@@ -23,13 +23,16 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction22c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction3rc
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableFieldReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableTypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -427,6 +430,89 @@ class SettingsRowShapesTest {
         assertEquals(6, offsetTarget(logger, 4))
     }
 
+    private fun logCall(parameters: List<String> = listOf(helper, "J"), returnType: String = "V") =
+        ImmutableMethodReference(ROW_LOG, "A02", parameters, returnType)
+
+    private fun readId(to: Int, from: Int = 2) = ImmutableInstruction22c(Opcode.IGET_WIDE, to, from, idOf())
+
+    /** The logger's object in v3, a helper in v0 and the id in v1 and v2, as 588's lambda hands them on. */
+    private fun handingId(call: MethodReference = logCall(), opcode: Opcode = Opcode.INVOKE_VIRTUAL) =
+        ImmutableInstruction35c(opcode, 4, 3, 0, 1, 2, 0, call)
+
+    private fun lambda(vararg code: Instruction): Method = method("Lfixture/Lambda;", "invoke", listOf(OBJECT), OBJECT, 9,
+        code.toList() + ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0))
+
+    @Test
+    fun `a log call is handed the row's id as its last argument`() {
+        assertEquals(listOf(logCall()), rowLogCalls(lambda(readId(1), handingId()), idOf()))
+        val longer = logCall(listOf(helper, helper, helper, "J"))
+        val range = lambda(readId(6, 1), ImmutableInstruction3rc(Opcode.INVOKE_VIRTUAL_RANGE, 2, 6, longer))
+        assertEquals(listOf(longer), rowLogCalls(range, idOf()))
+    }
+
+    @Test
+    fun `nothing else that reads the id counts as a log call`() {
+        fun none(why: String, vararg code: Instruction) =
+            assertEquals(why, emptyList<MethodReference>(), rowLogCalls(lambda(*code), idOf()))
+        none("another long goes on", readId(1), ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 4, 3, 0, 4, 5, 0, logCall()))
+        none("the call answers something", readId(1), handingId(logCall(returnType = "Z")))
+        none("the call doesn't end in a long", readId(1), handingId(logCall(listOf(helper, helper, helper))))
+        none("the call is static", readId(1), handingId(opcode = Opcode.INVOKE_STATIC))
+        none("half of the id is overwritten", readId(1), ImmutableInstruction11n(Opcode.CONST_4, 2, 0), handingId())
+        none("a branch comes first", readId(1), ImmutableInstruction10t(Opcode.GOTO, 1), handingId())
+        none("another field of the row", ImmutableInstruction22c(Opcode.IGET_WIDE, 1, 2, ImmutableFieldReference(item, "A03", "J")), handingId())
+        none("the same name on another class", ImmutableInstruction22c(Opcode.IGET_WIDE, 1, 2, ImmutableFieldReference(helper, "A02", "J")), handingId())
+    }
+
+    @Test
+    fun `the row component's creations come from its instance methods`() {
+        fun making(name: String, type: String, flags: Int) = method(owner, name, emptyList(), "V", 1, listOf(
+            ImmutableInstruction21c(Opcode.NEW_INSTANCE, 0, ImmutableTypeReference(type)),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        ), flags)
+        val component = ImmutableClassDef(owner, publicFinal, OBJECT, null, null, null, emptyList<ImmutableField>(),
+            listOf(making("render", "Lfixture/Lambda;", publicFinal), making("A00", "Lfixture/Other;", publicStatic)))
+        assertEquals(setOf("Lfixture/Lambda;"), rowComponentCreations(component))
+    }
+
+    private fun logger(registers: Int, parameters: List<String> = listOf(helper, "J"), returnType: String = "V") = MutableMethod(
+        method(ROW_LOG, "A02", parameters, returnType, registers, listOf(ImmutableInstruction10x(Opcode.RETURN_VOID))),
+    )
+
+    @Test
+    fun `a logger handed the row's id returns before it logs`() {
+        // Four locals, then this, the helper and the id in v6 and v7.
+        val log = logger(8)
+        log.skipRowLog()
+        val ask = log.at(0)
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, ask.opcode)
+        assertEquals(6, (ask as RegisterRangeInstruction).startRegister)
+        assertEquals(2, ask.registerCount)
+        assertEquals("isRow", ((ask as ReferenceInstruction).reference as MethodReference).name)
+        assertEquals(Opcode.MOVE_RESULT, log.at(1).opcode)
+        assertEquals(0, (log.at(1) as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.IF_EQZ, log.at(2).opcode)
+        assertEquals(Opcode.RETURN_VOID, log.at(3).opcode)
+        assertEquals(4, offsetTarget(log, 2))
+        assertEquals(5, log.implementation!!.instructions.count())
+    }
+
+    @Test
+    fun `a logger's id above v15 is still read`() {
+        // 588's longer logger has 21 registers, which puts a last long at v19 here.
+        val log = logger(21).apply { skipRowLog() }
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, log.at(0).opcode)
+        assertEquals(19, (log.at(0) as RegisterRangeInstruction).startRegister)
+    }
+
+    @Test
+    fun `a logger the hook doesn't fit stops the patch untouched`() {
+        for (log in listOf(logger(4), logger(8, listOf("J", helper)), logger(8, returnType = "Z"))) {
+            assertThrows(PatchException::class.java) { log.skipRowLog() }
+            assertEquals(1, log.implementation!!.instructions.count())
+        }
+    }
+
     @Test
     fun `a method the hook can't go into stops the patch before anything goes in`() {
         val tight = MutableMethod(tap(registers = 8))
@@ -442,5 +528,7 @@ class SettingsRowShapesTest {
     private companion object {
         const val CHAR = "Ljava/lang/CharSequence;"
         const val STRING = "Ljava/lang/String;"
+        const val OBJECT = "Ljava/lang/Object;"
+        const val ROW_LOG = "Lfixture/RowLog;"
     }
 }

@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegister
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -31,6 +32,7 @@ import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -140,7 +142,8 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
             return@execute
         }
         val owner = mutableClassDefBy(tap.definingClass)
-        // 582's 32-bit build has dropped both loggers, so there may be none to hook.
+        // 582's 32-bit build has dropped both loggers, so there may be none to hook. 588 folds them
+        // into a lambda of the row component, and there the logger class's own methods take the hook.
         val loggers = rowLoggers(owner, tap, item)
         val tapMethod = owner.findMutableMethodOf(tap)
         tapMethod.skipRow(tapMethod.parameterTypes.indexOfFirst { it.toString() == item }, id, tapToo = true)
@@ -148,8 +151,24 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
             val mutable = owner.findMutableMethodOf(logger)
             mutable.skipRow(mutable.parameterTypes.indexOfFirst { it.toString() == item }, id, tapToo = false)
         }
+        if (loggers.isEmpty()) skipRowInLogCalls(owner, id)
         enableStatus("menuSettingsRow")
     }
+}
+
+/** Keeps the row out of each logger the row component's lambdas hand its [id] to ([rowLogCalls]). */
+private fun BytecodePatchContext.skipRowInLogCalls(owner: ClassDef, id: FieldReference) {
+    rowComponentCreations(owner)
+        .flatMap { type -> classDefByOrNull(type)?.methods?.filter(::isLambdaInvoke).orEmpty() }
+        .flatMap { rowLogCalls(it, id) }
+        .distinctBy { ImmutableMethodReference.of(it) }
+        .forEach { call ->
+            val parameters = call.parameterTypes.map { it.toString() }
+            val logger = mutableClassDefBy(call.definingClass).methods.firstOrNull {
+                it.name == call.name && it.parameterTypes.map(Any::toString) == parameters
+            } ?: throw PatchException("$ROW_PATCH: ${call.definingClass} has no ${call.name} to log the row with")
+            logger.skipRowLog()
+        }
 }
 
 /**
@@ -272,6 +291,29 @@ internal fun MutableMethod.skipRow(itemIndex: Int, id: FieldReference, tapToo: B
             move-object/from16 v0, ${parameterRegister(itemIndex)}
             iget-wide v1, v0, ${reference(id)}
         """.trimIndent() + "\n" + ask + "\n" + """
+            move-result v0
+            if-eqz v0, :facebook
+            return-void
+        """.trimIndent(),
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in a logger taking the row's id as its last argument: a yes from [IS_ROW] returns
+ * before it logs anything. Every other row's id goes on as before. The id is read where it arrived,
+ * through the range form since it can sit above v15.
+ */
+internal fun MutableMethod.skipRowLog() {
+    if (returnType != "V" || parameterTypes.lastOrNull()?.toString() != "J") {
+        throw PatchException("$ROW_PATCH: $definingClass->$name doesn't return nothing and end in the row's id")
+    }
+    requireLocals(ROW_PATCH, 1)
+    val id = parameterRegisterNumber(parameterTypes.lastIndex)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { v$id .. v${id + 1} }, $IS_ROW
             move-result v0
             if-eqz v0, :facebook
             return-void

@@ -10,6 +10,7 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
@@ -25,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -45,13 +47,20 @@ class SettingsRowFixtureTest {
      * has a tap class again on both, and both its loggers take the row. Its Android 9 build folds
      * both into the tap handler (`LX/0p4C;->A05` logs `tap_bookmark` right after reading the id),
      * behind the hook that returns first for the patch's row. 587 keeps the tap class and both
-     * loggers on both ABIs (`LX/0D1G;->A09` and `A0A` on arm64).
+     * loggers on both ABIs (`LX/0D1G;->A09` and `A0A` on arm64). 588 folds them into arms of a
+     * merged lambda of the row component, so its tap class has none left ([inlinedLogCalls]).
      */
     private val loggerCount = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
         "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 0),
-        "588.0.0.42.55" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
+        "588.0.0.42.55" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0),
     )
+
+    /**
+     * The logger methods the row component's lambdas hand a row's id to, by build. 588's merged
+     * lambda (`LX/0WD7;->invoke`, 32-bit `LX/0WD8;`) calls `LX/0Dxe;->A01` and `A02` with it.
+     */
+    private val inlinedLogCalls = mapOf("588.0.0.42.55" to 2)
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()
 
@@ -217,6 +226,29 @@ class SettingsRowFixtureTest {
                 val ownerTap = owner.methods.single { it.name == tap.name && it.parameterTypes.size == tap.parameterTypes.size }
                 val loggers = rowLoggers(owner, ownerTap, item)
                 assertEquals("${bundle.name}: row loggers", loggerCount[version]?.get(abi), loggers.size)
+                val logCalls = FixtureDex.classes(bundle, rowComponentCreations(owner)).values
+                    .flatMap { lambda -> lambda.methods.filter(::isLambdaInvoke) }
+                    .flatMap { rowLogCalls(it, id) }
+                    .distinctBy { ImmutableMethodReference.of(it) }
+                assertEquals("${bundle.name}: log calls in the row component's lambdas: $logCalls",
+                    inlinedLogCalls[version] ?: 0, logCalls.size)
+                val logClasses = FixtureDex.classes(bundle, logCalls.map { it.definingClass }.toSet())
+                for (call in logCalls) {
+                    val logger = logClasses.getValue(call.definingClass).methods.single {
+                        it.name == call.name && it.parameterTypes.map(Any::toString) == call.parameterTypes.map(Any::toString)
+                    }
+                    assertTrue("${bundle.name}: ${logger.name} has no local for the answer", logger.localRegisterCount() >= 1)
+                    val patched = MutableMethod(logger).apply { skipRowLog() }
+                    val ask = patched.instructionList().first()
+                    assertEquals("${bundle.name}: ${logger.name}'s hook", Opcode.INVOKE_STATIC_RANGE, ask.opcode)
+                    assertEquals("${bundle.name}: what ${logger.name}'s hook asks", IS_ROW,
+                        ((ask as ReferenceInstruction).reference as MethodReference).let {
+                            "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}"
+                        })
+                    assertEquals("${bundle.name}: the register ${logger.name}'s hook reads",
+                        logger.parameterRegisterNumber(logger.parameterTypes.lastIndex),
+                        (ask as RegisterRangeInstruction).startRegister)
+                }
                 for (method in loggers + ownerTap) {
                     assertTrue("${bundle.name}: ${method.name} has ${method.localRegisterCount()} locals",
                         method.localRegisterCount() >= 3)

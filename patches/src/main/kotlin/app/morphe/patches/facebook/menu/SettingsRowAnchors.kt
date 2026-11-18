@@ -4,21 +4,26 @@
  */
 package app.morphe.patches.facebook.menu
 
+import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.util.ControlFlow
+import app.morphe.util.argumentRegister
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.VariableRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /**
  * Where a row in Facebook's Menu comes from, for the Hushfacebook row, on the 577 to 587 builds.
@@ -148,6 +153,43 @@ internal fun rowItemType(tap: Method): String = tap.parameterTypes[3].toString()
 internal fun rowLoggers(owner: ClassDef, tap: Method, item: String): List<Method> = owner.methods.filter {
     it !== tap && it.name != tap.name && it.implementation != null && it.isStatic() && it.returnType == "V" &&
         item in it.parameters()
+}
+
+/** The classes [owner]'s instance methods create, among them the lambdas of the row component's render. */
+internal fun rowComponentCreations(owner: ClassDef): Set<String> = owner.methods.filter { !it.isStatic() }.flatMap { method ->
+    method.implementation?.instructions?.toList().orEmpty().filter { it.opcode == Opcode.NEW_INSTANCE }
+        .mapNotNull { ((it as ReferenceInstruction).reference as? TypeReference)?.type }
+}.toSet()
+
+/**
+ * The calls logging a row out of [lambda]. 588 folds the row's two loggers into arms of a merged
+ * lambda of the row component (`LX/0WD7;->invoke`, 32-bit `LX/0WD8;`), so [rowLoggers] finds none:
+ * each arm reads the row's [id] and hands it, as the last argument, to a void virtual method of a
+ * logger class (`LX/0Dxe;->A01` and `A02`). The id has to go there straight, with no branch and no
+ * write to either half on the way.
+ */
+internal fun rowLogCalls(lambda: Method, id: FieldReference): List<MethodReference> {
+    val code = lambda.implementation?.instructions?.toList().orEmpty()
+    return code.indices.filter { at ->
+        val field = (code[at] as? ReferenceInstruction)?.reference as? FieldReference
+        code[at].opcode == Opcode.IGET_WIDE && field != null && field.definingClass == id.definingClass && field.name == id.name
+    }.mapNotNull { read ->
+        val register = (code[read] as TwoRegisterInstruction).registerA
+        (read + 1 until code.size).asSequence().map { code[it] }
+            .takeWhile {
+                it.opcode.canContinue() && it !is OffsetInstruction &&
+                    !writesRegister(it, register) && !writesRegister(it, register + 1)
+            }
+            .firstNotNullOfOrNull { call ->
+                val target = (call as? ReferenceInstruction)?.reference as? MethodReference
+                val count = (call as? VariableRegisterInstruction)?.registerCount ?: 0
+                target?.takeIf {
+                    call.opcode in VIRTUAL_INVOKES && it.returnType == "V" &&
+                        it.parameterTypes.lastOrNull()?.toString() == "J" && count >= 3 &&
+                        call.argumentRegister(count - 2) == register && call.argumentRegister(count - 1) == register + 1
+                }
+            }
+    }
 }
 
 /**
