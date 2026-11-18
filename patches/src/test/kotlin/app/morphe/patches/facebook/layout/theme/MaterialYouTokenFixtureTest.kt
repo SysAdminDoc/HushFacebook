@@ -114,11 +114,11 @@ class MaterialYouTokenFixtureTest {
          * getInteger (issue #154). The scan has to find it, or the crash is back. The reactions
          * pill bar below reads the same array in its constructor, under a name Redex leaves alone
          * on both ABIs, where the Litho component and the array's holder are renamed per build.
-         * 587's pill bar reads it from `LX/03tD;->A2y` on arm64 and `LX/03tB;->A2y` on v7, both
-         * holding 0x1010097, 0x101015d and 0x7f040f99 (586's `LX/01ic;->A30` held 0x7f040fc6 third).
+         * 588's pill bar reads it from `LX/01dW;->A2y` on both ABIs, holding 0x1010097, 0x101015d
+         * and 0x7f040f9d (587's `LX/03tD;->A2y` held 0x7f040f99 third, 586's `LX/01ic;->A30` 0x7f040fc6).
          */
         val LIKES_LINE_ATTRIBUTE = mapOf(
-            "585.0.0.47.54" to 0x7f040fcf, "586.0.0.52.53" to 0x7f040fc6, "588.0.0.42.55" to 0x7f040f99,
+            "585.0.0.47.54" to 0x7f040fcf, "586.0.0.52.53" to 0x7f040fc6, "588.0.0.42.55" to 0x7f040f9d,
         )
         /**
          * The seven tokens 584 dropped from 583's 324 (all of them named in MaterialYouTheme's
@@ -240,45 +240,33 @@ class MaterialYouTokenFixtureTest {
             "L?;->?()V@36",
         )
         /**
-         * 587 has 17 (2026-11-12, from this test's output on arm64): 586's (Context, String)Integer
-         * read is gone, its three (L?;I)V reads are gone, and three (L?;)V reads are new (at 10, at
-         * 111 and a second at 54). The tokens read as data and the unchecked ones are 586's, so no FDS
-         * token's read left the scan's sight; the new calls are pinned by shape only.
+         * 587 had 17: 586's (Context, String)Integer read went, its three (L?;I)V reads went, and three
+         * (L?;)V reads came (at 10, at 111 and a second at 54). 588 keeps those 17 (2026-11-18, from
+         * this test's output on both ABIs), six of the (L?;)V reads four instructions earlier in their
+         * method, back where 586 had them. The tokens read as data and the unchecked ones are still
+         * 586's, so no FDS token's read left the scan's sight; the calls are pinned by shape only.
          */
-        private val SHAPES_587 = MAPBOX.toList() + listOf(
+        private val SHAPES_588 = MAPBOX.toList() + listOf(
             "L?;->?(Ljava/lang/Integer;)V@16",
             "L?;->?(Landroid/content/Context;Lcom/facebook/react/bridge/ReadableMap;)Landroid/graphics/drawable/Drawable;@20",
             "L?;->?(L?;)V@10",
             "L?;->?(L?;)V@111",
-            "L?;->?(L?;)V@156",
-            "L?;->?(L?;)V@170",
+            "L?;->?(L?;)V@152",
+            "L?;->?(L?;)V@166",
+            "L?;->?(L?;)V@50",
             "L?;->?(L?;)V@54",
-            "L?;->?(L?;)V@54",
-            "L?;->?(L?;)V@67",
-            "L?;->?(L?;)V@79",
-            "L?;->?(L?;)V@82",
+            "L?;->?(L?;)V@63",
+            "L?;->?(L?;)V@75",
+            "L?;->?(L?;)V@78",
             "L?;->?(L?;L?;)V@9",
             "L?;-><init>(Landroid/content/Context;)V@114",
             "L?;->?()V@34",
         )
-        /**
-         * 587's armeabi-v7a reads the same 17 calls, three of them at other offsets in their methods
-         * (2026-11-12, from this test's output): the two late (L?;)V reads at 154 and 168, the
-         * constructor's at 113, the places 586's Android 9 build had them.
-         */
-        private val SHAPES_587_V7 = SHAPES_587.map {
-            when (it) {
-                "L?;->?(L?;)V@156" -> "L?;->?(L?;)V@154"
-                "L?;->?(L?;)V@170" -> "L?;->?(L?;)V@168"
-                "L?;-><init>(Landroid/content/Context;)V@114" -> "L?;-><init>(Landroid/content/Context;)V@113"
-                else -> it
-            }
-        }
         val UNRESOLVED = mapOf(
             "585.0.0.47.54" to mapOf("arm64-v8a" to SHAPES_585, "armeabi-v7a" to SHAPES_585),
             "586.0.0.52.53" to mapOf("arm64-v8a" to SHAPES_586, "armeabi-v7a" to SHAPES_586,
                 "arm64-v8a-minapi28-storeless" to SHAPES_586_ANDROID_9),
-            "588.0.0.42.55" to mapOf("arm64-v8a" to SHAPES_587, "armeabi-v7a" to SHAPES_587_V7),
+            "588.0.0.42.55" to mapOf("arm64-v8a" to SHAPES_588, "armeabi-v7a" to SHAPES_588),
         )
 
         /** A class name Redex made up for one build, or a merged lambda group's. */

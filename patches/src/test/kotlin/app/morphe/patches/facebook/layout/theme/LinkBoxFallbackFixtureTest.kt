@@ -52,20 +52,13 @@ class LinkBoxFallbackFixtureTest {
      * unboxes one of them with a static null-safe (Number, int) call that answers the int for null.
      */
     private val unboxingsByVersion = mapOf(
-        // 587's footer (arm64 `LX/094a;->A00`) and renders read the grey the way 586's did.
-        "588.0.0.42.55" to listOf("intValue", "intValue"),
+        // 588, both ABIs: the footer (arm64 `LX/082r;->A00`) calls intValue, and one render
+        // (`LX/0RBQ;->render`) the static null-safe call, as 586's Android 9 build did.
+        "588.0.0.42.55" to listOf("intValue", "static (Number, int)"),
         "586.0.0.52.53" to listOf("intValue", "intValue"),
     )
     private val unboxingsAndroid9 = mapOf(
         "586.0.0.52.53" to listOf("intValue", "static (Number, int)"),
-    )
-
-    /**
-     * A build whose ABIs unbox differently, by ABI. 587's armeabi-v7a unboxes one of them with the
-     * static null-safe (Number, int) call too, as 586's Android 9 build did.
-     */
-    private val unboxingsByAbi = mapOf(
-        "588.0.0.42.55" to mapOf("armeabi-v7a" to listOf("intValue", "static (Number, int)")),
     )
 
     @Test
@@ -130,8 +123,7 @@ class LinkBoxFallbackFixtureTest {
                     assertTrue("$themes: the second config's grey is unboxed by intValue ($unboxings)",
                         unboxings.any { it == "Ljava/lang/Number;->intValue" || it == "Ljava/lang/Integer;->intValue" })
                     val android9 = name.substringAfter("-$version-").contains("-minapi")
-                    val abi = name.substringAfter("-$version-").substringBefore(".apkm")
-                    val expected = unboxingsByAbi[version]?.get(abi) ?: (if (android9) unboxingsAndroid9 else unboxingsByVersion)[version]
+                    val expected = (if (android9) unboxingsAndroid9 else unboxingsByVersion)[version]
                     assertTrue("$themes: no unboxings pinned for $version", expected != null)
                     assertEquals("$themes: what the fallbacks unbox",
                         expected, unboxings.map { if (it.endsWith("->intValue")) "intValue" else it }.sorted())
