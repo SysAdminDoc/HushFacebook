@@ -2723,6 +2723,61 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     /**
+     * The example address the In-app proxy row shows: v2rayNG's local port, whose Xray socks inbound
+     * takes HTTP proxy requests too.
+     */
+    static final String PROXY_EXAMPLE = "127.0.0.1:10808";
+
+    /**
+     * In-app proxy (#504): an HTTP proxy for Facebook's connections, as host:port, blank for none.
+     * What's saved is the address as {@link InAppProxy.Address} writes it; an address it can't read
+     * isn't saved, and a toast says what to type.
+     */
+    static ValueRows.ProxyRow proxyRow(Context context) {
+        StringSetting setting = Settings.IN_APP_PROXY;
+        ValueRows.ProxyRow row = new ValueRows.ProxyRow(context);
+        row.setKey(setting.key);
+        row.setTitle(L10n.t("In-app proxy"));
+        row.setDialogTitle(L10n.t("In-app proxy"));
+        row.setDialogMessage(L10n.f("The address and port of an HTTP proxy for Facebook's connections, like %1$s. "
+                + "The local proxy port of a VLESS or V2Ray app such as v2rayNG works here. "
+                + "Leave it blank to connect the way your phone does.",
+                PROXY_EXAMPLE));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        field.setFilters(new InputFilter[] {new InputFilter.LengthFilter(300)});
+        field.setHint(PROXY_EXAMPLE);
+        row.setText(setting.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString().trim();
+            if (raw.isEmpty()) return true;
+            InAppProxy.Address proxy = InAppProxy.parse(raw);
+            if (proxy == null) {
+                Utils.showToastLong(L10n.f("Type an HTTP proxy's address and port, like %1$s.", PROXY_EXAMPLE));
+                return false;
+            }
+            String clean = proxy.toString();
+            if (clean.equals(raw)) return true;
+            ((ValueRows.ProxyRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** What the In-app proxy row says for [text], the address saved there. */
+    static String proxySummary(String text) {
+        InAppProxy.Address proxy = InAppProxy.parse(text);
+        if (proxy == null) {
+            return L10n.t("Facebook connects the way your phone does. Type a proxy's address and port to send its "
+                    + "connections through it.");
+        }
+        return L10n.f("Facebook's connections go through the proxy at %1$s.", L10n.isolate(proxy.toString()));
+    }
+
+    /**
      * A row taking a percent for [setting] (#425): digits only, at most three, blank for [blank].
      * What's typed that isn't digits is saved as its digits.
      */

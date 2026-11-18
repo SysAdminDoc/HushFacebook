@@ -2751,6 +2751,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_blocked_list_pictures", FALSE);
 
     /**
+     * An HTTP proxy Facebook's connections go through, as host:port, blank for the phone's own way
+     * out ({@link InAppProxy}, #504). The settings entry's own, so every build has it, and Pause
+     * leaves it be, as it does Lock Facebook. Set as each of Facebook's processes starts, so a change
+     * brings up the restart row. Not a switch.
+     */
+    public static final StringSetting IN_APP_PROXY =
+            new StringSetting("hushfacebook_in_app_proxy", "", true);
+
+    /**
      * Opening Facebook from its icon puts a cover that counts down {@link #OPENING_PAUSE_LENGTH}
      * over its first screen ({@link app.morphe.extension.facebook.misc.OpeningPause}). The settings
      * entry's own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default.

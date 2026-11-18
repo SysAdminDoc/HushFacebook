@@ -1038,6 +1038,34 @@ final class ValueRows {
         }
     }
 
+    /** The In-app proxy row (#504). Its summary follows its text, whoever sets it. */
+    static final class ProxyRow extends EditTextPreference {
+        ProxyRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(HushfacebookPreferenceFragment.proxySummary(text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
     /** What a percent row says for the digits typed there. */
     interface PercentSummary {
         String of(String text);

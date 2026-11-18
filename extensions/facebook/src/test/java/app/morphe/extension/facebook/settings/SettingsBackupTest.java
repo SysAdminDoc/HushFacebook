@@ -172,6 +172,9 @@ public class SettingsBackupTest {
                 "it is a size picked for this phone's screen, which reads differently on another phone.");
         out.put("hushfacebook_tab_bar_height",
                 "it is a size picked for this phone's screen, which reads differently on another phone.");
+        out.put("hushfacebook_in_app_proxy",
+                "it names a proxy on this phone or its network, often a VLESS app's local port. On a phone "
+                        + "without that proxy, Facebook couldn't connect at all.");
         for (String count : new String[] {"friends", "followers", "following"}) {
             out.put("hushfacebook_local_" + count,
                     "it's a number typed for your own profile on this phone, for fun. It stays here and isn't "

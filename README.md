@@ -124,6 +124,7 @@ These come up most. Each one has its fix in [Help](docs/help.md).
 - [A second Facebook beside the first](docs/help.md#a-second-facebook-beside-the-first)
 - [Facebook or Google Play offers an update](docs/help.md#facebook-or-google-play-offers-an-update)
 - [Signing in keeps going back to verification](docs/help.md#signing-in-keeps-going-back-to-verification)
+- [Facebook through VLESS or another proxy](docs/help.md#facebook-through-vless-or-another-proxy)
 - [Facebook keeps closing](docs/help.md#facebook-keeps-closing)
 - [Going back to an earlier release](docs/help.md#going-back-to-an-earlier-release)
 

@@ -2953,3 +2953,9 @@ Ask before reacting to a story	Vor Reaktionen auf eine Story fragen
 A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	Ein Tippen auf eine Reaktion unten in einer Story fragt zuerst nach, und die Story wartet. Erst Weiter sendet die Reaktion.
 # context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
 React to this story?	Auf diese Story reagieren?
+# context: In-app proxy, an HTTP proxy address (host:port) Facebook's connections go through
+In-app proxy	In-App-Proxy
+The address and port of an HTTP proxy for Facebook's connections, like %1$s. The local proxy port of a VLESS or V2Ray app such as v2rayNG works here. Leave it blank to connect the way your phone does.	Adresse und Port eines HTTP-Proxys für die Verbindungen von Facebook, zum Beispiel %1$s. Der lokale Proxy-Port einer VLESS- oder V2Ray-App wie v2rayNG funktioniert hier. Leer lassen, um wie dein Handy zu verbinden.
+Type an HTTP proxy's address and port, like %1$s.	Gib Adresse und Port eines HTTP-Proxys ein, zum Beispiel %1$s.
+Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook verbindet sich so wie dein Handy. Gib Adresse und Port eines Proxys ein, um die Verbindungen darüber zu leiten.
+Facebook's connections go through the proxy at %1$s.	Die Verbindungen von Facebook laufen über den Proxy %1$s.

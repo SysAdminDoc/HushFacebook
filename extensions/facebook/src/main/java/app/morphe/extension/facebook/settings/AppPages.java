@@ -624,6 +624,8 @@ final class AppPages {
         privacy.addPreference(toggle(context, Settings.HIDE_BLOCKED_LIST_PICTURES,
                 L10n.t("People you've blocked show without their profile pictures on the Blocking page in Facebook's "
                         + "settings. Reopen the page if it's already open.")));
+        // The settings entry's own too: each of Facebook's processes sets it as it starts (#504).
+        privacy.addPreference(HushfacebookPreferenceFragment.proxyRow(context));
         if (build.contains(PatchFamily.ANALYTICS_UPLOADS)) {
             // XAnalytics resumes its uploader once, as Facebook starts.
             privacy.addPreference(toggle(context, Settings.HOLD_ANALYTICS_UPLOADS,

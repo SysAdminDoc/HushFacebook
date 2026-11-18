@@ -3011,3 +3011,9 @@ Ask before reacting to a story	Спрашивать перед реакцией 
 A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	Нажатие на реакцию внизу Истории сначала спрашивает, и История ждёт. Только «Продолжить» отправляет реакцию.
 # context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
 React to this story?	Отреагировать на эту Историю?
+# context: In-app proxy, an HTTP proxy address (host:port) Facebook's connections go through
+In-app proxy	Прокси в приложении
+The address and port of an HTTP proxy for Facebook's connections, like %1$s. The local proxy port of a VLESS or V2Ray app such as v2rayNG works here. Leave it blank to connect the way your phone does.	Адрес и порт HTTP-прокси для соединений Facebook, например %1$s. Подойдёт локальный порт прокси приложения VLESS или V2Ray, например v2rayNG. Оставьте пустым, чтобы подключаться как обычно на телефоне.
+Type an HTTP proxy's address and port, like %1$s.	Введите адрес и порт HTTP-прокси, например %1$s.
+Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook подключается так же, как телефон. Введите адрес и порт прокси, чтобы его соединения шли через него.
+Facebook's connections go through the proxy at %1$s.	Соединения Facebook идут через прокси %1$s.

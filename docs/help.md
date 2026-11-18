@@ -72,6 +72,12 @@ A patched Facebook can't install Meta's updates, so it stays on the version you 
 
 Some people get through the password and then land on a browser or Google verification that keeps coming back, even after they approve it. So far it's been accounts with a passkey. What got them in: sign in to facebook.com in a browser, remove the passkey in Accounts Center under Password and security, then sign in on the patched app again. Facebook then asks you to approve the login from another device, and that goes through. A patched Messenger that loops the same way gets in after the same change.
 
+## Facebook through VLESS or another proxy
+
+**In-app proxy** under Privacy sends Facebook's connections through an HTTP proxy, so you don't have to put the whole phone on a VPN. For VLESS, VMess, Trojan or Shadowsocks, add your server to a proxy app like v2rayNG, set its mode to **Proxy only** and connect. Then type `127.0.0.1:10808` in **In-app proxy** and restart Facebook. That's v2rayNG's local port, and it takes HTTP as well as SOCKS. In another app, use the local HTTP or mixed port it shows.
+
+Facebook can't connect while the proxy app is off, so clear the row when you want your phone's normal connection back. Messenger and Instagram are separate apps. v2rayNG's **Per-app proxy** can send just those two through VLESS.
+
 ## Facebook keeps closing
 
 After three crashes or freezes within a minute of starting, Hushfacebook pauses itself. If you can't reach the settings at all, an empty file named `hushfacebook-safe-mode` in `Android/data/com.facebook.katana/files` pauses it too (a clone uses its own package's folder, like `com.facebook.katana.morphe`). Most file managers can't write there, but on newer Android versions a computer with adb can, with no root (seen working on Android 16):
