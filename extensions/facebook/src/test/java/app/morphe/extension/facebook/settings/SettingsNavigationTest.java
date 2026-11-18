@@ -1775,10 +1775,11 @@ public class SettingsNavigationTest {
         page = page(dialog);
         Map<String, Object> before = savedValues();
         page.navigation.navigate("Privacy");
-        // Close Facebook when you leave it and Hide pictures on the Blocked list belong to no patch, so every
-        // build has them. Save crashes to Downloads moved to Troubleshooting under Pause, backup and diagnostics.
+        // Close Facebook when you leave it, Hide pictures on the Blocked list and In-app proxy belong to no
+        // patch, so every build has them. Save crashes to Downloads moved to Troubleshooting under Pause,
+        // backup and diagnostics.
         List<String> expected = new ArrayList<>(Arrays.asList("Lock Facebook", "Lock after",
-                "Close Facebook when you leave it", "Hide pictures on the Blocked list"));
+                "Close Facebook when you leave it", "Hide pictures on the Blocked list", "In-app proxy"));
         expected.addAll(ADS_MAP);
         assertEquals(expected, categoryTitles("Privacy"));
 
