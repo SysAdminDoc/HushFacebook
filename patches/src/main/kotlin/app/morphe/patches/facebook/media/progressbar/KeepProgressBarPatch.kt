@@ -661,6 +661,8 @@ internal class ScrubberLooks(
     val labelField: String,
     /** The SeekBar field in that holder (582 `LX/9DH;->A0A`). */
     val barField: String,
+    /** The method hiding the time label: [passive], or from 588 the static helper it calls. */
+    val labelHide: Method,
 )
 
 /**
@@ -698,9 +700,10 @@ internal fun vddScrubber(holders: List<ClassDef>, activeHolders: List<ClassDef> 
     val scrubber = scrubbers.singleOrNull()
         ?: refuse("expected one class tracing both \"$SCRUBBER_ACTIVE\" and \"$SCRUBBER_PASSIVE\", found ${scrubbers.size}")
     val passive = look(scrubber, SCRUBBER_PASSIVE).single()
-    val (viewsField, labelField) = timeLabelFields(scrubber, passive)
+    val (labelHide, fields) = timeLabelHide(scrubber, passive)
+    val (viewsField, labelField) = fields
     val barField = seekBarField(passive, labelField.substringBefore("->"))
-    return ScrubberLooks(scrubber.type, active(scrubber)!!, passive, viewsField, labelField, barField)
+    return ScrubberLooks(scrubber.type, active(scrubber)!!, passive, viewsField, labelField, barField, labelHide)
 }
 
 /**
@@ -718,27 +721,36 @@ internal fun seekBarField(passive: Method, views: String): String {
 }
 
 /**
- * The time label's two fields, read from the passive look, which hides the label: the one
- * `iget-object` of a [VIEW_GROUP] field in it, straight after the `iget-object` of the scrubber's
- * own field that holds the views class declaring it. That field is declared on the scrubber, or on
- * the abstract base it extends: 582 moved the scrubber's fields and its looks' signatures to a base
+ * The time label's two fields, read from where the passive look hides the label: the one
+ * `iget-object` of a [VIEW_GROUP] field, straight after the `iget-object` of the scrubber's own
+ * field that holds the views class declaring it. That field is declared on the scrubber, or on the
+ * abstract base it extends: 582 moved the scrubber's fields and its looks' signatures to a base
  * (`LX/9c4;`, `LX/9d9;` overriding the looks), and its looks read the fields through the base.
- * Refuses unless that's exactly one field.
+ * 588 moved the hide itself out of the look into a static `(scrubber)V` helper of the scrubber
+ * (`LX/0DtI;->A0H`), so the helpers the look calls are read with it. Returns the method holding
+ * the read and the two fields. Refuses unless that's exactly one field.
  */
-internal fun timeLabelFields(scrubber: ClassDef, passive: Method): Pair<String, String> {
+internal fun timeLabelHide(scrubber: ClassDef, passive: Method): Pair<Method, Pair<String, String>> {
     val owners = setOf(scrubber.type) + listOfNotNull(scrubber.superclass)
-    val code = passive.implementation!!.instructions.toList()
-    val found = code.indices.mapNotNull { index ->
-        val label = (code[index] as? ReferenceInstruction)?.takeIf { it.opcode == Opcode.IGET_OBJECT }?.reference as? FieldReference
-        val views = (code.getOrNull(index - 1) as? ReferenceInstruction)?.takeIf { it.opcode == Opcode.IGET_OBJECT }?.reference as? FieldReference
-        if (label != null && views != null && label.type == VIEW_GROUP && views.definingClass in owners &&
-            views.type == label.definingClass
-        ) {
-            views.toString() to label.toString()
-        } else {
-            null
+    val helpers = passive.implementation!!.instructions.filter { it.opcode == Opcode.INVOKE_STATIC }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter { it.definingClass == scrubber.type && it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf(scrubber.type) }
+        .mapNotNull { call -> scrubber.methods.singleOrNull { it.name == call.name && it.parameterTypes.map(CharSequence::toString) == listOf(scrubber.type) && it.returnType == "V" } }
+        .distinctBy { it.name }
+    val found = (listOf(passive) + helpers).flatMap { method ->
+        val code = method.implementation?.instructions?.toList().orEmpty()
+        code.indices.mapNotNull { index ->
+            val label = (code[index] as? ReferenceInstruction)?.takeIf { it.opcode == Opcode.IGET_OBJECT }?.reference as? FieldReference
+            val views = (code.getOrNull(index - 1) as? ReferenceInstruction)?.takeIf { it.opcode == Opcode.IGET_OBJECT }?.reference as? FieldReference
+            if (label != null && views != null && label.type == VIEW_GROUP && views.definingClass in owners &&
+                views.type == label.definingClass
+            ) {
+                method to (views.toString() to label.toString())
+            } else {
+                null
+            }
         }
-    }.distinct()
+    }.distinctBy { it.second }
     return found.singleOrNull()
         ?: refuse("${scrubber.type}->${passive.name} reads ${found.size} view group fields off the scrubber's views, expected the one time label")
 }
