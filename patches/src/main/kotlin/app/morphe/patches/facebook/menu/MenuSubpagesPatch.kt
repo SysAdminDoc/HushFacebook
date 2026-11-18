@@ -311,8 +311,8 @@ internal fun treeField(context: ClassDef): FieldReference? {
 
 /**
  * The stack's push and pop: its methods holding [PAGE_UPDATE] that read [reference] once, each with
- * the index of that read. Instance methods on 585, and on 587 the one static both call, taking the
- * stack alone (`LX/0B3f;->A00`, 32-bit `LX/0B37;->A00`).
+ * the index of that read. Instance methods on 585 and again on 588, and on 587 the one static both
+ * call, taking the stack alone (`LX/0B3f;->A00`, 32-bit `LX/0B37;->A00`).
  */
 internal fun pageChanges(stack: ClassDef, reference: FieldReference): List<Pair<Method, Int>> = stack.methods
     .filter { (!AccessFlags.STATIC.isSet(it.accessFlags) || takesStackAlone(stack, it)) && holds(it, PAGE_UPDATE) }

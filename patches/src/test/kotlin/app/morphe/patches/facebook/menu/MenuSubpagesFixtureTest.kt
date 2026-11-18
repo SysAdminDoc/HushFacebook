@@ -44,9 +44,10 @@ class MenuSubpagesFixtureTest {
     /**
      * The stack's methods asking for the page update, per build. 587 moved the push's and the pop's
      * shared body into one static taking the stack (`LX/0B3f;->A00` on arm64, `LX/0B37;->A00` on
-     * 32-bit), so it has one where earlier builds have two.
+     * 32-bit), so it has one where earlier builds have two. 588 is back to a push and a pop of their
+     * own (`LX/0AWY;->A00` and `A01`, 32-bit `LX/0AWb;`), each asking for the update.
      */
-    private val pageChangeCounts = mapOf("588.0.0.42.55" to 1)
+    private val pageChangeCounts = mapOf("588.0.0.42.55" to 2)
 
     private fun pageChangeCount(bundle: String): Int =
         pageChangeCounts.entries.singleOrNull { bundle.contains("-${it.key}-") }?.value ?: 2
