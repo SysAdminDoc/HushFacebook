@@ -30,6 +30,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * The download button under a post and the post's menu now find videos that sit behind a photo or inside an album. A post with several videos gets `Save all videos`. (#509)
 * Your own story stays first in the tray when `Move seen stories to the end` or a similar switch is on. (#510)
 * The progress line on a reel opened from the feed sits above the gesture bar instead of under it. (#469)
+* `Hide the tab bar on the Reels tab` no longer leaves a grey line under the Reels title when your tabs are at the top. The line comes back with the bar on the other tabs. (#508)
 
 ## 0.23.0 (2026-11-17)
 

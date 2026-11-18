@@ -5,6 +5,8 @@
 package app.morphe.extension.facebook.navigation;
 
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
 
@@ -45,8 +47,16 @@ public final class ReelsTabBarHidden {
 
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
+    /** How far up from the bar its divider can sit, and how thick a divider can be. */
+    private static final int DIVIDER_LEVELS = 3;
+    private static final int DIVIDER_MAX_DP = 4;
+
     /** The bar this class hid, so only that one is shown again. */
     private static WeakReference<View> hidden = new WeakReference<>(null);
+
+    /** The divider this class faded out, and the alpha it goes back to. */
+    private static WeakReference<View> divider = new WeakReference<>(null);
+    private static float dividerAlpha = 1f;
 
     private ReelsTabBarHidden() {
     }
@@ -74,14 +84,74 @@ public final class ReelsTabBarHidden {
                     Logger.printDebug(() -> "Reels tab bar: hidden");
                 }
                 hidden = new WeakReference<>(bar);
+                // The header can still be filling in the first time the tab shows.
+                if (!hideDivider(bar)) bar.post(() -> dividerLater(bar));
             } else if (hidden.get() == bar) {
                 hidden = new WeakReference<>(null);
                 bar.setVisibility(View.VISIBLE);
+                showDivider();
                 Logger.printDebug(() -> "Reels tab bar: shown again");
             }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
         }
+    }
+
+    private static void dividerLater(View bar) {
+        try {
+            if (hidden.get() == bar) hideDivider(bar);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+        }
+    }
+
+    /**
+     * Fades out the thin line Facebook keeps beside the bar. With the tabs on top it stayed behind as
+     * a grey line across the Reels header once the bar had gone (#508). Facebook shows and hides that
+     * line itself, so this leaves its visibility alone. Answers whether there was one.
+     */
+    private static boolean hideDivider(View bar) {
+        View found = dividerBeside(bar);
+        if (found == null) return false;
+        if (found == divider.get()) return true;
+        showDivider();
+        dividerAlpha = found.getAlpha();
+        found.setAlpha(0f);
+        divider = new WeakReference<>(found);
+        return true;
+    }
+
+    private static void showDivider() {
+        View line = divider.get();
+        divider = new WeakReference<>(null);
+        if (line != null) line.setAlpha(dividerAlpha);
+    }
+
+    /** The first thin full-width view beside [bar] or beside one of its nearest parents. */
+    @Nullable
+    private static View dividerBeside(View bar) {
+        int most = Math.round(DIVIDER_MAX_DP * bar.getResources().getDisplayMetrics().density);
+        View from = bar;
+        for (int level = 0; level < DIVIDER_LEVELS; level++) {
+            ViewParent parent = from.getParent();
+            if (!(parent instanceof ViewGroup)) return null;
+            ViewGroup group = (ViewGroup) parent;
+            for (int index = 0; index < group.getChildCount(); index++) {
+                View child = group.getChildAt(index);
+                if (child != from && isDivider(child, group, most)) return child;
+            }
+            from = group;
+        }
+        return null;
+    }
+
+    private static boolean isDivider(View child, ViewGroup parent, int most) {
+        if (child instanceof ViewGroup || child.getVisibility() == View.GONE) return false;
+        ViewGroup.LayoutParams params = child.getLayoutParams();
+        int height = child.getHeight() > 0 ? child.getHeight() : params == null ? 0 : params.height;
+        if (height <= 0 || height > most) return false;
+        if (params != null && params.width == ViewGroup.LayoutParams.MATCH_PARENT) return true;
+        return parent.getWidth() > 0 && child.getWidth() * 10 >= parent.getWidth() * 9;
     }
 
     /**

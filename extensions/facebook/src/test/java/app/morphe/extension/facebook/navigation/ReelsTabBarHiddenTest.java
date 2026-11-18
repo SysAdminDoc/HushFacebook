@@ -9,7 +9,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import com.facebook.feed.tab.FeedTab;
 import com.facebook.video.videohome.tab.WatchTab;
@@ -150,6 +154,79 @@ public class ReelsTabBarHiddenTest {
         String missing = HookStatus.missing(FamilyNames.BOTTOM_TAB_BAR).toString();
         assertTrue(missing, missing.contains("a working '" + ReelsTabBarHidden.HOOK + "' hook (it threw "
                 + NullPointerException.class.getName() + ")"));
+    }
+
+    /** The bar as Facebook nests it with its tabs on top, inside a holder under the page's header. */
+    private FrameLayout headerAroundTheBar() {
+        Context context = RuntimeEnvironment.getApplication();
+        LinearLayout inner = new LinearLayout(context);
+        inner.addView(bar);
+        FrameLayout holder = new FrameLayout(context);
+        holder.addView(inner);
+        FrameLayout header = new FrameLayout(context);
+        header.addView(holder, ViewGroup.LayoutParams.MATCH_PARENT, 116);
+        return header;
+    }
+
+    private static View addLine(ViewGroup to) {
+        View line = new View(to.getContext());
+        to.addView(line, ViewGroup.LayoutParams.MATCH_PARENT, 2);
+        return line;
+    }
+
+    /** #508: with the tabs on top, Facebook's divider stayed behind as a grey line under the title. */
+    @Test
+    public void theLineUnderTheTitleGoesWithTheBarAndComesBackWithIt() {
+        View line = addLine(headerAroundTheBar());
+        line.setAlpha(0.5f);
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("the line stayed on the Reels tab", 0f, line.getAlpha(), 0f);
+        assertEquals("Facebook's own visibility was changed", View.VISIBLE, line.getVisibility());
+
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("Home didn't get its line back as it was", 0.5f, line.getAlpha(), 0f);
+    }
+
+    @Test
+    public void aLineInsideTheBarsOwnHolderGoesToo() {
+        FrameLayout header = headerAroundTheBar();
+        View line = addLine((ViewGroup) header.getChildAt(0));
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals(0f, line.getAlpha(), 0f);
+    }
+
+    @Test
+    public void onlyAThinFullWidthLineGoesNotWhatElseSitsNearTheBar() {
+        FrameLayout header = headerAroundTheBar();
+        Context context = header.getContext();
+        View tall = new View(context);
+        header.addView(tall, ViewGroup.LayoutParams.MATCH_PARENT, 116);
+        View narrow = new View(context);
+        header.addView(narrow, 40, 2);
+        FrameLayout thinGroup = new FrameLayout(context);
+        header.addView(thinGroup, ViewGroup.LayoutParams.MATCH_PARENT, 2);
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("a tall view went", 1f, tall.getAlpha(), 0f);
+        assertEquals("a short narrow view went", 1f, narrow.getAlpha(), 0f);
+        assertEquals("a thin layout went", 1f, thinGroup.getAlpha(), 0f);
+    }
+
+    @Test
+    public void theLineStaysFacebooksWithTheSwitchOffAndComesBackOnAPause() {
+        View line = addLine(headerAroundTheBar());
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("the line went with the switch off", 1f, line.getAlpha(), 0f);
+
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals(0f, line.getAlpha(), 0f);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("a pause left the line hidden", 1f, line.getAlpha(), 0f);
     }
 
     private static String line() {
