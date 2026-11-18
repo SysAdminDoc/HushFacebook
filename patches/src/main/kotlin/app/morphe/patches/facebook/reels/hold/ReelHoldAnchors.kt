@@ -330,6 +330,26 @@ internal fun holdSpeedReads(method: Method, setter: String, configAnswers: Set<S
     }
 }
 
+private val TWO_X_BITS = 2f.toRawBits()
+
+/**
+ * The calls of [setter] ("class->name(F)V") in [method] handing it a fixed 2x, loaded straight
+ * before the call. 588 dropped the hold speed's config read: its speed-up (LX/08n7;->A0b on arm64)
+ * sets 2f and compares the player's speed with 2f, so there's no answer for the extension to change.
+ */
+internal fun fixedHoldSpeeds(method: Method, setter: String): List<Int> {
+    val code = method.code
+    return code.indices.filter { index ->
+        val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference ?: return@filter false
+        if ("${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})${call.returnType}" != setter) {
+            return@filter false
+        }
+        val speed = code[index].registers().getOrNull(1) ?: return@filter false
+        val load = code.getOrNull(index - 1)?.takeIf { it.opcode == Opcode.CONST_HIGH16 } ?: return@filter false
+        (load as OneRegisterInstruction).registerA == speed && (load as NarrowLiteralInstruction).narrowLiteral == TWO_X_BITS
+    }
+}
+
 /**
  * Every double [method] reads from one of [configAnswers] through a method of its own handing back
  * an object: the call, a move-result-object, a check-cast of it to Number, its doubleValue() and the

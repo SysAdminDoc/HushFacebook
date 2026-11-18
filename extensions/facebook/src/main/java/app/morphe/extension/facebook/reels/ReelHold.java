@@ -43,7 +43,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       back and the 2x label all read. Outside the Video tab Facebook answers a fixed 2x, and where
  *       an account's Reels live in the Video tab it answers a server value, which may say normal
  *       speed where the server never gave the feature. While on, anything not faster than normal
- *       is 2x.</li>
+ *       is 2x. 588's speed-up sets a fixed 2x and reads no such value, so nothing calls this there.</li>
  *   <li>{@link #speedUp}: the speed-up flag where the controls decide whether to give a reel its
  *       release listener. Yes while the switch is on, so every reel has one.</li>
  *   <li>{@link #release}: both flags the release listener asks before it puts the speed back.
