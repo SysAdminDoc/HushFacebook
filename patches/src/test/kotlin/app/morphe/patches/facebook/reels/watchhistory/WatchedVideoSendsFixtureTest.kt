@@ -30,8 +30,16 @@ import java.io.File
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class WatchedVideoSendsFixtureTest {
-    /** The view-time events, each logged by a method that hands its name to the logger. */
-    private val events = listOf("android_update_video_view_time", "vpv_event_created", "vpv_event_attach_to_query")
+    /**
+     * The view-time events and how many methods load each, every one of them handing the name to the
+     * logger. 588 inlines the two small emitters of the first two into three player listeners, so
+     * those names sit in three places that all still go through the one logger the hook leads.
+     */
+    private val events = mapOf(
+        "android_update_video_view_time" to 3,
+        "vpv_event_created" to 3,
+        "vpv_event_attach_to_query" to 1,
+    )
 
     private val Instruction.call: MethodReference?
         get() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -86,14 +94,16 @@ class WatchedVideoSendsFixtureTest {
                 val loggers = methods(bundle, VIEW_TIME_POSITION, ::viewTimeLog)
                 assertEquals("$name: view-time loggers", 1, loggers.size)
                 val logger = loggers.single()
-                for (event in events) {
+                for ((event, loaders) in events) {
                     val logging = methods(bundle, event) { holdsString(it, event) }
-                    assertEquals("$name: methods loading \"$event\"", 1, logging.size)
-                    val calls = logging.single().implementation!!.instructions.mapNotNull { it.call }
-                    assertTrue("$name: \"$event\" doesn't go through the logger", calls.any {
-                        it.definingClass == logger.definingClass && it.name == logger.name &&
-                            it.parameterTypes.map(Any::toString) == logger.parameterTypes.map(Any::toString)
-                    })
+                    assertEquals("$name: methods loading \"$event\"", loaders, logging.size)
+                    for (method in logging) {
+                        val calls = method.implementation!!.instructions.mapNotNull { it.call }
+                        assertTrue("$name: \"$event\" in ${method.definingClass}->${method.name} doesn't go through the logger", calls.any {
+                            it.definingClass == logger.definingClass && it.name == logger.name &&
+                                it.parameterTypes.map(Any::toString) == logger.parameterTypes.map(Any::toString)
+                        })
+                    }
                 }
 
                 checkHook("$name position", senders.single(), HOLD_POSITION)
