@@ -313,6 +313,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_REACTION_BUBBLES,
                         L10n.t("Takes away the friend's picture with a reaction on it that Facebook puts on a photo or "
                                 + "video when a friend reacted. A change shows on the posts drawn after it.")));
+                feed.addPreference(toggle(context, Settings.HIDE_REACTOR_NAMES,
+                        L10n.t("Takes away the line under a post that names who reacted, like \"Name and others "
+                                + "reacted\". A change shows on the posts drawn after it.")));
             }
             if (build.contains(PatchFamily.PROFILE_PICTURES)) {
                 // Read as each post's header is built, so a change shows on the posts drawn after it.

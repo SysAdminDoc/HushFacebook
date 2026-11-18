@@ -3342,6 +3342,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reaction_bubbles", FALSE);
 
     /**
+     * The line under a post that names who reacted ("Name and others reacted", "Name and 20 others")
+     * is left out, and the bar under the post keeps whatever else it shows
+     * ({@link app.morphe.extension.facebook.feed.PostPrompts#hideReactorNames}, #483). Off by
+     * default. A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting HIDE_REACTOR_NAMES =
+            new BooleanSetting("hushfacebook_hide_reactor_names", FALSE);
+
+    /**
      * The profile picture leaves the top of posts, and the name moves over into its space
      * ({@link app.morphe.extension.facebook.feed.ProfilePictures}, #400). Off by default. Read as each
      * post's header draws.

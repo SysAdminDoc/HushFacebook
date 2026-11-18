@@ -61,6 +61,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_POST_REACTIONS) return L10n.t("Hide the reaction preview on posts");
         if (setting == Settings.HIDE_COMMENT_REACTIONS) return L10n.t("Hide the reaction preview on comments");
         if (setting == Settings.HIDE_REACTION_BUBBLES) return L10n.t("Hide friends' reactions on photos and videos");
+        if (setting == Settings.HIDE_REACTOR_NAMES) return L10n.t("Hide who reacted under posts");
         if (setting == Settings.HIDE_FEED_PROFILE_PICTURES) return L10n.t("Hide profile pictures on posts");
         if (setting == Settings.HIDE_COMMENT_PROFILE_PICTURES) return L10n.t("Hide profile pictures in comments");
         if (setting == Settings.HIDE_SEEN_POSTS) return L10n.t("Hide posts you've already seen");
