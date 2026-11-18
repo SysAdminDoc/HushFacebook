@@ -78,12 +78,16 @@ private const val REMEMBER_HELPER = "hushfacebookRememberVideoSource"
  *
  * A video someone posted in a comment gets Save video on the comment's long-press sheet (#318), a
  * row built the way Download any photo's Save GIF is, at the same point.
+ *
+ * A video opened from a post with several things in it plays in the photo and video viewer, whose
+ * own three-dot menu gets the row too (#509, [viewerMenu]).
  */
 @Suppress("unused")
 val downloadVideoPatch = bytecodePatch(
     name = "Download any video",
-    description = "Adds Download to phone to the menu of videos in the feed and in Watch, so you can save them " +
-        "to watch later. A post with several videos gets Save all videos. A video comment gets Save video when " +
+    description = "Adds Download to phone to the menu of videos in the feed, in Watch and in the photo and video " +
+        "viewer, so you can save them to watch later. A post with several videos gets Save all videos. A video " +
+        "comment gets Save video when " +
         "you long-press it. Videos save at the quality you set, best by default. Starts off. Turn it on in " +
         "Hushfacebook settings > Downloads.",
 ) {
@@ -96,6 +100,7 @@ val downloadVideoPatch = bytecodePatch(
         val menu = postMenu()
         // Found before any hook goes in, so a build without the sheet fails whole.
         val addCommentVideoRow = commentSheetVideoRow()
+        val viewer = viewerMenu()
         callAfterMenuFill(
             menu,
             postMenuHelper(
@@ -115,6 +120,7 @@ val downloadVideoPatch = bytecodePatch(
         rememberPlayerSources(helperName = REMEMBER_HELPER, recorder = REMEMBER_VIDEO_SOURCE)
 
         addCommentVideoRow()
+        addViewerVideoItem(viewer)
         enableStatus("videoDownload")
     }
 }

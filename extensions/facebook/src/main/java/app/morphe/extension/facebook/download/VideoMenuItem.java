@@ -363,6 +363,16 @@ public final class VideoMenuItem {
         }
 
         /**
+         * The video the photo and video viewer is showing. The viewer's [media] is a tree model
+         * and not a post's media, so its fields come through the tree's own string reader.
+         */
+        static Video ofTree(Object media, Object story) {
+            String id = PostDetails.string(media, ID);
+            return new Video(id, PostDetails.string(media, HD_PLAYABLE_URL), PostDetails.string(media, PLAYABLE_URL),
+                true, PostDetails.read(id, media, story));
+        }
+
+        /**
          * Whether the post gets the item: its media says it's a video, or there's something to
          * save. A photo post answers neither and keeps Facebook's own menu.
          */
@@ -428,7 +438,7 @@ public final class VideoMenuItem {
      * The model's GraphQL type name, asked only of a model whose native tree is still there,
      * since the name is read from it.
      */
-    private static String typeName(Object model) {
+    static String typeName(Object model) {
         if (model == null) return null;
         try {
             Object valid = model.getClass().getMethod("isValidGraphServicesJNIModel").invoke(model);

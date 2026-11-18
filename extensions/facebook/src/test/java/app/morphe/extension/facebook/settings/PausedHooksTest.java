@@ -945,12 +945,13 @@ public class PausedHooksTest {
         // the newer one so it has the button too, and a reel whose caption was seen gets Copy caption.
         probes.put(PatchFamily.REEL_DOWNLOAD, Arrays.asList(ReelDownload::showsButton,
                 () -> ReelDownload.verticalUfi(false), ReelCaptionForTests::addsTheRow));
-        // A video post's menu gets Download to phone, a video comment's sheet gets Save video, and
-        // the video recorder keeps a player. Its copied-link option reads the clipboard as a screen
-        // comes to the front.
+        // A video post's menu and the viewer's menu get Download to phone, a video comment's sheet
+        // gets Save video, and the video recorder keeps a player. Its copied-link option reads the
+        // clipboard as a screen comes to the front.
         probes.put(PatchFamily.VIDEO_DOWNLOAD, Arrays.asList(
                 VideoMenuItemForTests::addsAnItem,
                 VideoMenuItemForTests::addsTheOpenItem,
+                VideoMenuItemForTests::addsTheViewerRow,
                 CommentVideoForTests::addsARow,
                 PlayerSourcesForTests::recordsAVideoPlayer,
                 ClipboardLinkForTests::readsTheClipboard));

@@ -403,6 +403,7 @@ public class ColdStartHooksTest {
                 ProfilePictures.commentPicture("picture"));
         assertFalse(PlayerSourcesForTests.recordsAPlayer());
         assertFalse("a post menu built before the context got the video item", VideoMenuItemForTests.addsAnItem());
+        assertFalse("a viewer menu built before the context got the video row", VideoMenuItemForTests.addsTheViewerRow());
         assertFalse("a post menu built before the context got the photo item", PhotoMenuItemForTests.addsAnItem());
         assertFalse("a comment sheet built before the context got Save GIF", CommentGifForTests.addsARow());
         assertFalse("a comment sheet built before the context got Save photo", CommentPhotoForTests.addsARow());

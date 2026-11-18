@@ -245,8 +245,10 @@
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/SaveTo.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/SendLink.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/VideoMenuItem.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ViewerVideoItem.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/video/DownloadVideoPatch.kt",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/video/Fingerprints.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/video/Fingerprints.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/video/ViewerVideoMenu.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
