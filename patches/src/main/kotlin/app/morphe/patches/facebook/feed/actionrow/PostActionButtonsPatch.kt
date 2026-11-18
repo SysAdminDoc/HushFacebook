@@ -25,10 +25,12 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.namedRegisters
 import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
@@ -103,10 +105,10 @@ internal fun BytecodePatchContext.hookTypes(row: ActionRow) {
 }
 
 /**
- * Download: right before the row seals each list of items, the extension is asked whether this
- * post holds a video or photos, and when it does, an item built like Save's (Facebook's Download
- * icon, the label as text and description, the extension as the click) joins the list. A list held
- * above v15 (587's v18) is copied first into a low register nothing reads past the seal.
+ * Download: where the row's walk over its types ends, the extension is asked whether this post
+ * holds a video or photos, and when it does, an item built like Save's (Facebook's Download icon,
+ * the label as text and description, the extension as the click) joins the row's list. The list is
+ * held above v15 (588's v16), so it's copied first into a low register nothing reads from there on.
  */
 internal fun BytecodePatchContext.hookDownload(row: ActionRow) {
     val getters = listOf(
@@ -115,26 +117,31 @@ internal fun BytecodePatchContext.hookDownload(row: ActionRow) {
         graphQlGetter(GRAPHQL_STORY, GRAPHQL_STORY, ATTACHED_STORY_FIELD, "attached_story"),
         graphQlGetter(GRAPHQL_STORY_ATTACHMENT, IMMUTABLE_LIST, SUBATTACHMENTS_FIELD, "subattachments"),
     )
-    mutableClassDefBy(row.owner).methods.add(downloadHelper(row, getters))
-
-    // Every seal's code is chosen on Facebook's own method, before anything goes in.
-    val hooks = row.seals().map { seal ->
-        if (seal.state > 15) refuse("${row.items.name} holds its state in v${seal.state}")
-        val call = "${row.owner}->$DOWNLOAD_HELPER($LIST${row.state})V"
-        if (seal.list <= 15) return@map seal.index to "invoke-static { v${seal.list}, v${seal.state} }, $call"
-        val scratch = (0..15).firstOrNull { it != seal.state && row.items.readsAfter(seal.index, it).isEmpty() }
-            ?: refuse("${row.items.name} holds its items in v${seal.list} with no free low register to copy them to")
-        seal.index to """
-            move-object/from16 v$scratch, v${seal.list}
-            invoke-static { v$scratch, v${seal.state} }, $call
+    // The hook is chosen on Facebook's own method, before anything goes in.
+    val end = row.rowEnd()
+    if (end.state > 15) refuse("${row.items.name} holds its state in v${end.state}")
+    val call = "${row.owner}->$DOWNLOAD_HELPER($LIST${row.state})V"
+    val hook = if (end.list <= 15) {
+        "invoke-static { v${end.list}, v${end.state} }, $call"
+    } else {
+        val landing = row.items.code()[end.index].namedRegisters()
+        val scratch = (0..15).firstOrNull { it != end.state && it !in landing && row.items.readsAfter(end.index, it).isEmpty() }
+            ?: refuse("${row.items.name} holds its items in v${end.list} with no free low register to copy them to")
+        """
+            move-object/from16 v$scratch, v${end.list}
+            invoke-static { v$scratch, v${end.state} }, $call
         """
     }
-    val items = mutableMethodOf(row.items)
-    hooks.sortedByDescending { it.first }.forEach { (index, smali) -> items.addInstructionsAtControlFlowLabel(index, smali) }
+    mutableClassDefBy(row.owner).methods.add(downloadHelper(row, getters, end.pair))
+    mutableMethodOf(row.items).addInstructionsAtControlFlowLabel(end.index, hook)
 }
 
-/** `static void hushfacebookDownloadButton(List items, <state> state)`, adding the item when it applies. */
-private fun downloadHelper(row: ActionRow, getters: List<String>): MutableMethod {
+/**
+ * `static void hushfacebookDownloadButton(List items, <state> state)`, adding the item when it
+ * applies, as a [pair] like Facebook's own. A pair's first half is the type it was built for, which
+ * only the split around Share compares; Download has none.
+ */
+private fun downloadHelper(row: ActionRow, getters: List<String>, pair: MethodReference): MutableMethod {
     val itemParameters = row.itemInit.parameters()
     val last = 16 + itemParameters.size
     val locals = last + 1
@@ -209,7 +216,9 @@ private fun downloadHelper(row: ActionRow, getters: List<String>): MutableMethod
                 $moves
                 invoke-direct/range { v16 .. v${last} }, ${row.itemInit}
                 move-object/from16 v2, v16
-                invoke-interface { v15, v2 }, $LIST->add($OBJECT)Z
+                new-instance v3, ${pair.definingClass}
+                invoke-direct { v3, v10, v2 }, $pair
+                invoke-interface { v15, v3 }, $LIST->add($OBJECT)Z
                 :none
                 return-void
             """,

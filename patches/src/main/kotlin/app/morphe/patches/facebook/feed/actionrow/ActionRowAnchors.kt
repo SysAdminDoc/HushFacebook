@@ -7,10 +7,10 @@ package app.morphe.patches.facebook.feed.actionrow
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY
-import app.morphe.patches.facebook.downloads.video.IMMUTABLE_LIST
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.refresh.enumConstant
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -200,42 +200,55 @@ private fun saveTag(code: List<Instruction>, saveAt: Int): MethodReference? {
 }
 
 /**
- * Where [ActionRow.items] seals each list of items it hands its result: the index of the call that
- * wraps the list into an ImmutableList, whose answer is the last argument of the result's
- * constructor (the whole row, or the group Share sits in when the row is split; 587 seals one list,
- * with the range form), with the list's register and the row state's register there. The state is
- * the register Save's case reads the post's holder from, which the same writes reach at the seal.
+ * Where [ActionRow.items] has its whole row. 588 walks the row's types, adds a (type, item) pair for
+ * each to one list and only after the walk builds its result from that list, whole or split around
+ * Share, with the state's register already reused. So the walk's exit is the last place holding both
+ * the list and the state: [index] is the instruction the exit lands on, [head] the walk's `hasNext`,
+ * [list] the pairs' register and [pair] their constructor. The state is the register Save's case
+ * reads the post's holder from, which the same writes reach at the exit.
  */
-internal class RowSeal(val index: Int, val list: Int, val state: Int)
+internal class RowEnd(val head: Int, val index: Int, val list: Int, val state: Int, val pair: MethodReference)
 
-internal fun ActionRow.seals(): List<RowSeal> {
+internal fun ActionRow.rowEnd(): RowEnd {
     val code = items.code()
     val state = (code[stateRead] as TwoRegisterInstruction).registerB
-    val stateWrites = items.writersReaching(stateRead, state).toSet()
-    val seals = mutableListOf<RowSeal>()
-    code.forEachIndexed { index, instruction ->
-        val call = instruction.methodReference() ?: return@forEachIndexed
-        if ((instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) ||
-            call.returnType != IMMUTABLE_LIST || call.parameters() != listOf(LIST)
-        ) {
-            return@forEachIndexed
-        }
-        val result = (code.getOrNull(index + 1) as? OneRegisterInstruction)
-            ?.takeIf { code[index + 1].opcode == Opcode.MOVE_RESULT_OBJECT }?.registerA ?: return@forEachIndexed
-        val built = (index + 2 until code.size).firstOrNull { at ->
-            val init = code[at].methodReference()
-            (code[at].opcode == Opcode.INVOKE_DIRECT || code[at].opcode == Opcode.INVOKE_DIRECT_RANGE) && init?.name == "<init>" &&
-                init.parameters().isNotEmpty() && init.parameters().all { it == IMMUTABLE_LIST }
-        } ?: return@forEachIndexed
-        if (code[built].namedRegisters().last() != result || items.writersReaching(built, result) != listOf(index + 1)) return@forEachIndexed
-
-        if (items.writersReaching(index, state).toSet() != stateWrites) {
-            refuse("${items.name} seals a list at $index with something else than the row's state in v$state")
-        }
-        seals += RowSeal(index, instruction.namedRegisters().single(), state)
+    val walks = code.indices.mapNotNull { collectedPair(code, it) }.filter { it.head < stateRead && stateRead < it.init }
+    val walk = walks.singleOrNull() ?: refuse("${items.name} doesn't collect its items in one walk, found ${walks.size}")
+    if (items.writersReaching(walk.exit, state).toSet() != items.writersReaching(stateRead, state).toSet()) {
+        refuse("${items.name} ends its walk at ${walk.exit} with something else than the row's state in v$state")
     }
-    if (seals.isEmpty()) refuse("${items.name} seals no list of items into its result")
-    return seals
+    return RowEnd(walk.head, walk.exit, walk.list, state, walk.pair)
+}
+
+private class CollectedPair(val head: Int, val init: Int, val exit: Int, val list: Int, val pair: MethodReference)
+
+/** The walk that adds the pair built at [init] to a list and goes round again, when [init] builds one. */
+private fun collectedPair(code: List<Instruction>, init: Int): CollectedPair? {
+    val pair = code[init].methodReference() ?: return null
+    if (code[init].opcode != Opcode.INVOKE_DIRECT || pair.name != "<init>" || pair.parameters() != listOf(OBJECT, OBJECT)) return null
+    val copy = code.getOrNull(init + 1)?.takeIf { it.opcode == Opcode.MOVE_OBJECT || it.opcode == Opcode.MOVE_OBJECT_FROM16 }
+        as TwoRegisterInstruction?
+    val addAt = init + if (copy == null) 1 else 2
+    val add = code.getOrNull(addAt) ?: return null
+    val added = add.methodReference() ?: return null
+    if ((add.opcode != Opcode.INVOKE_VIRTUAL && add.opcode != Opcode.INVOKE_INTERFACE) || added.name != "add" ||
+        added.returnType != "Z" || added.parameters() != listOf(OBJECT)
+    ) {
+        return null
+    }
+    val registers = add.namedRegisters()
+    if (registers.size != 2 || registers[1] != code[init].namedRegisters().first()) return null
+    val list = copy?.takeIf { it.registerA == registers[0] }?.registerB ?: registers[0]
+
+    val back = code.getOrNull(addAt + 1) ?: return null
+    if (back.opcode != Opcode.GOTO && back.opcode != Opcode.GOTO_16 && back.opcode != Opcode.GOTO_32) return null
+    val head = branchTarget(code, addAt + 1) ?: return null
+    if (head >= init || code[head].methodReference()?.name != "hasNext") return null
+    val answer = code.getOrNull(head + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT } as OneRegisterInstruction? ?: return null
+    val test = code.getOrNull(head + 2)?.takeIf { it.opcode == Opcode.IF_EQZ } as OneRegisterInstruction? ?: return null
+    if (test.registerA != answer.registerA) return null
+    val exit = branchTarget(code, head + 2) ?: return null
+    return CollectedPair(head, init, exit, list, pair)
 }
 
 /** The indices of [ActionRow.types]'s returns, with the register each returns. */
