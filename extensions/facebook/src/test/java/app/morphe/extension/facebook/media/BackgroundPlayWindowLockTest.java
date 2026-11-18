@@ -338,6 +338,59 @@ public class BackgroundPlayWindowLockTest {
         assertEquals("and so did the next one", 3, player.plays);
     }
 
+    /**
+     * #495 on 588: back from a lock, the window's reel played to its end and Facebook's loop never
+     * came, so it sat on its last frame however often play was pressed.
+     */
+    @Test
+    public void aWindowVideoThatStopsAtItsEndAfterALockStartsOver() {
+        player.length = 9541;
+        backInTheWindow();
+        player.position = 9541;
+        player.playing = false;
+        looksPass(1);
+        assertTrue("the reel didn't start over", player.playing);
+        assertEquals("from its start", 0, player.positionAtPlay);
+        looksPass(BackgroundPlay.WINDOW_KEEP_MISSES * 2);
+        assertEquals(2, player.plays);
+
+        player.position = 4000;
+        player.playing = false;
+        looksPass(1);
+        assertEquals("a stop partway through goes on from there", 4000, player.positionAtPlay);
+    }
+
+    /**
+     * #495 on 588, from the log: back from a lock the window's reel went on from 8744 of 9334, and at
+     * its end Facebook put it at 0, stopped, then let the video go (0 of 0), so nothing could start
+     * it. It starts over just before the end instead, still playing, with no press of play.
+     */
+    @Test
+    public void aWindowVideoNearItsEndAfterALockStartsOverBeforeItGetsThere() {
+        player.length = 9334;
+        Player background = lockedAndCarriedOn();
+        background.position = 8744;
+        phoneInUse();
+        handedBack(background);
+        assertEquals(1, player.plays);
+        assertEquals(8744, player.positionAtPlay);
+
+        player.position = 9100;
+        looksPass(1);
+        assertEquals("the reel ran into its end", 0, player.position);
+        assertTrue(player.playing);
+        assertEquals("a seek, not a press of play", 1, player.plays);
+
+        player.position = 9000;
+        looksPass(2);
+        assertEquals("and so does every loop after", 0, player.position);
+        assertEquals(1, player.plays);
+
+        player.position = 3000;
+        looksPass(4);
+        assertEquals("partway through it plays on", 3000, player.position);
+    }
+
     @Test
     public void aVideoStillPlayingIsNotPressedAgain() {
         backInTheWindow();

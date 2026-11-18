@@ -24,6 +24,8 @@ public final class BackgroundPlayForTests {
         public int plays;
         /** Where the video is, in milliseconds. */
         public int position;
+        /** How long the video is, or 0 when that isn't known. Play at the end doesn't start it. */
+        public int length;
         /** Where it was as something other than Facebook last started it, or -1. */
         public int positionAtPlay = -1;
         /** A video id no other player here has. */
@@ -66,7 +68,8 @@ public final class BackgroundPlayForTests {
             Player started = (Player) player;
             started.plays++;
             started.positionAtPlay = started.position;
-            started.playing = !started.stuck;
+            boolean ended = started.length > 0 && started.position >= started.length;
+            started.playing = !started.stuck && !ended;
         }
 
         @Override
@@ -77,6 +80,11 @@ public final class BackgroundPlayForTests {
         @Override
         public void seek(Object player, int positionMs) {
             ((Player) player).position = positionMs;
+        }
+
+        @Override
+        public int length(Object player) {
+            return ((Player) player).length;
         }
     };
 

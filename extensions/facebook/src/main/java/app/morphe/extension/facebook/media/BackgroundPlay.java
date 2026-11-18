@@ -99,6 +99,8 @@ public final class BackgroundPlay {
     static final long WINDOW_KEEP_MS = 500;
     /** How many presses of play in a row may fail to start the window's video before it's left alone. */
     static final int WINDOW_KEEP_MISSES = 4;
+    /** How long before its end the window's video, back from a lock, starts over. */
+    static final long WINDOW_START_OVER_LEAD_MS = 250;
     private static final String WINDOW_RESUME = "window resume";
     private static final int NO_POSITION = -1;
 
@@ -148,6 +150,11 @@ public final class BackgroundPlay {
 
         /** Moves [player] to [positionMs]. */
         void seek(Object player, int positionMs) throws Exception;
+
+        /** How long [player]'s video is, in milliseconds, or 0 when that isn't known. */
+        default int length(Object player) throws Exception {
+            return 0;
+        }
     }
 
     static final PlayerReader PATCHED = new Reflected();
@@ -440,18 +447,62 @@ public final class BackgroundPlay {
             }
             if (position > 0) reader.seek(player, position);
             reader.play(player);
+            int length = reader.length(player);
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                    () -> "Background play: the window's video goes on from " + position);
+                    () -> "Background play: the window's video goes on from " + position + " of " + length);
             keepGoing(player);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
         }
     }
 
-    private static void keepGoing(Object player) {
+    private static void keepGoing(Object player) throws Exception {
         keptGoing = new WeakReference<>(player);
         keptMisses = 0;
-        lookLater(player, ++keptLook);
+        int look = ++keptLook;
+        if (!startOverNearItsEnd(player, look)) lookLater(player, look);
+    }
+
+    /**
+     * Back from a lock, a window reel that plays to its end is lost: Facebook's end of video puts it
+     * back at the start, stopped, then lets the video go, so nothing starts it again (#495 on 588).
+     * A reel less than two looks from its end starts over just before it instead, so that never runs.
+     */
+    private static boolean startOverNearItsEnd(Object player, int look) throws Exception {
+        int length = reader.length(player);
+        int at = reader.position(player);
+        if (length <= 0 || at < 0) return false;
+        long left = length - at;
+        if (left > 2 * WINDOW_KEEP_MS) return false;
+        Utils.runOnMainThreadDelayed(() -> startOver(player, look), Math.max(0, left - WINDOW_START_OVER_LEAD_MS));
+        return true;
+    }
+
+    private static void startOver(Object player, int look) {
+        try {
+            if (look != keptLook || keptGoing.get() != player) return;
+            if (!Utils.settingsReady() || !Settings.KEEP_PLAYING_IN_BACKGROUND.get()
+                    || !PictureInPicture.inOpenWindow(player)) {
+                keptGoing = new WeakReference<>(null);
+                return;
+            }
+            if (reader.playing(player)) {
+                int length = reader.length(player);
+                int at = reader.position(player);
+                if (length > 0 && at >= 0 && length - at <= WINDOW_KEEP_MS) {
+                    reader.seek(player, 0);
+                    Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                            () -> "Background play: the window's video came to its end at " + at + " of " + length
+                                    + ", started over");
+                } else if (startOverNearItsEnd(player, look)) {
+                    // Not there yet, maybe still loading: it looks again just before the end.
+                    return;
+                }
+            }
+            lookLater(player, look);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+        }
     }
 
     private static void lookLater(Object player, int look) {
@@ -468,7 +519,8 @@ public final class BackgroundPlay {
      * it sits below the player's pause and isn't known, but pressing play again holds. Anything that
      * does pause the video ends this, so a Pause in the window stays a pause. A player Facebook has
      * let go doesn't start whatever is pressed, so after {@link #WINDOW_KEEP_MISSES} presses in a row
-     * that didn't take, it's left alone.
+     * that didn't take, it's left alone. A video playing close to its end starts over just before it
+     * ({@link #startOverNearItsEnd}), since Facebook lets the video go once it reaches the end.
      */
     private static void lookAtWindow(Object player, int look) {
         try {
@@ -480,20 +532,41 @@ public final class BackgroundPlay {
             }
             if (reader.playing(player)) {
                 keptMisses = 0;
-            } else if (++keptMisses > WINDOW_KEEP_MISSES) {
+                if (!startOverNearItsEnd(player, look)) lookLater(player, look);
+                return;
+            }
+            int at = reader.position(player);
+            int length = reader.length(player);
+            String where = " at " + at + " of " + length;
+            if (++keptMisses > WINDOW_KEEP_MISSES) {
                 keptGoing = new WeakReference<>(null);
                 Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                        () -> "Background play: the window's video won't start again, left as it is");
+                        () -> "Background play: the window's video won't start again" + where + ", left as it is");
                 return;
+            }
+            if (atItsEnd(at, length)) {
+                reader.seek(player, 0);
+                reader.play(player);
+                Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                        () -> "Background play: the window's video stopped at its end" + where + ", started over");
             } else {
                 reader.play(player);
                 Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                        () -> "Background play: the window's video stopped by itself, started again");
+                        () -> "Background play: the window's video stopped by itself" + where + ", started again");
             }
             lookLater(player, look);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
         }
+    }
+
+    /**
+     * Whether [player] stopped less than a look from its video's end. After a lock, Facebook's loop
+     * back to the start sometimes never comes, and play on a video that has ended doesn't start it,
+     * so the window's video sat on its last frame (#495). Such a video starts over, as the loop would.
+     */
+    private static boolean atItsEnd(int at, int length) {
+        return length > 0 && at >= length - WINDOW_KEEP_MS;
     }
 
     /** Whether [player] is the one Facebook's background player is running a carried video on now. */
@@ -863,6 +936,11 @@ public final class BackgroundPlay {
         @Override
         public void seek(Object player, int positionMs) {
             FeedVideoControls.seekPlayer(player, null, positionMs);
+        }
+
+        @Override
+        public int length(Object player) {
+            return FeedVideoControls.playerLength(player);
         }
     }
 
