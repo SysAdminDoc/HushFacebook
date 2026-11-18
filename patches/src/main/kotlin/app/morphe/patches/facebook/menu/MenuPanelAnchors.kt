@@ -13,9 +13,11 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.search.branchTarget
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -65,8 +67,6 @@ internal const val BLOKS_MENU_PAGE = "Lcom/facebook/bookmark/fragment/BloksBookm
 internal const val BLOKS_MENU = "$EXTENSION_PACKAGE/menu/MenuPanel;->bloksMenu(Z)Z"
 internal const val CREATE_FRAGMENT = "createFragment"
 
-private const val MOBILE_CONFIG = "/MobileConfigUnsafeContext;"
-
 /** How far past the test, and past the branch's landing, the singleton read and the session build are looked for. */
 private const val NEAR = 6
 
@@ -92,30 +92,24 @@ internal fun BytecodePatchContext.menuPanelSetups(): List<Method> {
     }
 }
 
-/** The index of the `move-result` holding the panel's Bloks answer in [method], or null unless there's exactly one. */
-internal fun bloksPanelAnswer(method: Method): Int? {
+/**
+ * The index of the `move-result` holding the panel's Bloks answer in [method], or null unless there's
+ * exactly one. [classOf] looks a class up by type: 588 asks through a static helper of another class.
+ */
+internal fun bloksPanelAnswer(method: Method, classOf: (String) -> ClassDef?): Int? {
     val code = method.implementation?.instructions?.toList() ?: return null
-    return code.indices.filter { isBloksPanelAnswer(code, it) }.singleOrNull()
+    return code.indices.filter { isBloksPanelAnswer(code, it, classOf) }.singleOrNull()
 }
 
 /** The `move-result`s in [code] of a MobileConfig boolean asked by a long. */
-internal fun mobileConfigAnswers(code: List<Instruction>): List<Int> = code.indices.filter { isMobileConfigAnswer(code, it) }
+internal fun mobileConfigAnswers(code: List<Instruction>, classOf: (String) -> ClassDef?): List<Int> =
+    code.indices.filter { isMobileConfigAnswer(code, it, classOf) }
 
-private fun isMobileConfigAnswer(code: List<Instruction>, index: Int): Boolean {
-    if (index < 1 || code[index].opcode != Opcode.MOVE_RESULT) return false
-    val asked = code[index - 1]
-    val parameters = when (asked.opcode) {
-        Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE -> listOf("J")
-        Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE -> listOf("Ljava/lang/Object;", "J")
-        else -> return false
-    }
-    val call = (asked as ReferenceInstruction).reference as? MethodReference ?: return false
-    return call.definingClass.endsWith(MOBILE_CONFIG) && call.returnType == "Z" &&
-        call.parameterTypes.map(CharSequence::toString) == parameters
-}
+private fun isMobileConfigAnswer(code: List<Instruction>, index: Int, classOf: (String) -> ClassDef?): Boolean =
+    index >= 1 && code[index].opcode == Opcode.MOVE_RESULT && readsMobileConfig(code[index - 1], "Z", classOf)
 
-private fun isBloksPanelAnswer(code: List<Instruction>, index: Int): Boolean {
-    if (!isMobileConfigAnswer(code, index)) return false
+private fun isBloksPanelAnswer(code: List<Instruction>, index: Int, classOf: (String) -> ClassDef?): Boolean {
+    if (!isMobileConfigAnswer(code, index, classOf)) return false
     val register = (code[index] as OneRegisterInstruction).registerA
     val test = code.getOrNull(index + 1) ?: return false
     if (test.opcode != Opcode.IF_EQZ || (test as OneRegisterInstruction).registerA != register) return false
@@ -148,7 +142,7 @@ internal fun BytecodePatchContext.askAboutBloksPanel() {
     val setups = menuPanelSetups()
     val method = setups.singleOrNull()
         ?: throw PatchException("$PATCH: expected one method loading \"$PANEL_SETUP\" and \"$PANEL_KEY\", found ${setups.size}")
-    val answer = bloksPanelAnswer(method)
+    val answer = bloksPanelAnswer(method) { type -> classDefByOrNull(type) }
         ?: throw PatchException("$PATCH: ${method.definingClass}->${method.name} doesn't ask once whether its panel is the Bloks Menu")
     askAt(method, answer, BLOKS_PANEL, "the panel's")
 }

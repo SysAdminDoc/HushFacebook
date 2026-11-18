@@ -35,12 +35,12 @@ class MenuPanelFixtureTest {
     /**
      * The MobileConfig flag the panel asks per build, read from 583's arm64 and armv7 dex and 584's arm64.
      * 586's was read from both of its bundles, in the panel setup and the bookmarks fragment factory.
-     * 587's from its arm64 panel setup (`LX/020D;->A02`).
+     * 588's from the panel setup (`LX/01yX;->A01`) and the factory, the same on both ABIs.
      */
     private val bloksPanelFlags = mapOf(
         "585.0.0.47.54" to 0x101019f0058167fL,
         "586.0.0.52.53" to 0x101019f005816c8L,
-        "588.0.0.42.55" to 0x101019f00581702L,
+        "588.0.0.42.55" to 0x101019b0058171fL,
     )
 
     /** The flag [bundle]'s build asks, by the version in its name. */
@@ -62,14 +62,23 @@ class MenuPanelFixtureTest {
             // The panel key's holders too: 586's Android 9 build asks a string table for it.
             val classes = (FixtureDex.classesHolding(bundle, PANEL_SETUP) + FixtureDex.classesHolding(bundle, PANEL_KEY))
                 .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-            val context = PatchContexts.of(classes)
+            // 588 asks the flag through a static helper taking the config as an Object.
+            val helpers = FixtureDex.classes(bundle, classes.flatMap { it.methods }.flatMap { holder ->
+                holder.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
+                    instruction.called()?.takeIf {
+                        it.returnType == "Z" &&
+                            it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                    }?.definingClass
+                }
+            }.toSet())
+            val context = PatchContexts.of((classes + helpers.values).distinctBy { it.type })
             val setups = context.menuPanelSetups()
             assertEquals("$name: methods setting the panel up ${setups.map { "${it.definingClass}->${it.name}" }}", 1, setups.size)
             val method = setups.single()
             val code = method.code()
-            val answer = bloksPanelAnswer(method)
+            val answer = bloksPanelAnswer(method, helpers::get)
             assertNotNull("$name: ${method.definingClass}->${method.name} doesn't ask once whether its panel is the Bloks Menu " +
-                "(MobileConfig answers at ${mobileConfigAnswers(code)})", answer)
+                "(MobileConfig answers at ${mobileConfigAnswers(code, helpers::get)})", answer)
             // Positive control: the answer is the one for the panel's flag, by its id.
             val flag = code.subList(maxOf(0, answer!! - 4), answer).filterIsInstance<WideLiteralInstruction>()
                 .map { it.wideLiteral }
