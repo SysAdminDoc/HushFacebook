@@ -62,13 +62,13 @@ class EmojiProviderFixtureTest {
 
     /**
      * The methods besides the provider that read a holder of Meta's emoji font, in each declared
-     * build, then by the bundle's ABI. 587 adds one per phone ABI, which only checks whether a
-     * holder is set; 586's Android 9 build had none.
+     * build, then by the bundle's ABI. The phone ABIs have one since 587, which only checks whether
+     * a holder is set; 586's Android 9 build had none.
      */
     private val otherReaders = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to listOf("LX/01ef;->A0B(Ljava/lang/Object;)V"),
-            "armeabi-v7a" to listOf("LX/01ek;->A0B(Ljava/lang/Object;)V"),
+            "arm64-v8a" to listOf("LX/01Y4;->A0B(Ljava/lang/Object;)V"),
+            "armeabi-v7a" to listOf("LX/01Y4;->A0B(Ljava/lang/Object;)V"),
             "arm64-v8a-minapi28-storeless" to emptyList(),
         ),
     )
