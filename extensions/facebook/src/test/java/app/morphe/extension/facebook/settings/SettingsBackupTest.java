@@ -151,6 +151,8 @@ public class SettingsBackupTest {
         out.put("hushfacebook_font_source",
                 "it names the font file Use the system font draws in, whose copy only this install holds. A settings "
                         + "file can't carry the font itself, and the name alone would point at nothing on another phone.");
+        out.put("hushfacebook_emoji_font_source",
+                "it names the emoji font file, whose copy only this install holds, the same way the text font's does.");
         out.put("hushfacebook_translate_to",
                 "it's a language pick for the person on this phone, and left empty it follows the phone's own language.");
         out.put("hushfacebook_translate_leave_alone",
@@ -429,6 +431,26 @@ public class SettingsBackupTest {
             assertEquals("Inter-Regular.ttf", Settings.FONT_SOURCE.savedValue());
         } finally {
             Settings.FONT_SOURCE.resetToDefault();
+        }
+    }
+
+    /** Its copy stays on the phone, so a file naming it would point at nothing on the next one. */
+    @Test
+    public void thePickedEmojiFontStaysOutOfAFile() throws Exception {
+        Settings.EMOJI_FONT_SOURCE.save("Smileys.ttf");
+        try {
+            String text = SettingsBackup.create();
+            assertFalse(text, text.contains(Settings.EMOJI_FONT_SOURCE.key));
+            assertFalse(text, text.contains("Smileys.ttf"));
+
+            JSONObject file = new JSONObject(text);
+            file.getJSONObject("settings").put(Settings.EMOJI_FONT_SOURCE.key, "Other.ttf");
+            SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file.toString());
+            assertEquals(1, snapshot.unknown);
+            assertEquals(0, SettingsBackup.apply(snapshot));
+            assertEquals("Smileys.ttf", Settings.EMOJI_FONT_SOURCE.savedValue());
+        } finally {
+            Settings.EMOJI_FONT_SOURCE.resetToDefault();
         }
     }
 

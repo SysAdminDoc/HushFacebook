@@ -70,7 +70,7 @@ public class RowChevronTest {
     private static final Set<String> OPENS_SOMETHING = new LinkedHashSet<>(Arrays.asList(
             "Jump to a section", "Switches that are on", "Pause length", "Break after", "Break length", "Reels in the feed", "Reels that play by themselves", "The Reels tab", "Turn gray over",
             "Everything except Marketplace", "Menu tiles to hide", "Translate to", "Languages to leave alone", "Languages to keep", "Reaction", "Fold long posts", "Fold long comments",
-            "Tab bar position", "Tab bar while scrolling", "Tab order", "Tab to open on", "Feeds opens on", "Home shows", "Keep seen posts hidden for", "Words to hide", "Words that keep a post", "People, Pages and sites to hide", "Reels order", "Comment order", "Hide reaction counts", "Open comments at", "Recently watched", "Keep watched entries for","Default quality", "Reels quality", "Stories quality", "Font file", "Home header text", "Emoji after the logo", "Home header picture", "Download quality", "Save on", "Save to", "Save folder",
+            "Tab bar position", "Tab bar while scrolling", "Tab order", "Tab to open on", "Feeds opens on", "Home shows", "Keep seen posts hidden for", "Words to hide", "Words that keep a post", "People, Pages and sites to hide", "Reels order", "Comment order", "Hide reaction counts", "Open comments at", "Recently watched", "Keep watched entries for","Default quality", "Reels quality", "Stories quality", "Font file", "Emoji font file", "Home header text", "Emoji after the logo", "Home header picture", "Download quality", "Save on", "Save to", "Save folder",
             "Video subfolder", "Photo subfolder",
             "Video file name", "Photo file name", "When you tap Download", "App to send to", "Share sheet items to hide", "Supported links", "Meta App Manager", "Messenger", "Instagram",
             "Quiet hours start", "Quiet hours end", "Lock after", "In-app proxy", "Burn-in guard", "Dim after", "Show the post date as", "Box darkness",
@@ -112,6 +112,7 @@ public class RowChevronTest {
         ScreenColors.shown = null;
         PauseForTests.resume();
         Settings.FONT_SOURCE.resetToDefault();
+        Settings.EMOJI_FONT_SOURCE.resetToDefault();
         RuntimeEnvironment.setFontScale(1f);
     }
 
@@ -157,6 +158,7 @@ public class RowChevronTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         // The way back to the phone's font is on the page while a font file is picked.
         Settings.FONT_SOURCE.save("Inter.ttf");
+        Settings.EMOJI_FONT_SOURCE.save("Smileys.ttf");
         List<View> rows = rows(show());
         View card = rows.get(0);
         assertTrue(item(card).isSelectable());
@@ -167,6 +169,7 @@ public class RowChevronTest {
         assertNotNull(item(checkNow).getOnPreferenceClickListener());
         assertNull("Check now wears a chevron", chevronOf(checkNow));
         assertNull("Use your phone's font wears a chevron", chevronOf(rowTitled(rows, "Use your phone's font")));
+        assertNull("Remove emoji font file wears a chevron", chevronOf(rowTitled(rows, "Remove emoji font file")));
         assertNull("Return to regular Facebook wears a chevron", chevronOf(rowTitled(rows, "Return to regular Facebook")));
         assertNotNull("Licenses lost its chevron while paused", chevronOf(rowTitled(rows, "Licenses")));
     }

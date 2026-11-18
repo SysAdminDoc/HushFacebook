@@ -86,7 +86,7 @@ The settings file was saved, but it doesn't match what Hushfacebook wrote. Save 
 There's no app here that can open or share this saved file.	ไม่มีแอปที่สามารถเปิดหรือแชร์ไฟล์ที่บันทึกไว้นี้ได้
 # context: line at the top of a settings page while paused; Lock Facebook keeps working while paused
 Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.	จนกว่าคุณจะดำเนินการต่อ สวิตช์ทุกตัวยกเว้น "การบันทึกข้อมูลดีบัก" และ "ล็อก Facebook" จะทำงานเสมือนปิดอยู่ สิ่งที่เปลี่ยนแปลงตอนแพตช์จะยังคงมีผล
-Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	แสดงอิโมจิของโทรศัพท์คุณเองแทนอิโมจิของ Facebook โดยความรู้สึกและสติกเกอร์จะไม่เปลี่ยนแปลง เริ่มต้น Facebook ใหม่อีกครั้งเพื่อดูการเปลี่ยนแปลง
+Shows your phone's own emoji instead of Facebook's, or the ones in a font file you choose below. Reactions and stickers don't change. Restart Facebook to see the change.	แสดงอิโมจิของโทรศัพท์คุณเองแทนอิโมจิของ Facebook หรืออิโมจิจากไฟล์ฟอนต์ที่คุณเลือกด้านล่าง โดยความรู้สึกและสติกเกอร์จะไม่เปลี่ยนแปลง เริ่มต้น Facebook ใหม่อีกครั้งเพื่อดูการเปลี่ยนแปลง
 # context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
 Tab bar at the bottom	แถบแท็บที่ด้านล่าง
 # context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
@@ -2964,3 +2964,39 @@ Ask before downloading	ถามก่อนดาวน์โหลด
 A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	ปุ่มดาวน์โหลดของ Reel ปุ่มดาวน์โหลดใต้โพสต์ และ "ดาวน์โหลดลงโทรศัพท์" ของวิดีโอจะถามก่อน การแตะโดยไม่ตั้งใจจึงไม่บันทึกอะไร เมื่อเปิด "เลือกคุณภาพทุกครั้งที่บันทึก" รายการคุณภาพของวิดีโอจะเป็นตัวถามแทน
 # context: the question over the screen after a tap on a download button, answered Continue or Cancel
 Start this download?	เริ่มดาวน์โหลดนี้ไหม
+# context: the settings row that opens a file picker for a font holding emoji
+Emoji font file	ไฟล์ฟอนต์อิโมจิ
+# context: the settings row that deletes the saved emoji font and goes back to the phone's emoji
+Remove emoji font file	นำไฟล์ฟอนต์อิโมจิออก
+# context: under Remove emoji font file while Use the phone's emoji is on
+Removes the saved emoji font file. Restart Facebook to use your phone's emoji.	นำไฟล์ฟอนต์อิโมจิที่บันทึกไว้ออก รีสตาร์ท Facebook เพื่อใช้อิโมจิของโทรศัพท์คุณ
+# context: under Remove emoji font file while Use the phone's emoji is off
+Removes the saved emoji font file. Use the phone's emoji stays off.	นำไฟล์ฟอนต์อิโมจิที่บันทึกไว้ออก "ใช้อิโมจิของโทรศัพท์" จะยังคงปิดอยู่
+# context: under Emoji font file with nothing picked; %1$d is a number of megabytes
+No file chosen. Choose a .ttf or .otf emoji font of up to %1$d MB.	ไม่ได้เลือกไฟล์ เลือกฟอนต์อิโมจิ .ttf หรือ .otf ขนาดไม่เกิน %1$d MB
+# context: under Emoji font file; %1$s is the file's name
+Selected %1$s. Emoji changes apply after restarting Facebook.	เลือก %1$s แล้ว การเปลี่ยนแปลงอิโมจิจะมีผลหลังจากรีสตาร์ท Facebook
+# context: under Emoji font file while the switch is off; %1$s is the file's name
+Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.	เลือก %1$s แล้ว "ใช้อิโมจิของโทรศัพท์" ปิดอยู่ ให้เปิดใช้งานและรีสตาร์ท Facebook เพื่อใช้ไฟล์นี้
+# context: toast after an emoji font is picked; %1$s is the file's name
+Selected %1$s. Restart Facebook to apply the emoji change.	เลือก %1$s แล้ว รีสตาร์ท Facebook เพื่อใช้การเปลี่ยนแปลงอิโมจิ
+# context: toast after an emoji font is picked while the switch is off; %1$s is the file's name
+Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.	เลือก %1$s แล้ว เปิด "ใช้อิโมจิของโทรศัพท์" และรีสตาร์ท Facebook เพื่อใช้งาน
+# context: under Emoji font file while the picked file is copied
+Copying the emoji font file	กำลังคัดลอกไฟล์ฟอนต์อิโมจิ
+# context: toast when the file picked as an emoji font isn't a font
+That isn't a .ttf or .otf font file. Your emoji didn't change.	ไฟล์ดังกล่าวไม่ใช่ไฟล์ฟอนต์ .ttf หรือ .otf อิโมจิของคุณจึงไม่เปลี่ยนแปลง
+# context: toast when the emoji font is too large; %1$d is a number of megabytes
+That font file is over %1$d MB. Your emoji didn't change.	ไฟล์ฟอนต์นั้นมีขนาดเกิน %1$d MB อิโมจิของคุณจึงไม่เปลี่ยนแปลง
+# context: toast when Android can't load the picked emoji font
+Android couldn't use that font file. Your emoji didn't change.	Android ไม่สามารถใช้ไฟล์ฟอนต์นั้นได้ อิโมจิของคุณจึงไม่เปลี่ยนแปลง
+# context: toast when the font picked as an emoji font is a text font
+That font has no emoji in it. Your emoji didn't change.	ฟอนต์นั้นไม่มีอิโมจิ อิโมจิของคุณจึงไม่เปลี่ยนแปลง
+# context: toast when the picked emoji font can't be read
+Couldn't open that file. Your emoji didn't change.	ไม่สามารถเปิดไฟล์นั้นได้ อิโมจิของคุณจึงไม่เปลี่ยนแปลง
+# context: toast after Remove emoji font file
+Emoji font file cleared. Restart Facebook to apply the emoji change.	ล้างไฟล์ฟอนต์อิโมจิแล้ว รีสตาร์ท Facebook เพื่อใช้การเปลี่ยนแปลงอิโมจิ
+# context: toast when Remove emoji font file fails
+Couldn't go back to your phone's emoji. Try again.	ไม่สามารถเปลี่ยนกลับไปใช้อิโมจิของโทรศัพท์ได้ โปรดลองอีกครั้ง
+# context: toast when the app holding the emoji font doesn't answer in time
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	แอปที่มีไฟล์ฟอนต์ใช้เวลานานเกินไป Hushfacebook จึงหยุดรอ อิโมจิของคุณจึงไม่เปลี่ยนแปลง

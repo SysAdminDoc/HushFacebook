@@ -90,7 +90,7 @@ The settings file was saved, but it doesn't match what Hushfacebook wrote. Save 
 There's no app here that can open or share this saved file.	這支手機上沒有可開啟或分享該已儲存檔案的應用程式。
 # context: line at the top of a settings page while paused; Lock Facebook keeps working while paused
 Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.	繼續之前，除了「偵錯記錄」與「鎖定 Facebook」，所有開關都視為停用。修補時套用的變更仍會生效。
-Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	顯示手機的表情符號，取代 Facebook 的表情符號。心情與貼圖不受影響。重新啟動 Facebook 後生效。
+Shows your phone's own emoji instead of Facebook's, or the ones in a font file you choose below. Reactions and stickers don't change. Restart Facebook to see the change.	顯示手機的表情符號，取代 Facebook 的表情符號，也可改用你在下方選擇的字型檔。心情與貼圖不受影響。重新啟動 Facebook 後生效。
 # context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
 Tab bar at the bottom	將分頁列移至底部
 # context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
@@ -2968,3 +2968,39 @@ Ask before downloading	下載前先詢問
 A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Reels 的下載按鈕、貼文下方的下載按鈕和影片的「下載到手機」會先詢問，誤觸不會儲存任何內容。開啟「每次儲存時選擇畫質」後，影片由畫質清單來詢問。
 # context: the question over the screen after a tap on a download button, answered Continue or Cancel
 Start this download?	要開始這次下載嗎？
+# context: the settings row that opens a file picker for a font holding emoji
+Emoji font file	表情符號字型檔
+# context: the settings row that deletes the saved emoji font and goes back to the phone's emoji
+Remove emoji font file	移除表情符號字型檔
+# context: under Remove emoji font file while Use the phone's emoji is on
+Removes the saved emoji font file. Restart Facebook to use your phone's emoji.	移除已儲存的表情符號字型檔。重新啟動 Facebook 後會使用手機表情符號。
+# context: under Remove emoji font file while Use the phone's emoji is off
+Removes the saved emoji font file. Use the phone's emoji stays off.	移除已儲存的表情符號字型檔。「使用手機表情符號」仍保持停用。
+# context: under Emoji font file with nothing picked; %1$d is a number of megabytes
+No file chosen. Choose a .ttf or .otf emoji font of up to %1$d MB.	尚未選擇檔案。請選擇不超過 %1$d MB 的 .ttf 或 .otf 表情符號字型。
+# context: under Emoji font file; %1$s is the file's name
+Selected %1$s. Emoji changes apply after restarting Facebook.	已選擇 %1$s。表情符號變更在重新啟動 Facebook 後生效。
+# context: under Emoji font file while the switch is off; %1$s is the file's name
+Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.	已選擇 %1$s。「使用手機表情符號」已停用。請啟用並重新啟動 Facebook 以使用此檔案。
+# context: toast after an emoji font is picked; %1$s is the file's name
+Selected %1$s. Restart Facebook to apply the emoji change.	已選擇 %1$s。請重新啟動 Facebook 以套用表情符號變更。
+# context: toast after an emoji font is picked while the switch is off; %1$s is the file's name
+Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.	已選擇 %1$s。請啟用「使用手機表情符號」並重新啟動 Facebook 以使用此字型。
+# context: under Emoji font file while the picked file is copied
+Copying the emoji font file	正在複製表情符號字型檔
+# context: toast when the file picked as an emoji font isn't a font
+That isn't a .ttf or .otf font file. Your emoji didn't change.	這不是 .ttf 或 .otf 字型檔。表情符號未變更。
+# context: toast when the emoji font is too large; %1$d is a number of megabytes
+That font file is over %1$d MB. Your emoji didn't change.	該字型檔超過 %1$d MB。表情符號未變更。
+# context: toast when Android can't load the picked emoji font
+Android couldn't use that font file. Your emoji didn't change.	Android 無法使用該字型檔。表情符號未變更。
+# context: toast when the font picked as an emoji font is a text font
+That font has no emoji in it. Your emoji didn't change.	該字型不含表情符號。表情符號未變更。
+# context: toast when the picked emoji font can't be read
+Couldn't open that file. Your emoji didn't change.	無法開啟該檔案。表情符號未變更。
+# context: toast after Remove emoji font file
+Emoji font file cleared. Restart Facebook to apply the emoji change.	已清除表情符號字型檔。請重新啟動 Facebook 以套用表情符號變更。
+# context: toast when Remove emoji font file fails
+Couldn't go back to your phone's emoji. Try again.	無法恢復使用手機表情符號。請再試一次。
+# context: toast when the app holding the emoji font doesn't answer in time
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	提供該字型檔的應用程式回應過慢，Hushfacebook 已停止等待。表情符號未變更。

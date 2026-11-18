@@ -3855,4 +3855,12 @@ public class Settings extends BaseSettings {
      */
     public static final StringSetting FONT_SOURCE =
             new StringSetting("hushfacebook_font_source", "");
+
+    /**
+     * The name of the emoji font file {@link #USE_SYSTEM_EMOJI} draws in, or empty for the phone's
+     * own emoji. Its copy sits in Facebook's files, and like {@link #FONT_SOURCE} only the settings
+     * screen writes it and a settings file leaves it out.
+     */
+    public static final StringSetting EMOJI_FONT_SOURCE =
+            new StringSetting("hushfacebook_emoji_font_source", "");
 }

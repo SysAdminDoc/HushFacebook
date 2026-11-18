@@ -510,6 +510,10 @@ final class SettingsRows {
             super(page, context, role);
         }
 
+        FontRow(HushfacebookPreferenceFragment page, Context context, int role, FontFilePreference.Slot slot) {
+            super(page, context, role, slot);
+        }
+
         @Override
         protected void onBindView(View view) {
             super.onBindView(view);

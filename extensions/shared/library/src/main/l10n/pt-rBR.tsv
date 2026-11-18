@@ -86,7 +86,7 @@ The settings file was saved, but it doesn't match what Hushfacebook wrote. Save 
 There's no app here that can open or share this saved file.	Nenhum app pode abrir ou compartilhar este arquivo salvo.
 # context: line at the top of a settings page while paused; Lock Facebook keeps working while paused
 Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.	Até você retomar, todas as opções, menos o Registro de depuração e “Bloquear o Facebook”, funcionam como se estivessem desligadas. O que foi definido ao aplicar os patches continua ativo.
-Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	Mostra os emojis do próprio celular em vez dos do Facebook. Reações e figurinhas não mudam. Reinicie o Facebook para ver a mudança.
+Shows your phone's own emoji instead of Facebook's, or the ones in a font file you choose below. Reactions and stickers don't change. Restart Facebook to see the change.	Mostra os emojis do próprio celular em vez dos do Facebook, ou os de um arquivo de fonte que você escolher abaixo. Reações e figurinhas não mudam. Reinicie o Facebook para ver a mudança.
 # context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
 Tab bar at the bottom	Barra de abas embaixo
 # context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
@@ -2850,3 +2850,39 @@ Ask before downloading	Perguntar antes de baixar
 A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	O botão Baixar de um reel, o botão Baixar abaixo de uma publicação e o "Baixar no celular" de um vídeo perguntam primeiro, para um toque sem querer não salvar nada. Com "Escolher a qualidade a cada download" ativado, nos vídeos quem pergunta é a lista de qualidades.
 # context: the question over the screen after a tap on a download button, answered Continue or Cancel
 Start this download?	Iniciar este download?
+# context: the settings row that opens a file picker for a font holding emoji
+Emoji font file	Arquivo de fonte de emojis
+# context: the settings row that deletes the saved emoji font and goes back to the phone's emoji
+Remove emoji font file	Remover arquivo de fonte de emojis
+# context: under Remove emoji font file while Use the phone's emoji is on
+Removes the saved emoji font file. Restart Facebook to use your phone's emoji.	Remove o arquivo de fonte de emojis salvo. Reinicie o Facebook para usar os emojis do seu celular.
+# context: under Remove emoji font file while Use the phone's emoji is off
+Removes the saved emoji font file. Use the phone's emoji stays off.	Remove o arquivo de fonte de emojis salvo. "Usar os emojis do celular" continua desativado.
+# context: under Emoji font file with nothing picked; %1$d is a number of megabytes
+No file chosen. Choose a .ttf or .otf emoji font of up to %1$d MB.	Nenhum arquivo escolhido. Escolha uma fonte de emojis .ttf ou .otf de até %1$d MB.
+# context: under Emoji font file; %1$s is the file's name
+Selected %1$s. Emoji changes apply after restarting Facebook.	Selecionado %1$s. As alterações de emojis são aplicadas após reiniciar o Facebook.
+# context: under Emoji font file while the switch is off; %1$s is the file's name
+Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.	Selecionado %1$s. "Usar os emojis do celular" está desativado. Ative a opção e reinicie o Facebook para usar este arquivo.
+# context: toast after an emoji font is picked; %1$s is the file's name
+Selected %1$s. Restart Facebook to apply the emoji change.	Selecionado %1$s. Reinicie o Facebook para aplicar a alteração de emojis.
+# context: toast after an emoji font is picked while the switch is off; %1$s is the file's name
+Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.	Selecionado %1$s. Ative "Usar os emojis do celular" e reinicie o Facebook para usar o arquivo.
+# context: under Emoji font file while the picked file is copied
+Copying the emoji font file	Copiando o arquivo de fonte de emojis
+# context: toast when the file picked as an emoji font isn't a font
+That isn't a .ttf or .otf font file. Your emoji didn't change.	Isso não é um arquivo de fonte .ttf ou .otf. Seus emojis não mudaram.
+# context: toast when the emoji font is too large; %1$d is a number of megabytes
+That font file is over %1$d MB. Your emoji didn't change.	Esse arquivo de fonte tem mais de %1$d MB. Seus emojis não mudaram.
+# context: toast when Android can't load the picked emoji font
+Android couldn't use that font file. Your emoji didn't change.	O Android não conseguiu usar esse arquivo de fonte. Seus emojis não mudaram.
+# context: toast when the font picked as an emoji font is a text font
+That font has no emoji in it. Your emoji didn't change.	Essa fonte não tem emojis. Seus emojis não mudaram.
+# context: toast when the picked emoji font can't be read
+Couldn't open that file. Your emoji didn't change.	Não foi possível abrir esse arquivo. Seus emojis não mudaram.
+# context: toast after Remove emoji font file
+Emoji font file cleared. Restart Facebook to apply the emoji change.	Arquivo de fonte de emojis removido. Reinicie o Facebook para aplicar a alteração de emojis.
+# context: toast when Remove emoji font file fails
+Couldn't go back to your phone's emoji. Try again.	Não foi possível voltar para os emojis do seu celular. Tente de novo.
+# context: toast when the app holding the emoji font doesn't answer in time
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	O app que guarda esse arquivo de fonte está demorando demais, então o Hushfacebook parou de esperar. Seus emojis não mudaram.

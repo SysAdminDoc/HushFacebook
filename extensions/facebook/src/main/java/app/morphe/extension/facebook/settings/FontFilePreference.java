@@ -31,11 +31,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
+import app.morphe.extension.facebook.emoji.OwnEmoji;
 import app.morphe.extension.facebook.font.FontFile;
 import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
+import app.morphe.extension.shared.settings.BooleanSetting;
+import app.morphe.extension.shared.settings.StringSetting;
 import app.morphe.extension.shared.settings.preference.ImmediateAction;
 
 /**
@@ -58,11 +61,17 @@ import app.morphe.extension.shared.settings.preference.ImmediateAction;
  * <p>Use your phone's font takes the copy away. Font changes apply after a restart and only while
  * Use the system font is on. The file is removed when the row is tapped, so it goes without a
  * chevron, and it's on the page only while a file is picked or a copy is left to remove.
+ *
+ * <p>Emoji font file and Remove emoji font file are the same pair under Use the phone's emoji
+ * ({@link Slot#EMOJI}, issue #513). They keep a copy and a setting of their own, so picking one font
+ * leaves the other alone, and one run at a time covers both pairs.
  */
 @SuppressWarnings("deprecation") // Framework preferences are what the shared settings page builds on.
 public class FontFilePreference extends Preference implements ImmediateAction {
     /** The picker's request code. Import and Export settings use 7311 and 7312. */
     static final int PICK_FONT = 7313;
+    /** The emoji font picker's request code. The header picture uses 7314. */
+    static final int PICK_EMOJI_FONT = 7315;
 
     /** The row that opens the picker. */
     static final int CHOOSE = 1;
@@ -71,6 +80,52 @@ public class FontFilePreference extends Preference implements ImmediateAction {
 
     static final String CHOOSE_KEY = "action_choose_font";
     static final String PHONE_FONT_KEY = "action_phone_font";
+    static final String CHOOSE_EMOJI_KEY = "action_choose_emoji_font";
+    static final String PHONE_EMOJI_KEY = "action_phone_emoji";
+
+    /** Which font a pair of rows looks after. */
+    enum Slot {
+        TEXT, EMOJI;
+
+        int request() {
+            return this == TEXT ? PICK_FONT : PICK_EMOJI_FONT;
+        }
+
+        String chooseKey() {
+            return this == TEXT ? CHOOSE_KEY : CHOOSE_EMOJI_KEY;
+        }
+
+        String wayBackKey() {
+            return this == TEXT ? PHONE_FONT_KEY : PHONE_EMOJI_KEY;
+        }
+
+        /** The setting naming the picked file. */
+        StringSetting source() {
+            return this == TEXT ? Settings.FONT_SOURCE : Settings.EMOJI_FONT_SOURCE;
+        }
+
+        /** The switch the picked file waits on. */
+        BooleanSetting override() {
+            return this == TEXT ? Settings.USE_SYSTEM_FONT : Settings.USE_SYSTEM_EMOJI;
+        }
+
+        File file(Context context) {
+            return this == TEXT ? FontFile.file(context) : FontFile.emojiFile(context);
+        }
+
+        void copy(InputStream input, Context context, FontFile.Choice choice) throws FontFile.Refused {
+            if (this == TEXT) FontFile.copy(input, file(context), OwnFont::loads, choice);
+            else FontFile.copyEmoji(input, file(context), OwnFont::loads, choice);
+        }
+
+        /** A replacement can keep the same name, so its bytes, not a setting comparison, owe a restart. */
+        void changed() {
+            if (this == TEXT) OwnFont.fileChanged();
+            else OwnEmoji.fileChanged();
+            // The existing page reminder follows visible row keys. The source has no row of its own.
+            HushfacebookPreferenceFragment.restartPending.add(chooseKey());
+        }
+    }
 
     /**
      * What the picker offers: the names providers give fonts, and plain bytes for a provider that
@@ -152,14 +207,19 @@ public class FontFilePreference extends Preference implements ImmediateAction {
         }
     }
 
-    /** The line Font file shows while a copy runs, or null. */
+    /** The line the running copy's row shows, or null. */
     @Nullable
     private static volatile String runningLine;
+
+    /** Whose copy or removal is running, so only that pair's row shows the line. */
+    @Nullable
+    private static volatile Slot runningSlot;
 
     /** The rows on the page right now, so a run can take them all out of reach and bring them back. */
     private static final List<WeakReference<FontFilePreference>> ROWS = new CopyOnWriteArrayList<>();
 
     private final int role;
+    private final Slot slot;
 
     /**
      * On Font file, the Use your phone's font row it keeps beside itself while a font file is
@@ -169,17 +229,23 @@ public class FontFilePreference extends Preference implements ImmediateAction {
     FontFilePreference wayBack;
 
     FontFilePreference(HushfacebookPreferenceFragment page, Context context, int role) {
+        this(page, context, role, Slot.TEXT);
+    }
+
+    FontFilePreference(HushfacebookPreferenceFragment page, Context context, int role, Slot slot) {
         super(context);
         this.role = role;
-        setKey(role == CHOOSE ? CHOOSE_KEY : PHONE_FONT_KEY);
+        this.slot = slot;
+        setKey(role == CHOOSE ? slot.chooseKey() : slot.wayBackKey());
         setPersistent(false);
-        setTitle(role == CHOOSE ? L10n.t("Font file") : L10n.t("Use your phone's font"));
+        if (slot == Slot.TEXT) setTitle(role == CHOOSE ? L10n.t("Font file") : L10n.t("Use your phone's font"));
+        else setTitle(role == CHOOSE ? L10n.t("Emoji font file") : L10n.t("Remove emoji font file"));
         setOnPreferenceClickListener(preference -> {
             // Rows are out of reach while a run is going, so this is only the race between a tap
             // and that.
             if (OWNER.get() == null) {
-                if (role == PHONE_FONT) usePhoneFont(page);
-                else if (!stillStalled()) pickFont(page);
+                if (role == PHONE_FONT) usePhoneFont(page, slot);
+                else if (!stillStalled()) pickFont(page, slot);
             }
             return true;
         });
@@ -197,22 +263,30 @@ public class FontFilePreference extends Preference implements ImmediateAction {
      * Font file also puts Use your phone's font beside itself, or takes it away.
      */
     void show() {
-        String source = Settings.FONT_SOURCE.savedValue();
-        String line = runningLine;
+        String source = slot.source().savedValue();
+        String line = runningSlot == slot ? runningLine : null;
         boolean running = OWNER.get() != null;
-        boolean copy = copyExists();
+        boolean copy = copyExists(slot);
         // A copy no name points at, one a removal couldn't delete, still has a way out.
         boolean wayBack = !source.isEmpty() || copy;
         if (role == CHOOSE) {
             setEnabled(!running);
-            setSummary(line != null ? line : chosenSummary(source, copy));
+            setSummary(line != null ? line : chosenSummary(slot, source, copy));
             showWayBack(wayBack);
         } else {
             setEnabled(!running && wayBack);
-            setSummary(Settings.USE_SYSTEM_FONT.savedValue()
-                    ? L10n.t("Removes the saved font file. Restart Facebook to use your phone's font.")
-                    : L10n.t("Removes the saved font file. Use the system font stays off."));
+            setSummary(wayBackSummary());
         }
+    }
+
+    private String wayBackSummary() {
+        boolean on = slot.override().savedValue();
+        if (slot == Slot.EMOJI) {
+            return on ? L10n.t("Removes the saved emoji font file. Restart Facebook to use your phone's emoji.")
+                    : L10n.t("Removes the saved emoji font file. Use the phone's emoji stays off.");
+        }
+        return on ? L10n.t("Removes the saved font file. Restart Facebook to use your phone's font.")
+                : L10n.t("Removes the saved font file. Use the system font stays off.");
     }
 
     /** Puts Use your phone's font in Font file's group when [wanted], after it, or takes it out. */
@@ -234,31 +308,44 @@ public class FontFilePreference extends Preference implements ImmediateAction {
      * and a font already on screen keeps its typeface until Facebook restarts.
      */
     static String chosenSummary(String source, boolean copyExists) {
+        return chosenSummary(Slot.TEXT, source, copyExists);
+    }
+
+    /** {@link #chosenSummary(String, boolean)} for [slot]'s font. */
+    static String chosenSummary(Slot slot, String source, boolean copyExists) {
         if (source.isEmpty()) {
-            return L10n.f("No file chosen. Choose a .ttf or .otf font file of up to %1$d MB.", FontFile.MAX_MEGABYTES);
+            return slot == Slot.EMOJI
+                    ? L10n.f("No file chosen. Choose a .ttf or .otf emoji font of up to %1$d MB.", FontFile.MAX_EMOJI_MEGABYTES)
+                    : L10n.f("No file chosen. Choose a .ttf or .otf font file of up to %1$d MB.", FontFile.MAX_MEGABYTES);
         }
         if (!copyExists) {
             return L10n.f("The saved copy of %1$s is missing. Choose the file again.",
                     L10n.isolate(source));
         }
-        return Settings.USE_SYSTEM_FONT.savedValue()
+        if (slot == Slot.EMOJI) {
+            return slot.override().savedValue()
+                    ? L10n.f("Selected %1$s. Emoji changes apply after restarting Facebook.", L10n.isolate(source))
+                    : L10n.f("Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.",
+                            L10n.isolate(source));
+        }
+        return slot.override().savedValue()
                 ? L10n.f("Selected %1$s. Font changes apply after restarting Facebook.", L10n.isolate(source))
                 : L10n.f("Selected %1$s. Use the system font is off. Turn it on and restart Facebook to use this file.",
                         L10n.isolate(source));
     }
 
-    private static boolean copyExists() {
+    private static boolean copyExists(Slot slot) {
         Context context = Utils.getContext();
-        return context != null && FontFile.file(context).isFile();
+        return context != null && slot.file(context).isFile();
     }
 
-    private static void pickFont(HushfacebookPreferenceFragment page) {
+    private static void pickFont(HushfacebookPreferenceFragment page, Slot slot) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
                 .addCategory(Intent.CATEGORY_OPENABLE)
                 .setType("*/*")
                 .putExtra(Intent.EXTRA_MIME_TYPES, OPENABLE_TYPES);
         try {
-            page.startActivityForResult(intent, PICK_FONT);
+            page.startActivityForResult(intent, slot.request());
         } catch (ActivityNotFoundException missing) {
             Logger.printInfo(() -> "No file picker for the font file");
             Utils.showToastLong(L10n.t("This phone has no file picker, so there's no way to choose a file here."));
@@ -274,53 +361,63 @@ public class FontFilePreference extends Preference implements ImmediateAction {
      * @return whether the request was this row's.
      */
     static boolean onResult(HushfacebookPreferenceFragment page, int request, int result, @Nullable Intent data) {
-        if (request != PICK_FONT) return false;
+        Slot slot = request == PICK_FONT ? Slot.TEXT : request == PICK_EMOJI_FONT ? Slot.EMOJI : null;
+        if (slot == null) return false;
         Uri uri = result == Activity.RESULT_OK && data != null ? data.getData() : null;
-        if (uri != null) copyIn(page, uri); // Cancelled: nothing to do and nothing to say.
+        if (uri != null) copyIn(page, uri, slot); // Cancelled: nothing to do and nothing to say.
         return true;
     }
 
-    private static void copyIn(HushfacebookPreferenceFragment page, Uri uri) {
+    private static void copyIn(HushfacebookPreferenceFragment page, Uri uri, Slot slot) {
         Context context = appContext(page);
         if (context == null || stillStalled()) return;
-        Run run = start(L10n.t("Copying the font file"));
+        Run run = start(slot == Slot.EMOJI ? L10n.t("Copying the emoji font file") : L10n.t("Copying the font file"), slot);
         if (run == null) return;
         boolean accepted = Utils.runOnBackgroundThread(() -> {
             Runnable result = null;
             try {
                 String name = displayName(context, uri, run.cancel);
-                String before = Settings.FONT_SOURCE.savedValue();
+                String before = slot.source().savedValue();
                 // The name is saved before the copy moves in and put back if it can't, so the row,
                 // the message and the copy never disagree about which font is selected. A copy the
                 // screen stopped waiting for saves no name, so it doesn't move in either.
-                FontFile.copy(open(context, uri, run), FontFile.file(context), OwnFont::loads, new FontFile.Choice() {
+                slot.copy(open(context, uri, run), context, new FontFile.Choice() {
                     @Override
                     public boolean save() {
-                        return run.commit() && Settings.FONT_SOURCE.save(name);
+                        return run.commit() && slot.source().save(name);
                     }
 
                     @Override
                     public void undo() {
-                        Settings.FONT_SOURCE.save(before);
+                        slot.source().save(before);
                     }
                 });
                 // Whatever was built from the copy that was there before is stale now.
-                fontChanged();
-                String said = Settings.USE_SYSTEM_FONT.savedValue()
-                        ? L10n.f("Selected %1$s. Restart Facebook to apply the font change.", L10n.isolate(name))
-                        : L10n.f("Selected %1$s. Turn on Use the system font and restart Facebook to use it.",
-                                L10n.isolate(name));
+                slot.changed();
+                String said = pickedMessage(slot, name);
                 result = () -> Utils.showToastLong(said);
             } catch (FontFile.Refused refused) {
                 Logger.printInfo(() -> "Font file refused: " + refused.reason);
-                String said = refusal(refused.reason);
+                String said = refusal(slot, refused.reason);
                 result = () -> Utils.showToastLong(said);
             } finally {
                 ended(run, result);
             }
         });
         if (!accepted) notStarted(run);
-        else watch(run);
+        else watch(run, slot);
+    }
+
+    private static String pickedMessage(Slot slot, String name) {
+        boolean on = slot.override().savedValue();
+        if (slot == Slot.EMOJI) {
+            return on ? L10n.f("Selected %1$s. Restart Facebook to apply the emoji change.", L10n.isolate(name))
+                    : L10n.f("Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.",
+                            L10n.isolate(name));
+        }
+        return on ? L10n.f("Selected %1$s. Restart Facebook to apply the font change.", L10n.isolate(name))
+                : L10n.f("Selected %1$s. Turn on Use the system font and restart Facebook to use it.",
+                        L10n.isolate(name));
     }
 
     /** The picked file's bytes, opened through its app with [run]'s cancel signal and held where the screen can close them. */
@@ -342,6 +439,27 @@ public class FontFilePreference extends Preference implements ImmediateAction {
 
     /** One sentence per refusal: a photo picked by mistake and a file too large to take call for different things. */
     static String refusal(FontFile.Refusal reason) {
+        return refusal(Slot.TEXT, reason);
+    }
+
+    /** {@link #refusal(FontFile.Refusal)} for [slot]'s font. */
+    static String refusal(Slot slot, FontFile.Refusal reason) {
+        if (slot == Slot.EMOJI) {
+            switch (reason) {
+                case NOT_A_FONT:
+                    return L10n.t("That isn't a .ttf or .otf font file. Your emoji didn't change.");
+                case TOO_LARGE:
+                    return L10n.f("That font file is over %1$d MB. Your emoji didn't change.", FontFile.MAX_EMOJI_MEGABYTES);
+                case WONT_LOAD:
+                    return L10n.t("Android couldn't use that font file. Your emoji didn't change.");
+                case NO_EMOJI:
+                    return L10n.t("That font has no emoji in it. Your emoji didn't change.");
+                case NOT_SAVED:
+                    return L10n.t("Couldn't save a copy of that font. Check that the phone has room, then try again.");
+                default:
+                    return L10n.t("Couldn't open that file. Your emoji didn't change.");
+            }
+        }
         switch (reason) {
             case NOT_A_FONT:
                 return L10n.t("That isn't a .ttf or .otf font file. Your font didn't change.");
@@ -411,23 +529,27 @@ public class FontFilePreference extends Preference implements ImmediateAction {
      * removed only after the setting stops naming it. It reads no picked file, so it has no wait to
      * run out, and a copy the screen stopped waiting for doesn't keep it from running.
      */
-    private static void usePhoneFont(HushfacebookPreferenceFragment page) {
+    private static void usePhoneFont(HushfacebookPreferenceFragment page, Slot slot) {
         Context context = appContext(page);
         if (context == null) return;
-        Run run = start(null);
+        Run run = start(null, slot);
         if (run == null) return;
         boolean accepted = Utils.runOnBackgroundThread(() -> {
             String said = null;
             try {
-                if (Settings.FONT_SOURCE.save("")) {
-                    fontChanged();
-                    File copy = FontFile.file(context);
+                if (slot.source().save("")) {
+                    slot.changed();
+                    File copy = slot.file(context);
                     if (copy.exists() && !copy.delete()) {
                         Logger.printInfo(() -> "The font file copy couldn't be removed");
                     }
-                    said = L10n.t("Font file cleared. Restart Facebook to apply the font change.");
+                    said = slot == Slot.EMOJI
+                            ? L10n.t("Emoji font file cleared. Restart Facebook to apply the emoji change.")
+                            : L10n.t("Font file cleared. Restart Facebook to apply the font change.");
                 } else {
-                    said = L10n.t("Couldn't go back to your phone's font. Try again.");
+                    said = slot == Slot.EMOJI
+                            ? L10n.t("Couldn't go back to your phone's emoji. Try again.")
+                            : L10n.t("Couldn't go back to your phone's font. Try again.");
                 }
             } finally {
                 String result = said;
@@ -435,13 +557,6 @@ public class FontFilePreference extends Preference implements ImmediateAction {
             }
         });
         if (!accepted) notStarted(run);
-    }
-
-    /** A replacement can keep the same name, so its bytes, not a setting comparison, owe a restart. */
-    private static void fontChanged() {
-        OwnFont.fileChanged();
-        // The existing page reminder follows visible row keys. FONT_SOURCE has no row of its own.
-        HushfacebookPreferenceFragment.restartPending.add(CHOOSE_KEY);
     }
 
     @Nullable
@@ -452,12 +567,13 @@ public class FontFilePreference extends Preference implements ImmediateAction {
 
     /** Claims the rows for one run, or says why not. */
     @Nullable
-    private static Run start(@Nullable String line) {
+    private static Run start(@Nullable String line, Slot slot) {
         Run run = new Run();
         if (!OWNER.compareAndSet(null, run)) {
             Utils.showToastLong(L10n.t("Couldn't start that. Try again in a moment."));
             return null;
         }
+        runningSlot = slot;
         runningLine = line;
         showAll();
         return run;
@@ -467,6 +583,7 @@ public class FontFilePreference extends Preference implements ImmediateAction {
     private static boolean finish(Run run) {
         if (!OWNER.compareAndSet(run, null)) return false;
         runningLine = null;
+        runningSlot = null;
         showAll();
         return true;
     }
@@ -499,7 +616,7 @@ public class FontFilePreference extends Preference implements ImmediateAction {
      * closed. An app can ignore the cancel, so the message says only that the screen stopped
      * waiting. The font didn't change: the copy can't name it after this.
      */
-    private static void watch(Run run) {
+    private static void watch(Run run, Slot slot) {
         Utils.runOnMainThreadDelayed(() -> {
             if (OWNER.get() != run || !run.abandon()) return;
             finish(run);
@@ -509,8 +626,11 @@ public class FontFilePreference extends Preference implements ImmediateAction {
             // Closing can wait on the app too, so not on the main thread.
             if (open != null) new Thread(() -> closeQuietly(open), "hushfacebook-font-file").start();
             Logger.printInfo(() -> "Font file: stopped waiting on the app holding it");
-            Utils.showToastLong(L10n.t("The app holding that font file is taking too long, so Hushfacebook stopped "
-                    + "waiting. Your font didn't change."));
+            Utils.showToastLong(slot == Slot.EMOJI
+                    ? L10n.t("The app holding that font file is taking too long, so Hushfacebook stopped "
+                            + "waiting. Your emoji didn't change.")
+                    : L10n.t("The app holding that font file is taking too long, so Hushfacebook stopped "
+                            + "waiting. Your font didn't change."));
         }, timeoutMs);
     }
 
@@ -549,6 +669,8 @@ public class FontFilePreference extends Preference implements ImmediateAction {
         super.onBindView(view);
         // A screen reader hears Font file as unavailable during a copy, and this says why. Below
         // Android 11 it reads the summary, which says it too.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) view.setStateDescription(role == CHOOSE ? runningLine : null);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.setStateDescription(role == CHOOSE && runningSlot == slot ? runningLine : null);
+        }
     }
 }

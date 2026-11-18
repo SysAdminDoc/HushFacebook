@@ -86,7 +86,7 @@ The settings file was saved, but it doesn't match what Hushfacebook wrote. Save 
 There's no app here that can open or share this saved file.	Không có ứng dụng nào ở đây có thể mở hoặc chia sẻ tệp đã lưu này.
 # context: line at the top of a settings page while paused; Lock Facebook keeps working while paused
 Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.	Cho đến khi bạn tiếp tục, mọi công tắc trừ Ghi nhật ký gỡ lỗi và Khóa Facebook hoạt động như đang tắt. Các thay đổi đặt khi vá vẫn giữ nguyên.
-Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	Hiện emoji của điện thoại thay cho emoji của Facebook. Cảm xúc và nhãn dán không đổi. Khởi động lại Facebook để thấy thay đổi.
+Shows your phone's own emoji instead of Facebook's, or the ones in a font file you choose below. Reactions and stickers don't change. Restart Facebook to see the change.	Hiện emoji của điện thoại thay cho emoji của Facebook, hoặc emoji trong tệp phông chữ bạn chọn bên dưới. Cảm xúc và nhãn dán không đổi. Khởi động lại Facebook để thấy thay đổi.
 # context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
 Tab bar at the bottom	Thanh tab ở dưới cùng
 # context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
@@ -2964,3 +2964,39 @@ Ask before downloading	Hỏi trước khi tải xuống
 A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Nút Tải xuống của reel, nút Tải xuống dưới bài viết và mục Tải về điện thoại của video sẽ hỏi trước, nên lỡ chạm cũng không lưu gì. Khi bật Chọn chất lượng mỗi lần lưu, danh sách chất lượng của video sẽ thay câu hỏi này.
 # context: the question over the screen after a tap on a download button, answered Continue or Cancel
 Start this download?	Bắt đầu tải xuống này?
+# context: the settings row that opens a file picker for a font holding emoji
+Emoji font file	Tệp phông chữ emoji
+# context: the settings row that deletes the saved emoji font and goes back to the phone's emoji
+Remove emoji font file	Xóa tệp phông chữ emoji
+# context: under Remove emoji font file while Use the phone's emoji is on
+Removes the saved emoji font file. Restart Facebook to use your phone's emoji.	Xóa tệp phông chữ emoji đã lưu. Khởi động lại Facebook để dùng emoji của điện thoại.
+# context: under Remove emoji font file while Use the phone's emoji is off
+Removes the saved emoji font file. Use the phone's emoji stays off.	Xóa tệp phông chữ emoji đã lưu. Dùng emoji của điện thoại vẫn tắt.
+# context: under Emoji font file with nothing picked; %1$d is a number of megabytes
+No file chosen. Choose a .ttf or .otf emoji font of up to %1$d MB.	Chưa chọn tệp. Hãy chọn phông chữ emoji .ttf hoặc .otf có dung lượng tối đa %1$d MB.
+# context: under Emoji font file; %1$s is the file's name
+Selected %1$s. Emoji changes apply after restarting Facebook.	Đã chọn %1$s. Thay đổi emoji có hiệu lực sau khi khởi động lại Facebook.
+# context: under Emoji font file while the switch is off; %1$s is the file's name
+Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.	Đã chọn %1$s. Dùng emoji của điện thoại đang tắt. Hãy bật và khởi động lại Facebook để dùng tệp này.
+# context: toast after an emoji font is picked; %1$s is the file's name
+Selected %1$s. Restart Facebook to apply the emoji change.	Đã chọn %1$s. Khởi động lại Facebook để áp dụng thay đổi emoji.
+# context: toast after an emoji font is picked while the switch is off; %1$s is the file's name
+Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.	Đã chọn %1$s. Bật Dùng emoji của điện thoại và khởi động lại Facebook để dùng phông chữ này.
+# context: under Emoji font file while the picked file is copied
+Copying the emoji font file	Đang sao chép tệp phông chữ emoji
+# context: toast when the file picked as an emoji font isn't a font
+That isn't a .ttf or .otf font file. Your emoji didn't change.	Đó không phải tệp phông chữ .ttf hoặc .otf. Emoji của bạn không đổi.
+# context: toast when the emoji font is too large; %1$d is a number of megabytes
+That font file is over %1$d MB. Your emoji didn't change.	Tệp phông chữ đó lớn hơn %1$d MB. Emoji của bạn không đổi.
+# context: toast when Android can't load the picked emoji font
+Android couldn't use that font file. Your emoji didn't change.	Android không thể dùng tệp phông chữ đó. Emoji của bạn không đổi.
+# context: toast when the font picked as an emoji font is a text font
+That font has no emoji in it. Your emoji didn't change.	Phông chữ đó không có emoji. Emoji của bạn không đổi.
+# context: toast when the picked emoji font can't be read
+Couldn't open that file. Your emoji didn't change.	Không thể mở tệp đó. Emoji của bạn không đổi.
+# context: toast after Remove emoji font file
+Emoji font file cleared. Restart Facebook to apply the emoji change.	Đã xóa tệp phông chữ emoji. Khởi động lại Facebook để áp dụng thay đổi emoji.
+# context: toast when Remove emoji font file fails
+Couldn't go back to your phone's emoji. Try again.	Không thể quay lại emoji của điện thoại. Hãy thử lại.
+# context: toast when the app holding the emoji font doesn't answer in time
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	Ứng dụng chứa tệp phông chữ đó phản hồi quá lâu nên Hushfacebook đã ngừng chờ. Emoji của bạn không đổi.

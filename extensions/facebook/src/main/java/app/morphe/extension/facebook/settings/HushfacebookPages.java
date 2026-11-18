@@ -184,8 +184,13 @@ final class HushfacebookPages {
         if (build.contains(PatchFamily.SYSTEM_EMOJI)) {
             // The quick emoji picker keeps the first typeface it's given until Facebook restarts.
             appearance.addPreference(toggle(context, Settings.USE_SYSTEM_EMOJI,
-                    L10n.t("Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart "
-                            + "Facebook to see the change.")));
+                    L10n.t("Shows your phone's own emoji instead of Facebook's, or the ones in a font file you choose "
+                            + "below. Reactions and stickers don't change. Restart Facebook to see the change.")));
+            FontRow chooseEmoji = new FontRow(page, context, FontFilePreference.CHOOSE, FontFilePreference.Slot.EMOJI);
+            chooseEmoji.wayBack = new FontRow(page, context, FontFilePreference.PHONE_FONT, FontFilePreference.Slot.EMOJI);
+            appearance.addPreference(chooseEmoji);
+            appearance.addPreference(chooseEmoji.wayBack);
+            chooseEmoji.show();
         }
         subheading(appearance, L10n.t("Colors and theme"));
         if (build.contains(PatchFamily.ACCENT_COLOR)) {

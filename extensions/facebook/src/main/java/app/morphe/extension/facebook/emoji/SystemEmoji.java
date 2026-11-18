@@ -29,7 +29,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * default typeface, whose font fallback ends in the phone's emoji font (Noto Color Emoji on a
  * Pixel, Samsung's own on a Galaxy), so every span and picker draws the phone's emoji. Facebook's
  * own screenshot tests do much the same behind an end-to-end flag, with the file
- * /system/fonts/NotoColorEmoji.ttf, which misses a phone whose emoji font is another file.
+ * /system/fonts/NotoColorEmoji.ttf, which misses a phone whose emoji font is another file. An
+ * emoji font file picked in the settings ({@link OwnEmoji}) goes in the default typeface's place.
  * Otherwise it answers null and the provider carries on as Facebook wrote it, so anything this
  * doesn't recognise draws Meta's emoji as before.
  *
@@ -54,7 +55,8 @@ public final class SystemEmoji {
     }
 
     /**
-     * The phone's default typeface while the switch is on, or null for Facebook's own emoji font.
+     * The emoji font file picked in the settings, or else the phone's default typeface, while the
+     * switch is on, or null for Facebook's own emoji font.
      * Called first thing in Facebook's emoji typeface provider, from any thread that lays out text.
      */
     @Nullable
@@ -63,7 +65,8 @@ public final class SystemEmoji {
             HookStatus.invoked(FamilyNames.SYSTEM_EMOJI);
             if (!Utils.settingsReady() || !Settings.USE_SYSTEM_EMOJI.get()) return null;
             HookStatus.bound(FamilyNames.SYSTEM_EMOJI, PROVIDER);
-            return Typeface.DEFAULT;
+            Typeface picked = OwnEmoji.typeface();
+            return picked != null ? picked : Typeface.DEFAULT;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SYSTEM_EMOJI, PROVIDER, failure);
             return null;

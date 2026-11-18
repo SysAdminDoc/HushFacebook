@@ -442,4 +442,170 @@ public class FontFileTest {
         bytes.put(moved);
         return bytes.array();
     }
+
+    // ---- Emoji fonts ------------------------------------------------------------------------------
+
+    /** Counts what a copy did with its setting. */
+    private static final class Saves implements FontFile.Choice {
+        int saved;
+        int undone;
+
+        @Override
+        public boolean save() {
+            saved++;
+            return true;
+        }
+
+        @Override
+        public void undo() {
+            undone++;
+        }
+    }
+
+    @Test
+    public void aMapReachingTheEmojiBlocksHoldsEmoji() throws Exception {
+        assertFalse(FontFile.lacksEmoji(write("smileys.ttf", sfntWithMap(12, 0x1F600, 0x1F64F))));
+        assertFalse("the first emoji block's start", FontFile.lacksEmoji(write("first.ttf", sfntWithMap(12, 0x1F300, 0x1F300))));
+        assertFalse("the last emoji block's end", FontFile.lacksEmoji(write("last.ttf", sfntWithMap(12, 0x1FAFF, 0x1FAFF))));
+        assertFalse("one group across them all", FontFile.lacksEmoji(write("wide.ttf", sfntWithMap(12, 0x10000, 0x2FFFF))));
+        assertFalse("format 13", FontFile.lacksEmoji(write("last-resort.ttf", sfntWithMap(13, 0x1F600, 0x1F64F))));
+    }
+
+    @Test
+    public void aMapStoppingShortOfThemHoldsNone() throws Exception {
+        assertTrue(FontFile.lacksEmoji(write("latin.ttf", sfntWithMap(12, 0x41, 0x5A))));
+        assertTrue("the enclosed ideographs just before them", FontFile.lacksEmoji(write("cjk.ttf", sfntWithMap(12, 0x1F200, 0x1F2FF))));
+        assertTrue("the block just after them", FontFile.lacksEmoji(write("legacy.ttf", sfntWithMap(12, 0x1FB00, 0x1FBFF))));
+        assertTrue("a basic plane map", FontFile.lacksEmoji(write("basic.ttf", sfntWithMap(4, 0, 0))));
+    }
+
+    /** Android's own text fonts, which a person could well pick by mistake. */
+    @Test
+    public void realTextFontsHoldNone() throws Exception {
+        assertTrue(FontFile.lacksEmoji(write("rubik.ttf", font(STATIC_FONT))));
+        assertTrue(FontFile.lacksEmoji(write("khmer.ttf", font(VARIABLE_FONT))));
+        assertTrue(FontFile.lacksEmoji(write("cjk.ttc", font(COLLECTION))));
+        assertFalse(FontFile.lacksEmoji(write("rubik-emoji.ttf", withEmoji(font(STATIC_FONT)))));
+    }
+
+    @Test
+    public void aCollectionIsJudgedByItsFirstFont() throws Exception {
+        assertFalse(FontFile.lacksEmoji(write("emoji.ttc", collectionOf(sfntWithMap(12, 0x1F600, 0x1F64F)))));
+        assertTrue(FontFile.lacksEmoji(write("latin.ttc", collectionOf(sfntWithMap(12, 0x41, 0x5A)))));
+    }
+
+    /** Android has already built a typeface by now, so what can't be read isn't held against it. */
+    @Test
+    public void aMapThatCantBeReadIsGivenTheBenefitOfTheDoubt() throws Exception {
+        byte[] whole = sfntWithMap(12, 0x41, 0x5A);
+        assertFalse("cut off in its groups", FontFile.lacksEmoji(write("cut.ttf", Arrays.copyOf(whole, whole.length - 8))));
+        assertFalse("no map at all", FontFile.lacksEmoji(write("none.ttf", sfntWithAxes(new String[]{"wght"},
+                new float[][]{{100, 900}}, 20))));
+        assertFalse("format 10 isn't read", FontFile.lacksEmoji(write("ten.ttf", sfntWithMap(10, 0x41, 0x5A))));
+        assertFalse("not a font at all", FontFile.lacksEmoji(write("short.ttf", new byte[]{1, 2})));
+    }
+
+    @Test
+    public void anEmojiFontIsCopiedAndItsChoiceSaved() throws Exception {
+        byte[] emoji = withEmoji(font(STATIC_FONT));
+        File target = existingCopy();
+        Saves choice = new Saves();
+        FontFile.copyEmoji(new ByteArrayInputStream(emoji), target, file -> true, choice);
+        assertArrayEquals(emoji, Files.readAllBytes(target.toPath()));
+        assertEquals(1, choice.saved);
+        assertEquals(0, choice.undone);
+    }
+
+    @Test
+    public void aTextFontIsTurnedDownAsAnEmojiFont() throws Exception {
+        File target = existingCopy();
+        Saves choice = new Saves();
+        try {
+            FontFile.copyEmoji(new ByteArrayInputStream(font(STATIC_FONT)), target, file -> true, choice);
+            fail("a font with no emoji was taken");
+        } catch (FontFile.Refused refused) {
+            assertEquals(FontFile.Refusal.NO_EMOJI, refused.reason);
+        }
+        assertUntouched(target);
+        assertEquals("the setting moved for a refused font", 0, choice.saved);
+    }
+
+    /** The same font stays fine as a text font. */
+    @Test
+    public void aTextFontStaysWelcomeAsATextFont() throws Exception {
+        byte[] rubik = font(STATIC_FONT);
+        File target = existingCopy();
+        FontFile.copy(new ByteArrayInputStream(rubik), target, file -> true);
+        assertArrayEquals(rubik, Files.readAllBytes(target.toPath()));
+    }
+
+    /** A color emoji font runs well past the text limit, and has a limit of its own. */
+    @Test
+    public void anEmojiFontHasALargerLimitOfItsOwn() throws Exception {
+        File target = existingCopy();
+        FontFile.copyEmoji(fontShaped(FontFile.MAX_BYTES + 1), target, file -> true, new Saves());
+        assertEquals(FontFile.MAX_BYTES + 1, target.length());
+
+        Saves choice = new Saves();
+        try {
+            FontFile.copyEmoji(fontShaped(FontFile.MAX_EMOJI_BYTES + 1), target, file -> true, choice);
+            fail("a file over the emoji limit was taken");
+        } catch (FontFile.Refused refused) {
+            assertEquals(FontFile.Refusal.TOO_LARGE, refused.reason);
+        }
+        assertEquals("the copy before it changed", FontFile.MAX_BYTES + 1, target.length());
+        assertEquals(0, choice.saved);
+        assertFalse(new File(folder.getRoot(), FontFile.PARTIAL).exists());
+    }
+
+    /** A TrueType header with one table, a character map whose one subtable has one group. */
+    private static byte[] sfntWithMap(int format, int first, int last) {
+        int mapAt = 12 + 16;
+        int mapLength = 4 + 8 + 16 + 12;
+        ByteBuffer bytes = ByteBuffer.allocate(mapAt + mapLength);
+        bytes.putInt(0x00010000).putShort((short) 1).putShort((short) 16).putShort((short) 0).putShort((short) 0);
+        bytes.putInt(tag("cmap")).putInt(0).putInt(mapAt).putInt(mapLength);
+        bytes.putShort((short) 0).putShort((short) 1);
+        bytes.putShort((short) 3).putShort((short) 10).putInt(12);
+        bytes.putShort((short) format).putShort((short) 0).putInt(16 + 12).putInt(0).putInt(1);
+        bytes.putInt(first).putInt(last).putInt(1);
+        return bytes.array();
+    }
+
+    /**
+     * [font] with the smileys, U+1F600 on, added to its character map. The map moves to the end of
+     * the file with one more encoding, so Android still builds a typeface from the result.
+     */
+    public static byte[] withEmoji(byte[] font) {
+        ByteBuffer in = ByteBuffer.wrap(font);
+        int tables = in.getShort(4) & 0xFFFF;
+        for (int index = 0; index < tables; index++) {
+            int record = 12 + 16 * index;
+            if (in.getInt(record) != tag("cmap")) continue;
+            int at = in.getInt(record + 8);
+            int length = in.getInt(record + 12);
+            int encodings = in.getShort(at + 2) & 0xFFFF;
+            int headerLength = 4 + 8 * encodings;
+            int added = 8;
+            int groupsAt = (length + added + 3) & ~3;
+            int total = groupsAt + 16 + 12;
+            int start = (font.length + 3) & ~3;
+            ByteBuffer out = ByteBuffer.allocate(start + total);
+            out.put(font);
+            out.position(start);
+            out.putShort((short) 0).putShort((short) (encodings + 1));
+            for (int encoding = 0; encoding < encodings; encoding++) {
+                int entry = at + 4 + 8 * encoding;
+                out.putShort(in.getShort(entry)).putShort(in.getShort(entry + 2)).putInt(in.getInt(entry + 4) + added);
+            }
+            out.putShort((short) 3).putShort((short) 10).putInt(groupsAt);
+            out.put(font, at + headerLength, length - headerLength);
+            out.position(start + groupsAt);
+            out.putShort((short) 12).putShort((short) 0).putInt(16 + 12).putInt(0).putInt(1);
+            out.putInt(0x1F600).putInt(0x1F64F).putInt(1);
+            out.putInt(record + 8, start).putInt(record + 12, total);
+            return out.array();
+        }
+        throw new AssertionError("no character map");
+    }
 }

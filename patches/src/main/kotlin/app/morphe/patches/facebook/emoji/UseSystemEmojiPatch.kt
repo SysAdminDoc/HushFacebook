@@ -45,7 +45,7 @@ val useSystemEmojiPatch = bytecodePatch(
     name = "Use the phone's emoji",
     description = "Draws emoji with your phone's own emoji font instead of Meta's, so emoji in posts, comments " +
         "and chats match your keyboard. Reactions and stickers stay as they are. Starts off. Turn it on in " +
-        "Hushfacebook settings > Appearance, then restart Facebook.",
+        "Hushfacebook settings > Appearance, where you can also pick an emoji font file, then restart Facebook.",
 ) {
     category("Theme")
     dependsOn(settingsPatch)

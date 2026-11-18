@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -27,6 +28,12 @@ import java.nio.file.StandardCopyOption;
  * a collection), be at most {@link #MAX_MEGABYTES}, and be a font Android builds a typeface from.
  * The copy it replaces stays until the new one has passed and takes its place in one rename, and a
  * file turned down leaves nothing behind but, at worst, a partial file the next pick writes over.
+ *
+ * <p>The emoji font picked for Use the phone's emoji (issue #513) is a copy of its own, made the
+ * same way with two differences. A color emoji font holds a picture of every emoji, so the limit
+ * is {@link #MAX_EMOJI_MEGABYTES}. And its character map has to reach the emoji blocks: Android
+ * builds a typeface from any font, and that typeface falls back to the phone's emoji, so a text
+ * font picked by mistake would look like a pick that did nothing.
  */
 public final class FontFile {
     /**
@@ -36,8 +43,14 @@ public final class FontFile {
     public static final int MAX_MEGABYTES = 20;
     static final long MAX_BYTES = MAX_MEGABYTES * 1024L * 1024L;
 
+    /** The largest emoji font taken. A color emoji font holds a picture of every emoji, so it runs far larger than a text font. */
+    public static final int MAX_EMOJI_MEGABYTES = 128;
+    static final long MAX_EMOJI_BYTES = MAX_EMOJI_MEGABYTES * 1024L * 1024L;
+
     /** The copy, in Facebook's files folder. */
     static final String NAME = "hushfacebook-font";
+    /** The emoji font's copy, beside it. */
+    static final String EMOJI_NAME = "hushfacebook-emoji-font";
     /** Where a copy is written until it has passed its checks. */
     static final String PARTIAL = NAME + ".part";
 
@@ -55,6 +68,20 @@ public final class FontFile {
     private static final int MAX_TABLES = 512;
     private static final int MAX_AXES = 64;
 
+    private static final int CMAP = 0x636D6170;
+    /**
+     * The blocks that count as emoji, from Miscellaneous Symbols and Pictographs on. The block just
+     * before it holds the enclosed ideographs a full Chinese, Japanese and Korean font carries.
+     */
+    private static final int EMOJI_FIRST = 0x1F300;
+    private static final int EMOJI_LAST = 0x1FAFF;
+    /** More than any real character map carries, so a map that claims more isn't read. */
+    private static final int MAX_CMAP_SUBTABLES = 64;
+    private static final int MAX_CMAP_GROUPS = 1_000_000;
+    /** A format 12 or 13 group: first character, last character, glyph. */
+    private static final int CMAP_GROUP_BYTES = 12;
+    private static final int CMAP_GROUPS_PER_READ = 1024;
+
     /** Why a picked file wasn't taken. Each reaches the person as a sentence of its own. */
     public enum Refusal {
         /** The picker's file couldn't be opened or read to the end. */
@@ -65,6 +92,8 @@ public final class FontFile {
         TOO_LARGE,
         /** It starts like a font, but Android builds no typeface from it. */
         WONT_LOAD,
+        /** An emoji font was asked for, and its character map holds no emoji. */
+        NO_EMOJI,
         /** The copy couldn't be written to Facebook's files or take the old one's place, or its name couldn't be saved. */
         NOT_SAVED
     }
@@ -116,6 +145,11 @@ public final class FontFile {
         return new File(context.getFilesDir(), NAME);
     }
 
+    /** The copy Use the phone's emoji draws in. */
+    public static File emojiFile(Context context) {
+        return new File(context.getFilesDir(), EMOJI_NAME);
+    }
+
     /** Whether [tag], a file's first four bytes read as one number, is one a font file starts with. */
     static boolean isFontTag(int tag) {
         return tag == TRUETYPE || tag == TRUETYPE_APPLE || tag == OPENTYPE_CFF || tag == COLLECTION;
@@ -138,6 +172,19 @@ public final class FontFile {
      * stream that never ends is turned down too.
      */
     public static void copy(@Nullable InputStream input, File target, Check check, Choice choice) throws Refused {
+        copy(input, target, check, choice, MAX_BYTES, false);
+    }
+
+    /**
+     * {@link #copy(InputStream, File, Check, Choice)} for an emoji font: up to
+     * {@link #MAX_EMOJI_BYTES}, and turned down when its character map holds no emoji.
+     */
+    public static void copyEmoji(@Nullable InputStream input, File target, Check check, Choice choice) throws Refused {
+        copy(input, target, check, choice, MAX_EMOJI_BYTES, true);
+    }
+
+    private static void copy(@Nullable InputStream input, File target, Check check, Choice choice, long limit,
+                             boolean emojiOnly) throws Refused {
         if (input == null) throw new Refused(Refusal.UNREADABLE, "No stream to read");
         File partial = new File(target.getParentFile(), PARTIAL);
         boolean kept = false;
@@ -147,7 +194,7 @@ public final class FontFile {
             if (got < head.length || !isFontTag(tagOf(head))) {
                 throw new Refused(Refusal.NOT_A_FONT, got < head.length ? "Shorter than a font header" : "No font tag");
             }
-            write(input, head, partial);
+            write(input, head, partial, limit);
             boolean loads;
             try {
                 loads = check.loads(partial);
@@ -155,6 +202,7 @@ public final class FontFile {
                 loads = false;
             }
             if (!loads) throw new Refused(Refusal.WONT_LOAD, "Android built no typeface from it");
+            if (emojiOnly && lacksEmoji(partial)) throw new Refused(Refusal.NO_EMOJI, "No emoji in its character map");
             boolean saved;
             try {
                 saved = choice.save();
@@ -198,8 +246,8 @@ public final class FontFile {
         }
     }
 
-    /** Writes [head] and the rest of [input] to [partial], at most {@link #MAX_BYTES} in all. */
-    private static void write(InputStream input, byte[] head, File partial) throws Refused {
+    /** Writes [head] and the rest of [input] to [partial], at most [limit] bytes in all. */
+    private static void write(InputStream input, byte[] head, File partial, long limit) throws Refused {
         OutputStream output = null;
         try {
             output = new FileOutputStream(partial);
@@ -209,7 +257,7 @@ public final class FontFile {
             int count;
             while ((count = read(input, buffer)) != -1) {
                 total += count;
-                if (total > MAX_BYTES) throw new Refused(Refusal.TOO_LARGE, "Larger than " + MAX_BYTES + " bytes");
+                if (total > limit) throw new Refused(Refusal.TOO_LARGE, "Larger than " + limit + " bytes");
                 output.write(buffer, 0, count);
             }
             output.close();
@@ -293,6 +341,63 @@ public final class FontFile {
         } catch (IOException | RuntimeException unreadable) {
             return null;
         }
+    }
+
+    /**
+     * Whether [file]'s character map was read and reaches none of the emoji blocks. A font whose map
+     * can't be read gets the benefit of the doubt, since Android has already built a typeface from
+     * it. For a collection, its first font's map, the font Android builds.
+     */
+    static boolean lacksEmoji(File file) {
+        try (RandomAccessFile font = new RandomAccessFile(file, "r")) {
+            long start = 0;
+            if (readInt(font, 0) == COLLECTION) {
+                if (readInt(font, 8) < 1) return false;
+                start = readUnsignedInt(font, 12);
+            }
+            int tables = readUnsignedShort(font, start + 4);
+            if (tables > MAX_TABLES) return false;
+            for (int index = 0; index < tables; index++) {
+                long record = start + 12 + 16L * index;
+                if (readInt(font, record) != CMAP) continue;
+                return mapLacksEmoji(font, readUnsignedInt(font, record + 8));
+            }
+            return false;
+        } catch (IOException | RuntimeException unreadable) {
+            return false;
+        }
+    }
+
+    /**
+     * Reads the map at [cmap]. Characters past the basic plane live in format 12 and 13 subtables,
+     * read in blocks because a color font lists thousands of groups. Formats 8 and 10 reach past
+     * that plane too and are rare enough not to be worth reading, so they count as holding emoji.
+     */
+    private static boolean mapLacksEmoji(RandomAccessFile font, long cmap) throws IOException {
+        int subtables = readUnsignedShort(font, cmap + 2);
+        if (subtables > MAX_CMAP_SUBTABLES) return false;
+        byte[] chunk = new byte[CMAP_GROUPS_PER_READ * CMAP_GROUP_BYTES];
+        ByteBuffer groups = ByteBuffer.wrap(chunk);
+        for (int index = 0; index < subtables; index++) {
+            long table = cmap + readUnsignedInt(font, cmap + 4 + 8L * index + 4);
+            int format = readUnsignedShort(font, table);
+            if (format == 8 || format == 10) return false;
+            if (format != 12 && format != 13) continue;
+            long left = readUnsignedInt(font, table + 12);
+            if (left > MAX_CMAP_GROUPS) return false;
+            font.seek(table + 16);
+            while (left > 0) {
+                int take = (int) Math.min(left, CMAP_GROUPS_PER_READ);
+                font.readFully(chunk, 0, take * CMAP_GROUP_BYTES);
+                for (int group = 0; group < take; group++) {
+                    long first = groups.getInt(group * CMAP_GROUP_BYTES) & 0xFFFFFFFFL;
+                    long last = groups.getInt(group * CMAP_GROUP_BYTES + 4) & 0xFFFFFFFFL;
+                    if (first <= EMOJI_LAST && last >= EMOJI_FIRST) return false;
+                }
+                left -= take;
+            }
+        }
+        return true;
     }
 
     private static int readInt(RandomAccessFile font, long at) throws IOException {

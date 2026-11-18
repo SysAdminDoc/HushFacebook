@@ -51,6 +51,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import app.morphe.extension.facebook.emoji.OwnEmoji;
 import app.morphe.extension.facebook.font.FontFile;
 import app.morphe.extension.facebook.font.FontFileTest;
 import app.morphe.extension.facebook.font.OwnFont;
@@ -107,13 +108,22 @@ public class FontFilePreferenceTest {
         PatchFamily.inBuildForTests = null;
         Settings.FONT_SOURCE.resetToDefault();
         Settings.USE_SYSTEM_FONT.resetToDefault();
+        Settings.EMOJI_FONT_SOURCE.resetToDefault();
+        Settings.USE_SYSTEM_EMOJI.resetToDefault();
         OwnFont.fileChanged();
+        OwnEmoji.fileChanged();
         File copy = copy();
         if (copy.exists()) assertTrue(copy.delete());
+        File emoji = emojiCopy();
+        if (emoji.exists()) assertTrue(emoji.delete());
     }
 
     private static File copy() {
         return FontFile.file(RuntimeEnvironment.getApplication());
+    }
+
+    private static File emojiCopy() {
+        return FontFile.emojiFile(RuntimeEnvironment.getApplication());
     }
 
     /** With nothing picked, the switch and Font file are there, and there's no way back to show. */
@@ -176,7 +186,8 @@ public class FontFilePreferenceTest {
                 keys.add(section.getPreference(i).getKey());
             }
             assertEquals(Arrays.asList(Settings.TEXT_SIZE.key, Settings.USE_SYSTEM_FONT.key, FontFilePreference.CHOOSE_KEY,
-                    FontFilePreference.PHONE_FONT_KEY, Settings.USE_SYSTEM_EMOJI.key), keys);
+                    FontFilePreference.PHONE_FONT_KEY, Settings.USE_SYSTEM_EMOJI.key,
+                    FontFilePreference.CHOOSE_EMOJI_KEY), keys);
         }
     }
 
@@ -719,10 +730,236 @@ public class FontFilePreferenceTest {
         assertEquals(FontFilePreference.MAX_NAME_LENGTH, shown.codePointCount(0, shown.length()));
     }
 
+    // ---- The emoji font ---------------------------------------------------------------------------
+
+    private static final String SMILEYS = "content://font-test/documents/Smileys.ttf";
+
+    private static byte[] smileys() throws Exception {
+        return FontFileTest.withEmoji(FontFileTest.font(FontFileTest.STATIC_FONT));
+    }
+
+    private static HushfacebookPreferenceFragment emojiPage(Activity activity) {
+        return SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
+    }
+
+    /** Emoji font file sits under its switch, with its way back right after it once there's a pick. */
+    @Test
+    public void theEmojiRowsSitUnderTheirSwitch() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_FONT, PatchFamily.SYSTEM_EMOJI);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            Preference choose = page.findPreference(FontFilePreference.CHOOSE_EMOJI_KEY);
+            assertEquals("Emoji font file", String.valueOf(choose.getTitle()));
+            assertEquals(FontFilePreference.chosenSummary(FontFilePreference.Slot.EMOJI, "", false),
+                    String.valueOf(choose.getSummary()));
+            assertNull(page.findPreference(FontFilePreference.PHONE_EMOJI_KEY));
+
+            deliver(activity, tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY), SMILEYS, smileys());
+
+            Preference back = page.findPreference(FontFilePreference.PHONE_EMOJI_KEY);
+            assertEquals("Remove emoji font file", String.valueOf(back.getTitle()));
+            PreferenceGroup section = choose.getParent();
+            List<String> keys = new ArrayList<>();
+            for (int i = 0; i < section.getPreferenceCount(); i++) keys.add(section.getPreference(i).getKey());
+            int at = keys.indexOf(Settings.USE_SYSTEM_EMOJI.key);
+            assertEquals(Arrays.asList(FontFilePreference.CHOOSE_EMOJI_KEY, FontFilePreference.PHONE_EMOJI_KEY),
+                    keys.subList(at + 1, at + 3));
+        }
+    }
+
+    @Test
+    public void withoutTheEmojiPatchThereAreNoEmojiRows() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = emojiPage(controller.get());
+            assertNull(page.findPreference(FontFilePreference.CHOOSE_EMOJI_KEY));
+        }
+    }
+
+    @Test
+    public void emojiFontFileOpensItsOwnPicker() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_EMOJI);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            ShadowActivity.IntentForResult started =
+                    tap(activity, emojiPage(activity), FontFilePreference.CHOOSE_EMOJI_KEY);
+            assertEquals(Intent.ACTION_OPEN_DOCUMENT, started.intent.getAction());
+            assertEquals(FontFilePreference.PICK_EMOJI_FONT, started.requestCode);
+        }
+    }
+
+    /** The whole point of the issue: the two fonts are picked and kept apart. */
+    @Test
+    public void aPickedEmojiFontLeavesTheTextFontAlone() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_FONT, PatchFamily.SYSTEM_EMOJI);
+        Settings.USE_SYSTEM_EMOJI.save(true);
+        byte[] rubik = pickedBefore();
+        byte[] emoji = smileys();
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            AbstractPreferenceFragment.restartPending.clear();
+            deliver(activity, tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY), SMILEYS, emoji, "Smileys.ttf");
+
+            assertEquals("Smileys.ttf", Settings.EMOJI_FONT_SOURCE.savedValue());
+            assertArrayEquals(emoji, Files.readAllBytes(emojiCopy().toPath()));
+            assertEquals("Rubik-Regular.ttf", Settings.FONT_SOURCE.savedValue());
+            assertArrayEquals(rubik, Files.readAllBytes(copy().toPath()));
+            assertEquals(L10n.f("Selected %1$s. Restart Facebook to apply the emoji change.", L10n.isolate("Smileys.ttf")),
+                    ShadowToast.getTextOfLatestToast());
+            assertTrue(AbstractPreferenceFragment.restartPending.contains(FontFilePreference.CHOOSE_EMOJI_KEY));
+            assertFalse("the text font's row owes a restart it doesn't",
+                    AbstractPreferenceFragment.restartPending.contains(FontFilePreference.CHOOSE_KEY));
+        }
+    }
+
+    @Test
+    public void aPickWithTheSwitchOffSaysToTurnItOn() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_EMOJI);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            deliver(activity, tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY), SMILEYS, smileys(), "Smileys.ttf");
+            assertEquals(L10n.f("Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.",
+                    L10n.isolate("Smileys.ttf")), ShadowToast.getTextOfLatestToast());
+            assertFalse("picking a file turned the switch on", Settings.USE_SYSTEM_EMOJI.savedValue());
+        }
+    }
+
+    /** A text font picked here by mistake would otherwise look like a pick that did nothing. */
+    @Test
+    public void aTextFontPickedForEmojiIsTurnedDown() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_EMOJI);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            deliver(activity, tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY),
+                    "content://font-test/documents/Rubik-Regular.ttf", FontFileTest.font(FontFileTest.STATIC_FONT));
+            assertEquals("That font has no emoji in it. Your emoji didn't change.", ShadowToast.getTextOfLatestToast());
+            assertEquals("", Settings.EMOJI_FONT_SOURCE.savedValue());
+            assertFalse(emojiCopy().exists());
+            assertFalse(partial().exists());
+            assertNull(page.findPreference(FontFilePreference.PHONE_EMOJI_KEY));
+        }
+    }
+
+    @Test
+    public void removeEmojiFontFileTakesOnlyItsOwnCopy() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_FONT, PatchFamily.SYSTEM_EMOJI);
+        byte[] rubik = pickedBefore();
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            deliver(activity, tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY), SMILEYS, smileys());
+            AbstractPreferenceFragment.restartPending.clear();
+
+            Preference back = page.findPreference(FontFilePreference.PHONE_EMOJI_KEY);
+            assertTrue(((FontFilePreference) back).actsOnTap());
+            back.getOnPreferenceClickListener().onPreferenceClick(back);
+            settle();
+
+            assertNull("removing the file opened something", shadowOf(activity).getNextStartedActivityForResult());
+            assertEquals("", Settings.EMOJI_FONT_SOURCE.savedValue());
+            assertFalse(emojiCopy().exists());
+            assertEquals("Emoji font file cleared. Restart Facebook to apply the emoji change.",
+                    ShadowToast.getTextOfLatestToast());
+            assertTrue(AbstractPreferenceFragment.restartPending.contains(FontFilePreference.CHOOSE_EMOJI_KEY));
+            assertNull(page.findPreference(FontFilePreference.PHONE_EMOJI_KEY));
+            assertEquals(FontFilePreference.chosenSummary(FontFilePreference.Slot.EMOJI, "", false),
+                    String.valueOf(page.findPreference(FontFilePreference.CHOOSE_EMOJI_KEY).getSummary()));
+
+            assertEquals("Rubik-Regular.ttf", Settings.FONT_SOURCE.savedValue());
+            assertArrayEquals(rubik, Files.readAllBytes(copy().toPath()));
+            assertNotNull("the text font lost its way back", page.findPreference(FontFilePreference.PHONE_FONT_KEY));
+        }
+    }
+
+    /** One run at a time covers both fonts, and the line goes on the row whose file is coming in. */
+    @Test
+    public void aRunningCopyShowsOnItsOwnRowAndHoldsBothPairs() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_FONT, PatchFamily.SYSTEM_EMOJI);
+        CountDownLatch release = new CountDownLatch(1);
+        FontFileProvider.stallQuery = release;
+        Uri uri = FontFileProvider.put(SMILEYS, smileys(), "Smileys.ttf");
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            Preference emoji = page.findPreference(FontFilePreference.CHOOSE_EMOJI_KEY);
+            Preference text = page.findPreference(FontFilePreference.CHOOSE_KEY);
+            shadowOf(activity).receiveResult(tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY).intent,
+                    Activity.RESULT_OK, new Intent().setData(uri));
+            ShadowLooper.idleMainLooper();
+            assertTrue("the app never got the request", FontFileProvider.holding.tryAcquire(5, TimeUnit.SECONDS));
+
+            assertEquals("Copying the emoji font file", String.valueOf(emoji.getSummary()));
+            assertEquals(FontFilePreference.chosenSummary("", false), String.valueOf(text.getSummary()));
+            assertFalse(emoji.isEnabled());
+            assertFalse("the text font could start a second run", text.isEnabled());
+
+            release.countDown();
+            settle();
+            assertEquals("Smileys.ttf", Settings.EMOJI_FONT_SOURCE.savedValue());
+            assertTrue(emoji.isEnabled());
+            assertTrue(text.isEnabled());
+        }
+    }
+
+    @Test
+    public void aSlowAppIsReportedAboutTheEmoji() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_EMOJI);
+        CountDownLatch release = new CountDownLatch(1);
+        FontFileProvider.stallQuery = release;
+        Uri uri = FontFileProvider.put(SMILEYS, smileys(), "Smileys.ttf");
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = emojiPage(activity);
+            shadowOf(activity).receiveResult(tap(activity, page, FontFilePreference.CHOOSE_EMOJI_KEY).intent,
+                    Activity.RESULT_OK, new Intent().setData(uri));
+            ShadowLooper.idleMainLooper();
+            assertTrue("the app never got the request", FontFileProvider.holding.tryAcquire(5, TimeUnit.SECONDS));
+            waitOut();
+            assertEquals("The app holding that font file is taking too long, so Hushfacebook stopped waiting. "
+                    + "Your emoji didn't change.", ShadowToast.getTextOfLatestToast());
+            release.countDown();
+            settle();
+            assertEquals("", Settings.EMOJI_FONT_SOURCE.savedValue());
+            assertFalse(emojiCopy().exists());
+        }
+    }
+
+    @Test
+    public void everyEmojiRefusalTalksAboutTheEmoji() {
+        for (FontFile.Refusal reason : FontFile.Refusal.values()) {
+            String said = FontFilePreference.refusal(FontFilePreference.Slot.EMOJI, reason);
+            if (reason != FontFile.Refusal.NOT_SAVED) {
+                assertTrue(reason + ": " + said, said.endsWith("Your emoji didn't change."));
+            }
+            assertEquals(FontFilePreference.refusal(reason), FontFilePreference.refusal(FontFilePreference.Slot.TEXT, reason));
+        }
+        assertTrue(FontFilePreference.refusal(FontFilePreference.Slot.EMOJI, FontFile.Refusal.TOO_LARGE)
+                .contains(String.valueOf(FontFile.MAX_EMOJI_MEGABYTES)));
+    }
+
+    @Test
+    public void theEmojiRowSaysWhatItsPickWaitsOn() {
+        assertEquals(L10n.f("Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.",
+                        L10n.isolate("Smileys.ttf")),
+                FontFilePreference.chosenSummary(FontFilePreference.Slot.EMOJI, "Smileys.ttf", true));
+        Settings.USE_SYSTEM_EMOJI.save(true);
+        assertEquals(L10n.f("Selected %1$s. Emoji changes apply after restarting Facebook.", L10n.isolate("Smileys.ttf")),
+                FontFilePreference.chosenSummary(FontFilePreference.Slot.EMOJI, "Smileys.ttf", true));
+        assertTrue(FontFilePreference.chosenSummary(FontFilePreference.Slot.EMOJI, "", false)
+                .contains(String.valueOf(FontFile.MAX_EMOJI_MEGABYTES)));
+    }
+
     // ---- Helpers ----------------------------------------------------------------------------------
 
     private static ShadowActivity.IntentForResult tap(Activity activity, HushfacebookPreferenceFragment page) {
-        Preference choose = page.findPreference(FontFilePreference.CHOOSE_KEY);
+        return tap(activity, page, FontFilePreference.CHOOSE_KEY);
+    }
+
+    private static ShadowActivity.IntentForResult tap(Activity activity, HushfacebookPreferenceFragment page, String key) {
+        Preference choose = page.findPreference(key);
         assertNotNull("no Font file row", choose);
         choose.getOnPreferenceClickListener().onPreferenceClick(choose);
         ShadowActivity.IntentForResult started = shadowOf(activity).getNextStartedActivityForResult();

@@ -86,7 +86,7 @@ The settings file was saved, but it doesn't match what Hushfacebook wrote. Save 
 There's no app here that can open or share this saved file.	Tidak ada aplikasi yang bisa membuka atau membagikan file yang disimpan ini.
 # context: line at the top of a settings page while paused; Lock Facebook keeps working while paused
 Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.	Sampai Anda melanjutkan, semua sakelar kecuali Pencatatan debug dan “Kunci Facebook” dianggap nonaktif. Yang diatur saat Anda menambal tetap aktif.
-Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	Menampilkan emoji bawaan ponsel, bukan milik Facebook. Reaksi dan stiker tidak berubah. Mulai ulang Facebook untuk melihat perubahannya.
+Shows your phone's own emoji instead of Facebook's, or the ones in a font file you choose below. Reactions and stickers don't change. Restart Facebook to see the change.	Menampilkan emoji bawaan ponsel, bukan milik Facebook, atau emoji dari file font yang Anda pilih di bawah. Reaksi dan stiker tidak berubah. Mulai ulang Facebook untuk melihat perubahannya.
 # context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
 Tab bar at the bottom	Bilah tab di bawah
 # context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
@@ -2964,3 +2964,39 @@ Ask before downloading	Tanya sebelum mengunduh
 A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Tombol Unduh pada reel, tombol Unduh di bawah postingan, dan "Unduh ke ponsel" pada video bertanya dulu, jadi ketukan tak sengaja tidak menyimpan apa pun. Saat "Pilih kualitas setiap menyimpan" aktif, daftar kualitas video yang bertanya.
 # context: the question over the screen after a tap on a download button, answered Continue or Cancel
 Start this download?	Mulai unduhan ini?
+# context: the settings row that opens a file picker for a font holding emoji
+Emoji font file	File font emoji
+# context: the settings row that deletes the saved emoji font and goes back to the phone's emoji
+Remove emoji font file	Hapus file font emoji
+# context: under Remove emoji font file while Use the phone's emoji is on
+Removes the saved emoji font file. Restart Facebook to use your phone's emoji.	Menghapus file font emoji tersimpan. Mulai ulang Facebook untuk memakai emoji ponsel Anda.
+# context: under Remove emoji font file while Use the phone's emoji is off
+Removes the saved emoji font file. Use the phone's emoji stays off.	Menghapus file font emoji tersimpan. "Gunakan emoji ponsel" tetap nonaktif.
+# context: under Emoji font file with nothing picked; %1$d is a number of megabytes
+No file chosen. Choose a .ttf or .otf emoji font of up to %1$d MB.	Belum ada file yang dipilih. Pilih font emoji .ttf atau .otf hingga %1$d MB.
+# context: under Emoji font file; %1$s is the file's name
+Selected %1$s. Emoji changes apply after restarting Facebook.	%1$s dipilih. Perubahan emoji berlaku setelah Facebook dimulai ulang.
+# context: under Emoji font file while the switch is off; %1$s is the file's name
+Selected %1$s. Use the phone's emoji is off. Turn it on and restart Facebook to use this file.	%1$s dipilih. "Gunakan emoji ponsel" nonaktif. Aktifkan dan mulai ulang Facebook untuk memakai file ini.
+# context: toast after an emoji font is picked; %1$s is the file's name
+Selected %1$s. Restart Facebook to apply the emoji change.	%1$s dipilih. Mulai ulang Facebook untuk menerapkan perubahan emoji.
+# context: toast after an emoji font is picked while the switch is off; %1$s is the file's name
+Selected %1$s. Turn on Use the phone's emoji and restart Facebook to use it.	%1$s dipilih. Aktifkan "Gunakan emoji ponsel" dan mulai ulang Facebook untuk memakainya.
+# context: under Emoji font file while the picked file is copied
+Copying the emoji font file	Menyalin file font emoji
+# context: toast when the file picked as an emoji font isn't a font
+That isn't a .ttf or .otf font file. Your emoji didn't change.	Itu bukan file font .ttf atau .otf. Emoji Anda tidak berubah.
+# context: toast when the emoji font is too large; %1$d is a number of megabytes
+That font file is over %1$d MB. Your emoji didn't change.	File font itu lebih dari %1$d MB. Emoji Anda tidak berubah.
+# context: toast when Android can't load the picked emoji font
+Android couldn't use that font file. Your emoji didn't change.	Android tidak bisa memakai file font itu. Emoji Anda tidak berubah.
+# context: toast when the font picked as an emoji font is a text font
+That font has no emoji in it. Your emoji didn't change.	Font itu tidak berisi emoji. Emoji Anda tidak berubah.
+# context: toast when the picked emoji font can't be read
+Couldn't open that file. Your emoji didn't change.	File itu tidak dapat dibuka. Emoji Anda tidak berubah.
+# context: toast after Remove emoji font file
+Emoji font file cleared. Restart Facebook to apply the emoji change.	File font emoji dihapus. Mulai ulang Facebook untuk menerapkan perubahan emoji.
+# context: toast when Remove emoji font file fails
+Couldn't go back to your phone's emoji. Try again.	Tidak dapat kembali ke emoji ponsel Anda. Coba lagi.
+# context: toast when the app holding the emoji font doesn't answer in time
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	Aplikasi yang menyimpan file font itu terlalu lama, jadi Hushfacebook berhenti menunggu. Emoji Anda tidak berubah.
