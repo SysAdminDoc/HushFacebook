@@ -43,7 +43,8 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * still winning), and the link rule is the Reels tab's ({@link PostTypes#captionLinkKind}): a post
  * whose card leads off Facebook, or whose words name a website off it. Both run on the News feed
  * switches, each with its own switch for profiles and Pages, one for groups and one for search
- * results under it. The search ones start off.
+ * results under it. The search ones start off. A search result's post that isn't an ad comes with
+ * no story on 588, so the words its card shows go by the same lists and the same web address rule.
  *
  * <p>It fails open: switches off, a pause, settings that aren't ready, a unit that isn't a story or
  * can't be read, a list it can't name, or any failure in here, and Facebook draws the row. Each row
@@ -122,10 +123,13 @@ public final class TimelineWords {
     /** The list of posts a search turns up, by Facebook's own name for it. */
     static final Set<String> SEARCH_LISTS = Collections.singleton("SEARCH_RESULTS");
 
-    /** What reads the post a search results module carries: the patch's stubs, or a test's stand-in. */
+    /**
+     * What reads the post a search results module carries, its story or else the words its card
+     * shows: the patch's stubs, or a test's stand-in.
+     */
     interface ModuleReader {
         @Nullable
-        Object story(@Nullable Object module);
+        Object post(@Nullable Object module);
     }
 
     /** Where each module of a page of search results is counted while a search switch is on. */
@@ -133,10 +137,10 @@ public final class TimelineWords {
     static final String SEARCH_POST = "post";
     static final String SEARCH_NOT_A_POST = "not a post";
 
-    static final Reader WORDS_READER = PostWords::storyKind;
-    static final Reader LINKS_READER = PostTypes::captionLinkKind;
+    static final Reader WORDS_READER = TimelineWords::wordsKind;
+    static final Reader LINKS_READER = TimelineWords::linksKind;
     static final ListReader LIST_READER = TimelineWords::listNameOf;
-    static final ModuleReader MODULE_READER = TimelineWords::searchStoryOf;
+    static final ModuleReader MODULE_READER = TimelineWords::searchPostOf;
 
     private TimelineWords() {
     }
@@ -223,17 +227,18 @@ public final class TimelineWords {
         try {
             HookStatus.invoked(FamilyNames.POST_WORDS);
             if (modules == null || modules.isEmpty() || !Utils.settingsReady()) return null;
-            if (!SEARCH_WORDS.switchedOn() && !SEARCH_LINKS.switchedOn()) return null;            FeedFilterCounters.sawList(SEARCH_MODULES, modules.size());
+            if (!SEARCH_WORDS.switchedOn() && !SEARCH_LINKS.switchedOn()) return null;
+            FeedFilterCounters.sawList(SEARCH_MODULES, modules.size());
             ArrayList<Object> kept = null;
             int posts = 0;
             for (int index = 0; index < modules.size(); index++) {
                 Object module = modules.get(index);
-                Object story = stories.story(module);
-                FeedFilterCounters.sawKind(SEARCH_MODULES, story == null ? SEARCH_NOT_A_POST : SEARCH_POST);
+                Object post = stories.post(module);
+                FeedFilterCounters.sawKind(SEARCH_MODULES, post == null ? SEARCH_NOT_A_POST : SEARCH_POST);
                 boolean hidden = false;
-                if (story != null) {
+                if (post != null) {
                     posts++;
-                    hidden = judge(story, SEARCH_WORDS, SEARCH_LINKS, words, links, "Search result");
+                    hidden = judge(post, SEARCH_WORDS, SEARCH_LINKS, words, links, "Search result");
                 }
                 if (hidden) {
                     if (kept == null) kept = new ArrayList<>(modules.subList(0, index));
@@ -270,6 +275,19 @@ public final class TimelineWords {
     }
 
     /**
+     * What the lists make of [post]: a story's words the way a News feed post's are read, or the
+     * text a search result's card shows when the result comes with no story.
+     */
+    static String wordsKind(@Nullable Object post) {
+        return post instanceof String ? PostWords.textKind((String) post) : PostWords.storyKind(post);
+    }
+
+    /** What the link rule makes of [post], read the same two ways as {@link #wordsKind}. */
+    static String linksKind(@Nullable Object post) {
+        return post instanceof String ? PostTypes.textLinkKind((String) post) : PostTypes.captionLinkKind(post);
+    }
+
+    /**
      * The name of the list [environment] says its row is in, through the two stubs, or null when
      * there's no environment, the stubs aren't filled in or the answer isn't a list name.
      */
@@ -299,11 +317,16 @@ public final class TimelineWords {
         return StoryFlag.NOT_PATCHED;
     }
 
-    /** The post [module] carries, or null when it isn't a search module or carries none. */
+    /**
+     * The post [module] carries: its story, which Facebook fills in only for an ad, or else the
+     * words its card shows ("" for a post with none), or null when it isn't a search module or
+     * carries no post.
+     */
     @Nullable
-    static Object searchStoryOf(@Nullable Object module) {
+    static Object searchPostOf(@Nullable Object module) {
         if (module == null || !isSearchModule(module)) return null;
-        return searchStory(module);
+        Object story = searchStory(module);
+        return story != null ? story : searchPostText(module);
     }
 
     /**
@@ -317,10 +340,21 @@ public final class TimelineWords {
 
     /**
      * Injection point, filled in by Hide posts by words: the GraphQLStory a search module carries,
-     * or null. The patch replaces this body with a read of the module's story field. Only an item
-     * {@link #isSearchModule} took may be passed.
+     * or null. The patch replaces this body with a read of the module's story field, which Facebook
+     * fills in only for an ad. Only an item {@link #isSearchModule} took may be passed.
      */
     public static Object searchStory(Object module) {
+        return null;
+    }
+
+    /**
+     * Injection point, filled in by Hide posts by words: the words of the post a search module's
+     * card shows, "" for a post with none, or null when the module carries no post. On 588 every
+     * post that isn't an ad comes with no story, and its words are on the module's own tree. The
+     * patch replaces this body with the calls Facebook's search card makes to read them. Only an
+     * item {@link #isSearchModule} took may be passed.
+     */
+    public static String searchPostText(Object module) {
         return null;
     }
 }

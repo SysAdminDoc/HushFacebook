@@ -280,6 +280,16 @@ public final class PostTypes {
         return namesASite(text.texts) ? CAPTION_LINK : NO_SITE_NAMED;
     }
 
+    /**
+     * What the link rule makes of [text], the words a search result's card shows when the result
+     * comes with no story (#458): {@link #CAPTION_LINK} when they hold a web address that leads off
+     * Facebook, otherwise {@link #NO_SITE_NAMED}, or why nothing was read.
+     */
+    static String textLinkKind(@Nullable String text) {
+        if (text == null || text.trim().isEmpty()) return PostText.Outcome.NO_TEXT.reason;
+        return namesASite(Arrays.asList(text)) ? CAPTION_LINK : NO_SITE_NAMED;
+    }
+
     /** Whether a {@link #captionLinkKind} takes the reel off. */
     public static boolean captionLinkHides(String kind) {
         return LINK.equals(kind) || CAPTION_LINK.equals(kind);

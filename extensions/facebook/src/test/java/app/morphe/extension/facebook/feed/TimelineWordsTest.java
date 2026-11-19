@@ -455,14 +455,57 @@ public class TimelineWordsTest {
         assertEquals("the next page still goes by your words", Arrays.asList(plain), keptPage(page));
     }
 
+    /**
+     * On 588 a post on search's Posts tab comes with no story: Facebook's card reads its words off
+     * the module's own tree, so the patch hands those over as text (#458, seen on the phone, where
+     * every post read as no post). The words go by your real lists and the real link rule, a kept
+     * phrase still winning, and a post with no words is read and stays.
+     */
+    @Test
+    public void searchPostWordsWithNoStoryGoByYourLists() {
+        Object person = new Object();
+        Object spoiler = new Object();
+        Object kept = new Object();
+        Object drama = new Object();
+        Object photo = new Object();
+        Object plain = new Object();
+        Map<Object, String> shown = new IdentityHashMap<>();
+        shown.put(spoiler, SPOILER);
+        shown.put(kept, KEPT_SPOILER);
+        shown.put(drama, DRAMA);
+        shown.put(photo, "");
+        shown.put(plain, PLAIN);
+        TimelineWords.ModuleReader cards = shown::get;
+        List<Object> page = Arrays.asList(person, spoiler, kept, drama, photo, plain);
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+        Settings.POST_WORDS_IN_SEARCH.save(true);
+
+        assertEquals(Arrays.asList(person, kept, drama, photo, plain),
+                TimelineWords.keptSearchResults(page, cards, TimelineWords.WORDS_READER, TimelineWords.LINKS_READER));
+        Settings.LINK_POSTS_IN_SEARCH.save(true);
+        assertEquals(Arrays.asList(person, kept, photo, plain),
+                TimelineWords.keptSearchResults(page, cards, TimelineWords.WORDS_READER, TimelineWords.LINKS_READER));
+
+        String modules = line(TimelineWords.SEARCH_MODULES);
+        assertTrue(modules, modules.contains(TimelineWords.SEARCH_POST + " 10"));
+        assertTrue(modules, modules.contains(TimelineWords.SEARCH_NOT_A_POST + " 2"));
+        String wordsRow = line(TimelineWords.SEARCH_WORDS.route);
+        assertTrue(wordsRow, wordsRow.contains("Removed: " + PostWordsForTests.HIDE_WORD + " 2"));
+        assertTrue(wordsRow, wordsRow.contains(PostWordsForTests.NO_TEXT));
+        String linksRow = line(TimelineWords.SEARCH_LINKS.route);
+        assertTrue(linksRow, linksRow.contains("Removed: " + PostWordsForTests.CAPTION_LINK + " 1"));
+    }
+
     /** Before the patch fills in the stubs, no module reads as a post, so the page is kept whole. */
     @Test
     public void unpatchedStubsReadNoSearchPost() {
         Settings.HIDE_POSTS_WITH_WORDS.save(true);
         Settings.POST_WORDS_IN_SEARCH.save(true);
 
-        assertNull(TimelineWords.searchStoryOf(new SearchModule(post(SPOILER))));
-        assertNull(TimelineWords.searchStoryOf(null));
+        assertNull(TimelineWords.searchPostOf(new SearchModule(post(SPOILER))));
+        assertNull(TimelineWords.searchPostOf(null));
+        assertNull(TimelineWords.searchPostText(new SearchModule(post(SPOILER))));
         assertNull(TimelineWords.keptSearchResults(Arrays.asList(new SearchModule(post(SPOILER))), "search"));
         String modules = line(TimelineWords.SEARCH_MODULES);
         assertTrue(modules, modules.contains(TimelineWords.SEARCH_NOT_A_POST + " 1"));

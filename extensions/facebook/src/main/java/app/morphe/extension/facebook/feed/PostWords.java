@@ -624,6 +624,18 @@ public final class PostWords {
         return found.judge(read.texts).reason;
     }
 
+    /**
+     * What the lists make of [text], the words a search result's card shows when the result comes
+     * with no story (#458): the verdict's reason, or why nothing was read. Read like {@link #storyKind}.
+     */
+    public static String textKind(@Nullable String text) {
+        Rules found = rules(Settings.HIDDEN_WORDS.get(), Settings.KEPT_WORDS.get(),
+                Settings.POST_WORDS_WHOLE_WORDS.get());
+        if (found.hidesNothing()) return FeedFilter.NO_WORDS;
+        if (text == null || text.trim().isEmpty()) return PostText.Outcome.NO_TEXT.reason;
+        return found.judge(Arrays.asList(text)).reason;
+    }
+
     /** Whether a {@link #storyKind} takes the reel off. */
     public static boolean storyHides(String kind) {
         return Verdict.HIDE.reason.equals(kind) || Verdict.HIDE_PATTERN.reason.equals(kind);
