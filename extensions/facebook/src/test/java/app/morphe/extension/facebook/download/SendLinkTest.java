@@ -311,6 +311,26 @@ public class SendLinkTest {
         assertNull(ReelDownload.motionEventOf(null));
     }
 
+    /** The tap slot's event holds the button's View, which the Clean mode button reads (#391). */
+    @Test
+    public void aTapEventHoldingTheViewIsRead() {
+        android.view.View button = new android.view.View(RuntimeEnvironment.getApplication());
+        assertEquals(button, ReelDownload.viewOf(button));
+        assertEquals(button, ReelDownload.viewOf(new Tap(button)));
+        assertNull(ReelDownload.viewOf(new Holder(lift(10))));
+        assertNull(ReelDownload.viewOf(null));
+    }
+
+    static final class Tap {
+        static final android.view.View SHARED = null;
+        final Object source = new Object();
+        final android.view.View view;
+
+        Tap(android.view.View view) {
+            this.view = view;
+        }
+    }
+
     static final class Holder {
         static final String KIND = "touch";
         final Object view = new Object();

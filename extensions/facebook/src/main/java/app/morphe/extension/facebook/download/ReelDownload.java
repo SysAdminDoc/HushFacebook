@@ -10,6 +10,7 @@ package app.morphe.extension.facebook.download;
 import android.content.Context;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewConfiguration;
 
 import app.morphe.extension.facebook.reels.ReelCleanMode;
@@ -355,7 +356,7 @@ public final class ReelDownload implements Function1<Object, Object> {
                 return null;
             }
             if (kind == CLEAN) {
-                if (saves) ReelCleanMode.enterClean();
+                if (saves) ReelCleanMode.enterClean(viewOf(argument));
                 return null;
             }
             // Only the tap slot saves. The others get the same object and return without a word. They fire on every touch and
@@ -510,6 +511,24 @@ public final class ReelDownload implements Function1<Object, Object> {
             }
         } catch (Throwable ignored) {
             // An event this can't read is a touch that copies nothing.
+        }
+        return null;
+    }
+
+    /** The View [argument] is, or holds in a field of its own, as the tap slot's event does, or null. Never throws. */
+    static View viewOf(Object argument) {
+        if (argument instanceof View) return (View) argument;
+        if (argument == null) return null;
+        try {
+            for (java.lang.reflect.Field field : argument.getClass().getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+                if (!View.class.isAssignableFrom(field.getType())) continue;
+                field.setAccessible(true);
+                Object value = field.get(argument);
+                return value instanceof View ? (View) value : null;
+            }
+        } catch (Throwable ignored) {
+            // An event this can't read leaves the way out of Clean mode where Facebook puts it.
         }
         return null;
     }

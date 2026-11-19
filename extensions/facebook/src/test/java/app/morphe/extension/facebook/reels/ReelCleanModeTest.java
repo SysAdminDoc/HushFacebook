@@ -267,18 +267,18 @@ public class ReelCleanModeTest {
     @Test
     public void aTapOnTheSidebarButtonIsCountedOnlyWithAStore() {
         Settings.REEL_CLEAN_BUTTON.save(true);
-        ReelCleanMode.enterClean();
+        ReelCleanMode.enterClean(null);
         String line = statusLine();
         assertFalse("a tap with no store was counted: " + line, line != null && line.contains("Counted"));
 
         Object facebooks = new Object();
         ReelCleanMode.keepStore(facebooks);
-        ReelCleanMode.enterClean();
+        ReelCleanMode.enterClean(null);
         assertEquals(FamilyNames.REEL_DECLUTTER + ": invoked 2, 1 found, 0 missing. Counted: "
                 + ReelCleanMode.ENTERED_FROM_SIDEBAR + " 1", statusLine());
 
         Settings.REEL_CLEAN_BUTTON.save(false);
-        ReelCleanMode.enterClean();
+        ReelCleanMode.enterClean(null);
         assertTrue("a tap with the switch off was counted: " + statusLine(),
                 statusLine().endsWith(ReelCleanMode.ENTERED_FROM_SIDEBAR + " 1"));
     }
