@@ -109,6 +109,17 @@ class BackgroundPlayFixtureTest {
                 assertTrue("$name: the player keeps isPlaying()Z",
                     groot.methods.any { it.name == "isPlaying" && it.parameterTypes.isEmpty() && it.returnType == "Z" })
 
+                // The activation, which makes the player the one the window's buttons act on.
+                val activations = groot.methods.filter { holdsString(it, ACTIVATE_PLAYER) }
+                assertEquals("$name: the player's activations", 1, activations.size)
+                val currentFields = currentPlayerFields(activations.single(), groot.type)
+                assertNotNull("$name: the activation's current player", currentFields)
+                val stateType = groot.fields.firstOrNull { it.name == currentFields!!.managerField }?.type
+                assertNotNull("$name: the player declares the manager's field itself", stateType)
+                val stateClass = FixtureDex.classes(fixture, setOf(stateType!!)).getValue(stateType)
+                assertTrue("$name: the manager keeps its current player in a WeakReference",
+                    stateClass.fields.any { it.name == currentFields!!.currentField && it.type == WEAK_REFERENCE })
+
                 // Facebook's manager and its fullscreen handler.
                 val managers = holders[MANAGER_ON_BACKGROUND].orEmpty()
                 assertEquals("$name: classes holding \"$MANAGER_ON_BACKGROUND\"", listOf(MANAGER), managers.map { it.type })
@@ -169,6 +180,8 @@ class BackgroundPlayFixtureTest {
                     .implementation!!.instructions.first().let { ((it as ReferenceInstruction).reference as StringReference).string }
                 assertEquals("$name: the accessor's name", accessor, stub(VIDEO_ID_METHOD))
                 assertEquals("$name: the handler's class", binaryName(handler.type), stub(HANDLER_CLASS))
+                assertEquals("$name: the player's manager", currentFields!!.managerField, stub(STATE_MANAGER_FIELD))
+                assertEquals("$name: the manager's current player", currentFields.currentField, stub(CURRENT_PLAYER_FIELD))
 
                 // The play and the inner pause tell the extension first with p0 and p1.
                 listOf(play to STARTED, pause to PAUSING).forEach { (original, tell) ->

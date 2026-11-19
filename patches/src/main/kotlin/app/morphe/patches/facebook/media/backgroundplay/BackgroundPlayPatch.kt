@@ -15,6 +15,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
 import app.morphe.patches.facebook.media.taptoplay.TRIGGER_NAMES
 import app.morphe.patches.facebook.media.taptoplay.grootPauses
@@ -59,7 +60,7 @@ val backgroundPlayPatch = bytecodePatch(
     execute {
         val player = findPlayer()
         val handler = findHandler(player.trigger)
-        fillStubs(player.videoIdAccessor, player.triggerPause.name, handler.classDef.type)
+        fillStubs(player, handler.classDef.type)
         hookPlayer(player)
         hookHandler(handler)
         hookWindowButtons()
@@ -69,8 +70,8 @@ val backgroundPlayPatch = bytecodePatch(
 }
 
 /**
- * FbGrootPlayer's play, its inner pause, the pause taking only a trigger, its trigger type and its
- * video id accessor.
+ * FbGrootPlayer's play, its inner pause, the pause taking only a trigger, its trigger type, its
+ * video id accessor and the fields its activation makes it Facebook's current player through.
  */
 internal class Player(
     val owner: ClassDef,
@@ -79,6 +80,7 @@ internal class Player(
     val triggerPause: Method,
     val trigger: String,
     val videoIdAccessor: String,
+    val current: CurrentPlayer,
 )
 
 /** The fullscreen handler, its check and return, the record's fields and the notification's gate. */
@@ -120,7 +122,14 @@ private fun BytecodePatchContext.findPlayer(): Player {
     val accessor = videoIdAccessor(helper, call, owner.type) ?: throw PatchException(
         "$PATCH: the video id ${helper.definingClass}->${helper.name} records doesn't come from one accessor of the player",
     )
-    return Player(owner, play, pause, triggerPause, trigger, accessor)
+    val activations = owner.methods.filter { holdsString(it, ACTIVATE_PLAYER) }
+    val activation = activations.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one method of ${owner.type} holding \"$ACTIVATE_PLAYER\", found ${activations.size}",
+    )
+    val current = currentPlayerFields(activation, owner.type) ?: throw PatchException(
+        "$PATCH: ${owner.type}->${activation.name} doesn't put the player in one WeakReference field of its manager",
+    )
+    return Player(owner, play, pause, triggerPause, trigger, accessor, current)
 }
 
 private fun BytecodePatchContext.findHandler(trigger: String): Handler {
@@ -168,13 +177,18 @@ private fun BytecodePatchContext.findHandler(trigger: String): Handler {
     return Handler(handler, check, back, read, videoField.name, triggerField.name, record, trigger, gate)
 }
 
-/** Fills in the extension's stubs: the player's video id accessor and trigger pause, and the handler's class. */
-private fun BytecodePatchContext.fillStubs(videoIdAccessor: String, triggerPause: String, handlerType: String) {
+/**
+ * Fills in the extension's stubs: the player's video id accessor, trigger pause and the fields that
+ * make it Facebook's current player, and the handler's class.
+ */
+private fun BytecodePatchContext.fillStubs(player: Player, handlerType: String) {
     val extension = mutableClassDefBy(BACKGROUND_PLAY)
     listOf(
-        VIDEO_ID_METHOD to videoIdAccessor,
-        PAUSE_METHOD to triggerPause,
+        VIDEO_ID_METHOD to player.videoIdAccessor,
+        PAUSE_METHOD to player.triggerPause.name,
         HANDLER_CLASS to binaryName(handlerType),
+        STATE_MANAGER_FIELD to player.current.managerField,
+        CURRENT_PLAYER_FIELD to player.current.currentField,
     ).forEach { (stub, value) ->
         extension.methods.singleOrNull { it.name == stub && it.parameterTypes.isEmpty() && it.returnType == STRING }
             ?.returnEarly(value)

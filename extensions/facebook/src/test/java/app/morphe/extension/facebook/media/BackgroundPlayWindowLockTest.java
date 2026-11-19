@@ -65,6 +65,7 @@ public class BackgroundPlayWindowLockTest {
         // A reel Facebook started on its own, floating in the window.
         player = new Player();
         BackgroundPlay.started(player, Trigger.BY_AUTOPLAY);
+        player.activate();
         PictureInPicture.armed(screen, player, null);
         controller.pause();
     }
@@ -161,6 +162,7 @@ public class BackgroundPlayWindowLockTest {
         Player background = new Player();
         background.video = player.video;
         BackgroundPlay.started(background, BackgroundTrigger.BY_BACKGROUND_PLAY);
+        background.activate();
         PictureInPicture.playerPlaying(background);
         return background;
     }
@@ -301,6 +303,49 @@ public class BackgroundPlayWindowLockTest {
         player.playing = true;
         handedBack(background);
         assertEquals(0, player.plays);
+    }
+
+    /**
+     * #495 on 588: the window's own Pause and Play act on Facebook's current player, which after a
+     * lock was still the background player, gone with its session, so neither button did a thing.
+     */
+    @Test
+    public void theWindowsButtonsGoBackToItsVideoAfterALock() {
+        Player background = lockedAndCarriedOn();
+        assertSame("the background player took over", background, BackgroundPlayForTests.currentPlayer());
+        phoneInUse();
+        handedBack(background);
+        assertSame(player, BackgroundPlayForTests.currentPlayer());
+    }
+
+    @Test
+    public void aVideoPausedFromTheLockScreenGetsItsButtonsBackToo() {
+        Player background = lockedAndCarriedOn();
+        background.playing = false;
+        phoneInUse();
+        handedBack(background);
+        assertSame("its Play has to reach it", player, BackgroundPlayForTests.currentPlayer());
+        assertEquals(0, player.plays);
+    }
+
+    @Test
+    public void aVideoAlreadyPlayingAgainGetsItsButtonsBack() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        player.playing = true;
+        handedBack(background);
+        assertSame(player, BackgroundPlayForTests.currentPlayer());
+        assertEquals(0, player.plays);
+    }
+
+    @Test
+    public void aWindowClosedMeanwhileKeepsFacebooksCurrentPlayer() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        screen.inWindow = false;
+        handedBack(background);
+        allTriesPass();
+        assertSame(background, BackgroundPlayForTests.currentPlayer());
     }
 
     @Test

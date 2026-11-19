@@ -149,6 +149,41 @@ class BackgroundPlayShapesTest {
         assertFalse("no String video id", isRecorder(noId, trigger))
     }
 
+    // The activation that makes a player Facebook's current one, the one the window's buttons act on.
+
+    private val stateManager = "Lfixture/States;"
+    private val weakReference = "Ljava/lang/ref/WeakReference;"
+    private val wrapPlayer = "invoke-static {p0}, Lfixture/Refs;->wrap(Ljava/lang/Object;)$weakReference"
+
+    private fun activation(
+        read: String = "iget-object v1, p0, $player->states:$stateManager",
+        between: String = "const/4 v0, 0x0",
+        wrap: String = wrapPlayer,
+        put: String = "iput-object v0, v1, $stateManager->now:$weakReference",
+        twice: Boolean = false,
+    ) = method(
+        player, "activate", listOf(type), "V",
+        (listOf(read, between, wrap, "move-result-object v0", put) +
+            (if (twice) listOf(wrap, "move-result-object v0", "iput-object v0, v1, $stateManager->before:$weakReference") else emptyList()) +
+            "return-void").joinToString("\n"),
+    )
+
+    @Test
+    fun `the activation puts the player in one WeakReference field of the manager it holds`() {
+        val found = currentPlayerFields(activation(), player)
+        assertEquals("states", found?.managerField)
+        assertEquals("now", found?.currentField)
+        assertNull("another object wrapped", currentPlayerFields(
+            activation(wrap = "invoke-static {p1}, Lfixture/Refs;->wrap(Ljava/lang/Object;)$weakReference"), player))
+        assertNull("a manager another class holds", currentPlayerFields(
+            activation(read = "iget-object v1, p0, $registry->states:$stateManager"), player))
+        assertNull("a field of another class than the manager", currentPlayerFields(
+            activation(put = "iput-object v0, v1, $registry->now:$weakReference"), player))
+        assertNull("the player's register written in between", currentPlayerFields(activation(between = "move-object p0, p1"), player))
+        assertNull("no manager read", currentPlayerFields(activation(read = "const/4 v1, 0x0"), player))
+        assertNull("two such fields", currentPlayerFields(activation(twice = true), player))
+    }
+
     private fun outerPause(name: String = "pause", flags: Int = AccessFlags.PUBLIC.value, handsOn: Boolean = true) = method(
         player, name, listOf(trigger), "V",
         (if (handsOn) "const/4 v0, 0x0\ninvoke-virtual {p0, p1, v0}, $player->pauseFor($trigger${"Ljava/lang/Object;"})V\n" else "") +

@@ -58,6 +58,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   "com.facebook.video.reels.pip.ACTION_SKIP_BACK" and building RemoteActions. It answers a play or
  *   pause alone for a live video, else rewind, play or pause, and forward, through two returns. Both
  *   reels window fragments, the inbox window and the window's arming ask it.
+ * - The window's buttons act on Facebook's current player (588 LX/0eI7;->Jt9 reads LX/04lR;->A0E(),
+ *   read 2026-11-18), since every window controller is made without a player of its own. The player's
+ *   activation, the one method of FbGrootPlayer holding "VideoStateManager.activateFbGrootPlayer"
+ *   (588 LX/05mn;->A1k), sets it: it reads the player's video state manager from its own field
+ *   (A1v), wraps the player through a static (Object)WeakReference call and puts that in the
+ *   manager's WeakReference field (A0S).
  */
 
 internal const val BACKGROUND_PLAY = "$EXTENSION_PACKAGE/media/BackgroundPlay;"
@@ -81,11 +87,19 @@ internal const val REMOTE_ACTION = "Landroid/app/RemoteAction;"
 
 /**
  * The extension's stubs the patch fills in: the video id accessor's name, the name of the pause the
- * window's button calls and the handler's class.
+ * window's button calls, the handler's class, the player's field holding its video state manager and
+ * that manager's field holding its current player.
  */
 internal const val VIDEO_ID_METHOD = "videoIdMethod"
 internal const val PAUSE_METHOD = "pauseMethod"
 internal const val HANDLER_CLASS = "handlerClass"
+internal const val STATE_MANAGER_FIELD = "stateManagerField"
+internal const val CURRENT_PLAYER_FIELD = "currentPlayerField"
+
+/** The trace the player's activation, which makes it Facebook's current player, starts. */
+internal const val ACTIVATE_PLAYER = "VideoStateManager.activateFbGrootPlayer"
+internal const val WEAK_REFERENCE = "Ljava/lang/ref/WeakReference;"
+private const val ANY_OBJECT = "Ljava/lang/Object;"
 
 internal const val MANAGER = "Lcom/facebook/video/bgplayback/manager/BackgroundPlaybackManager;"
 internal const val MANAGER_ON_BACKGROUND = "BackgroundPlaybackManager.onBackground"
@@ -190,6 +204,47 @@ internal fun videoIdAccessor(helper: Method, callIndex: Int, player: String): St
         return null
     }
     return call.name
+}
+
+/** The player's field holding Facebook's video state manager, and that manager's current player field. */
+internal class CurrentPlayer(val managerField: String, val currentField: String)
+
+/**
+ * The fields [activation] makes [player] Facebook's current player through: it reads the manager from
+ * a field of [player] whose type declares the current player field, wraps the same player through a
+ * static (Object)WeakReference call and puts the reference in that field of the manager. Null unless
+ * exactly one write has that shape.
+ */
+internal fun currentPlayerFields(activation: Method, player: String): CurrentPlayer? {
+    val instructions = activation.code()
+    fun writes(instruction: Instruction, register: Int) =
+        instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == register
+    val found = (3 until instructions.size).mapNotNull { index ->
+        val put = instructions[index]
+        val current = (put as? ReferenceInstruction)?.reference as? FieldReference
+        if (put.opcode != Opcode.IPUT_OBJECT || current == null || current.type != WEAK_REFERENCE) return@mapNotNull null
+        put as TwoRegisterInstruction
+        val result = instructions[index - 1]
+        val wrap = instructions[index - 2]
+        val wrapped = wrap.call
+        if (result.opcode != Opcode.MOVE_RESULT_OBJECT || !writes(result, put.registerA) || wrap.opcode !in invokeStatic ||
+            wrapped == null || wrapped.returnType != WEAK_REFERENCE || wrapped.parameters() != listOf(ANY_OBJECT)
+        ) {
+            return@mapNotNull null
+        }
+        val wrappedPlayer = wrap.arguments().single()
+        val holder = (index - 3 downTo 0).firstOrNull { writes(instructions[it], put.registerB) } ?: return@mapNotNull null
+        val read = instructions[holder]
+        val manager = (read as? ReferenceInstruction)?.reference as? FieldReference
+        if (read.opcode != Opcode.IGET_OBJECT || manager == null || manager.definingClass != player ||
+            manager.type != current.definingClass || (read as TwoRegisterInstruction).registerB != wrappedPlayer ||
+            (holder + 1 until index - 2).any { writes(instructions[it], wrappedPlayer) }
+        ) {
+            return@mapNotNull null
+        }
+        CurrentPlayer(manager.name, current.name)
+    }
+    return found.singleOrNull()
 }
 
 /** Whether [classDef] is Facebook's background playback manager as the extension makes and fills it. */

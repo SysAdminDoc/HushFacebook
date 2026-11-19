@@ -6,16 +6,27 @@ package app.morphe.extension.facebook.media;
 
 import android.os.SystemClock;
 
-
+import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import app.morphe.extension.facebook.media.TapToPlayForTests.Trigger;
 
 /** What tests outside this package need of Keep playing in the background: a player and a whole leave. */
 public final class BackgroundPlayForTests {
+    /** Stands in for Facebook's video state manager: its current player, which the window's buttons act on. */
+    public static final class StateManager {
+        public WeakReference<Object> current = new WeakReference<>(null);
+    }
+
+    /** The manager every player made since the last {@link #forget()} holds, as Facebook's share one. */
+    private static StateManager states = new StateManager();
+
     /** Stands in for FbGrootPlayer: its kept isPlaying and a video id accessor. */
     public static final class Player {
         private static final AtomicInteger NEXT = new AtomicInteger(1000);
+
+        /** Its video state manager, in a field as FbGrootPlayer keeps it. */
+        private final StateManager stateManager = states;
 
         public boolean playing = true;
         /** A player Facebook let go: pressing play counts, but it doesn't start. */
@@ -44,7 +55,20 @@ public final class BackgroundPlayForTests {
             BackgroundPlay.pausing(this, trigger);
             playing = false;
         }
+
+        /** Facebook's activation of this player, which makes it the manager's current one. */
+        public void activate() {
+            stateManager.current = new WeakReference<>(this);
+        }
     }
+
+    /** The player the window's buttons act on now, or null. */
+    public static Object currentPlayer() {
+        return states.current.get();
+    }
+
+    /** The patched reader itself, handed the stand-ins' field names in place of the patch's. */
+    private static final BackgroundPlay.Reflected FIELDS = new BackgroundPlay.Reflected();
 
     /** Reads a {@link Player} as the patched reader reads FbGrootPlayer. */
     static final BackgroundPlay.PlayerReader READER = new BackgroundPlay.PlayerReader() {
@@ -86,6 +110,11 @@ public final class BackgroundPlayForTests {
         public int length(Object player) {
             return ((Player) player).length;
         }
+
+        @Override
+        public boolean makeCurrent(Object player) throws Exception {
+            return FIELDS.makeCurrent(player, "stateManager", "current");
+        }
     };
 
     private BackgroundPlayForTests() { }
@@ -96,6 +125,7 @@ public final class BackgroundPlayForTests {
         BackgroundPlay.forget();
         BackgroundPlayButton.forget();
         BackgroundPlay.reader = READER;
+        states = new StateManager();
     }
 
     /**

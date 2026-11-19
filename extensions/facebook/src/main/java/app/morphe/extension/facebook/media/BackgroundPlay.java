@@ -102,6 +102,7 @@ public final class BackgroundPlay {
     /** How long before its end the window's video, back from a lock, starts over. */
     static final long WINDOW_START_OVER_LEAD_MS = 250;
     private static final String WINDOW_RESUME = "window resume";
+    private static final String WINDOW_BUTTONS = "window buttons";
     private static final int NO_POSITION = -1;
 
     /** The most players followed at once; the oldest goes first. */
@@ -154,6 +155,14 @@ public final class BackgroundPlay {
         /** How long [player]'s video is, in milliseconds, or 0 when that isn't known. */
         default int length(Object player) throws Exception {
             return 0;
+        }
+
+        /**
+         * Makes [player] the current player of Facebook's video state manager, the one the window's own
+         * buttons act on. Answers whether another player was current until now.
+         */
+        default boolean makeCurrent(Object player) throws Exception {
+            return false;
         }
     }
 
@@ -223,6 +232,18 @@ public final class BackgroundPlay {
     /** The binary name of Facebook's fullscreen background handler. The patch replaces this body. */
     @Nullable
     public static String handlerClass() {
+        return null;
+    }
+
+    /** The name of the player's field holding Facebook's video state manager. The patch replaces this body. */
+    @Nullable
+    public static String stateManagerField() {
+        return null;
+    }
+
+    /** The name of that manager's field holding its current player. The patch replaces this body. */
+    @Nullable
+    public static String currentPlayerField() {
         return null;
     }
 
@@ -380,13 +401,13 @@ public final class BackgroundPlay {
         keptPosition = NO_POSITION;
         Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: handed back, "
                 + (player == null ? "no locked window" : goOn ? "playing at " + position : "paused"));
-        if (player == null || !goOn) return;
-        resumeLater(player, position, WINDOW_RESUME_TRIES);
+        if (player == null) return;
+        resumeLater(player, goOn, position, WINDOW_RESUME_TRIES);
     }
 
-    private static void resumeLater(Object player, int position, int tries) {
+    private static void resumeLater(Object player, boolean goOn, int position, int tries) {
         try {
-            Utils.runOnMainThreadDelayed(() -> resumeWindow(player, position, tries), WINDOW_RESUME_MS);
+            Utils.runOnMainThreadDelayed(() -> resumeWindow(player, goOn, position, tries), WINDOW_RESUME_MS);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
         }
@@ -425,20 +446,24 @@ public final class BackgroundPlay {
      * Unlocking gives the video back to the window, which Android resumes and pauses again, so it sat
      * paused though it had been playing all along (#495). Plays it on from where the background player
      * got to, if the window is open and nothing has started it since. The phone can still read as
-     * locked just after the hand back, so a closed or locked window gets a few more looks.
+     * locked just after the hand back, so a closed or locked window gets a few more looks. Playing or
+     * paused, the window's own buttons go back to its player first: Facebook still had the background
+     * player as its current one, gone with its session, so Pause and Play did nothing (#495 on 588).
      */
-    private static void resumeWindow(Object player, int position, int tries) {
+    private static void resumeWindow(Object player, boolean goOn, int position, int tries) {
         try {
             if (!Utils.settingsReady() || !Settings.KEEP_PLAYING_IN_BACKGROUND.get()) return;
             if (!PictureInPicture.inOpenWindow(player)) {
                 if (tries > 1) {
-                    resumeLater(player, position, tries - 1);
+                    resumeLater(player, goOn, position, tries - 1);
                 } else {
                     Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                            () -> "Background play: no open window on an unlocked phone to go on in");
+                            () -> "Background play: no open window on an unlocked phone to go back to");
                 }
                 return;
             }
+            pointButtonsAt(player);
+            if (!goOn) return;
             if (reader.playing(player)) {
                 Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
                         () -> "Background play: the window's video is playing already");
@@ -453,6 +478,17 @@ public final class BackgroundPlay {
             keepGoing(player);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+        }
+    }
+
+    private static void pointButtonsAt(Object player) {
+        try {
+            if (reader.makeCurrent(player)) {
+                Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                        () -> "Background play: the window's buttons pointed at another player, now at the window's");
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_BUTTONS, failure);
         }
     }
 
@@ -870,6 +906,8 @@ public final class BackgroundPlay {
         private final Map<Class<?>, Method> playing = new ConcurrentHashMap<>();
         private final Map<Class<?>, Method> videoIds = new ConcurrentHashMap<>();
         private final Map<Class<?>, Method> pauses = new ConcurrentHashMap<>();
+        private final Map<Class<?>, Field> managers = new ConcurrentHashMap<>();
+        private final Map<Class<?>, Field> currents = new ConcurrentHashMap<>();
 
         @Override
         public boolean playing(Object player) throws Exception {
@@ -941,6 +979,44 @@ public final class BackgroundPlay {
         @Override
         public int length(Object player) {
             return FeedVideoControls.playerLength(player);
+        }
+
+        @Override
+        public boolean makeCurrent(Object player) throws Exception {
+            return makeCurrent(player, stateManagerField(), currentPlayerField());
+        }
+
+        /**
+         * Puts a new WeakReference to [player] in the [currentName] field of the manager its
+         * [managerName] field holds, unless that already refers to [player].
+         */
+        boolean makeCurrent(Object player, @Nullable String managerName, @Nullable String currentName)
+                throws Exception {
+            if (managerName == null || currentName == null) {
+                HookStatus.missingMember(FamilyNames.BACKGROUND_PLAY, "field", "FbGrootPlayer", "video state manager");
+                return false;
+            }
+            Object manager = field(managers, player.getClass(), managerName).get(player);
+            if (manager == null) return false;
+            Field current = field(currents, manager.getClass(), currentName);
+            Object held = current.get(manager);
+            if (held instanceof WeakReference && ((WeakReference<?>) held).get() == player) return false;
+            current.set(manager, new WeakReference<>(player));
+            return true;
+        }
+
+        private static Field field(Map<Class<?>, Field> found, Class<?> owner, String name) throws NoSuchFieldException {
+            Field field = found.get(owner);
+            if (field != null) return field;
+            for (Class<?> type = owner; type != null; type = type.getSuperclass()) {
+                for (Field each : type.getDeclaredFields()) {
+                    if (!each.getName().equals(name)) continue;
+                    each.setAccessible(true);
+                    found.put(owner, each);
+                    return each;
+                }
+            }
+            throw new NoSuchFieldException(owner.getName() + "." + name);
         }
     }
 
