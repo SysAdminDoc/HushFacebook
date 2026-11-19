@@ -8,12 +8,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.SeekBar;
 
 import org.junit.After;
@@ -21,6 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
@@ -212,6 +217,73 @@ public class TapToSeekTest {
         assertFalse("a press on the thumb was held", touch(bar, MotionEvent.ACTION_DOWN, thumb, Y));
         assertFalse("its drag was held", touch(bar, MotionEvent.ACTION_MOVE, thumb + 200, Y));
         assertFalse("its lift was held", touch(bar, MotionEvent.ACTION_UP, thumb + 200, Y));
+    }
+
+    /**
+     * 588's saved video viewer (S22, 2026-11-19) runs the bar's 118 px touch area up over the
+     * bottom of the reel's three dots, so a tap on the dots seeked instead of opening the menu.
+     * Here the bar's 60 px sit at 300 on a 1000 x 400 page, a button 135 x 50 at 865, 280 runs
+     * down over its top 30, and the reel's own full width press area runs under the bar's top.
+     * The window is made wide enough to hold the page, as a phone's screen holds the viewer.
+     */
+    @Test
+    @Config(qualifiers = "w1100dp-h800dp-mdpi")
+    public void aPressOnAButtonUnderTheBarIsTheButtons() {
+        Settings.TAP_TO_SEEK.save(true);
+        SeekBar bar = bar(1000, 100);
+        Activity screen = Robolectric.buildActivity(Activity.class).setup().get();
+        FrameLayout page = new FrameLayout(screen);
+        View reel = new View(page.getContext());
+        reel.setClickable(true);
+        place(page, reel, 0, 0, 1000, 330);
+        View dots = new View(page.getContext());
+        dots.setClickable(true);
+        place(page, dots, 865, 280, 135, 50);
+        View time = new View(page.getContext());
+        place(page, time, 20, 290, 200, 30);
+        place(page, bar, 0, 300, 1000, 60);
+        // Only views in a window have a place on the screen; a detached one reads 0, 0.
+        screen.setContentView(page, new ViewGroup.LayoutParams(1000, 400));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertTrue("the page never reached a window", bar.isAttachedToWindow());
+        assertEquals("the bar wasn't laid out at 1000 x 60", 1000, bar.getWidth());
+        assertTrue("the window is narrower than the page", bar.getRootView().getWidth() >= 1000);
+
+        assertFalse("a press on the dots was held for the bar", touch(bar, MotionEvent.ACTION_DOWN, 930, 15));
+        assertFalse(touch(bar, MotionEvent.ACTION_UP, 930, 15));
+        // The stand-in for Facebook's handler drags from anywhere, so put the thumb back.
+        bar.setProgress(100);
+
+        assertTrue("a press on the line under the dots wasn't held", touch(bar, MotionEvent.ACTION_DOWN, 930, 45));
+        assertTrue(touch(bar, MotionEvent.ACTION_UP, 930, 45));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(TapToSeek.LIFT_DELAY_MS));
+        assertNear("the line under the dots didn't seek there", progressAt(930), bar.getProgress());
+
+        assertTrue("the reel's own press area kept the bar from seeking", touch(bar, MotionEvent.ACTION_DOWN, 500, 15));
+        assertTrue(touch(bar, MotionEvent.ACTION_UP, 500, 15));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(TapToSeek.LIFT_DELAY_MS));
+        assertNear("a press over the reel's area didn't seek there", progressAt(500), bar.getProgress());
+
+        assertTrue("a label that takes no press kept the bar from seeking", touch(bar, MotionEvent.ACTION_DOWN, 150, 5));
+        assertTrue(touch(bar, MotionEvent.ACTION_UP, 150, 5));
+
+        dots.setVisibility(View.GONE);
+        assertTrue("dots Facebook hid kept the bar from seeking", touch(bar, MotionEvent.ACTION_DOWN, 930, 15));
+        assertTrue(touch(bar, MotionEvent.ACTION_UP, 930, 15));
+        // That tap took the thumb to 930, so put it back where a press there misses it.
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(TapToSeek.LIFT_DELAY_MS));
+        bar.setProgress(100);
+        dots.setVisibility(View.VISIBLE);
+        dots.setAlpha(0f);
+        assertTrue("dots faded out kept the bar from seeking", touch(bar, MotionEvent.ACTION_DOWN, 930, 15));
+        assertTrue(touch(bar, MotionEvent.ACTION_UP, 930, 15));
+    }
+
+    private static void place(FrameLayout page, View child, int left, int top, int width, int height) {
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height, Gravity.LEFT | Gravity.TOP);
+        params.leftMargin = left;
+        params.topMargin = top;
+        page.addView(child, params);
     }
 
     @Test

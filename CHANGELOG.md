@@ -32,6 +32,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* With `Tap the bar to seek` on, the three dots and other buttons that sit just above a reel's progress line open again. Before, a tap on the bottom of the three dots in a saved reel jumped the video instead of opening the menu. A tap on the line itself still seeks.
 * With `Show the post date on reels` on, the date under a reel's author stays put. On a reel with a song, the song line no longer scrolls the date out of sight, and on the others the line holds on the date instead of turning over to the location or "New for you" a few seconds later. (#503)
 * With `Keep playing in the background` on, a video playing in the picture-in-picture window keeps its sound when you lock the phone and plays on in the window when you unlock it. (#495)
 * With `Open comments at` on `Full height` or `Half height`, Comment on the Reels tab now slides the regular sheet straight up over the reel. Before, the reel shrank into the top of the screen first, the way Facebook's split view opens, and at full height the sheet covered it a moment later. (#501)

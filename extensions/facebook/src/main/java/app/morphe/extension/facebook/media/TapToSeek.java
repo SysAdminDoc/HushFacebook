@@ -8,7 +8,9 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.widget.SeekBar;
 
 import androidx.annotation.Nullable;
@@ -17,6 +19,7 @@ import java.lang.ref.WeakReference;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
@@ -33,8 +36,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * thumb is held. If it lifts without moving, Facebook's handler is played a drag from the thumb to
  * that spot. If it moves sideways, the handler gets a press on the thumb and then the real moves,
  * so the thumb follows the finger. A vertical swipe is left alone: the reel pager takes it from
- * the bar as it always did. A press on the thumb, a bar that's off or has no length yet, or the
- * switch off, paused or not ready all leave every touch to Facebook.
+ * the bar as it always did. A press on the thumb or on a button under the bar's touch area
+ * ({@link #onButtonUnder}), a bar that's off or has no length yet, or the switch off, paused or
+ * not ready all leave every touch to Facebook.
  *
  * <p>The played drag's lift waits {@link #LIFT_DELAY_MS}. On 583 the scrubber's listener
  * ({@code LX/9JU;}) can post its start of a scrub to a Handler as the drag starts, and a lift
@@ -119,6 +123,10 @@ public final class TapToSeek {
         if (thumb == null) return false;
         float reach = thumb.width() / 2f + slop(bar);
         if (Math.abs(event.getX() - thumb.exactCenterX()) <= reach) return false;
+        if (onButtonUnder(bar, event)) {
+            Logger.printDebug(() -> "Tap the bar to seek: a press on a button under the bar went to the button");
+            return false;
+        }
         HookStatus.bound(FAMILY, "seek bar touch");
         held = new WeakReference<>(bar);
         downX = event.getX();
@@ -223,6 +231,34 @@ public final class TapToSeek {
         if (thumb == null) return null;
         Rect bounds = thumb.getBounds();
         return bounds.isEmpty() ? null : bounds;
+    }
+
+    /**
+     * Whether [event] lands on a button Facebook drew under the bar's touch area: a view that shows,
+     * takes presses and is narrower than the bar. 588's saved video viewer runs the bar's 118 px
+     * up over the bottom of the reel's three dots, and with the bar holding every press off its
+     * thumb, a tap on the dots seeked. The reel's own press area spans the bar's width, so a press
+     * over it still seeks. Facebook's own handler turns such a press away, so the button gets it.
+     */
+    private static boolean onButtonUnder(SeekBar bar, MotionEvent event) {
+        int[] at = new int[2];
+        bar.getLocationOnScreen(at);
+        return buttonAt(bar.getRootView(), bar, at[0] + event.getX(), at[1] + event.getY(), at);
+    }
+
+    /** {@link #onButtonUnder} for [view] and what it holds, with [x], [y] on the screen. */
+    private static boolean buttonAt(View view, SeekBar bar, float x, float y, int[] at) {
+        if (view == bar || view.getVisibility() != View.VISIBLE || view.getAlpha() <= 0f) return false;
+        view.getLocationOnScreen(at);
+        // A press outside a view never reaches what it holds either.
+        if (x < at[0] || x >= at[0] + view.getWidth() || y < at[1] || y >= at[1] + view.getHeight()) return false;
+        if ((view.isClickable() || view.isLongClickable()) && view.getWidth() < bar.getWidth()) return true;
+        if (!(view instanceof ViewGroup)) return false;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            if (buttonAt(group.getChildAt(i), bar, x, y, at)) return true;
+        }
+        return false;
     }
 
     private static int slop(SeekBar bar) {
