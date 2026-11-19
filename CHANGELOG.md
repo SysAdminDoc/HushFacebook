@@ -35,6 +35,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide the tab bar on the Reels tab` no longer leaves a grey line under the Reels title when your tabs are at the top. The line comes back with the bar on the other tabs. (#508)
 * `Seek bar on feed videos` stays out of Facebook's own video viewer, so a video you open from the feed only shows Facebook's bar. (#505)
 * A long press on a reel's Download, Cast or Clean mode button no longer opens an empty gray box. (#518)
+* With `Hide the tab bar on the Reels tab` on, a reel's time, caption and seek bar sit above the gesture bar again, so the seek bar can be tapped and held. (#516)
 
 ## 0.23.0 (2026-11-17)
 

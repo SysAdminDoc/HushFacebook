@@ -10,8 +10,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.graphics.Insets;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -38,9 +40,10 @@ import app.morphe.extension.shared.settings.SettingReadsForTests;
 
 /**
  * Hide the tab bar on the Reels tab: with the switch on, selecting Reels hides the bar, the Reels
- * page loses the bar's bottom margin and its reels lose the bar's height, and selecting another tab
- * brings the bar back while the other pages keep their margin. The bar and the margin stay Facebook's with the switch off, paused, before
- * the settings are ready and when the switch can't be read.
+ * page and its reels keep only the room the phone's navigation bar takes (#516), and selecting
+ * another tab brings the bar back while the other pages keep their margin. The bar and the margin
+ * stay Facebook's with the switch off, paused, before the settings are ready and when the switch
+ * can't be read.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -48,6 +51,8 @@ public class ReelsTabBarHiddenTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     private static final int BAR = 200;
+    /** The phone's navigation bar along the bottom, which Facebook's bar height includes. */
+    private static final int STRIP = 63;
 
     private View bar;
 
@@ -55,6 +60,7 @@ public class ReelsTabBarHiddenTest {
     public void start() {
         HookStatus.clear();
         bar = new View(RuntimeEnvironment.getApplication());
+        ReelsTabBarHidden.insetsForTests = navigationBar(STRIP);
     }
 
     @After
@@ -63,7 +69,15 @@ public class ReelsTabBarHiddenTest {
         ReelsTabBarHidden.tabShown(bar, new FeedTab());
         PauseForTests.resume();
         Settings.HIDE_REELS_TAB_BAR.resetToDefault();
+        ReelsTabBarHidden.insetsForTests = null;
+        ReelsTabBarHidden.forgetWindow();
         HookStatus.clear();
+    }
+
+    private static WindowInsets navigationBar(int height) {
+        return new WindowInsets.Builder()
+                .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, height))
+                .build();
     }
 
     private void assertFacebooksBar(String why) {
@@ -86,9 +100,9 @@ public class ReelsTabBarHiddenTest {
         Settings.HIDE_REELS_TAB_BAR.save(true);
         ReelsTabBarHidden.tabShown(bar, new WatchTab());
         assertEquals("the bar stayed on the Reels tab", View.GONE, bar.getVisibility());
-        assertEquals("the Reels page kept the bar's margin", 0, ReelsTabBarHidden.pageBottomMargin(BAR, new WatchTab()));
+        assertEquals("the Reels page kept the bar's margin", STRIP, ReelsTabBarHidden.pageBottomMargin(BAR, new WatchTab()));
         assertEquals("Home's page lost the bar's margin", BAR, ReelsTabBarHidden.pageBottomMargin(BAR, new FeedTab()));
-        assertEquals("the reel stayed short of the hidden bar", 0, ReelsTabBarHidden.reelBottomBars(BAR));
+        assertEquals("the reel stayed short of the hidden bar", STRIP, ReelsTabBarHidden.reelBottomBars(BAR));
 
         ReelsTabBarHidden.tabShown(bar, new FeedTab());
         assertEquals("Home didn't get the bar back", View.VISIBLE, bar.getVisibility());
@@ -101,7 +115,55 @@ public class ReelsTabBarHiddenTest {
         Settings.HIDE_REELS_TAB_BAR.save(true);
         ReelsTabBarHidden.tabShown(bar, new FeedTab());
         assertEquals("Home lost its bar", View.VISIBLE, bar.getVisibility());
-        assertEquals("a reel sized before Reels showed stopped short of the bar", 0, ReelsTabBarHidden.reelBottomBars(BAR));
+        assertEquals("a reel sized before Reels showed stopped short of the bar", STRIP, ReelsTabBarHidden.reelBottomBars(BAR));
+    }
+
+    /**
+     * #516: Facebook's bar height includes the phone's navigation bar, so answering 0 ran the reel,
+     * its time and its seek bar down under the gesture bar, where they couldn't be tapped or held.
+     */
+    @Test
+    public void theReelStopsAboveThePhonesNavigationBar() {
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("the reel ran under the navigation bar", STRIP, ReelsTabBarHidden.reelBottomBars(BAR));
+        assertEquals("the page ran under the navigation bar", STRIP, ReelsTabBarHidden.pageBottomMargin(BAR, new WatchTab()));
+        assertEquals("a bar shorter than the strip grew", 40, ReelsTabBarHidden.reelBottomBars(40));
+
+        ReelsTabBarHidden.insetsForTests = navigationBar(0);
+        assertEquals("a phone with no navigation bar kept a gap", 0, ReelsTabBarHidden.reelBottomBars(BAR));
+    }
+
+    /** A strip already read stands for a call that comes before the window can say. */
+    @Test
+    public void theLastStripReadStandsUntilTheWindowCanSay() {
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.insetsForTests = null;
+        assertEquals("a reel sized before any window was known kept a gap", 0, ReelsTabBarHidden.reelBottomBars(BAR));
+        ReelsTabBarHidden.insetsForTests = navigationBar(STRIP);
+        ReelsTabBarHidden.reelBottomBars(BAR);
+        ReelsTabBarHidden.insetsForTests = null;
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("the strip was forgotten", STRIP, ReelsTabBarHidden.reelBottomBars(BAR));
+    }
+
+    /** A window that already stops above the navigation bar (no edge to edge) needs no room for it. */
+    @Test
+    public void aWindowThatStopsAboveTheNavigationBarGetsNoRoomForIt() {
+        Context context = RuntimeEnvironment.getApplication();
+        FrameLayout root = new FrameLayout(context);
+        FrameLayout content = new FrameLayout(context);
+        content.setId(android.R.id.content);
+        root.addView(content);
+        content.addView(bar);
+        root.layout(0, 0, 1080, 2400);
+        content.layout(0, 0, 1080, 2400 - STRIP);
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("a window above the navigation bar left a gap", 0, ReelsTabBarHidden.reelBottomBars(BAR));
+
+        content.layout(0, 0, 1080, 2400);
+        assertEquals("an edge to edge window ran under the navigation bar", STRIP, ReelsTabBarHidden.reelBottomBars(BAR));
     }
 
     @Test

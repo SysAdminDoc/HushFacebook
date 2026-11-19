@@ -72,6 +72,7 @@ import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.HiddenStatusBar;
 import app.morphe.extension.facebook.navigation.MarketplaceFilterButton;
 import app.morphe.extension.facebook.navigation.ReelsTab;
+import app.morphe.extension.facebook.navigation.ReelsTabBarHidden;
 import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.notifications.PushDiagnostics;
 import app.morphe.extension.facebook.reels.BurnInGuard;
@@ -836,6 +837,7 @@ public final class SettingsEntry {
             WatchHistoryShortcut.refresh(activity);
             FreeStuffShortcut.refresh(activity);
             if (SettingsStatus.sponsoredMarketplace()) MarketplaceFilterButton.activityResumed(activity);
+            if (SettingsStatus.bottomTabBar()) ReelsTabBarHidden.activityShown(activity);
         }
 
         @Override
@@ -868,6 +870,7 @@ public final class SettingsEntry {
             ScreenTransitions.activityCreated(activity);
             if (SettingsStatus.storySeen()) StorySeenButton.activityCreated(activity);
             if (SettingsStatus.suggestedStories()) SuggestedStories.activityCreated(activity);
+            if (SettingsStatus.bottomTabBar()) ReelsTabBarHidden.activityShown(activity);
         }
 
         @Override
