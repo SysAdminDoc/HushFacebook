@@ -467,11 +467,11 @@ final class VideoPages {
             subheading(playback, L10n.t("Autoplay and resume"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY,
-                        L10n.t("Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own "
+                        L10n.t("Videos, reels and music wait for your tap instead of playing by themselves. Facebook's own "
                                 + "Autoplay setting shows Off while this is on.")));
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY_REELS_AFTER_FIRST,
                         L10n.t("With the switch above on, after you play one reel, the reels you swipe to play on their own. The "
-                                + "feed, Watch and stories always wait.")));
+                                + "feed and Watch always wait.")));
                 // Asked at each story video's start, so it applies to the next story you open.
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY_STORIES,
                         L10n.t("Video stories don't start by themselves. Touch and hold a story, then let go, to play it. "

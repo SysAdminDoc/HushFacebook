@@ -33,7 +33,7 @@ import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Tap to play: videos, reels, stories and songs wait for a tap.
+ * Tap to play: videos, reels and songs wait for a tap, and video stories with a switch of their own.
  *
  * <p>Nearly every Facebook surface starts its media through FbGrootPlayer's play, and the older
  * Rich Video Player through its playback controller's. The patch asks {@link #allowStart} first
@@ -84,9 +84,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       between, came from that tap, like the Reels tab's, and waits.</li>
  * </ul>
  *
- * <p>With {@link Settings#TAP_TO_PLAY_STORIES} on, a video story's start follows a rule of its
- * own instead, whether this switch is on or off ({@link #decideStory}): the tap that opened the
- * story, or moved to it, doesn't count, so it waits for a touch on the story itself (#261).
+ * <p>A video story's start skips the rules above. With {@link Settings#TAP_TO_PLAY_STORIES} on it
+ * follows a rule of its own, whether this switch is on or off ({@link #decideStory}): the tap that
+ * opened the story, or moved to it, doesn't count, so it waits for a touch on the story itself
+ * (#261). With it off the story plays as Facebook plays it. A story has no play button and a tap on
+ * it moves on, so the next story after one ends, or one after a swipe, never played (#521).
  *
  * <p>Every other start is held, and the player stays where it was, showing its first frame or its
  * cover. Facebook's own Autoplay setting reads Off while the switch is on and Inline feed video
@@ -561,8 +563,12 @@ public final class TapToPlay {
                 failNext = null;
                 throw failure;
             }
-            if (groot && player != null && storiesWait() && playsStory(player)) {
+            boolean storiesWait = storiesWait();
+            if (groot && player != null && (storiesWait || on()) && playsStory(player)) {
                 HookStatus.bound(FamilyNames.TAP_TO_PLAY, "story start");
+                // A story has no play button and a tap on it moves on, so with Video stories wait
+                // for a tap off it plays as Facebook plays it, Tap to play on or off (#521).
+                if (!storiesWait) return true;
                 String name = trigger instanceof Enum ? ((Enum<?>) trigger).name() : null;
                 boolean allowed = decideStory(player, name, SystemClock.uptimeMillis(), path);
                 if (!allowed) PictureInPicture.startHeld(player);

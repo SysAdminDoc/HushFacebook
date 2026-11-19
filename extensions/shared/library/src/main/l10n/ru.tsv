@@ -453,7 +453,7 @@ Playback	Воспроизведение
 # context: switch title; on, videos and music wait for a tap before they play
 Tap to play	Воспроизведение по нажатию
 # context: summary of that switch; Autoplay and Off are the name and value of Facebook's own setting, as Facebook shows them in this language
-Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	Видео, Reels, Истории и музыка ждут вашего нажатия, а не запускаются автоматически. Пока эта настройка включена, собственная настройка автозапуска Facebook показывает значение «Выкл.».
+Videos, reels and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	Видео, Reels и музыка ждут вашего нажатия, а не запускаются автоматически. Пока эта настройка включена, собственная настройка автозапуска Facebook показывает значение «Выкл.».
 # context: switch title under Opening Facebook; Marketplace is Facebook's tab and keeps its name
 Marketplace only	Только Marketplace
 # context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
@@ -1692,7 +1692,7 @@ Facebook hasn't downloaded this screen to this phone, so a tap opens the Whiteha
 # context: toast when the Facebook version has no such screen
 This Facebook build has no Whitehat settings screen.	В этой сборке Facebook нет экрана настроек Whitehat.
 Only the first reel waits	Только первый Reels ожидает нажатия
-With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	Если включен переключатель выше, после запуска первого Reels следующие ролики, к которым вы переходите свайпом, воспроизводятся автоматически. Лента, Watch и Истории всегда ждут нажатия.
+With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed and Watch always wait.	Если включен переключатель выше, после запуска первого Reels следующие ролики, к которым вы переходите свайпом, воспроизводятся автоматически. Лента и Watch всегда ждут нажатия.
 Slower speeds	Более низкая скорость
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	Добавляет скорости 0,1x и 0,25x в меню скорости Reels, видео в Ленте и Watch, чтобы замедлять быстрые моменты.
 Faster speeds	Более высокая скорость

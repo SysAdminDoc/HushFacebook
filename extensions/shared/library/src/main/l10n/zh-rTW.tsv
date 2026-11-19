@@ -451,7 +451,7 @@ Playback	播放
 # context: switch title; on, videos and music wait for a tap before they play
 Tap to play	點按播放
 # context: summary of that switch; Autoplay and Off are the name and value of Facebook's own setting, as Facebook shows them in this language
-Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	影片、Reels、限時動態與音樂會等你點按後才播放，不再自動播放。啟用時，Facebook 本身的「自動播放」設定會顯示為關閉。
+Videos, reels and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	影片、Reels 與音樂會等你點按後才播放，不再自動播放。啟用時，Facebook 本身的「自動播放」設定會顯示為關閉。
 # context: switch title under Opening Facebook; Marketplace is Facebook's tab and keeps its name
 Marketplace only	僅使用 Marketplace
 # context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
@@ -1662,7 +1662,7 @@ Facebook hasn't downloaded this screen to this phone, so a tap opens the Whiteha
 # context: toast when the Facebook version has no such screen
 This Facebook build has no Whitehat settings screen.	此 Facebook 建置版本沒有白帽設定畫面。
 Only the first reel waits	僅第一則 Reels 等待點按
-With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	啟用上方開關後，播放過一則 Reels，接著滑到的 Reels 就會自動播放。動態消息、Watch 與限時動態一律等待點按。
+With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed and Watch always wait.	啟用上方開關後，播放過一則 Reels，接著滑到的 Reels 就會自動播放。動態消息與 Watch 一律等待點按。
 Slower speeds	更慢的播放速度
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	在 Reels、動態消息與 Watch 影片的速度選單中新增 0.1 倍與 0.25 倍，方便放慢快速片段。
 Faster speeds	更快的播放速度

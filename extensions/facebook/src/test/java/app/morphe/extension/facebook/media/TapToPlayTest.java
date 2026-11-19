@@ -1439,18 +1439,35 @@ public class TapToPlayTest {
         }
     }
 
+    /**
+     * #521: with Video stories wait for a tap off, a story plays the way Facebook plays it, Tap to play
+     * on or off. A story has no play button and a tap on it moves on, so a story held here never
+     * played: the next one after a story ends, one after a swipe, and one that loads after the tap window.
+     */
     @Test
-    public void offStoriesFollowTapToPlay() {
-        Object story = new Object();
-        storyPlayer(story);
+    public void offStoriesPlayLikeFacebookWithTapToPlayOn() {
         assertFalse(Settings.TAP_TO_PLAY_STORIES.defaultValue);
+        assertTrue(Settings.TAP_TO_PLAY.get());
+        Object feed = new Object();
+        TapToPlay.origins = player -> player == feed ? "newsfeed" : "fb_stories_video_view::fb_stories_tray";
         TapToPlayForTests.tapEnded(100);
-        assertTrue("the tap that opened a story stopped playing it", TapToPlay.allowStart(story, Trigger.BY_USER));
-        Object other = new Object();
-        storyPlayer(other);
-        Settings.TAP_TO_PLAY.save(false);
+        assertTrue("the tap that opened a story stopped playing it", TapToPlay.allowStart(new Object(), Trigger.BY_USER));
+
         TapClock.forget();
-        assertTrue("with both switches off a story waited", TapToPlay.allowStart(other, Trigger.BY_AUTOPLAY));
+        assertTrue("the story after one that ended waited", TapToPlay.allowStart(new Object(), Trigger.BY_AUTOPLAY));
+
+        TapToPlayForTests.tapEnded(100);
+        TapToPlay.nonTapGesture();
+        assertTrue("the story after a swipe waited", TapToPlay.allowStart(new Object(), Trigger.BY_AUTOPLAY));
+
+        TapToPlayForTests.tapEnded(TapToPlay.TAP_WINDOW_MS + 1_500);
+        assertTrue("a story that loaded slowly after the tap waited", TapToPlay.allowStart(new Object(), Trigger.BY_AUTOPLAY));
+
+        TapClock.forget();
+        assertFalse("a feed video played by itself", TapToPlay.allowStart(feed, Trigger.BY_AUTOPLAY));
+
+        Settings.TAP_TO_PLAY.save(false);
+        assertTrue("with both switches off a story waited", TapToPlay.allowStart(new Object(), Trigger.BY_AUTOPLAY));
     }
 
     @Test

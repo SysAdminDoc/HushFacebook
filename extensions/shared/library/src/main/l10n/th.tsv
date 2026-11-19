@@ -447,7 +447,7 @@ Playback	การเล่น
 # context: switch title; on, videos and music wait for a tap before they play
 Tap to play	แตะเพื่อเล่น
 # context: summary of that switch; Autoplay and Off are the name and value of Facebook's own setting, as Facebook shows them in this language
-Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	วิดีโอ คลิป Reels สตอรี่ และเพลงจะรอให้คุณแตะก่อนแทนที่จะเล่นโดยอัตโนมัติ การตั้งค่า "เล่นอัตโนมัติ" ของ Facebook เองจะแสดงเป็น "ปิด" ในขณะที่เปิดใช้ฟีเจอร์นี้
+Videos, reels and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	วิดีโอ คลิป Reels และเพลงจะรอให้คุณแตะก่อนแทนที่จะเล่นโดยอัตโนมัติ การตั้งค่า "เล่นอัตโนมัติ" ของ Facebook เองจะแสดงเป็น "ปิด" ในขณะที่เปิดใช้ฟีเจอร์นี้
 # context: switch title under Opening Facebook; Marketplace is Facebook's tab and keeps its name
 Marketplace only	เฉพาะ Marketplace
 # context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
@@ -1660,7 +1660,7 @@ Facebook hasn't downloaded this screen to this phone, so a tap opens the Whiteha
 # context: toast when the Facebook version has no such screen
 This Facebook build has no Whitehat settings screen.	เวอร์ชันบิลด์ของ Facebook นี้ไม่มีหน้าจอการตั้งค่า Whitehat
 Only the first reel waits	เฉพาะ Reel แรกเท่านั้นที่จะหยุดรอ
-With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	เมื่อเปิดสวิตช์ด้านบน หลังจากที่คุณเล่น Reel หนึ่งคลิป คลิป Reels ที่คุณปัดไปจะเล่นเองโดยอัตโนมัติ ทั้งนี้ฟีด Watch และสตอรี่จะหยุดรอเสมอ
+With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed and Watch always wait.	เมื่อเปิดสวิตช์ด้านบน หลังจากที่คุณเล่น Reel หนึ่งคลิป คลิป Reels ที่คุณปัดไปจะเล่นเองโดยอัตโนมัติ ทั้งนี้ฟีดและ Watch จะหยุดรอเสมอ
 Slower speeds	ความเร็วที่ช้าลง
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	เพิ่ม 0.1x และ 0.25x ในเมนูความเร็วของ Reels รวมถึงวิดีโอในฟีดและ Watch เพื่อให้เล่นช่วงเวลาที่รวดเร็วได้ช้าลง
 Faster speeds	ความเร็วที่เร็วขึ้น

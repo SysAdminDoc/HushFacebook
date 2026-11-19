@@ -1793,7 +1793,7 @@ public class Settings extends BaseSettings {
     /**
      * With {@link #TAP_TO_PLAY} on, once a tap plays a reel that was waiting, the reels swiped to
      * after it start on their own, until a start is held again (#91). Off by default, so every reel
-     * waits. The feed, Watch and stories wait either way.
+     * waits. The feed and Watch wait either way.
      */
     public static final BooleanSetting TAP_TO_PLAY_REELS_AFTER_FIRST =
             new BooleanSetting("hushfacebook_tap_to_play_reels_after_first", FALSE);
