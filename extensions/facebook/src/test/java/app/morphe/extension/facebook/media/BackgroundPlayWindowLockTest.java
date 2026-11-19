@@ -408,7 +408,9 @@ public class BackgroundPlayWindowLockTest {
     /**
      * #495 on 588, from the log: back from a lock the window's reel went on from 8744 of 9334, and at
      * its end Facebook put it at 0, stopped, then let the video go (0 of 0), so nothing could start
-     * it. It starts over just before the end instead, still playing, with no press of play.
+     * it. That's a player Facebook doesn't have as its current one, here because it made another one
+     * current after the hand-back. It starts over just before the end instead, still playing, with no
+     * press of play.
      */
     @Test
     public void aWindowVideoNearItsEndAfterALockStartsOverBeforeItGetsThere() {
@@ -419,6 +421,7 @@ public class BackgroundPlayWindowLockTest {
         handedBack(background);
         assertEquals(1, player.plays);
         assertEquals(8744, player.positionAtPlay);
+        new Player().activate();
 
         player.position = 9100;
         looksPass(1);
@@ -434,6 +437,26 @@ public class BackgroundPlayWindowLockTest {
         player.position = 3000;
         looksPass(4);
         assertEquals("partway through it plays on", 3000, player.position);
+    }
+
+    /**
+     * #495 on 588, from the log: with the window's buttons back on its player, Facebook looped the
+     * reel itself at 8293 of 8520, and a second seek to the start 30 ms later lost the video (0 of 0).
+     * While its player is Facebook's current one, the end is left to Facebook.
+     */
+    @Test
+    public void aWindowVideoNearItsEndIsLeftToFacebooksOwnLoop() {
+        player.length = 8520;
+        Player background = lockedAndCarriedOn();
+        background.position = 5770;
+        phoneInUse();
+        handedBack(background);
+        assertSame(player, BackgroundPlayForTests.currentPlayer());
+
+        player.position = 8293;
+        looksPass(3);
+        assertEquals("nothing but Facebook seeks it", 8293, player.position);
+        assertEquals(1, player.plays);
     }
 
     @Test

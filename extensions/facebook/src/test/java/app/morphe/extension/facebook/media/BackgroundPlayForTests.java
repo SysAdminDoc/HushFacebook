@@ -115,6 +115,11 @@ public final class BackgroundPlayForTests {
         public boolean makeCurrent(Object player) throws Exception {
             return FIELDS.makeCurrent(player, "stateManager", "current");
         }
+
+        @Override
+        public boolean isCurrent(Object player) throws Exception {
+            return FIELDS.isCurrent(player, "stateManager", "current");
+        }
     };
 
     private BackgroundPlayForTests() { }

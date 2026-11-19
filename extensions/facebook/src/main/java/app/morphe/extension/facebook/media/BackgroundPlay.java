@@ -164,6 +164,11 @@ public final class BackgroundPlay {
         default boolean makeCurrent(Object player) throws Exception {
             return false;
         }
+
+        /** Whether [player] is the current player of Facebook's video state manager. No when that can't be read. */
+        default boolean isCurrent(Object player) throws Exception {
+            return false;
+        }
     }
 
     static final PlayerReader PATCHED = new Reflected();
@@ -503,8 +508,13 @@ public final class BackgroundPlay {
      * Back from a lock, a window reel that plays to its end is lost: Facebook's end of video puts it
      * back at the start, stopped, then lets the video go, so nothing starts it again (#495 on 588).
      * A reel less than two looks from its end starts over just before it instead, so that never runs.
+     * That end is what Facebook does to a player that isn't its current one. While the window's
+     * player is current ({@link #pointButtonsAt}), Facebook loops it itself, and a second seek to the
+     * start right after its own lost the video (#495 on 588: its loop at 8293 of 8520, this one 30 ms
+     * later, then 0 of 0), so then it's left to Facebook.
      */
     private static boolean startOverNearItsEnd(Object player, int look) throws Exception {
+        if (reader.isCurrent(player)) return false;
         int length = reader.length(player);
         int at = reader.position(player);
         if (length <= 0 || at < 0) return false;
@@ -522,7 +532,7 @@ public final class BackgroundPlay {
                 keptGoing = new WeakReference<>(null);
                 return;
             }
-            if (reader.playing(player)) {
+            if (reader.playing(player) && !reader.isCurrent(player)) {
                 int length = reader.length(player);
                 int at = reader.position(player);
                 if (length > 0 && at >= 0 && length - at <= WINDOW_KEEP_MS) {
@@ -986,23 +996,43 @@ public final class BackgroundPlay {
             return makeCurrent(player, stateManagerField(), currentPlayerField());
         }
 
+        @Override
+        public boolean isCurrent(Object player) throws Exception {
+            return isCurrent(player, stateManagerField(), currentPlayerField());
+        }
+
         /**
          * Puts a new WeakReference to [player] in the [currentName] field of the manager its
          * [managerName] field holds, unless that already refers to [player].
          */
         boolean makeCurrent(Object player, @Nullable String managerName, @Nullable String currentName)
                 throws Exception {
-            if (managerName == null || currentName == null) {
-                HookStatus.missingMember(FamilyNames.BACKGROUND_PLAY, "field", "FbGrootPlayer", "video state manager");
-                return false;
-            }
-            Object manager = field(managers, player.getClass(), managerName).get(player);
+            Object manager = manager(player, managerName, currentName);
             if (manager == null) return false;
             Field current = field(currents, manager.getClass(), currentName);
             Object held = current.get(manager);
             if (held instanceof WeakReference && ((WeakReference<?>) held).get() == player) return false;
             current.set(manager, new WeakReference<>(player));
             return true;
+        }
+
+        /** Whether the [currentName] field of the manager [player]'s [managerName] field holds refers to [player]. */
+        boolean isCurrent(Object player, @Nullable String managerName, @Nullable String currentName)
+                throws Exception {
+            Object manager = manager(player, managerName, currentName);
+            if (manager == null) return false;
+            Object held = field(currents, manager.getClass(), currentName).get(manager);
+            return held instanceof WeakReference && ((WeakReference<?>) held).get() == player;
+        }
+
+        @Nullable
+        private Object manager(Object player, @Nullable String managerName, @Nullable String currentName)
+                throws Exception {
+            if (managerName == null || currentName == null) {
+                HookStatus.missingMember(FamilyNames.BACKGROUND_PLAY, "field", "FbGrootPlayer", "video state manager");
+                return null;
+            }
+            return field(managers, player.getClass(), managerName).get(player);
         }
 
         private static Field field(Map<Class<?>, Field> found, Class<?> owner, String name) throws NoSuchFieldException {
