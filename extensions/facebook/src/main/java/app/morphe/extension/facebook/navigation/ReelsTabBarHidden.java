@@ -31,8 +31,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * {@link #reelBottomBars} as well, which answers 0 with the switch on, and the reel runs down to
  * the bottom.
  *
- * <p>The switch off, settings that aren't ready yet or a failure in here, and the bar and the
- * margin stay Facebook's.
+ * <p>The same method fades out the thin line Facebook draws along the bar: on Reels whenever the
+ * bar goes, and on every tab while {@link Settings#HIDE_TAB_BAR_LINE} is on (#521).
+ *
+ * <p>The switch off, settings that aren't ready yet or a failure in here, and the bar, the line and
+ * the margin stay Facebook's.
  */
 public final class ReelsTabBarHidden {
     /** Counted each time the tab bar is hidden for the Reels tab. */
@@ -42,8 +45,13 @@ public final class ReelsTabBarHidden {
     /** Counted each time a reel is sized without the hidden tab bar's height. */
     static final String REEL_SIZED = "Reel sized without the tab bar";
 
+    /** Counted each time the line along the tab bar is faded out. */
+    static final String LINE_HIDDEN = "Line along the tab bar hidden";
+
     /** The hook's name in the diagnostics report. */
     static final String HOOK = "Hide the tab bar on the Reels tab";
+    /** The line switch's hook name in the diagnostics report. */
+    static final String LINE_HOOK = "Hide the line along the tab bar";
 
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
@@ -72,11 +80,12 @@ public final class ReelsTabBarHidden {
      * again. Never throws.
      */
     public static void tabShown(@Nullable View bar, @Nullable Object tab) {
+        if (bar == null || tab == null) return;
+        boolean barGoes = false;
         try {
-            if (bar == null || tab == null) return;
             HookStatus.invoked(FAMILY);
-            boolean reels = StartTab.VIDEO.isTab(tab.getClass().getName());
-            if (reels && on()) {
+            barGoes = StartTab.VIDEO.isTab(tab.getClass().getName()) && on();
+            if (barGoes) {
                 HookStatus.bound(FAMILY, HOOK);
                 if (bar.getVisibility() != View.GONE) {
                     bar.setVisibility(View.GONE);
@@ -84,24 +93,37 @@ public final class ReelsTabBarHidden {
                     Logger.printDebug(() -> "Reels tab bar: hidden");
                 }
                 hidden = new WeakReference<>(bar);
-                // The header can still be filling in the first time the tab shows.
-                if (!hideDivider(bar)) bar.post(() -> dividerLater(bar));
             } else if (hidden.get() == bar) {
                 hidden = new WeakReference<>(null);
                 bar.setVisibility(View.VISIBLE);
-                showDivider();
                 Logger.printDebug(() -> "Reels tab bar: shown again");
             }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
         }
+        try {
+            if (barGoes || lineOff()) {
+                if (!barGoes) HookStatus.bound(FAMILY, LINE_HOOK);
+                // The header can still be filling in the first time the tab shows.
+                if (!hideDivider(bar)) bar.post(() -> dividerLater(bar));
+            } else {
+                showDivider();
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, barGoes ? HOOK : LINE_HOOK, failure);
+        }
+    }
+
+    /** Whether the line along the bar goes on every tab: its switch on and the settings ready. */
+    static boolean lineOff() {
+        return Utils.settingsReady() && Settings.HIDE_TAB_BAR_LINE.get();
     }
 
     private static void dividerLater(View bar) {
         try {
-            if (hidden.get() == bar) hideDivider(bar);
+            if (hidden.get() == bar || lineOff()) hideDivider(bar);
         } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, HOOK, failure);
+            HookStatus.threw(FAMILY, LINE_HOOK, failure);
         }
     }
 
@@ -118,6 +140,7 @@ public final class ReelsTabBarHidden {
         dividerAlpha = found.getAlpha();
         found.setAlpha(0f);
         divider = new WeakReference<>(found);
+        HookStatus.counted(FAMILY, LINE_HIDDEN);
         return true;
     }
 

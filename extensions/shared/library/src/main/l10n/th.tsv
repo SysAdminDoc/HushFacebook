@@ -2839,6 +2839,8 @@ A small label at the top of Reels shows the minutes you've watched. Time on othe
 %1$d min	%1$d นาที
 Hide the tab bar on the Reels tab	ซ่อนแถบแท็บในแท็บ Reels
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	แถบแท็บจะหายไปขณะที่เปิดแท็บ Reels อยู่ และ Reel จะแสดงเต็มหน้าจอ แท็บอื่นๆ จะยังคงมีแถบแท็บ รีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
+Hide the line along the tab bar	ซ่อนเส้นตามแถบแท็บ
+The thin line Facebook draws along the edge of the tab bar goes away on every tab. Tap a tab to see the change.	เส้นบางที่ Facebook วาดไว้ตามขอบแถบแท็บจะหายไปในทุกแท็บ แตะแท็บใดก็ได้เพื่อดูการเปลี่ยนแปลง
 Playback speed in the post menu	ความเร็วในการเล่นในเมนูโพสต์
 A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	เมนูจุดสามจุดของวิดีโอในฟีดหรือ Watch จะมีตัวเลือก "ความเร็วในการเล่น" ตั้งแต่ 0.5x ถึง 3x รวมถึงวิดีโอถ่ายทอดสดด้วย ปิดใช้งานตามค่าเริ่มต้นเนื่องจากยังไม่ได้ทดสอบกับบัญชีจริง
 Double tap to skip on feed videos	แตะสองครั้งเพื่อข้ามในวิดีโอบนฟีด

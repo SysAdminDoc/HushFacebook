@@ -3112,6 +3112,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reels_tab_bar", FALSE, true);
 
     /**
+     * The thin line Facebook draws along the tab bar's edge goes on every tab (#521,
+     * {@link app.morphe.extension.facebook.navigation.ReelsTabBarHidden}). Off by default. Facebook
+     * restyles the bar each time a tab is selected, so a change shows on the next tab tapped.
+     */
+    public static final BooleanSetting HIDE_TAB_BAR_LINE =
+            new BooleanSetting("hushfacebook_hide_tab_bar_line", FALSE);
+
+    /**
      * The top bar and the tab bar let the feed show through, with a blur of it behind them on
      * Android 12 and newer (#124, {@link app.morphe.extension.facebook.navigation.TranslucentBars}).
      * Asked as each frame of the main screen draws, so a change shows right away. A kept tab bar is

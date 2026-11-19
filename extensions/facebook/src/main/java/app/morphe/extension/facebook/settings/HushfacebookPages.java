@@ -108,6 +108,10 @@ final class HushfacebookPages {
             tabs.addPreference(toggle(context, Settings.HIDE_REELS_TAB_BAR,
                     L10n.t("The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. "
                             + "The other tabs keep the bar. Restart Facebook to see the change.")));
+            // Facebook restyles the bar each time a tab is selected, so a change shows on the next tab.
+            tabs.addPreference(toggle(context, Settings.HIDE_TAB_BAR_LINE,
+                    L10n.t("The thin line Facebook draws along the edge of the tab bar goes away on every tab. "
+                            + "Tap a tab to see the change.")));
             subheading(tabs, L10n.t("Top bar"));
             // Asked each time Facebook moves the top bar, so it takes effect on the next scroll.
             tabs.addPreference(toggle(context, Settings.KEEP_TOP_BAR,

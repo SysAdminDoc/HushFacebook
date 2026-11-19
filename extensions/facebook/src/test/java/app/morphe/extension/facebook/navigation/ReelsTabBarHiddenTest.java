@@ -59,6 +59,7 @@ public class ReelsTabBarHiddenTest {
 
     @After
     public void restore() {
+        Settings.HIDE_TAB_BAR_LINE.resetToDefault();
         ReelsTabBarHidden.tabShown(bar, new FeedTab());
         PauseForTests.resume();
         Settings.HIDE_REELS_TAB_BAR.resetToDefault();
@@ -227,6 +228,72 @@ public class ReelsTabBarHiddenTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         ReelsTabBarHidden.tabShown(bar, new WatchTab());
         assertEquals("a pause left the line hidden", 1f, line.getAlpha(), 0f);
+    }
+
+    /** #521: the line along the bar goes on every tab with its own switch, and comes back with it off. */
+    @Test
+    public void theLineAlongTheBarGoesOnEveryTabWithItsOwnSwitch() {
+        View line = addLine(headerAroundTheBar());
+        line.setAlpha(0.5f);
+        assertFalse(Settings.HIDE_TAB_BAR_LINE.defaultValue);
+        assertFalse("the next tab tapped shows the change", Settings.HIDE_TAB_BAR_LINE.rebootApp);
+        assertTrue(PatchFamily.BOTTOM_TAB_BAR.switches.contains(Settings.HIDE_TAB_BAR_LINE));
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("the line went with the switch off", 0.5f, line.getAlpha(), 0f);
+
+        Settings.HIDE_TAB_BAR_LINE.save(true);
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("Home kept the line", 0f, line.getAlpha(), 0f);
+        assertEquals("Facebook's own visibility was changed", View.VISIBLE, line.getVisibility());
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        assertEquals("Reels kept the line", 0f, line.getAlpha(), 0f);
+        assertEquals("the bar went on Reels with only the line's switch on", View.VISIBLE, bar.getVisibility());
+
+        Settings.HIDE_TAB_BAR_LINE.save(false);
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("the line didn't come back as it was", 0.5f, line.getAlpha(), 0f);
+    }
+
+    /** With both switches on, the bar comes back off Reels and the line stays gone. */
+    @Test
+    public void theLineStaysGoneWhenTheReelsBarComesBack() {
+        View line = addLine(headerAroundTheBar());
+        Settings.HIDE_REELS_TAB_BAR.save(true);
+        Settings.HIDE_TAB_BAR_LINE.save(true);
+        ReelsTabBarHidden.tabShown(bar, new WatchTab());
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("Home didn't get the bar back", View.VISIBLE, bar.getVisibility());
+        assertEquals("the line came back with the bar", 0f, line.getAlpha(), 0f);
+    }
+
+    @Test
+    public void theLineStaysFacebooksWhilePausedOrBeforeTheSettingsAreReady() {
+        View line = addLine(headerAroundTheBar());
+        Settings.HIDE_TAB_BAR_LINE.save(true);
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals(0f, line.getAlpha(), 0f);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("a pause left the line hidden", 1f, line.getAlpha(), 0f);
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> {
+            ReelsTabBarHidden.tabShown(bar, new FeedTab());
+            assertEquals("the line went before the settings were ready", 1f, line.getAlpha(), 0f);
+        });
+    }
+
+    @Test
+    public void aFadedLineIsCountedOnce() {
+        addLine(headerAroundTheBar());
+        Settings.HIDE_TAB_BAR_LINE.save(true);
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        String found = null;
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.BOTTOM_TAB_BAR + ":") && line.contains(ReelsTabBarHidden.LINE_HIDDEN)) found = line;
+        }
+        assertNotNull("no faded line counted: " + HookStatus.report(), found);
+        assertTrue(found, found.contains(ReelsTabBarHidden.LINE_HIDDEN + " 1"));
     }
 
     private static String line() {
