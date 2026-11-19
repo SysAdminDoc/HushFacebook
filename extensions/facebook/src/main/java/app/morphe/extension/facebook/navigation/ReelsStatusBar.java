@@ -55,10 +55,15 @@ public final class ReelsStatusBar {
     private ReelsStatusBar() {
     }
 
-    /** Whether the switches let the reel run under the status bar: See-through bars on, the tabs at the bottom, nothing paused. */
+    /**
+     * Whether the switches let the reel run under the status bar: See-through bars on, Tab bar at the
+     * bottom on, nothing paused. The bottom switch is read itself, since it wins over the top one:
+     * with the tabs moved down Facebook still names its top bar's entry for the title and the tabs,
+     * so {@link TabBarScrollAway#tabsOnTop} reads true there (seen on the S22, 588).
+     */
     static boolean wanted() {
         return Utils.settingsReady() && !Setting.isPaused() && Settings.TRANSLUCENT_BARS.get()
-                && Settings.BOTTOM_TAB_BAR.get() && !TabBarScrollAway.tabsOnTop();
+                && Settings.BOTTOM_TAB_BAR.get();
     }
 
     /** Whether the strip behind the status bar is closed over the Reels tab now. */
@@ -77,8 +82,7 @@ public final class ReelsStatusBar {
             boolean reelsNow = reels;
             Logger.printDebug(() -> "Reels status bar: the tab bar shows " + tab.getClass().getName()
                     + (reelsNow ? ", the Reels tab" : "") + "; see-through " + Settings.TRANSLUCENT_BARS.get()
-                    + ", tabs at the bottom " + Settings.BOTTOM_TAB_BAR.get() + ", tabs on top "
-                    + TabBarScrollAway.tabsOnTop() + ", paused " + Setting.isPaused());
+                    + ", tabs at the bottom " + Settings.BOTTOM_TAB_BAR.get() + ", paused " + Setting.isPaused());
         }
         told = true;
         refresh(bar);

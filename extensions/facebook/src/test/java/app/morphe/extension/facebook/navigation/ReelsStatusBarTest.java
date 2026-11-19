@@ -129,6 +129,19 @@ public class ReelsStatusBarTest {
         assertFalse(ReelsStatusBar.closed());
     }
 
+    /**
+     * On the S22 (588) Facebook still names its top bar's entry for the title and the tabs with the
+     * tabs moved to the bottom, which reads as tabs on top, and the strip never closed.
+     */
+    @Test
+    public void tabsMovedDownCloseItWhateverFacebookNamesItsTopEntry() {
+        TabBarScrollAway.topBarFade(TabBarScrollAway.TITLE_AND_TABS, 0f);
+        assertTrue("Facebook's entry reads as tabs on top", TabBarScrollAway.tabsOnTop());
+        ReelsTabBarHidden.tabShown(tabBar, new WatchTab());
+        assertEquals(1, tabBar.asked);
+        assertEquals(0, HiddenStatusBar.topInset(content, BAR));
+    }
+
     @Test
     public void theStripStaysWithTheSwitchOffTheTabsAtTheTopOrPaused() {
         Settings.TRANSLUCENT_BARS.save(false);
