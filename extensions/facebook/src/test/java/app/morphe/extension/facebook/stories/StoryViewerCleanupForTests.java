@@ -4,8 +4,12 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import android.view.View;
+
 import java.util.Arrays;
 import java.util.List;
+
+import org.robolectric.RuntimeEnvironment;
 
 /** Story lists as the viewer's list runner hands them to {@link StoryViewerCleanup}, with a stand-in card. */
 public final class StoryViewerCleanupForTests {
@@ -33,5 +37,12 @@ public final class StoryViewerCleanupForTests {
     public static boolean dropsACreateCard() {
         List<Object> buckets = Arrays.asList(new Object(), new CreateCard(), new Object());
         return kept(buckets).size() == 2;
+    }
+
+    /** Whether a page the cube turns halfway stays square to the screen (#521). */
+    public static boolean flattensACubeTurn() {
+        View page = new View(RuntimeEnvironment.getApplication());
+        StoryViewerCleanup.cubeTurn(page, 45f);
+        return page.getRotationY() == 0f;
     }
 }

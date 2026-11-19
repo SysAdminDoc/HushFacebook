@@ -124,6 +124,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_STORY_SUBSCRIBE) return L10n.t("Hide the Subscribe button");
         if (setting == Settings.HIDE_STORY_CREATE_CARDS) return L10n.t("Hide create story cards");
         if (setting == Settings.STORY_PROGRESS_BAR) return L10n.t("Progress bar at the bottom");
+        if (setting == Settings.STORY_FLAT_SLIDE) return L10n.t("Plain slide between people");
         if (setting == Settings.HIDE_FEED_STORY_RINGS) return L10n.t("Hide rings in the feed");
         if (setting == Settings.HIDE_COMMENT_STORY_RINGS) return L10n.t("Hide rings in comments");
         if (setting == Settings.HIDE_PROFILE_STORY_RINGS) return L10n.t("Hide rings on profiles");

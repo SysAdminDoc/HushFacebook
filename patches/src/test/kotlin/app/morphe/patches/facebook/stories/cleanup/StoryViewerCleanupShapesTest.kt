@@ -8,15 +8,19 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Where the links column's render sorts a pill by its type, on each shape Facebook has shipped. */
@@ -168,5 +172,68 @@ class StoryViewerCleanupShapesTest {
         ))
         val at = code.runningFold(0) { offset, it -> offset + it.codeUnits }
         assertEquals("the loop's test doesn't land on the hook", at[13], at[4] + (code[4] as OffsetInstruction).codeOffset)
+    }
+
+    private val view = "Landroid/view/View;"
+    private val placerParameters = listOf(view, "Lfixture/Pager;", "F", "I")
+
+    /**
+     * A placer on [owner] shaped like 588's cube (#521): [distance] sets the page's camera distance,
+     * then the page in p1 turns by p3, once through a plain call and once through a range one, and
+     * tilts on its X axis. 8 registers, so p0 to p4 are v3 to v7.
+     */
+    private fun placer(owner: String = "Lfixture/Cube;", distance: Boolean = true) = MutableMethod(
+        ImmutableMethod(
+            owner, "place", placerParameters.map { ImmutableMethodParameter(it, null, null) }, "V",
+            AccessFlags.PUBLIC.value, null, null, ImmutableMethodImplementation(8, emptyList(), null, null),
+        ),
+    ).apply {
+        addInstructionsWithLabels(
+            0,
+            """
+                ${if (distance) "invoke-virtual { p1, p3 }, $view->setCameraDistance(F)V" else "nop"}
+                invoke-virtual { p1, p3 }, $view->setRotationY(F)V
+                move-object v0, p1
+                move v1, p3
+                invoke-virtual/range { v0 .. v1 }, $view->setRotationY(F)V
+                invoke-virtual { p1, p3 }, $view->setRotationX(F)V
+                return-void
+            """,
+        )
+    }
+
+    private fun positioner(type: String, method: MutableMethod) = ImmutableClassDef(
+        type, AccessFlags.PUBLIC.value, "Lfixture/Positioner;", null, null, null, emptyList(), listOf(ImmutableMethod.of(method)),
+    )
+
+    /** #521: the cube's turns are its setRotationY calls, the plain and the range one, never its other calls. */
+    @Test
+    fun `the cube's turns are its setRotationY calls`() {
+        assertEquals(listOf(1, 4), cubeTurns(placer()))
+    }
+
+    /** The cube is the positioner whose placer sets a camera distance; one that only turns isn't it, nor one under another base. */
+    @Test
+    fun `only a positioner setting the camera distance under the base placer is the cube`() {
+        val base = placer(owner = "Lfixture/Positioner;", distance = false)
+        assertTrue(isCubePositioner(positioner("Lfixture/Cube;", placer()), base))
+        assertFalse(isCubePositioner(positioner("Lfixture/Tilt;", placer(owner = "Lfixture/Tilt;", distance = false)), base))
+        assertFalse(isCubePositioner(positioner("Lfixture/Cube;", placer()), placer(owner = "Lfixture/Other;")))
+    }
+
+    /** Each turn goes to the extension in the same registers, a range call as a range call, and the rest stays. */
+    @Test
+    fun `each turn goes to the extension with the same page and angle`() {
+        val method = placer()
+        val stock = method.implementation!!.instructions.map { it.opcode }
+        cubeTurns(method).forEach { method.turnThroughExtension(it) }
+        val code = method.implementation!!.instructions.toList()
+        assertEquals(stock.mapIndexed { at, it -> if (at == 1) Opcode.INVOKE_STATIC else if (at == 4) Opcode.INVOKE_STATIC_RANGE else it },
+            code.map { it.opcode })
+        assertEquals(listOf(CUBE_TURN, CUBE_TURN), listOf(code[1], code[4]).map { (it as ReferenceInstruction).reference.toString() })
+        assertEquals(listOf(2, 4, 6), (code[1] as FiveRegisterInstruction).let { listOf(it.registerCount, it.registerC, it.registerD) })
+        assertEquals(listOf(2, 0), (code[4] as RegisterRangeInstruction).let { listOf(it.registerCount, it.startRegister) })
+        assertEquals(emptyList<Int>(), cubeTurns(method))
+        assertEquals("$view->setRotationX(F)V", (code[5] as ReferenceInstruction).reference.toString())
     }
 }

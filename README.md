@@ -87,6 +87,8 @@ Turn on **Queue reel saves** there too, and Download on a reel adds it to a queu
 
 **Seek bar on stories**, under **Stories**, gives a video story a bar along its bottom that you drag to move through it. The story waits while you drag and plays on when you let go. On a video story it sits where **Progress bar at the bottom** draws its line, and that line steps aside for it. Live stories and ads get no bar. **Fade the story seek bar** has its own switch, separate from the feed's, so the story bar only fades if you want it to. Both are off at first.
 
+**Plain slide between people**, also under **Stories**, takes the cube turn out of a swipe from one person's stories to the next, so the pages just slide across. It starts off.
+
 ### Blocking Reels
 
 Reels turn up in several places, and no one switch covers them all. Searching the settings for "block reels" brings up a map of them.

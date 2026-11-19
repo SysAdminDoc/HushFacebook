@@ -2645,6 +2645,8 @@ Takes out the cards between stories that ask you to make one, including the full
 Progress bar at the bottom	Barra de progresso embaixo
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Mostra uma barra fina na parte de baixo de um story que vai enchendo enquanto ele toca, como a do Reels.
 Seek bar on stories	Barra de progresso nos stories
+Plain slide between people	Deslizar simples entre pessoas
+Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Ao deslizar para os stories da próxima pessoa ou da anterior, eles passam de lado em vez de girar como um cubo. Vale a partir do próximo deslize.
 Fade the story seek bar	Esmaecer a barra de progresso dos stories
 Story position	Posição do story
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Mostra uma barra na parte de baixo de um story em vídeo que você arrasta para andar por ele. O story espera enquanto você arrasta. “Barra de progresso embaixo” dá lugar a ela nos stories em vídeo.

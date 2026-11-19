@@ -2759,6 +2759,8 @@ Takes out the cards between stories that ask you to make one, including the full
 Progress bar at the bottom	Thanh tiến trình ở dưới
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Hiện một thanh mỏng ở cuối tin, đầy dần khi tin phát, giống thanh trên Reels.
 Seek bar on stories	Thanh tua trên tin
+Plain slide between people	Trượt thường khi chuyển người
+Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Khi vuốt sang tin của người tiếp theo hoặc người trước, tin sẽ trượt ngang thay vì xoay như khối lập phương. Áp dụng từ lần vuốt tiếp theo.
 Fade the story seek bar	Làm mờ thanh tua của tin
 Story position	Vị trí trong tin
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Hiện một thanh ở cuối tin video để bạn kéo đi qua tin. Tin chờ trong lúc bạn kéo. Thanh tiến trình ở dưới nhường chỗ cho thanh này trên tin video.

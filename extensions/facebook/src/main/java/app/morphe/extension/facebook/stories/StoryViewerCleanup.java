@@ -4,6 +4,8 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import android.view.View;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,6 +32,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * cards switch keeps out the "Add to story" card Facebook puts between other people's stories, the
  * plain one and the ones built from the gallery (#439), and the full screen "continue the story"
  * card built from recent gallery photos, which the viewer's finished list loses on its way out (#521).
+ *
+ * <p>The flat slide switch keeps the cube Facebook turns between people's stories square to the
+ * screen, so the pages slide across instead (#521).
  *
  * <p>Off, paused, settings that aren't ready yet or a failure in here, and Facebook draws its own.
  */
@@ -220,5 +225,26 @@ public final class StoryViewerCleanup {
      */
     public static boolean isCreateCard(Object bucket) {
         return false;
+    }
+
+    /** What the hook binds as, and the name a failure in it is reported under (#521). */
+    static final String CUBE_TURN = "story cube turn";
+
+    /**
+     * Injection point, for each turn the stories pager's cube positioner gives a page as you swipe
+     * between people (#521): the patch hands it every setRotationY that positioner makes. With the
+     * flat slide switch on the page stays square to the screen. Read on each frame of a swipe, so
+     * nothing is counted here.
+     */
+    public static void cubeTurn(View page, float degrees) {
+        float turn = degrees;
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, CUBE_TURN);
+            if (Utils.settingsReady() && Settings.STORY_FLAT_SLIDE.get()) turn = 0f;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, CUBE_TURN, failure);
+        }
+        page.setRotationY(turn);
     }
 }

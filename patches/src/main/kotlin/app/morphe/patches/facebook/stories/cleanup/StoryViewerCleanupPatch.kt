@@ -8,6 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
@@ -24,6 +25,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.misc.upsells.definesImmutableCopy
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -103,6 +105,16 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   goes through the extension, which drops each bucket of the card's class, and back into an
  *   ImmutableList. Its own Kotlin null check on the list (index 76 in 588) runs right after, and the
  *   finally handler round the trace section never reads it.
+ * - The cube turn between people's stories (#521, 588 arm64 LX/0BAx;, v7 LX/0BB0;) is one of the
+ *   page positioners the stories pager (com.instagram...ReboundViewPager, a kept name) places pages
+ *   through. Each extends a base (LX/0Com;, v7 LX/0Cop;) whose placer, the one method opening the
+ *   trace section "BaseSimpleItemPositioner.positionItemAtOffset", takes the page, the pager, the
+ *   page's offset and its position. The viewer (LX/0B7S;->A0B) picks the cube for two of a server
+ *   setting's values, a plain slide or a 2D tilt for the others. The cube's own placer sets the
+ *   page's camera distance, slides it by the pager's width times its offset, turns it by 90 degrees
+ *   times the offset round its left or right edge (two small helpers calling setRotationY) and puts
+ *   it back square once it's settled. Each setRotationY in the cube goes through the extension in the
+ *   same registers, so with the switch on a page keeps the slide and loses the turn.
  */
 
 internal const val STORY_VIEWER_CLEANUP_PATCH = "Clean up the story viewer"
@@ -160,7 +172,8 @@ private const val SUBSCRIBE_REACH = 80
 
 /**
  * Takes the song and effect credits off the line under the poster's name on a story, and the
- * suggested replies off the bottom, and can draw a progress bar along the bottom (#380).
+ * suggested replies off the bottom, and can draw a progress bar along the bottom (#380) and slide
+ * from one person's stories to the next without the cube turn (#521).
  *
  * In the default selection with every switch off, so nothing changes until one is turned on.
  */
@@ -169,8 +182,9 @@ val storyViewerCleanupPatch = bytecodePatch(
     name = "Clean up the story viewer",
     description = "Switches that take the song and effect credits and the Subscribe button off a story, the " +
         "suggested replies off the bottom while the reply box stays, and the cards between stories that ask you to " +
-        "make your own out of the viewer, plus one that adds a thin progress bar along the bottom like the one on " +
-        "Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
+        "make your own out of the viewer. Two more add a thin progress bar along the bottom like the one on Reels " +
+        "and swap the cube turn between people's stories for a plain slide. All start off. Turn them on in " +
+        "Hushfacebook settings > Stories.",
 ) {
     category("Stories")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -185,6 +199,7 @@ val storyViewerCleanupPatch = bytecodePatch(
         hideCreateStoryCards()
         dropCreateCardsFromViewerList()
         followStoryProgress()
+        flattenStoryCube()
         enableStatus("storyViewerCleanup")
     }
 }
@@ -609,4 +624,85 @@ internal fun BytecodePatchContext.dropCreateCardsFromViewerList() {
         it.name == runner.name && it.returnType == runner.returnType &&
             it.parameterTypes.map(CharSequence::toString) == runner.parameterTypes.map(CharSequence::toString)
     }.dropCreateCardsAt(done)
+}
+
+/** The trace section the pager's base page positioner opens as it places a page: only that method names it (#521). */
+internal const val ITEM_POSITIONER = "BaseSimpleItemPositioner.positionItemAtOffset"
+
+internal const val CUBE_TURN = "$STORY_VIEWER_CLEANUP->cubeTurn(Landroid/view/View;F)V"
+
+private const val VIEW = "Landroid/view/View;"
+
+/**
+ * The base page positioner's placer in [classes]: the one void method taking a page, its pager, its
+ * offset and its position that opens [ITEM_POSITIONER]. Each positioner the pager can use overrides it.
+ */
+internal fun pagePlacer(classes: Iterable<ClassDef>): Method? = classes.flatMap { it.methods }.filter {
+    val types = it.parameterTypes.map(CharSequence::toString)
+    it.returnType == "V" && it.implementation != null && types.size == 4 && types[0] == VIEW &&
+        types[2] == "F" && types[3] == "I" && holdsString(it, ITEM_POSITIONER)
+}.singleOrNull()
+
+/** Whether [instruction] calls `View.[name](float)`. */
+private fun callsViewFloat(instruction: Instruction, name: String): Boolean {
+    if (instruction.opcode != Opcode.INVOKE_VIRTUAL && instruction.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return false
+    val called = (instruction as ReferenceInstruction).reference as? MethodReference ?: return false
+    return called.definingClass == VIEW && called.name == name && called.returnType == "V" &&
+        called.parameterTypes.map(CharSequence::toString) == listOf("F")
+}
+
+/** Where [method] turns a page on its Y axis: the index of every `View.setRotationY` it calls. */
+internal fun cubeTurns(method: Method): List<Int> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return code.indices.filter { callsViewFloat(code[it], "setRotationY") }
+}
+
+/**
+ * Whether [classDef] is the cube among the positioners overriding [placer]: its own placer sets the
+ * page's camera distance, which only a turn in 3D needs, and it turns pages on the Y axis.
+ */
+internal fun isCubePositioner(classDef: ClassDef, placer: Method): Boolean {
+    if (classDef.superclass != placer.definingClass) return false
+    val params = placer.parameterTypes.map(CharSequence::toString)
+    val places = classDef.methods.any { method ->
+        method.name == placer.name && method.parameterTypes.map(CharSequence::toString) == params &&
+            method.implementation?.instructions?.any { callsViewFloat(it, "setCameraDistance") } == true
+    }
+    return places && classDef.methods.any { cubeTurns(it).isNotEmpty() }
+}
+
+/** Sends the `View.setRotationY` at [index] to [CUBE_TURN] instead, with the same page and angle registers. */
+internal fun MutableMethod.turnThroughExtension(index: Int) {
+    val call = when (val turn = getInstruction(index)) {
+        is RegisterRangeInstruction -> {
+            if (turn.registerCount != 2) refuse("the story cube's turn at $index doesn't name a page and an angle")
+            "invoke-static/range { v${turn.startRegister} .. v${turn.startRegister + 1} }, $CUBE_TURN"
+        }
+        is FiveRegisterInstruction -> {
+            if (turn.registerCount != 2) refuse("the story cube's turn at $index doesn't name a page and an angle")
+            "invoke-static { v${turn.registerC}, v${turn.registerD} }, $CUBE_TURN"
+        }
+        else -> refuse("the story cube's turn at $index isn't a call")
+    }
+    replaceInstruction(index, call)
+}
+
+/**
+ * Hands each turn the stories pager's cube positioner gives a page to the extension (#521), which
+ * keeps it square to the screen with the flat slide switch on. How far a page slides, its pivot and
+ * when it shows stay Facebook's, so a page that doesn't turn just slides.
+ */
+internal fun BytecodePatchContext.flattenStoryCube() {
+    val holders = classDefByStrings(ITEM_POSITIONER, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+    val placer = pagePlacer(holders) ?: refuse("expected one page positioner opening $ITEM_POSITIONER")
+    val found = mutableSetOf<String>()
+    classDefForEachReferencing(types = listOf(placer.definingClass)) { classDef ->
+        if (isCubePositioner(classDef, placer)) found += classDef.type
+    }
+    val cube = found.singleOrNull()
+        ?: refuse("expected one positioner under ${placer.definingClass} turning its pages like a cube, found ${found.size}")
+    mutableClassDefBy(cube).methods.forEach { method ->
+        cubeTurns(method).forEach { method.turnThroughExtension(it) }
+    }
 }

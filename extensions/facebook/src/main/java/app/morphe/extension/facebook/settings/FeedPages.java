@@ -910,6 +910,9 @@ final class FeedPages {
                                 + "Applies the next time you open stories.")));
                 stories.addPreference(toggle(context, Settings.STORY_PROGRESS_BAR,
                         L10n.t("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.")));
+                stories.addPreference(toggle(context, Settings.STORY_FLAT_SLIDE,
+                        L10n.t("Swiping to the next or previous person's stories slides them across instead of "
+                                + "turning them like a cube. Applies from your next swipe.")));
             }
             if (build.contains(PatchFamily.STORY_RINGS)) {
                 // Read each time a picture draws, so a change shows on what's drawn after it.

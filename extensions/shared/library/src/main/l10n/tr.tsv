@@ -2759,6 +2759,8 @@ Takes out the cards between stories that ask you to make one, including the full
 Progress bar at the bottom	Altta ilerleme çubuğu
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Bir hikayenin altında, oynatıldıkça dolan ince bir çubuk gösterir, Reels'teki gibi.
 Seek bar on stories	Hikayelerde sarma çubuğu
+Plain slide between people	Kişiler arasında düz kaydırma
+Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Sonraki ya da önceki kişinin hikayelerine kaydırdığında hikayeler küp gibi dönmek yerine yana kayar. Bir sonraki kaydırmandan itibaren uygulanır.
 Fade the story seek bar	Hikaye sarma çubuğunu soldur
 Story position	Hikaye konumu
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Bir video hikayenin altında, içinde ilerlemek için sürükleyebileceğiniz bir çubuk gösterir. Siz sürüklerken hikaye bekler. “Altta ilerleme çubuğu” video hikayelerde ona yer açar.

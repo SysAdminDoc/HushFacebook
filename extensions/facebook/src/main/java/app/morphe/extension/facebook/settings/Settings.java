@@ -554,6 +554,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_story_progress_bar", FALSE);
 
     /**
+     * The cube Facebook turns between people's stories stays flat, so their pages slide across ({@link
+     * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #521). Starts off. Read on each frame of a swipe.
+     */
+    public static final BooleanSetting STORY_FLAT_SLIDE =
+            new BooleanSetting("hushfacebook_story_flat_slide", FALSE);
+
+    /**
      * The story and LIVE rings leave the profile pictures at the top of posts, and a tap on the picture
      * opens the profile ({@link app.morphe.extension.facebook.stories.StoryRings}, #397). Starts off.
      * Read as each post's header draws.

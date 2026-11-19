@@ -2759,6 +2759,8 @@ Takes out the cards between stories that ask you to make one, including the full
 Progress bar at the bottom	Fortschrittsbalken unten
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Zeigt unten in einer Story einen dünnen Balken, der sich beim Abspielen füllt, wie bei Reels.
 Seek bar on stories	Suchleiste bei Storys
+Plain slide between people	Flacher Wechsel zwischen Personen
+Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Beim Wischen zu den Storys der nächsten oder vorherigen Person werden sie seitlich verschoben, statt sich wie ein Würfel zu drehen. Gilt ab dem nächsten Wischen.
 Fade the story seek bar	Story-Suchleiste verblassen lassen
 Story position	Position in der Story
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Zeigt unten in einer Video-Story eine Leiste, die du ziehst, um dich durch die Story zu bewegen. Die Story wartet, während du ziehst. „Fortschrittsbalken unten“ macht bei Video-Storys Platz dafür.

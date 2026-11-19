@@ -142,6 +142,7 @@ import app.morphe.extension.facebook.stories.StoryRings;
 import app.morphe.extension.facebook.stories.StoryTapsForTests;
 import app.morphe.extension.facebook.stories.StoryUpload;
 import app.morphe.extension.facebook.stories.StoryViewerCleanup;
+import app.morphe.extension.facebook.stories.StoryViewerCleanupForTests;
 import app.morphe.extension.facebook.stories.SuggestedStoriesForTests;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.PauseForTests;
@@ -391,6 +392,8 @@ public class ColdStartHooksTest {
         assertFalse("a story's suggested replies drawn before the context drew nothing",
                 StoryViewerCleanup.hideReplySuggestions());
         assertFalse("a story played before the context got a progress bar", StoryProgressBarForTests.drawsABar());
+        assertFalse("a swipe between people before the context kept the pages flat",
+                StoryViewerCleanupForTests.flattensACubeTurn());
         assertTrue("a post header drawn before the context lost its story ring",
                 StoryRings.feedRing(1));
         assertFalse("a comment drawn before the context lost its story ring",

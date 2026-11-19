@@ -227,6 +227,7 @@ public final class SettingsBackup {
             Settings.HIDE_STORY_SUBSCRIBE,
             Settings.HIDE_STORY_CREATE_CARDS,
             Settings.STORY_PROGRESS_BAR,
+            Settings.STORY_FLAT_SLIDE,
             Settings.HIDE_FEED_STORY_RINGS,
             Settings.HIDE_COMMENT_STORY_RINGS,
             Settings.HIDE_PROFILE_STORY_RINGS,

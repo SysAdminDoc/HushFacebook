@@ -10,6 +10,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.view.View;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -20,6 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -51,6 +54,7 @@ public class StoryViewerCleanupTest {
         Settings.HIDE_STORY_REPLY_SUGGESTIONS.resetToDefault();
         Settings.HIDE_STORY_SUBSCRIBE.resetToDefault();
         Settings.HIDE_STORY_CREATE_CARDS.resetToDefault();
+        Settings.STORY_FLAT_SLIDE.resetToDefault();
         HookStatus.clear();
     }
 
@@ -203,6 +207,36 @@ public class StoryViewerCleanupTest {
         assertEquals(Collections.singletonList(
                         "a working 'story create card list' hook (it threw java.lang.IllegalStateException)"),
                 HookStatus.missing(FamilyNames.STORY_VIEWER_CLEANUP));
+    }
+
+    /**
+     * #521: with Plain slide between people on, the cube Facebook turns between people's stories keeps
+     * each page square to the screen, so the pages only slide. Off, paused or before the settings are
+     * ready, a page turns as far as Facebook asks.
+     */
+    @Test
+    public void theFlatSlideSwitchStartsOffAndKeepsThePagesFromTurning() {
+        assertFalse(Settings.STORY_FLAT_SLIDE.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.STORY_FLAT_SLIDE));
+        View page = new View(RuntimeEnvironment.getApplication());
+        StoryViewerCleanup.cubeTurn(page, 45f);
+        assertEquals("off, the page didn't turn", 45f, page.getRotationY(), 0f);
+
+        Settings.STORY_FLAT_SLIDE.save(true);
+        StoryViewerCleanup.cubeTurn(page, -30f);
+        assertEquals("on, the page still turned", 0f, page.getRotationY(), 0f);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        StoryViewerCleanup.cubeTurn(page, 20f);
+        assertEquals("paused, the page didn't turn", 20f, page.getRotationY(), 0f);
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> {
+            StoryViewerCleanup.cubeTurn(page, 10f);
+            assertEquals("before the settings were ready, the page didn't turn", 10f, page.getRotationY(), 0f);
+        });
+        String line = statusLine();
+        assertTrue(line, line != null && line.startsWith(FamilyNames.STORY_VIEWER_CLEANUP + ": invoked 4, 1 found, 0 missing"));
+        assertFalse("a turn was counted: " + line, line.contains("Counted"));
+        assertFalse("it hid the credits", StoryViewerCleanup.hideCredits());
     }
 
     @Test
