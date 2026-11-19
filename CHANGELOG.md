@@ -39,6 +39,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * A long press on a reel's Download, Cast or Clean mode button no longer opens an empty gray box. (#518)
 * With `Hide the tab bar on the Reels tab` on, a reel's time, caption and seek bar sit above the gesture bar again, so the seek bar can be tapped and held. (#516)
 * With `Tap to play` on, video stories play by themselves again, the way Facebook plays them. Before, the story after the first one, or one you swiped to, could sit frozen at the start, since a tap on a story moves on instead of playing it. Stories that wait for you are what `Video stories wait for a tap` is for. (#521)
+* A Threads post in your feed opens that post in Threads instead of the Threads home feed, also when Facebook sends the post in Threads' list form. The 0.23.0 fix only read a single post number, so those cards still landed on the feed. (#385)
 
 ## 0.23.0 (2026-11-17)
 

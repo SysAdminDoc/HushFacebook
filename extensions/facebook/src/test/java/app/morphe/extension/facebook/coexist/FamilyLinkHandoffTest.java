@@ -155,6 +155,31 @@ public class FamilyLinkHandoffTest {
     }
 
     @Test
+    public void aThreadsCardsBracketedPostListOpensAsThePostItself() {
+        // Threads writes injected_media_ids as a bracketed list, [id] or [id1,id2]: its own parser drops
+        // the brackets, splits on the comma and takes the first. A bare-number check let that card
+        // through untouched, so Threads still opened its home feed after the first fix (#385).
+        List<?> targets = Collections.singletonList(THREADS_LINKS);
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=[3714360682692465464]"), targets).getData());
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=%5B3714360682692465464%2C3714360682692465465%5D"
+                        + "&injected_user_ids=%5B314216%5D"), targets).getData());
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=[3714360682692465464, 3714360682692465465]"),
+                targets).getData());
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464_314216"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=[3714360682692465464_314216]"), targets).getData());
+        for (String feed : new String[] {
+                "barcelona://mainfeed?injected_media_ids=[]",
+                "barcelona://mainfeed?injected_media_ids=[DOMD1yDj9M4]",
+                "barcelona://mainfeed?injected_media_ids=[,3714360682692465464]",
+        }) {
+            assertEquals(feed, Uri.parse(feed), FamilyLinkHandoff.publicLink(threadsCard(feed), targets).getData());
+        }
+    }
+
+    @Test
     public void aThreadsLinkThatIsNoPostStaysAWebLink() {
         List<?> targets = Collections.singletonList(THREADS_LINKS);
         for (String link : new String[] {

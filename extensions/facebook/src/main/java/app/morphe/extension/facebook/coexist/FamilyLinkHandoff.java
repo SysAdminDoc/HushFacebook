@@ -33,8 +33,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Threads opens a post's web address, and its own {@code barcelona://mainfeed?injected_media_ids=}
  * link, as its home feed with the post on top. Only its {@code barcelona://media?id=} link opens the
- * post itself, so either of those goes over as that link: the first injected id, or the web address's
- * short code read back into the post's number.
+ * post itself, so either of those goes over as that link: the first injected id (Threads writes them as
+ * a bracketed list, {@code [id1,id2]}), or the web address's short code read back into the post's number.
  *
  * <p>The new intent holds only the action, the address and the browsable category: no extras, no
  * clip data, no permissions the dropped intent may have carried. A family intent can carry sign-in
@@ -138,8 +138,13 @@ public final class FamilyLinkHandoff {
             if (!"mainfeed".equalsIgnoreCase(link.getHost())) return null;
             String injected = link.getQueryParameter("injected_media_ids");
             if (injected == null) return null;
-            int comma = injected.indexOf(',');
-            String first = comma < 0 ? injected : injected.substring(0, comma);
+            // Threads writes the ids as a bracketed list, [id] or [id1,id2], and reads them the same
+            // way: brackets off, split on the comma, the first one (#385). A bare id still works.
+            String list = injected.trim();
+            if (list.startsWith("[")) list = list.substring(1);
+            if (list.endsWith("]")) list = list.substring(0, list.length() - 1);
+            int comma = list.indexOf(',');
+            String first = (comma < 0 ? list : list.substring(0, comma)).trim();
             if (MEDIA_ID.matcher(first).matches()) id = first;
         } else if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
             List<String> path = link.getPathSegments();
