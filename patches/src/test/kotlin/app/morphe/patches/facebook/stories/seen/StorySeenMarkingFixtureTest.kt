@@ -37,8 +37,8 @@ private const val NAVIGATE_TO_CARD = "StoryViewerNavigationDelegate.navigateToCa
 
 /**
  * What marking a watched bucket on the phone hooks and calls (#61), on every declared build: the
- * seen helper's per-card method hands its bucket, card, helper and peek flag to the extension as a
- * range; there's one way of publishing the bucket's flag; StoryBucket's members are there;
+ * seen helper's per-card method hands its bucket, card, helper and the helper's launch source to the
+ * extension as a range; there's one way of publishing the bucket's flag; StoryBucket's members are there;
  * RegularStoryBucket's one straight constructor takes the bucket hook in front of its return; and
  * every publishing call is public in a public class, so the extension in another package can make
  * it. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
@@ -73,26 +73,33 @@ class StorySeenMarkingFixtureTest {
             method.implementation?.instructions?.toList().orEmpty().filter(::isStringTableCall).mapNotNull { it.call?.definingClass }
         }.toSet()
         val tables = FixtureDex.classes(bundle, tableOwners)
-        val helper = seenHelper(callers, sender) { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val helper = seenHelper(callers, sender, resolve)
+        val launch = launchSource(helper, resolve)
+        assertTrue("$name: the launch config ${launch.config} isn't the helper's", launch.config.startsWith("${helper.type}->"))
+        assertTrue("$name: the launch config ${launch.config} isn't a $LAUNCH_CONFIG", launch.config.endsWith(":$LAUNCH_CONFIG"))
+        assertTrue("$name: the launch source ${launch.source} isn't the config's", launch.source.startsWith("$LAUNCH_CONFIG->"))
+        assertTrue("$name: the launch source ${launch.source} isn't a String", launch.source.endsWith(":Ljava/lang/String;"))
         val card = cardSeen(helper)
-        val first = card.parameterRegisterNumber(1)
-        assertEquals("$name: the bucket, card, helper and peek flag aren't side by side", first + 3, card.parameterRegisterNumber(4))
 
         val code = card.implementation!!.instructions.toList()
         val patched = MutableMethod(card).apply {
             reportCard()
-            hearViewedCards()
+            hearViewedCards(launch)
         }
         val after = patched.implementation!!.instructions.toList()
-        assertEquals("$name: instructions added to the per-card method", code.size + 2, after.size)
-        val viewed = after[0]
+        assertEquals("$name: instructions added to the per-card method", code.size + 8, after.size)
+        assertEquals("$name: the helper's launch config read", Opcode.IGET_OBJECT, after[3].opcode)
+        assertEquals("$name: the launch config's null check", Opcode.IF_EQZ, after[4].opcode)
+        assertEquals("$name: the launch source read", Opcode.IGET_OBJECT, after[5].opcode)
+        val viewed = after[6]
         assertEquals("$name: the viewed hook's form", Opcode.INVOKE_STATIC_RANGE, viewed.opcode)
         assertEquals("$name: the viewed hook", VIEWED, viewed.call!!.smali())
-        assertEquals("$name: the viewed hook's first register", first, (viewed as RegisterRangeInstruction).startRegister)
+        assertEquals("$name: the viewed hook's first register", 0, (viewed as RegisterRangeInstruction).startRegister)
         assertEquals("$name: the viewed hook's registers", 4, viewed.registerCount)
-        assertEquals("$name: the card hook stays", ON_CARD, after[1].call!!.smali())
+        assertEquals("$name: the card hook stays", ON_CARD, after[7].call!!.smali())
         for (index in code.indices) {
-            assertEquals("$name: per-card instruction $index changed", code[index].opcode, after[index + 2].opcode)
+            assertEquals("$name: per-card instruction $index changed", code[index].opcode, after[index + 8].opcode)
         }
     }
 
@@ -320,7 +327,7 @@ class StorySeenMarkingFixtureTest {
         }
         val obj = "Ljava/lang/Object;"
         val string = "Ljava/lang/String;"
-        assertTrue("StorySeen has no viewed hook", has("viewed", "V", obj, obj, obj, "Z"))
+        assertTrue("StorySeen has no viewed hook", has("viewed", "V", obj, obj, obj, obj))
         assertTrue("StorySeen has no bucketMade hook", has("bucketMade", "V", obj))
         assertTrue("StorySeen has no watchedHere hook", has("watchedHere", "Z", obj))
         assertTrue("StorySeen has no readsWatched hook", has("readsWatched", "Z", obj))

@@ -17,6 +17,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
@@ -127,10 +128,55 @@ class StorySeenMarkingShapesTest {
         assertNull(seenPublisher(onSeen(withConsistency = false)))
     }
 
-    private fun queue() = method(
-        helperType, "A00", listOf(FB_USER_SESSION, STORY_BUCKET, STORY_CARD, helperType, "Z"), "V", 8, listOf(returnVoid),
+    private fun queue(registers: Int = 9) = method(
+        helperType, "A00", listOf(FB_USER_SESSION, STORY_BUCKET, STORY_CARD, helperType, "Z"), "V", registers, listOf(returnVoid),
         flags = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
     )
+
+    private val configField = ImmutableFieldReference(helperType, "A0A", LAUNCH_CONFIG)
+    private val stringEquals = ImmutableMethodReference(string, "equals", listOf("Ljava/lang/Object;"), "Z")
+
+    /**
+     * The seen helper's flush (588 A02): its launch config, the config's [source] String (none when
+     * null), then "story_preview" to compare it with.
+     */
+    private fun flush(source: String? = "A0h", name: String = "A02") = method(
+        helperType, name, emptyList(), "V", 3,
+        listOfNotNull(
+            ImmutableInstruction22c(Opcode.IGET_OBJECT, 0, 2, configField),
+            source?.let { ImmutableInstruction22c(Opcode.IGET_OBJECT, 0, 0, ImmutableFieldReference(LAUNCH_CONFIG, it, string)) },
+            text(1, SEEN_HELPER_LITERAL),
+            invoke(Opcode.INVOKE_VIRTUAL, stringEquals, 1, 0),
+            returnVoid,
+        ),
+    )
+
+    /** The seen helper with [configs] launch config fields and [methods]. */
+    private fun seenHelper(vararg methods: Method, configs: Int = 1): ClassDef = ImmutableClassDef(
+        helperType, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null,
+        List(configs) { ImmutableField(helperType, "A0${'A' + it}", LAUNCH_CONFIG, AccessFlags.PUBLIC.value, null, null, null) },
+        methods.toList(),
+    )
+
+    private val launch = LaunchSource("$helperType->A0A:$LAUNCH_CONFIG", "$LAUNCH_CONFIG->A0h:$string")
+
+    @Test
+    fun `the launch source is the config String the flush reads right before naming story_preview`() {
+        val found = launchSource(seenHelper(flush(), queue()))
+        assertEquals(launch.config, found.config)
+        assertEquals(launch.source, found.source)
+    }
+
+    @Test
+    fun `a helper whose launch source isn't clear gives none`() {
+        // Negative controls: no config field, two of them, a literal with no config String read
+        // before it, two places naming the literal after different Strings, and no literal at all.
+        assertThrows(PatchException::class.java) { launchSource(seenHelper(flush(), configs = 0)) }
+        assertThrows(PatchException::class.java) { launchSource(seenHelper(flush(), configs = 2)) }
+        assertThrows(PatchException::class.java) { launchSource(seenHelper(flush(source = null))) }
+        assertThrows(PatchException::class.java) { launchSource(seenHelper(flush(), flush(source = "A0g", name = "A03"))) }
+        assertThrows(PatchException::class.java) { launchSource(seenHelper(queue())) }
+    }
 
     private val bucketType = STORY_BUCKET
     private val regularType = REGULAR_BUCKET
@@ -221,20 +267,39 @@ class StorySeenMarkingShapesTest {
     private fun MutableMethod.at(index: Int) = implementation!!.instructions.elementAt(index)
 
     @Test
-    fun `the queue hands its bucket, card, helper and peek flag to the extension first thing`() {
+    fun `the queue hands its bucket, card, helper and the helper's launch source to the extension first thing`() {
         val queue = MutableMethod(queue())
-        queue.hearViewedCards()
-        val hook = queue.at(0)
+        queue.hearViewedCards(launch)
+        val code = queue.implementation!!.instructions.toList()
+        assertEquals(8, code.size)
+        // Nine registers, five parameters: p1 to p3, the bucket, the card and the helper, are v5 to v7.
+        listOf(5, 6, 7).forEachIndexed { local, parameter ->
+            assertEquals(Opcode.MOVE_OBJECT_FROM16, code[local].opcode)
+            assertEquals(local, (code[local] as TwoRegisterInstruction).registerA)
+            assertEquals(parameter, (code[local] as TwoRegisterInstruction).registerB)
+        }
+        assertEquals(Opcode.IGET_OBJECT, code[3].opcode)
+        assertEquals("the helper's launch config", "A0A", ((code[3] as ReferenceInstruction).reference as FieldReference).name)
+        assertEquals("read off the helper", 2, (code[3] as TwoRegisterInstruction).registerB)
+        assertEquals(Opcode.IF_EQZ, code[4].opcode)
+        assertEquals(3, (code[4] as OneRegisterInstruction).registerA)
+        assertEquals("no config hands the call null", 6, (code[4] as BuilderOffsetInstruction).target.location.index)
+        assertEquals("the config's source", "A0h", ((code[5] as ReferenceInstruction).reference as FieldReference).name)
+        val hook = code[6]
         assertEquals(Opcode.INVOKE_STATIC_RANGE, hook.opcode)
         val reference = (hook as ReferenceInstruction).reference as MethodReference
         assertEquals("Lapp/morphe/extension/facebook/stories/StorySeen;", reference.definingClass)
         assertEquals("viewed", reference.name)
-        assertEquals(listOf("Ljava/lang/Object;", "Ljava/lang/Object;", "Ljava/lang/Object;", "Z"),
+        assertEquals("no boolean goes in as the peek (#165)", List(4) { "Ljava/lang/Object;" },
             reference.parameterTypes.map { it.toString() })
-        // Eight registers, five parameters: p1 to p4, the bucket to the peek flag, are v4 to v7.
-        assertEquals(4, (hook as RegisterRangeInstruction).startRegister)
+        assertEquals(0, (hook as RegisterRangeInstruction).startRegister)
         assertEquals(4, hook.registerCount)
-        assertEquals(Opcode.RETURN_VOID, queue.at(1).opcode)
+        assertEquals(Opcode.RETURN_VOID, code[7].opcode)
+
+        // Negative control: a queue with three locals isn't changed.
+        val tight = MutableMethod(queue(registers = 8))
+        assertThrows(PatchException::class.java) { tight.hearViewedCards(launch) }
+        assertEquals(1, tight.implementation!!.instructions.count())
     }
 
     /** RegularStoryBucket's constructor: the super call, a field set, and [extra] before its return. */

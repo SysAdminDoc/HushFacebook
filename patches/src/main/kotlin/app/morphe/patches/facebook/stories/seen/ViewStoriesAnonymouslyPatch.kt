@@ -134,6 +134,7 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         val tables = { call: MethodReference -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
         val helper = seenHelper(callers, sender, tables)
         val card = cardSeen(helper)
+        val launch = launchSource(helper, tables)
         val storyCard = classDefByOrNull(STORY_CARD) ?: throw PatchException("$PATCH: this Facebook build has no $STORY_CARD")
         if (storyCard.methods.none { "${it.definingClass}->${it.name}()${it.returnType}" == CARD_ID && it.parameterTypes.isEmpty() }) {
             throw PatchException("$PATCH: $STORY_CARD has no getId()")
@@ -199,7 +200,7 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         mutableClassDefBy(sender.definingClass).methods.single { it.sameAs(sender) }.filterViews()
         mutableClassDefBy(card.definingClass).methods.single { it.sameAs(card) }.apply {
             reportCard()
-            hearViewedCards()
+            hearViewedCards(launch)
         }
         mutableClassDefBy(activationOwner.type).methods.single { it.sameAs(activation) }.reportActive(store)
         mutableClassDefBy(later.listener.type).methods.single { it.sameAs(later.constructor) }.reportCardLater()

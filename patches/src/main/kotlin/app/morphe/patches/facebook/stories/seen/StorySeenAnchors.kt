@@ -83,7 +83,8 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * runs for each card about to be counted as viewed, and reads the card's id through
  * StoryCard.getId(), a kept method. The hook goes first in it with the session, the bucket and the
  * card, so the button knows the card on screen. The extension's two stubs are filled to call the
- * sender and StoryCard.getId().
+ * sender and StoryCard.getId(). That boolean was taken as the peek flag until 588, where it says
+ * whether the card counts again; the peek comes from the helper's launch config ([launchSource], #165).
  *
  * The eye must follow the card on screen, which the helper doesn't promise: its caller skips the
  * counted method for some bucket types and some cards, and a late callback can count a card the
@@ -264,6 +265,48 @@ internal fun cardSeen(helper: ClassDef): Method {
     return methods.singleOrNull() ?: refuse("expected one static per-card method in ${helper.type}, found ${methods.size}")
 }
 
+/** The kept class holding where a story viewer was opened from. */
+internal const val LAUNCH_CONFIG = "Lcom/facebook/stories/model/StoryBucketLaunchConfig;"
+
+/**
+ * Where the seen helper keeps the place its viewer was opened from: its one [LAUNCH_CONFIG] field
+ * ([config]) and that config's String field ([source]) the flush compares with
+ * [SEEN_HELPER_LITERAL] to send is_story_peek_view. Both as smali field references.
+ */
+internal class LaunchSource(val config: String, val source: String)
+
+/**
+ * The seen helper's launch source (#165). The per-card method's boolean isn't the peek flag: on 588
+ * its caller passes whether the card counts again (a card flag and a server switch), and with it
+ * set the hook took every card as a peek and marked nothing. The flush reads the peek from the
+ * helper's launch config instead, the String field it reads last before naming
+ * [SEEN_HELPER_LITERAL] (588 arm64 LX/0BII;->A02 and armeabi-v7a LX/0BIL;->A02, both A0A then
+ * A0h). Every place the helper names the literal has to read the same field.
+ */
+internal fun launchSource(helper: ClassDef, resolve: (MethodReference) -> Method? = { null }): LaunchSource {
+    val configs = helper.fields.filter { it.type == LAUNCH_CONFIG && !AccessFlags.STATIC.isSet(it.accessFlags) }
+    val config = configs.singleOrNull() ?: refuse("expected one $LAUNCH_CONFIG field in ${helper.type}, found ${configs.size}")
+    val sources = helper.methods.flatMap { method ->
+        val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
+        code.indices.filter { code[it].string() == SEEN_HELPER_LITERAL || tableStringAt(code, it, resolve) == SEEN_HELPER_LITERAL }
+            .map { at ->
+                code.subList(0, at).lastOrNull { it.opcode == Opcode.IGET_OBJECT && it.launchField() != null }?.launchField()
+            }
+    }
+    val found = sources.filterNotNull().distinct()
+    if (sources.isEmpty() || sources.any { it == null } || found.size != 1) {
+        refuse("expected every \"$SEEN_HELPER_LITERAL\" in ${helper.type} to follow one $LAUNCH_CONFIG String read, found $found")
+    }
+    return LaunchSource("${helper.type}->${config.name}:$LAUNCH_CONFIG", found.single())
+}
+
+/** The [LAUNCH_CONFIG] String field this instruction reads, as smali, or null. */
+private fun Instruction.launchField(): String? {
+    val field = (this as? ReferenceInstruction)?.reference as? FieldReference ?: return null
+    if (field.definingClass != LAUNCH_CONFIG || field.type != STRING) return null
+    return "${field.definingClass}->${field.name}:${field.type}"
+}
+
 /**
  * First thing in the sender: hand the extension everything the sender was handed, and send the
  * set of card ids it answers in the set's place, or return without sending on null. When the
@@ -372,7 +415,7 @@ internal fun MutableMethod.fillCardId() {
  * read off Facebook's own code in the order it makes them.
  *
  * The seen helper's per-card method ([cardSeen]) takes the session, the bucket, the card, the helper
- * and the peek flag, and that's where the patch hears that a bucket's newest card was watched.
+ * and a flag, and that's where the patch hears that a bucket's newest card was watched.
  * Facebook's story bucket, RegularStoryBucket, keeps its name, and so do StoryBucket and StoryCard
  * with getId(). The bucket's cards come from StoryBucket's one public method answering an
  * ImmutableList, its session from its one FbUserSession field, and whether it has a story not
@@ -397,7 +440,7 @@ private const val OBJECT = "Ljava/lang/Object;"
 internal const val BUCKET_TYPE = "DirectMessageThreadBucket"
 internal const val BUCKET_SEEN_FIELD = "is_bucket_seen_by_viewer"
 
-internal const val VIEWED = "$STORY_SEEN->viewed($OBJECT$OBJECT${OBJECT}Z)V"
+internal const val VIEWED = "$STORY_SEEN->viewed($OBJECT$OBJECT$OBJECT$OBJECT)V"
 internal const val BUCKET_MADE = "$STORY_SEEN->bucketMade($OBJECT)V"
 
 /** The calls Facebook makes to publish a bucket's seen flag, in its order. */
@@ -523,14 +566,27 @@ internal fun storyBuckets(bucket: ClassDef, regular: ClassDef): StoryBuckets? {
 }
 
 /**
- * First thing in the seen helper's per-card method: the bucket, the card, the helper and the peek
- * flag go to the extension. Nothing has written a parameter yet, and the range form names the four
- * registers wherever they sit.
+ * First thing in the seen helper's per-card method: the bucket, the card, the helper and the
+ * helper's launch source ([launchSource], null when it has no config) go to the extension, which
+ * takes a "story_preview" source as a peek (#165). No local holds anything yet, so the four are
+ * copied into v0 to v3 with the 16-bit moves and handed over as a range. The source register
+ * reaches the call as the config or the String, so the hook takes it as an Object.
  */
-internal fun MutableMethod.hearViewedCards() {
-    val first = parameterRegisterNumber(1)
-    if (parameterRegisterNumber(4) != first + 3) refuse("$definingClass->$name's parameters aren't side by side")
-    addInstructions(0, "invoke-static/range { v$first .. v${first + 3} }, $VIEWED")
+internal fun MutableMethod.hearViewedCards(launch: LaunchSource) {
+    requireLocals(PATCH, 4)
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, p1
+            move-object/from16 v1, p2
+            move-object/from16 v2, p3
+            iget-object v3, v2, ${launch.config}
+            if-eqz v3, :viewed
+            iget-object v3, v3, ${launch.source}
+            :viewed
+            invoke-static/range { v0 .. v3 }, $VIEWED
+        """,
+    )
 }
 
 /**

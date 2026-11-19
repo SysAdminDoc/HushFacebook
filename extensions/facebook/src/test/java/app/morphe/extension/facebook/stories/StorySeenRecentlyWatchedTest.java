@@ -62,7 +62,7 @@ public class StorySeenRecentlyWatchedTest {
 
     @Test
     public void aViewedCardIsKeptUnderItsBucket() {
-        StorySeen.viewed(new Object(), "s1", new Object(), false);
+        StorySeen.viewed(new Object(), "s1", new Object(), null);
         assertEquals(1, entries().size());
         RecentlyWatched.Entry story = entries().get(0);
         assertEquals(RecentlyWatched.STORY, story.kind);
@@ -73,16 +73,16 @@ public class StorySeenRecentlyWatchedTest {
 
     @Test
     public void aPeekIsNot() {
-        StorySeen.viewed(new Object(), "s1", new Object(), true);
+        StorySeen.viewed(new Object(), "s1", new Object(), StorySeen.PEEK_SOURCE);
         assertTrue(entries().isEmpty());
     }
 
     @Test
     public void viewStoriesAnonymouslyOnOrOffMakesNoDifference() {
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
-        StorySeen.viewed(new Object(), "off", new Object(), false);
+        StorySeen.viewed(new Object(), "off", new Object(), null);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
-        StorySeen.viewed(new Object(), "on", new Object(), false);
+        StorySeen.viewed(new Object(), "on", new Object(), null);
         assertEquals(2, entries().size());
         assertEquals("on", entries().get(0).id);
     }
@@ -90,17 +90,17 @@ public class StorySeenRecentlyWatchedTest {
     @Test
     public void offOrPausedNothingIsKept() {
         Settings.RECENTLY_WATCHED.save(false);
-        StorySeen.viewed(new Object(), "off", new Object(), false);
+        StorySeen.viewed(new Object(), "off", new Object(), null);
         Settings.RECENTLY_WATCHED.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
-        StorySeen.viewed(new Object(), "paused", new Object(), false);
+        StorySeen.viewed(new Object(), "paused", new Object(), null);
         PauseForTests.resume();
         assertTrue(entries().isEmpty());
     }
 
     @Test
     public void aCardWithNoIdIsNotKept() {
-        StorySeen.viewed(new Object(), null, new Object(), false);
+        StorySeen.viewed(new Object(), null, new Object(), null);
         assertTrue(entries().isEmpty());
         assertTrue(HookStatus.missing(FamilyNames.RESUME_LONG_VIDEOS).isEmpty());
     }
@@ -115,7 +115,7 @@ public class StorySeenRecentlyWatchedTest {
             @Override public boolean hasUnwatched(Object bucket) { return false; }
             @Override public void publishWatched(Object bucket, String bucketId) { }
         });
-        StorySeen.viewed(new Object(), "s1", new Object(), false);
+        StorySeen.viewed(new Object(), "s1", new Object(), null);
         assertTrue(entries().isEmpty());
         String failures = HookStatus.missing(FamilyNames.RESUME_LONG_VIDEOS).toString();
         assertTrue(failures, failures.contains("recently watched story"));

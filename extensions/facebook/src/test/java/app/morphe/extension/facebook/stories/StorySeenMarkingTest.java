@@ -140,8 +140,8 @@ public class StorySeenMarkingTest {
     @Test
     public void aBucketWatchedToItsNewestStoryIsMarkedWatchedWhenItsViewsAreHeldBack() {
         Bucket friend = new Bucket("b1", "s1", "s2");
-        StorySeen.viewed(friend, "s1", helper, false);
-        StorySeen.viewed(friend, "s2", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
+        StorySeen.viewed(friend, "s2", helper, null);
         assertTrue(published.isEmpty());
         assertTrue(heldBack());
         idle();
@@ -158,7 +158,7 @@ public class StorySeenMarkingTest {
     @Test
     public void aBucketBuiltAgainIsMarkedAgainUntilANewStoryArrives() {
         Bucket friend = new Bucket("b1", "s1", "s2");
-        StorySeen.viewed(friend, "s2", helper, false);
+        StorySeen.viewed(friend, "s2", helper, null);
         heldBack();
         idle();
         assertEquals(1, published.size());
@@ -197,7 +197,7 @@ public class StorySeenMarkingTest {
         // with each refresh: 40 copies in a session's first minutes on a reporter's phone. The old
         // ceiling of eight a minute left the ninth copy on blue (#165, 0.15.0).
         Bucket friend = new Bucket("b1", "s1");
-        StorySeen.viewed(friend, "s1", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
         heldBack();
         idle();
         for (int i = 0; i < 40; i++) built(new Bucket("b1", "s1"));
@@ -207,7 +207,7 @@ public class StorySeenMarkingTest {
     @Test
     public void aBucketBuiltUnwatchedWithoutEndIsCutOffFarAboveWhatATrayBuilds() {
         Bucket friend = new Bucket("b1", "s1");
-        StorySeen.viewed(friend, "s1", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
         heldBack();
         idle();
         assertTrue(StorySeen.MARKS_PER_WINDOW >= 200);
@@ -215,7 +215,7 @@ public class StorySeenMarkingTest {
         assertEquals(StorySeen.MARKS_PER_WINDOW, published.size());
 
         // Another bucket has its own window.
-        StorySeen.viewed(new Bucket("b2", "t1"), "t1", helper, false);
+        StorySeen.viewed(new Bucket("b2", "t1"), "t1", helper, null);
         heldBack();
         idle();
         assertEquals(StorySeen.MARKS_PER_WINDOW + 1, published.size());
@@ -228,9 +228,9 @@ public class StorySeenMarkingTest {
     @Test
     public void aPeekOrAStoryShortOfTheNewestMarksNothing() {
         Bucket friend = new Bucket("b1", "s1", "s2");
-        StorySeen.viewed(friend, "s1", helper, false);
-        StorySeen.viewed(friend, "s2", helper, true);
-        StorySeen.viewed(new Bucket("b2"), "s1", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
+        StorySeen.viewed(friend, "s2", helper, StorySeen.PEEK_SOURCE);
+        StorySeen.viewed(new Bucket("b2"), "s1", helper, null);
         heldBack();
         idle();
         built(new Bucket("b1", "s1", "s2"));
@@ -242,7 +242,7 @@ public class StorySeenMarkingTest {
     public void offOrPausedNothingIsMarked() {
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
         Bucket friend = new Bucket("b1", "s1");
-        StorySeen.viewed(friend, "s1", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
         assertFalse(heldBack());
         idle();
         built(new Bucket("b1", "s1"));
@@ -251,7 +251,7 @@ public class StorySeenMarkingTest {
         // Watched with the switch on, then paused: the views go out, and nothing is marked here,
         // since Facebook marks them itself once its servers take them.
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
-        StorySeen.viewed(friend, "s1", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse(heldBack());
         idle();
@@ -266,7 +266,7 @@ public class StorySeenMarkingTest {
 
     @Test
     public void theSwitchSavedOffForgetsWhatWasWatched() {
-        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, null);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
         built(new Bucket("b1", "s1"));
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
@@ -279,8 +279,8 @@ public class StorySeenMarkingTest {
     @Test
     public void aBucketKeptAsWatchedReadsWatchedTheFirstTimeTheTrayAsks() {
         Bucket friend = new Bucket("b1", "s1", "s2");
-        StorySeen.viewed(friend, "s1", helper, false);
-        StorySeen.viewed(friend, "s2", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
+        StorySeen.viewed(friend, "s2", helper, null);
         heldBack();
         idle();
 
@@ -309,8 +309,8 @@ public class StorySeenMarkingTest {
         // A cold start's lightweight bucket holds one card, its preview story, which needn't be
         // the newest the bucket had when it was watched.
         Bucket friend = new Bucket("b1", "s1", "s2");
-        StorySeen.viewed(friend, "s1", helper, false);
-        StorySeen.viewed(friend, "s2", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
+        StorySeen.viewed(friend, "s2", helper, null);
         StorySeen.useForTests(stories);
         assertFalse(stories.hasUnwatched(new Bucket("b1", "s2")));
         assertFalse(stories.hasUnwatched(new Bucket("b1", "s1")));
@@ -321,13 +321,13 @@ public class StorySeenMarkingTest {
 
         // Watched partway isn't kept as watched at all.
         Bucket other = new Bucket("b2", "t1", "t2");
-        StorySeen.viewed(other, "t1", helper, false);
+        StorySeen.viewed(other, "t1", helper, null);
         assertTrue(stories.hasUnwatched(new Bucket("b2", "t1")));
     }
 
     @Test
     public void offOrPausedABucketReadsAsFacebookSendsIt() {
-        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, null);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
         assertTrue(stories.hasUnwatched(new Bucket("b1", "s1")));
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
@@ -339,7 +339,7 @@ public class StorySeenMarkingTest {
 
     @Test
     public void aFailureReadingABucketLeavesFacebooksAnswerAndIsReported() {
-        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, null);
         HookStatus.clear();
         StorySeen.useForTests(new StorySeen.Stories() {
             @Override public String bucketId(Object bucket) { return "b1"; }
@@ -356,8 +356,8 @@ public class StorySeenMarkingTest {
     public void aBucketWatchedPartwayOpensPastTheCardsWatchedHereAfterARestart() {
         // #218: Facebook's start check passes over each card the hook says was watched here.
         Bucket friend = new Bucket("b1", "s1", "s2", "s3");
-        StorySeen.viewed(friend, "s1", helper, false);
-        StorySeen.viewed(friend, "s2", helper, false);
+        StorySeen.viewed(friend, "s1", helper, null);
+        StorySeen.viewed(friend, "s2", helper, null);
         heldBack();
         idle();
         assertTrue("watched partway isn't watched to the end", published.isEmpty());
@@ -371,23 +371,35 @@ public class StorySeenMarkingTest {
         assertTrue(statusLine(), statusLine().contains(StorySeen.PASSED_OVER));
 
         // A card that arrives later opens the bucket at it, once the rest were all watched.
-        StorySeen.viewed(friend, "s3", helper, false);
+        StorySeen.viewed(friend, "s3", helper, null);
         assertTrue(StorySeen.watchedHere("s3"));
         assertFalse(StorySeen.watchedHere("s4"));
+    }
+
+    /** #165: a viewer opened from anywhere but a peek counts, whatever else the helper was told. */
+    @Test
+    public void aViewerOpenedFromAProfileMarksTheBucket() {
+        Bucket page = new Bucket("b1", "s1");
+        StorySeen.viewed(page, "s1", helper, "profile");
+        assertTrue("watched here", StorySeen.watchedHere("s1"));
+        assertTrue(heldBack());
+        idle();
+        assertEquals(Arrays.asList("b1"), published);
+        assertFalse(page.unwatched);
     }
 
     @Test
     public void aPeekTheSwitchOffOrAPauseLeavesFacebooksOwnStart() {
         Bucket friend = new Bucket("b1", "s1", "s2", "s3");
-        StorySeen.viewed(friend, "s1", helper, true);
+        StorySeen.viewed(friend, "s1", helper, StorySeen.PEEK_SOURCE);
         assertFalse("a peek counted", StorySeen.watchedHere("s1"));
 
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
-        StorySeen.viewed(friend, "s2", helper, false);
+        StorySeen.viewed(friend, "s2", helper, null);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
         assertFalse("a view Facebook heard about was kept", StorySeen.watchedHere("s2"));
 
-        StorySeen.viewed(friend, "s3", helper, false);
+        StorySeen.viewed(friend, "s3", helper, null);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse(StorySeen.watchedHere("s3"));
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
@@ -399,7 +411,7 @@ public class StorySeenMarkingTest {
 
     @Test
     public void theSwitchSavedOffForgetsTheCardsToo() {
-        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, null);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
         built(new Bucket("b1", "s1", "s2"));
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
@@ -417,7 +429,7 @@ public class StorySeenMarkingTest {
             @Override public boolean hasUnwatched(Object bucket) { throw new IllegalStateException("renamed"); }
             @Override public void publishWatched(Object bucket, String bucketId) { throw new IllegalStateException("renamed"); }
         });
-        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1"), "s1", helper, null);
         StorySeen.bucketMade(new Bucket("b1", "s1"));
         idle();
         assertTrue("the views stopped going out", heldBack());
@@ -426,7 +438,7 @@ public class StorySeenMarkingTest {
 
     @Test
     public void aFailureInTheStartCheckLeavesFacebooksOwnStartAndIsReported() {
-        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, null);
         assertTrue(StorySeen.watchedHere("s1"));
         HookStatus.clear();
         StorySeen.useForTests(new StorySeen.Stories() {
@@ -450,9 +462,9 @@ public class StorySeenMarkingTest {
         // #218: a Page's picture opens its bucket naming no card, which skips the start check, and
         // the tray names the card Facebook starts at, which wins over it.
         Bucket page = new Bucket("b1", "s1", "s2", "s3", "s4");
-        StorySeen.viewed(page, "s1", helper, false);
-        StorySeen.viewed(page, "s2", helper, false);
-        StorySeen.viewed(page, "s3", helper, false);
+        StorySeen.viewed(page, "s1", helper, null);
+        StorySeen.viewed(page, "s2", helper, null);
+        StorySeen.viewed(page, "s3", helper, null);
         StorySeen.useForTests(stories);
         assertEquals("s4", StorySeen.startCard(page, null));
         assertEquals("s4", StorySeen.startCard(page, ""));
@@ -466,15 +478,15 @@ public class StorySeenMarkingTest {
         // Negative controls: nothing watched here yet.
         assertNull(StorySeen.startCard(page, null));
         assertEquals("s1", StorySeen.startCard(page, "s1"));
-        StorySeen.viewed(page, "s1", helper, false);
+        StorySeen.viewed(page, "s1", helper, null);
         // A card the launch picked that isn't Facebook's start stands, watched here or not.
         assertEquals("s3", StorySeen.startCard(page, "s3"));
         assertEquals("s2", StorySeen.startCard(page, "s2"));
         assertEquals("a launch naming a card no longer in the bucket", "gone", StorySeen.startCard(page, "gone"));
         assertFalse("a pick was counted as moved", openedLater());
         // Every card watched here: Facebook's own start and its watched-bucket answer stand.
-        StorySeen.viewed(page, "s2", helper, false);
-        StorySeen.viewed(page, "s3", helper, false);
+        StorySeen.viewed(page, "s2", helper, null);
+        StorySeen.viewed(page, "s3", helper, null);
         assertNull(StorySeen.startCard(page, null));
         assertEquals("s1", StorySeen.startCard(page, "s1"));
         assertFalse(openedLater());
@@ -486,7 +498,7 @@ public class StorySeenMarkingTest {
         // A first card Facebook's check turns down isn't its start, so naming the second one is.
         Bucket page = new Bucket("b1", "s1", "s2", "s3");
         flagged.add("s1");
-        StorySeen.viewed(page, "s2", helper, false);
+        StorySeen.viewed(page, "s2", helper, null);
         assertEquals("s3", StorySeen.startCard(page, "s2"));
         assertEquals("s3", StorySeen.startCard(page, null));
         // Naming the card the check turns down is a pick of the launch's own.
@@ -504,9 +516,9 @@ public class StorySeenMarkingTest {
         Bucket page = new Bucket("b1", "s1", "s2", "s3", "s4", "s5");
         noMedia.add("s4");
         noMedia.add("s5");
-        StorySeen.viewed(page, "s1", helper, false);
-        StorySeen.viewed(page, "s2", helper, false);
-        StorySeen.viewed(page, "s3", helper, false);
+        StorySeen.viewed(page, "s1", helper, null);
+        StorySeen.viewed(page, "s2", helper, null);
+        StorySeen.viewed(page, "s3", helper, null);
         assertEquals("s4", StorySeen.startCard(page, null));
         assertEquals("s4", StorySeen.startCard(page, "s1"));
         // A seen flag past the start still passes a card over, media or not.
@@ -527,8 +539,8 @@ public class StorySeenMarkingTest {
         Bucket standIn = new Bucket("b1", first);
         loading.add(standIn);
         Bucket page = new Bucket("b1", "s1", "s2", "s3", "s4");
-        StorySeen.viewed(page, "s1", helper, false);
-        StorySeen.viewed(page, "s2", helper, false);
+        StorySeen.viewed(page, "s1", helper, null);
+        StorySeen.viewed(page, "s2", helper, null);
         StorySeen.replacing(standIn, first);
         assertSame("s3", StorySeen.cardAfterLoading(page, first));
         assertTrue(statusLine(), openedLater());
@@ -558,12 +570,12 @@ public class StorySeenMarkingTest {
         assertNull(StorySeen.cardAfterLoading(page, null));
         StorySeen.replacing(standIn, first);
         assertSame("nothing watched here", first, StorySeen.cardAfterLoading(new Bucket("b2", "t1", "t2"), first));
-        StorySeen.viewed(page, "s3", helper, false);
-        StorySeen.viewed(page, "s4", helper, false);
+        StorySeen.viewed(page, "s3", helper, null);
+        StorySeen.viewed(page, "s4", helper, null);
         StorySeen.replacing(standIn, first);
         assertSame("every story watched here", first, StorySeen.cardAfterLoading(page, first));
         Bucket friend = new Bucket("b3", "u1", "u2");
-        StorySeen.viewed(friend, "u1", helper, false);
+        StorySeen.viewed(friend, "u1", helper, null);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         StorySeen.replacing(standIn, first);
         assertSame("paused", first, StorySeen.cardAfterLoading(friend, first));
@@ -592,7 +604,7 @@ public class StorySeenMarkingTest {
     @Test
     public void theSwitchOffOrAPauseLeavesTheCardTheLaunchNamed() {
         Bucket page = new Bucket("b1", "s1", "s2");
-        StorySeen.viewed(page, "s1", helper, false);
+        StorySeen.viewed(page, "s1", helper, null);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
         assertNull(StorySeen.startCard(page, null));
         assertEquals("s1", StorySeen.startCard(page, "s1"));
@@ -607,7 +619,7 @@ public class StorySeenMarkingTest {
 
     @Test
     public void aFailureFindingTheStartCardLeavesTheLaunchAloneAndIsReported() {
-        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, false);
+        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, null);
         HookStatus.clear();
         StorySeen.useForTests(new StorySeen.Stories() {
             @Override public String bucketId(Object bucket) { return "b1"; }

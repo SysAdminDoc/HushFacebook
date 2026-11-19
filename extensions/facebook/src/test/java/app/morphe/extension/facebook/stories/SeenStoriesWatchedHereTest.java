@@ -153,7 +153,7 @@ public class SeenStoriesWatchedHereTest {
 
     /** Plays [cards] of [bucket] in the viewer, with the views held back. */
     private void watch(Played bucket, String... cards) {
-        for (String card : cards) StorySeen.viewed(bucket, card, helper, false);
+        for (String card : cards) StorySeen.viewed(bucket, card, helper, null);
     }
 
     private static Object kept(List<Tree> tray) {

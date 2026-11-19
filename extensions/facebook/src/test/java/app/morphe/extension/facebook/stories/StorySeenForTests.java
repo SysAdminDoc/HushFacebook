@@ -103,7 +103,7 @@ public final class StorySeenForTests {
         RecentlyWatchedForTests.install();
         StorySeen.useForTests(ONE_BUCKET);
         try {
-            StorySeen.viewed(new Object(), "s1", new Object(), false);
+            StorySeen.viewed(new Object(), "s1", new Object(), null);
             return !RecentlyWatchedForTests.entries().isEmpty();
         } finally {
             StorySeen.useForTests(null);

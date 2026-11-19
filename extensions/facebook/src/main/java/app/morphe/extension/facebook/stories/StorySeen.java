@@ -383,20 +383,30 @@ public final class StorySeen {
 
     // ------------------------------------------------------------------ watched on the phone (#61)
 
+    /** The launch source of a viewer opened as a peek, which Facebook reports as is_story_peek_view. */
+    static final String PEEK_SOURCE = "story_preview";
+
     /**
      * Injection point, first thing in the seen helper's method that queues a viewed card for the
-     * next send. [peek] is the flag Facebook sends as is_story_peek_view: a glance from outside the
-     * viewer, which doesn't count. Recently watched hears each card that isn't a peek here, with
-     * this switch on or off. Never throws.
+     * next send. [source] is where the helper's viewer was opened from, or null: a [PEEK_SOURCE]
+     * one is a glance from outside the viewer, which doesn't count, the same test Facebook makes
+     * for is_story_peek_view. The method's own boolean isn't that flag (#165: on 588 it says
+     * whether the card counts again, and taken as a peek it kept every story unwatched here).
+     * Recently watched hears each card that isn't a peek here, with this switch on or off. Never
+     * throws.
      */
-    public static void viewed(Object bucket, Object card, Object helper, boolean peek) {
+    public static void viewed(Object bucket, Object card, Object helper, @Nullable Object source) {
+        boolean peek = PEEK_SOURCE.equals(source);
         if (!peek) remember(bucket, card);
         try {
             if (peek || !Utils.settingsReady() || !Settings.VIEW_STORIES_ANONYMOUSLY.get()) return;
             Stories access = stories;
             String story = access.storyId(card);
             String bucketId = access.bucketId(bucket);
-            if (story == null || bucketId == null) return;
+            if (story == null || bucketId == null) {
+                Logger.printDebug(() -> "Story views: a viewed story has no " + (story == null ? "story" : "bucket") + " id");
+                return;
+            }
             long now = System.currentTimeMillis();
             SeenBuckets cards = cardStore();
             if (cards != null) {
