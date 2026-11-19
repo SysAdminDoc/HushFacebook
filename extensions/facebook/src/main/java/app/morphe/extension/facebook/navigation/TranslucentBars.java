@@ -899,6 +899,7 @@ public final class TranslucentBars {
         void update() {
             View window = this.window.get();
             if (window == null || stopped) return;
+            ReelsStatusBar.frame(window);
             boolean seeThrough = on();
             if (!seeThrough && !RoundedTabBar.on()) {
                 giveBack();

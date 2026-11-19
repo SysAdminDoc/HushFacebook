@@ -175,6 +175,11 @@ public final class ReelsTabBarHidden {
             HookStatus.threw(FAMILY, HOOK, failure);
         }
         try {
+            ReelsStatusBar.tabShown(bar, tab);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, ReelsStatusBar.HOOK, failure);
+        }
+        try {
             if (barGoes || lineOff()) {
                 if (!barGoes) HookStatus.bound(FAMILY, LINE_HOOK);
                 // The header can still be filling in the first time the tab shows.

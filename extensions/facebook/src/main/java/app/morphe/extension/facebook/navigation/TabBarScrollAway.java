@@ -387,7 +387,10 @@ public final class TabBarScrollAway {
      * making rows of its own. See-through bars and Rounded tab bar run the Reels page down under
      * the tab bar, and a row that filled all of it put the reel's name, caption and buttons behind
      * the bar (#503). The row fills it still, so the video runs under the bar and the gesture bar
-     * (#466), and {@link ReelDetailsLift} holds the name, caption and buttons above the bar.
+     * (#466), and {@link ReelDetailsLift} holds the name, caption and buttons above the bar. Where
+     * the strip behind the status bar closes over the Reels tab ({@link ReelsStatusBar}), the list
+     * runs that much taller there, so a row made while the strip is open, on Home most of all, gets
+     * that room as well and the next reel doesn't show under the see-through tab bar.
      * Facebook makes rows off the main thread too and reads the list there itself, so a search that
      * meets the view tree mid-change answers 0 for that row.
      */
@@ -407,7 +410,8 @@ public final class TabBarScrollAway {
             reelsList = new WeakReference<>(list);
         }
         if (list.getWindowVisibility() != View.VISIBLE) return 0;
-        return Math.max(0, list.getHeight() - list.getPaddingTop() - list.getPaddingBottom());
+        int height = list.getHeight() - list.getPaddingTop() - list.getPaddingBottom();
+        return height <= 0 ? 0 : height + ReelsStatusBar.roomAbove(list);
     }
 
     /**
@@ -423,6 +427,8 @@ public final class TabBarScrollAway {
         if (Settings.KEEP_TAB_BAR.get()) bits |= 1 << 4;
         if (Settings.TRANSLUCENT_BARS.get()) bits |= 1 << 5;
         if (Settings.HIDE_STATUS_BAR.get()) bits |= 1 << 6;
+        // The Reels list runs up under the status bar too (#466), so a height seen before doesn't fit.
+        if (ReelsStatusBar.wanted()) bits |= 1 << 7;
         return bits;
     }
 
@@ -448,7 +454,7 @@ public final class TabBarScrollAway {
     }
 
     /** Whether the tabs sit at the top: in the top bar's entry, or moved there by the switch. */
-    private static boolean tabsOnTop() {
+    static boolean tabsOnTop() {
         return tabsInTopEntry || (Settings.TOP_TAB_BAR.get() && !Settings.BOTTOM_TAB_BAR.get());
     }
 
@@ -474,7 +480,7 @@ public final class TabBarScrollAway {
     }
 
     /** Whether the main screen shows the tab called Reels or Video. */
-    private static boolean onReelsTab() {
+    static boolean onReelsTab() {
         Activity screen = mainScreen.get();
         Object tab = screen == null ? null : StartTabRoute.TabBar.currentTab(screen);
         return tab != null && StartTab.VIDEO.isTab(tab.getClass().getName());

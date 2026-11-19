@@ -103,19 +103,32 @@ public final class HiddenStatusBar {
      * moves up to the edge. A window opened over the main screen with a bar of its own, the comment
      * sheet over a reel, makes the main screen's insets report the bar again, and the answer stays
      * 0 while this asked the main screen's bar away: the sheet's window pads for its own bar, and
-     * the reel under it keeps its place. Anything else keeps Facebook's inset, and so does a failure.
+     * the reel under it keeps its place. With the bar showing, the Reels tab can still close the
+     * strip so the reel runs up behind the bar ({@link ReelsStatusBar}, #466). Anything else keeps
+     * Facebook's inset, and so does a failure.
      */
     public static int topInset(View content, int top) {
         try {
-            if (top <= 0 || content == null || !on()) return top;
-            WindowInsets insets = content.getRootWindowInsets();
-            // Android 10 and older can't say, and Facebook draws no strip there anyway.
-            Boolean showing = null;
-            if (insets != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                showing = insets.isVisible(WindowInsets.Type.statusBars());
+            if (top <= 0 || content == null) return top;
+            boolean hiding = on();
+            if (!hiding && !ReelsStatusBar.wanted()) {
+                ReelsStatusBar.notClosed();
+                return top;
             }
             Activity screen = screenOf(content.getContext());
-            return topInset(top, screen, showing, askedAway(content, screen));
+            if (hiding) {
+                WindowInsets insets = content.getRootWindowInsets();
+                // Android 10 and older can't say, and Facebook draws no strip there anyway.
+                Boolean showing = null;
+                if (insets != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    showing = insets.isVisible(WindowInsets.Type.statusBars());
+                }
+                if (topInset(top, screen, showing, askedAway(content, screen)) == 0) {
+                    ReelsStatusBar.notClosed();
+                    return 0;
+                }
+            }
+            return ReelsStatusBar.topInset(top, screen, content);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "hidden status bar strip", failure);
             return top;
