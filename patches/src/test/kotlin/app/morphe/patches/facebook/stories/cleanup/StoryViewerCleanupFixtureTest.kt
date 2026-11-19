@@ -25,6 +25,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import java.io.File
@@ -444,11 +445,86 @@ class StoryViewerCleanupFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    private val conditionals = setOf(
+        Opcode.IF_EQ, Opcode.IF_NE, Opcode.IF_LT, Opcode.IF_GE, Opcode.IF_GT, Opcode.IF_LE,
+        Opcode.IF_EQZ, Opcode.IF_NEZ, Opcode.IF_LTZ, Opcode.IF_GEZ, Opcode.IF_GTZ, Opcode.IF_LEZ,
+    )
+
+    /**
+     * #521: the viewer's list runner hands its list through every story list source, and where the
+     * loop comes out the finished list goes through the extension, which drops each card asking you
+     * to make a story ("continue the story" included), and back into an ImmutableList.
+     */
+    @Test
+    fun `each declared build's story list runner drops the create cards once its sources are done`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val immutableList = "Lcom/google/common/collect/ImmutableList;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val runners = FixtureDex.classesHolding(bundle, BUCKET_DATA_RUN)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val runner = listRunner(runners)
+                assertNotNull("$name: no one story list runner opens $BUCKET_DATA_RUN", runner)
+                val done = sourcesDone(runner!!)
+                assertNotNull("$name: the runner doesn't hand its list round its sources in one loop", done)
+                // Positive control: the list going round is the one the runner was given.
+                val given = runner.parameterTypes.indexOfFirst { it.toString() == immutableList }
+                assertEquals("$name: the sources answer into another register than the runner's list",
+                    runner.parameterRegisterNumber(given), done!!.register)
+                val original = runner.code()
+                assertTrue("$name: the loop's way out isn't right after its step back",
+                    original[done.at - 1].opcode in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32))
+
+                val cardHolders = FixtureDex.classesHolding(bundle, CREATE_CARD_BUCKET_ID)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val cards = cardHolders.filter(::isCreateCardBucket)
+                assertEquals("$name: story buckets naming themselves $CREATE_CARD_BUCKET_ID", 1, cards.size)
+                val guava = FixtureDex.classes(bundle, setOf(immutableList)).values
+
+                val context = PatchContexts.of(runners + cardHolders + guava + ExtensionDex.classDef(STORY_VIEWER_CLEANUP))
+                context.dropCreateCardsFromViewerList()
+                val code = context.mutableClassDefBy(runner.definingClass).methods.single {
+                    it.name == runner.name && it.parameterTypes.map(CharSequence::toString) ==
+                        runner.parameterTypes.map(CharSequence::toString)
+                }.code()
+                val hook = code.subList(done.at, done.at + 4)
+                assertEquals("$name: the finished list doesn't go through the extension and back",
+                    listOf(Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT),
+                    hook.map { it.opcode })
+                assertEquals("$name: asks its own hook", WITHOUT_CREATE_CARDS, hook[0].reference())
+                assertEquals("$name: copies back with Guava's copyOf",
+                    "$immutableList->copyOf(Ljava/util/Collection;)$immutableList", hook[2].reference())
+                assertEquals("$name: works in another register than the runner's list", List(4) { done.register }, listOf(
+                    (hook[0] as RegisterRangeInstruction).startRegister, (hook[1] as OneRegisterInstruction).registerA,
+                    (hook[2] as RegisterRangeInstruction).startRegister, (hook[3] as OneRegisterInstruction).registerA,
+                ))
+                val at = code.runningFold(0) { offset, it -> offset + it.codeUnits }
+                assertTrue("$name: the loop's way out doesn't land on the hook", code.indices.any { i ->
+                    code[i].opcode in conditionals && at[i] + (code[i] as OffsetInstruction).codeOffset == at[done.at]
+                })
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    (code.take(done.at) + code.drop(done.at + 4)).unpadded())
+
+                val question = context.mutableClassDefBy(STORY_VIEWER_CLEANUP).methods.single {
+                    "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == IS_CREATE_CARD
+                }.code()
+                assertEquals("$name: the question about a bucket isn't filled in",
+                    listOf(Opcode.INSTANCE_OF, Opcode.RETURN), question.take(2).map { it.opcode })
+                assertEquals("$name: asks about another class than the card", cards.single().type, question[0].reference())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     @Test
     fun `the extension has every hook`() {
         for ((owner, hook) in listOf(STORY_VIEWER_CLEANUP to HIDE_CREDITS, STORY_VIEWER_CLEANUP to HIDE_REPLY_SUGGESTIONS,
             STORY_VIEWER_CLEANUP to DROP_CREDIT, STORY_VIEWER_CLEANUP to HIDE_SUBSCRIBE,
             STORY_VIEWER_CLEANUP to HIDE_CREATE_STORY_CARD, STORY_VIEWER_CLEANUP to HIDE_SONG_PILL,
+            STORY_VIEWER_CLEANUP to WITHOUT_CREATE_CARDS, STORY_VIEWER_CLEANUP to IS_CREATE_CARD,
             STORY_PROGRESS_BAR to SEGMENTS_MOVED)) {
             val method = ExtensionDex.classDef(owner).methods.singleOrNull {
                 "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == hook

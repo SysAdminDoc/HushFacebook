@@ -2755,7 +2755,7 @@ Takes the row of suggested replies off the bottom of a story. The reply box stay
 Hide the Subscribe button	ซ่อนปุ่มสมัครรับข้อมูล
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	นำปุ่มสมัครรับข้อมูลออกจากด้านบนของสตอรี่ จะมีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
 Hide create story cards	ซ่อนการ์ดชวนสร้างสตอรี่
-Takes out the card between stories that asks you to make one, including the ones built from photos in your gallery. Applies the next time you open stories.	นำการ์ดระหว่างสตอรี่ที่ชวนให้คุณสร้างสตอรี่ออก รวมถึงการ์ดที่สร้างจากรูปภาพในแกลเลอรีของคุณ มีผลในครั้งถัดไปที่คุณเปิดสตอรี่
+Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	นำการ์ดระหว่างสตอรี่ที่ชวนให้คุณสร้างสตอรี่ออก รวมถึงการ์ดแบบเต็มหน้าจอที่ชวนให้คุณเล่าสตอรี่ต่อด้วยรูปภาพจากแกลเลอรีของคุณ มีผลในครั้งถัดไปที่คุณเปิดสตอรี่
 Progress bar at the bottom	แถบแสดงความคืบหน้าที่ด้านล่าง
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	แสดงแถบบางๆ ตามขอบด้านล่างของสตอรี่ที่จะค่อยๆ เต็มขึ้นขณะเล่น เช่นเดียวกับใน Reels
 Seek bar on stories	แถบเลื่อนในสตอรี่

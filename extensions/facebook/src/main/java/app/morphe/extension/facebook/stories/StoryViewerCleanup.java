@@ -4,8 +4,10 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -26,7 +28,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The reply suggestions switch takes the row of suggested replies off the bottom of a story,
  * leaving the reply box, and the Subscribe switch the Subscribe pill under the name. The create
  * cards switch keeps out the "Add to story" card Facebook puts between other people's stories, the
- * plain one and the ones built from the gallery (#439).
+ * plain one and the ones built from the gallery (#439), and the full screen "continue the story"
+ * card built from recent gallery photos, which the viewer's finished list loses on its way out (#521).
  *
  * <p>Off, paused, settings that aren't ready yet or a failure in here, and Facebook draws its own.
  */
@@ -153,5 +156,69 @@ public final class StoryViewerCleanup {
             HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story create card", failure);
             return false;
         }
+    }
+
+    /** Counted for each card taken out of the viewer's finished list of stories (#521). */
+    static final String CREATE_CARDS_DROPPED = "story create cards dropped";
+
+    /** Which of the viewer's buckets is a card asking you to make a story. */
+    interface CreateCards {
+        boolean isCard(Object bucket);
+    }
+
+    /** Facebook's own card, asked about through the question the patch fills in. */
+    private static final CreateCards PATCHED = new CreateCards() {
+        @Override
+        public boolean isCard(Object bucket) {
+            return isCreateCard(bucket);
+        }
+    };
+
+    /**
+     * Injection point, where the viewer's list runner is done with its story list sources: the list
+     * to show without the cards asking you to make a story, the full screen "continue the story" one
+     * included (#521). The list comes back as it came when there's nothing to take out. Never throws.
+     */
+    public static List<?> withoutCreateCards(List<?> buckets) {
+        return withoutCreateCards(buckets, PATCHED);
+    }
+
+    static List<?> withoutCreateCards(List<?> buckets, CreateCards cards) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story create card list");
+            if (buckets == null || buckets.isEmpty() || !Utils.settingsReady()
+                    || !Settings.HIDE_STORY_CREATE_CARDS.get()) {
+                return buckets;
+            }
+            List<Object> kept = null;
+            int dropped = 0;
+            for (int i = 0; i < buckets.size(); i++) {
+                Object bucket = buckets.get(i);
+                if (cards.isCard(bucket)) {
+                    if (kept == null) kept = new ArrayList<>(buckets.subList(0, i));
+                    dropped++;
+                } else if (kept != null) {
+                    kept.add(bucket);
+                }
+            }
+            if (kept == null) return buckets;
+            for (int i = 0; i < dropped; i++) {
+                HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, CREATE_CARDS_DROPPED);
+            }
+            return kept;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story create card list", failure);
+            return buckets;
+        }
+    }
+
+    /**
+     * Whether a bucket of the viewer's list is Facebook's card asking you to make a story. The patch
+     * fills this in with an instance-of on that card's class, the one whose id falls back to
+     * "story-end-card-bucket"; unpatched, nothing is a card.
+     */
+    public static boolean isCreateCard(Object bucket) {
+        return false;
     }
 }

@@ -2811,7 +2811,7 @@ Takes the row of suggested replies off the bottom of a story. The reply box stay
 Hide the Subscribe button	Скрыть кнопку «Подписаться»
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	Убирает кнопку «Подписаться» вверху Истории. Действует со следующей открытой Истории.
 Hide create story cards	Скрыть карточки создания Истории
-Takes out the card between stories that asks you to make one, including the ones built from photos in your gallery. Applies the next time you open stories.	Убирает карточку между Историями, которая предлагает создать свою, в том числе собранную из фото вашей галереи. Действует при следующем открытии Историй.
+Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	Убирает карточки между Историями, которые предлагают создать свою, в том числе полноэкранную карточку, которая предлагает продолжить Историю с фото из вашей галереи. Действует при следующем открытии Историй.
 Progress bar at the bottom	Полоса прогресса внизу
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Показывает внизу Истории тонкую полосу, которая заполняется по мере воспроизведения, как в Reels.
 Seek bar on stories	Полоса перемотки в Историях

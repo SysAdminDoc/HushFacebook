@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.stories.cleanup
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -20,7 +21,9 @@ import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.misc.upsells.definesImmutableCopy
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.addInstructionsAtControlFlowLabel
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -89,6 +92,17 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   the list to show. This one splices in a card it tags "ats_tile", or "camera_roll" for the one
  *   built from the gallery, and hands the list back unchanged when it has nothing to add. The patch
  *   gives that same answer first thing on a yes.
+ * - The full screen "<Name>, continue the story" card with its Create story button (#521, 588 arm64
+ *   LX/0BDx;, AddToStoryOverlayComponent drawing it from six or more recent gallery photos) is a
+ *   bucket of its own, a StoryBucket whose getId falls back to "story-end-card-bucket". It's built
+ *   from the server's buckets (LX/08I5;->A03), which the tray load and the sources both use, so no
+ *   one source owns it. Every story list source (LX/0DFi;, v7 LX/0DFh;) runs only from the viewer's
+ *   static list runner (LX/0B7A;->A02, v7 LX/0B7D;->A02), the one method opening the trace section
+ *   "StoryviewerBucketDataController.processBucketData". It hands its list (p2) to each source in
+ *   turn and keeps the answer in the same register, then comes out of the loop. Right there the list
+ *   goes through the extension, which drops each bucket of the card's class, and back into an
+ *   ImmutableList. Its own Kotlin null check on the list (index 76 in 588) runs right after, and the
+ *   finally handler round the trace section never reads it.
  */
 
 internal const val STORY_VIEWER_CLEANUP_PATCH = "Clean up the story viewer"
@@ -169,6 +183,7 @@ val storyViewerCleanupPatch = bytecodePatch(
         hideSongPill()
         hideSubscribePill()
         hideCreateStoryCards()
+        dropCreateCardsFromViewerList()
         followStoryProgress()
         enableStatus("storyViewerCleanup")
     }
@@ -464,4 +479,134 @@ internal fun BytecodePatchContext.hideCreateStoryCards() {
         """,
         ExternalLabel("facebooks_list", method.getInstruction(0)),
     )
+}
+
+/** The trace section the viewer's list runner opens first thing: only that method names it. */
+internal const val BUCKET_DATA_RUN = "StoryviewerBucketDataController.processBucketData"
+
+/** The id the "continue the story" card's bucket answers when it has none of its own (#521). */
+internal const val CREATE_CARD_BUCKET_ID = "story-end-card-bucket"
+
+internal const val WITHOUT_CREATE_CARDS = "$STORY_VIEWER_CLEANUP->withoutCreateCards(Ljava/util/List;)Ljava/util/List;"
+internal const val IS_CREATE_CARD = "$STORY_VIEWER_CLEANUP->isCreateCard(Ljava/lang/Object;)Z"
+
+private const val LIST_COPY = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
+private const val USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
+
+private val GOTOS = setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32)
+private val CONDITIONALS = setOf(
+    Opcode.IF_EQ, Opcode.IF_NE, Opcode.IF_LT, Opcode.IF_GE, Opcode.IF_GT, Opcode.IF_LE,
+    Opcode.IF_EQZ, Opcode.IF_NEZ, Opcode.IF_LTZ, Opcode.IF_GEZ, Opcode.IF_GTZ, Opcode.IF_LEZ,
+)
+
+/** Where the viewer's list runner is done with its sources: the instruction at [at], with the finished list in [register]. */
+internal data class SourcesDone(val at: Int, val register: Int)
+
+/** The one method in [classes] answering an ImmutableList that opens [BUCKET_DATA_RUN]. */
+internal fun listRunner(classes: Iterable<ClassDef>): Method? = classes.flatMap { it.methods }.filter {
+    it.returnType == IMMUTABLE_LIST && it.implementation != null && holdsString(it, BUCKET_DATA_RUN)
+}.singleOrNull()
+
+/** The last register an invoke names, or null. */
+private fun Instruction.lastRegister(): Int? = when (this) {
+    is RegisterRangeInstruction -> (startRegister + registerCount - 1).takeIf { registerCount > 0 }
+    is FiveRegisterInstruction -> when (registerCount) {
+        1 -> registerC
+        2 -> registerD
+        3 -> registerE
+        4 -> registerF
+        5 -> registerG
+        else -> null
+    }
+    else -> null
+}
+
+/**
+ * The one place in [runner] where a source is asked for the list (session, flags and the list so
+ * far in, a list out), its answer goes back into the list's own register, and the loop steps back
+ * up, with a branch before it coming out of the loop right after that step. Null unless there's
+ * exactly one.
+ */
+internal fun sourcesDone(runner: Method): SourcesDone? {
+    val code = runner.implementation?.instructions?.toList() ?: return null
+    val at = code.runningFold(0) { offset, it -> offset + it.codeUnits }
+    val found = (0 until code.size - 3).mapNotNull { i ->
+        val ask = code[i]
+        if (ask.opcode != Opcode.INVOKE_INTERFACE && ask.opcode != Opcode.INVOKE_INTERFACE_RANGE) return@mapNotNull null
+        val called = (ask as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
+        val types = called.parameterTypes.map(CharSequence::toString)
+        if (called.returnType != IMMUTABLE_LIST || types.size != 3 || types.first() != USER_SESSION ||
+            types.last() != IMMUTABLE_LIST
+        ) return@mapNotNull null
+        val list = ask.lastRegister() ?: return@mapNotNull null
+        val kept = code[i + 1]
+        if (kept.opcode != Opcode.MOVE_RESULT_OBJECT || (kept as OneRegisterInstruction).registerA != list) return@mapNotNull null
+        val step = code[i + 2]
+        if (step.opcode !in GOTOS || at[i + 2] + (step as OffsetInstruction).codeOffset > at[i]) return@mapNotNull null
+        val out = (0 until i).any { j ->
+            code[j].opcode in CONDITIONALS && at[j] + (code[j] as OffsetInstruction).codeOffset == at[i + 3]
+        }
+        if (out) SourcesDone(i + 3, list) else null
+    }
+    return found.singleOrNull()
+}
+
+/** Whether [classDef] is the "continue the story" card's bucket: a story bucket whose id falls back to [CREATE_CARD_BUCKET_ID]. */
+internal fun isCreateCardBucket(classDef: ClassDef): Boolean = classDef.superclass == STORY_BUCKET &&
+    classDef.methods.any {
+        it.name == "getId" && it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;" &&
+            it.implementation != null && holdsString(it, CREATE_CARD_BUCKET_ID)
+    }
+
+/**
+ * Where the runner comes out of its loop, its finished list goes through the extension and back
+ * through Guava's copyOf in its own register. The code goes in at that instruction's control flow
+ * label, so the loop's way out runs it.
+ */
+internal fun MutableMethod.dropCreateCardsAt(done: SourcesDone) {
+    val list = "v${done.register}"
+    addInstructionsAtControlFlowLabel(
+        done.at,
+        """
+            invoke-static/range { $list .. $list }, $WITHOUT_CREATE_CARDS
+            move-result-object $list
+            invoke-static/range { $list .. $list }, $LIST_COPY
+            move-result-object $list
+        """,
+    )
+}
+
+/**
+ * Takes the cards asking you to make a story out of the viewer's list once every source has had its
+ * turn (#521), whichever source or tray load put them there. The extension's question about a bucket
+ * is filled in first, with an instance-of on the card's class.
+ */
+internal fun BytecodePatchContext.dropCreateCardsFromViewerList() {
+    val runners = classDefByStrings(BUCKET_DATA_RUN, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+    val runner = listRunner(runners) ?: refuse("expected one story list runner opening $BUCKET_DATA_RUN")
+    val done = sourcesDone(runner) ?: refuse("the story list runner doesn't hand its list round its sources in one loop")
+    if (done.register > 255) refuse("the story list runner keeps its list in v${done.register}, past what move-result-object reaches")
+    val cards = classDefByStrings(CREATE_CARD_BUCKET_ID, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }.filter(::isCreateCardBucket)
+    val card = cards.singleOrNull()
+        ?: refuse("expected one story bucket whose id falls back to $CREATE_CARD_BUCKET_ID, found ${cards.size}")
+    if (classDefByOrNull(IMMUTABLE_LIST)?.let(::definesImmutableCopy) != true) refuse("$IMMUTABLE_LIST has no copyOf(Collection)")
+
+    val question = mutableClassDefBy(STORY_VIEWER_CLEANUP).methods.singleOrNull {
+        it.name == "isCreateCard" && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+            it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+    } ?: refuse("the extension has no isCreateCard(Object)")
+    question.addInstructions(
+        0,
+        """
+            instance-of p0, p0, ${card.type}
+            return p0
+        """,
+    )
+
+    mutableClassDefBy(runner.definingClass).methods.single {
+        it.name == runner.name && it.returnType == runner.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == runner.parameterTypes.map(CharSequence::toString)
+    }.dropCreateCardsAt(done)
 }

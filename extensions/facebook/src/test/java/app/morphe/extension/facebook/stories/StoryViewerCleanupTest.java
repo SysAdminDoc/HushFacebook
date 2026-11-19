@@ -6,7 +6,13 @@ package app.morphe.extension.facebook.stories;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -152,6 +158,51 @@ public class StoryViewerCleanupTest {
         SettingsContextRule.withoutContext(() ->
                 assertFalse("the card went before the settings were ready", StoryViewerCleanup.hideCreateStoryCard()));
         assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.CREATE_CARDS_HIDDEN + " 1"));
+    }
+
+    /**
+     * #521: the "continue the story" card built from the gallery, and every other card between stories
+     * that asks you to make one, leaves the viewer's list with the same switch, whichever source put it
+     * there. The rest keep their order, and a list with no such card comes back as the same list.
+     */
+    @Test
+    public void theCreateCardsSwitchTakesEveryCreateCardOutOfTheViewersList() {
+        Object friend = new Object();
+        Object page = new Object();
+        List<Object> buckets = Arrays.asList(new StoryViewerCleanupForTests.CreateCard(), friend,
+                new StoryViewerCleanupForTests.CreateCard(), page);
+        assertSame("off, the list changed", buckets, StoryViewerCleanupForTests.kept(buckets));
+
+        Settings.HIDE_STORY_CREATE_CARDS.save(true);
+        assertEquals(Arrays.asList(friend, page), StoryViewerCleanupForTests.kept(buckets));
+        List<Object> noCards = Arrays.asList(friend, page);
+        assertSame("a list with no card in it was copied", noCards, StoryViewerCleanupForTests.kept(noCards));
+        List<Object> empty = Collections.emptyList();
+        assertSame("an empty list was copied", empty, StoryViewerCleanupForTests.kept(empty));
+        assertNull("no list came back as one", StoryViewerCleanupForTests.kept(null));
+        // Until the patch fills in its question, the real hook reads no bucket as a card.
+        assertSame("the unpatched hook read a bucket as a card", buckets, StoryViewerCleanup.withoutCreateCards(buckets));
+
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertSame("paused, the list changed", buckets, StoryViewerCleanupForTests.kept(buckets));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertSame("the list changed before the settings were ready", buckets, StoryViewerCleanupForTests.kept(buckets)));
+        assertFalse("it hid the Subscribe button", StoryViewerCleanup.hideSubscribe());
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.CREATE_CARDS_DROPPED + " 2"));
+    }
+
+    /** #521: a card check that throws leaves the list as Facebook built it and names the hook. */
+    @Test
+    public void aFailingCardCheckLeavesTheListAsItCame() {
+        Settings.HIDE_STORY_CREATE_CARDS.save(true);
+        List<Object> buckets = Arrays.asList(new Object(), new StoryViewerCleanupForTests.CreateCard());
+        assertSame(buckets, StoryViewerCleanup.withoutCreateCards(buckets, bucket -> {
+            throw new IllegalStateException("a bucket that can't be read");
+        }));
+        assertEquals(Collections.singletonList(
+                        "a working 'story create card list' hook (it threw java.lang.IllegalStateException)"),
+                HookStatus.missing(FamilyNames.STORY_VIEWER_CLEANUP));
     }
 
     @Test

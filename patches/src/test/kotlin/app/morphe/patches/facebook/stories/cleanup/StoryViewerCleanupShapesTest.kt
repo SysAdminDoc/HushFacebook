@@ -7,6 +7,11 @@ package app.morphe.patches.facebook.stories.cleanup
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -85,5 +90,83 @@ class StoryViewerCleanupShapesTest {
     @Test
     fun `a flag tested in another register isn't the gate`() {
         assertNull(pillSwitch(render("iget-boolean v0, p0, Lfixture/Column;->shown:Z\nif-eqz v4, :loop")))
+    }
+
+    private val session = "Lcom/facebook/auth/usersession/FbUserSession;"
+    private val immutableList = "Lcom/google/common/collect/ImmutableList;"
+
+    /**
+     * A list runner shaped like 588's processBucketData: the list in p2 goes to each source in p1 in
+     * turn, [answer] keeps what it hands back and [step] goes on to the next one. 8 registers, so
+     * p0 to p2 are v5 to v7.
+     */
+    private fun runner(answer: String = "move-result-object p2", step: String = "goto :loop") = MutableMethod(
+        ImmutableMethod(
+            "Lfixture/Controller;", "run",
+            listOf(session, "Ljava/util/List;", immutableList).map { ImmutableMethodParameter(it, null, null) },
+            immutableList, AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null,
+            ImmutableMethodImplementation(8, emptyList(), null, null),
+        ),
+    ).apply {
+        addInstructionsWithLabels(
+            0,
+            """
+                invoke-interface { p1 }, Ljava/util/List;->iterator()Ljava/util/Iterator;
+                move-result-object v0
+                :loop
+                invoke-interface { v0 }, Ljava/util/Iterator;->hasNext()Z
+                move-result v1
+                if-eqz v1, :done
+                invoke-interface { v0 }, Ljava/util/Iterator;->next()Ljava/lang/Object;
+                move-result-object v1
+                check-cast v1, Lfixture/Source;
+                new-instance v2, Lfixture/Flags;
+                invoke-direct { v2 }, Lfixture/Flags;-><init>()V
+                invoke-interface { v1, p0, v2, p2 }, Lfixture/Source;->answer(${session}Lfixture/Flags;$immutableList)$immutableList
+                $answer
+                $step
+                :done
+                return-object p2
+            """,
+        )
+    }
+
+    /** #521: the loop's way out is right after the step back, with the finished list in p2. */
+    @Test
+    fun `the runner is done with its sources right after the step back`() {
+        assertEquals(SourcesDone(at = 13, register = 7), sourcesDone(runner()))
+    }
+
+    /** An answer kept in another register isn't the runner's list going round. */
+    @Test
+    fun `an answer kept elsewhere isn't the list going round`() {
+        assertNull(sourcesDone(runner(answer = "move-result-object v3")))
+    }
+
+    /** A source asked once, with no step back up, isn't the runner's loop. */
+    @Test
+    fun `a source asked once isn't the loop`() {
+        assertNull(sourcesDone(runner(step = "return-object p2")))
+    }
+
+    /** The finished list goes through the extension and back into an ImmutableList, and the loop's test lands on that. */
+    @Test
+    fun `the finished list goes through the extension where the loop comes out`() {
+        val method = runner()
+        method.dropCreateCardsAt(SourcesDone(at = 13, register = 7))
+        val code = method.implementation!!.instructions.toList()
+        assertEquals(
+            listOf(Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT,
+                Opcode.RETURN_OBJECT),
+            code.drop(13).map { it.opcode },
+        )
+        assertEquals(WITHOUT_CREATE_CARDS, (code[13] as ReferenceInstruction).reference.toString())
+        assertEquals("$immutableList->copyOf(Ljava/util/Collection;)$immutableList", (code[15] as ReferenceInstruction).reference.toString())
+        assertEquals(listOf(7, 7, 7, 7), listOf(
+            (code[13] as RegisterRangeInstruction).startRegister, (code[14] as OneRegisterInstruction).registerA,
+            (code[15] as RegisterRangeInstruction).startRegister, (code[16] as OneRegisterInstruction).registerA,
+        ))
+        val at = code.runningFold(0) { offset, it -> offset + it.codeUnits }
+        assertEquals("the loop's test doesn't land on the hook", at[13], at[4] + (code[4] as OffsetInstruction).codeOffset)
     }
 }
