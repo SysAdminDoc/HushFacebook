@@ -114,4 +114,73 @@ class ListingPhotoFixtureTest {
         }
         assertEquals("a declared build has no fixture", versions, checked)
     }
+
+    /**
+     * React Native's touch dispatcher, an obfuscated class built around the root view it serves:
+     * only its handleTouchEvent logs [TOUCH_DOWN_TWICE], and it takes the touch first. The roots
+     * calling it from onInterceptTouchEvent ignore requestDisallowInterceptTouchEvent, so it hears
+     * every touch in the window. After the patch its first instruction hands the touch over, one
+     * range call over its own parameter, with the rest of the body kept.
+     */
+    @Test
+    fun `React Native's touch dispatcher hands every touch to the extension, on each declared build`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, TOUCH_DOWN_TWICE)
+                val handlers = holders.flatMap { holder ->
+                    holder.methods.filter { method ->
+                        method.implementation?.instructions?.any { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == TOUCH_DOWN_TWICE } == true
+                    }
+                }
+                val handler = handlers.singleOrNull() ?: throw AssertionError("$name: methods logging the line: ${handlers.map { "${it.definingClass}->${it.name}" }}")
+                assertEquals("$name: takes the touch first", "Landroid/view/MotionEvent;", handler.shape().firstOrNull())
+                assertEquals("$name: returns nothing", "V", handler.returnType)
+                val dispatcher = holders.single { it.type == handler.definingClass }
+                assertTrue("$name: ${dispatcher.type} is built around its root view", dispatcher.methods.any {
+                    it.name == "<init>" && it.shape() == listOf("Landroid/view/ViewGroup;")
+                })
+
+                val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.methodSection.any { it.definingClass == handler.definingClass && it.name == handler.name } }) { method ->
+                    method.definingClass != handler.definingClass && method.implementation?.instructions?.any {
+                        val called = (it as? ReferenceInstruction)?.reference as? MethodReference
+                        called?.definingClass == handler.definingClass && called.name == handler.name
+                    } == true
+                }
+                assertTrue("$name: no root view hands its touches to ${handler.definingClass}->${handler.name}",
+                    callers.any { it.name == "onInterceptTouchEvent" })
+                val rootTypes = callers.map { it.definingClass }.toSet()
+                val roots = FixtureDex.classes(bundle, rootTypes)
+                assertEquals("$name: root views read", rootTypes, roots.keys)
+                for ((type, root) in roots) {
+                    // React Native's roots never set their own flag, so they keep hearing every touch.
+                    val disallow = root.methods.singleOrNull { it.name == "requestDisallowInterceptTouchEvent" && it.shape() == listOf("Z") }
+                        ?: throw AssertionError("$name: $type keeps the framework's requestDisallowInterceptTouchEvent")
+                    assertTrue("$name: $type stops intercepting when a view asks", disallow.implementation!!.instructions.none {
+                        it.opcode == Opcode.INVOKE_SUPER || it.opcode == Opcode.INVOKE_SUPER_RANGE
+                    })
+                }
+
+                val before = handler.implementation!!.instructions.toList()
+                val context = PatchContexts.of(listOf(dispatcher))
+                val step = context.listingPhotoTouches()
+                assertEquals("$name: nothing changes before the step runs", before.size, patched(context, handler).size)
+                step()
+                val after = patched(context, handler)
+                val call = after.first()
+                val where = "$name ${handler.definingClass}->${handler.name}"
+                assertEquals("$where: the hook comes first", Opcode.INVOKE_STATIC_RANGE, call.opcode)
+                assertEquals("$where: the hook", LISTING_ROOT, (call as ReferenceInstruction).reference.toString())
+                assertEquals("$where: registers handed over", 1, (call as RegisterRangeInstruction).registerCount)
+                assertEquals("$where: from the touch", firstParameter(handler), call.startRegister)
+                assertEquals("$where: the rest of the body is kept",
+                    before.filter { it.opcode != Opcode.NOP }.map { it.opcode },
+                    after.drop(1).filter { it.opcode != Opcode.NOP }.map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
 }

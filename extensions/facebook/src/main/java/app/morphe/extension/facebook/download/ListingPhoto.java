@@ -41,17 +41,21 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * placeholder has no web address and keeps nothing.
  *
  * <p>The image view has no touch handling of its own, so a view with a kept address gets a touch
- * listener, and this times the press itself the way Long press opens comments does: a finger held
- * still for the system's long-press time on a photo at least two thirds of the screen across (and a
- * third of it tall) saves the kept address through the same save as every other photo, with its
- * folder and its toasts, then ends the press for the rest of the screen, so the lift doesn't also
- * open the photo. Moving past the touch slop, a second finger, a lift, a cancel or a window that
+ * listener that only notes a finger going down on it and never takes the finger: the listing's own
+ * pressable gets every touch as before. React Native then takes the press from the photo for that
+ * pressable, so the photo never hears how it ends. What does is React Native's touch dispatcher,
+ * which each root view of a React Native screen hands every touch in its window before its views
+ * see it, and which the patch hands {@link #root} each touch first. A root never stops listening
+ * when a view asks it to. This times the press the way Long press opens comments does: a finger
+ * held still for the system's long-press time on a photo at least two thirds of the screen across
+ * (and a third of it tall) saves the kept address through the same save as every other photo, with
+ * its folder and its toasts, then ends the press for the rest of the screen, so the lift doesn't
+ * also open the photo. Moving past the touch slop, a second finger, a lift, a cancel or a window that
  * lost focus saves nothing, and so does a press on a smaller image, like an icon or a seller's
- * picture. The listener takes a finger only while it times the press; React Native's root view hears
- * every touch before its views do, so a tap or a swipe still reaches the listing. With either switch
- * off or Hushfacebook paused nothing is kept, the listener comes off with the next photo, and every
- * touch goes through untouched. Facebook draws big photos on a few other React Native screens the
- * same way, where a long press saves the same way.
+ * picture, or one the root never heard go down. With either switch off or Hushfacebook paused
+ * nothing is kept, the listener comes off with the next photo, and every touch goes through
+ * untouched. Facebook draws big photos on a few other React Native screens the same way, where a
+ * long press saves the same way.
  */
 public final class ListingPhoto {
     private static final String FAMILY = FamilyNames.PHOTO_DOWNLOAD;
@@ -64,6 +68,7 @@ public final class ListingPhoto {
     /** Counted for each press on a listing photo held long enough to save it. */
     static final String HELD = "listing photo held";
     private static final String HOOK = "Marketplace listing photo";
+    private static final String TOUCHES = "React Native touches";
 
     /** The address kept for each image view, forgotten with the view. */
     private static final Map<View, String> ADDRESSES = Collections.synchronizedMap(new WeakHashMap<>());
@@ -82,12 +87,14 @@ public final class ListingPhoto {
     private static long downTime;
     private static int slop;
     private static boolean timing;
+    /** When the finger React Native's root last heard go down went down. */
+    private static long rootDown = Long.MIN_VALUE;
     private static final Runnable FIRE = ListingPhoto::fire;
 
-    /** Each kept photo's touches: timed here, and the finger taken only while a press is timed. */
+    /** Each kept photo's touches: a finger going down is noted, and every touch goes on to the listing. */
     private static final View.OnTouchListener PRESS = (view, event) -> {
-        touch(view, event);
-        return event != null && event.getActionMasked() == MotionEvent.ACTION_DOWN && timing && pressed.get() == view;
+        down(view, event);
+        return false;
     };
 
     private ListingPhoto() {
@@ -208,33 +215,60 @@ public final class ListingPhoto {
     }
 
     /**
-     * One touch on a kept photo [view], from its touch listener. A finger going down on a big
-     * photo with a kept address starts the timer; anything but a small wobble stops it. Never throws.
+     * A finger going down on a kept photo [view], from its touch listener: on a big photo with a
+     * kept address, for a press React Native's root heard go down, the timer starts. A photo drawn
+     * above another hears the press first, so the one under it leaves that press alone. Never throws.
      */
-    static void touch(@Nullable View view, @Nullable MotionEvent event) {
+    static void down(@Nullable View view, @Nullable MotionEvent event) {
         try {
-            if (view == null || event == null) return;
-            int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN) {
-                stop();
-                if (!enabled() || addressOf(view) == null || !bigEnough(view)) return;
-                pressed = new WeakReference<>(view);
-                downX = event.getRawX();
-                downY = event.getRawY();
-                downTime = event.getDownTime();
-                slop = ViewConfiguration.get(view.getContext()).getScaledTouchSlop();
-                timing = true;
-                main().postDelayed(FIRE, ViewConfiguration.getLongPressTimeout());
+            if (view == null || event == null || event.getActionMasked() != MotionEvent.ACTION_DOWN) return;
+            if (timing && event.getDownTime() == downTime) return;
+            stop();
+            if (!enabled() || addressOf(view) == null || !bigEnough(view)) return;
+            if (event.getDownTime() != rootDown) {
+                Logger.diagnosticDebug(DiagnosticCategory.DOWNLOADS, SOURCE,
+                        () -> "Marketplace photo: React Native's root didn't hear this press");
                 return;
             }
-            if (!timing || pressed.get() != view) return;
-            if (action != MotionEvent.ACTION_MOVE
-                    || Math.hypot(event.getRawX() - downX, event.getRawY() - downY) > slop) {
-                stop();
-            }
+            HookStatus.bound(FAMILY, TOUCHES);
+            pressed = new WeakReference<>(view);
+            downX = event.getRawX();
+            downY = event.getRawY();
+            downTime = event.getDownTime();
+            slop = ViewConfiguration.get(view.getContext()).getScaledTouchSlop();
+            timing = true;
+            main().postDelayed(FIRE, ViewConfiguration.getLongPressTimeout());
+            Logger.diagnosticDebug(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "Marketplace photo: timing a press");
         } catch (Throwable t) {
             stop();
             HookStatus.threw(FAMILY, HOOK, t);
+        }
+    }
+
+    /**
+     * Injection point, first thing in React Native's touch dispatcher, which a React Native screen's
+     * root view hands every touch in its window before its views see it. A finger going down is
+     * noted, and while a press is timed, anything of that finger's but a small wobble ends it: a
+     * move past the touch slop, a second finger, a lift or a cancel. Never throws.
+     */
+    public static void root(@Nullable MotionEvent event) {
+        try {
+            if (event == null) return;
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                rootDown = event.getDownTime();
+                if (timing && event.getDownTime() != downTime) stop();
+                return;
+            }
+            if (!timing || event.getDownTime() != downTime) return;
+            if (action == MotionEvent.ACTION_MOVE
+                    && Math.hypot(event.getRawX() - downX, event.getRawY() - downY) <= slop) return;
+            stop();
+            Logger.diagnosticDebug(DiagnosticCategory.DOWNLOADS, SOURCE,
+                    () -> "Marketplace photo: press ended before the long-press time (" + MotionEvent.actionToString(action) + ")");
+        } catch (Throwable t) {
+            stop();
+            HookStatus.threw(FAMILY, TOUCHES, t);
         }
     }
 
@@ -301,6 +335,7 @@ public final class ListingPhoto {
     /** For tests: forgets every kept address and the press being timed. */
     static void reset() {
         stop();
+        rootDown = Long.MIN_VALUE;
         ADDRESSES.clear();
     }
 }

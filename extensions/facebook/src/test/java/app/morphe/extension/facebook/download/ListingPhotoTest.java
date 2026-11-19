@@ -49,11 +49,13 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Long press to save Marketplace photos (#515): which of the sources React Native hands a listing's
  * photo is kept, and which presses on that photo save it. Touches go through the activity's window
- * to a plain image view, as on a listing, under a screen that hears every touch first the way
- * React Native's root view does. A press held still on a big photo saves it and ends the press for
- * the screen, so the lift doesn't also open the photo. One that moves, lifts early, gains a second
- * finger or loses the window saves nothing, and so does every press on a small image, with either
- * switch off or with Hushfacebook paused.
+ * to a plain image view inside the listing's pressable, as on a listing, under a screen that hears
+ * every touch first and keeps hearing them the way React Native's root view does, handing each to
+ * ListingPhoto as the patched touch dispatcher does. A press held still on a big photo saves it and
+ * ends the press for the screen, so the lift doesn't also open the photo, even once React Native
+ * has taken the press from the photo. One that moves, lifts early, gains a second finger or loses
+ * the window saves nothing, and so does every press on a small image, one the root never heard,
+ * and any with either switch off or with Hushfacebook paused. The photo never takes the finger.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -71,16 +73,20 @@ public class ListingPhotoTest {
     private final AtomicInteger saves = new AtomicInteger();
     private ActivityController<Activity> window;
     private Screen screen;
+    private Pressable pressable;
     private ImageView photo;
     private long downTime;
 
     /**
-     * React Native's root view: it hears every touch before the views under it, then takes any
-     * finger none of them took.
+     * React Native's root view: it hears every touch before the views under it, and since it
+     * ignores a view's request to stop intercepting, it keeps hearing them after a view under it
+     * takes the finger. It hands each touch to ListingPhoto, as the patched touch dispatcher does
+     * from the root's onInterceptTouchEvent and onTouchEvent, and takes any finger nothing took.
      */
     static final class Screen extends FrameLayout {
         final List<Integer> heard = new ArrayList<>();
-        final List<Integer> leftToIt = new ArrayList<>();
+        /** Off for a screen whose touches never reach the patched dispatcher. */
+        boolean dispatching = true;
 
         Screen(Context context) {
             super(context);
@@ -88,13 +94,50 @@ public class ListingPhotoTest {
 
         @Override
         public boolean onInterceptTouchEvent(MotionEvent event) {
-            heard.add(event.getActionMasked());
+            hear(event);
             return false;
         }
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            leftToIt.add(event.getActionMasked());
+            hear(event);
+            return true;
+        }
+
+        @Override
+        public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+            // React Native's roots keep hearing every touch.
+        }
+
+        private void hear(MotionEvent event) {
+            heard.add(event.getActionMasked());
+            if (dispatching) ListingPhoto.root(event);
+        }
+    }
+
+    /**
+     * The pressable around a listing's photo, a React Native view that takes any finger the photo
+     * leaves it. Once React Native picks it to answer the press, it takes the press from anything
+     * under it on the next touch but a lift, as React Native's responder does, so a photo holding
+     * the finger would hear a cancel while the finger is still down.
+     */
+    static final class Pressable extends FrameLayout {
+        final List<Integer> taken = new ArrayList<>();
+        boolean responder;
+
+        Pressable(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent event) {
+            int action = event.getActionMasked();
+            return responder && action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_UP;
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            taken.add(event.getActionMasked());
             return true;
         }
     }
@@ -111,8 +154,10 @@ public class ListingPhotoTest {
         window = Robolectric.buildActivity(Activity.class).setup();
         Activity activity = window.get();
         screen = new Screen(activity);
+        pressable = new Pressable(activity);
         photo = new ImageView(activity);
-        screen.addView(photo, new FrameLayout.LayoutParams(1080, 1500));
+        pressable.addView(photo, new FrameLayout.LayoutParams(1080, 1500));
+        screen.addView(pressable, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         activity.setContentView(screen);
         window.windowFocusChanged(true);
         waitFor(100);
@@ -320,11 +365,12 @@ public class ListingPhotoTest {
         touch(MotionEvent.ACTION_UP, X, Y);
         assertEquals("the screen heard the press start, then end in a cancel, never a lift",
                 List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL), screen.heard);
-        assertTrue("the screen took the rest of the press", screen.leftToIt.isEmpty());
+        assertEquals("the listing's pressable heard the press end in a cancel",
+                List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL), pressable.taken);
     }
 
     @Test
-    public void aTimedPressTakesTheFingerAndATapStillReachesTheScreen() throws Exception {
+    public void aTapStillReachesTheListing() throws Exception {
         listing(new Source(FULL, 2048, 1536));
         touch(MotionEvent.ACTION_DOWN, X, Y);
         waitFor(100);
@@ -332,6 +378,59 @@ public class ListingPhotoTest {
         holdLongEnough();
         assertEquals(0, savedAfterSaves());
         assertEquals("the screen heard the whole tap", List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP), screen.heard);
+        assertEquals("the pressable took the whole tap", List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP), pressable.taken);
+    }
+
+    @Test
+    public void aKeptPhotoNeverTakesTheFingerFromTheListing() {
+        listing(new Source(FULL, 2048, 1536));
+        touch(MotionEvent.ACTION_DOWN, X, Y);
+        assertEquals("the photo kept the finger from the listing's pressable", List.of(MotionEvent.ACTION_DOWN), pressable.taken);
+    }
+
+    // ---- When React Native takes the press --------------------------------------------------------
+
+    @Test
+    public void aHoldStillSavesOnceReactNativeTakesThePressFromThePhoto() throws Exception {
+        listing(new Source(FULL, 2048, 1536));
+        touch(MotionEvent.ACTION_DOWN, X, Y);
+        pressable.responder = true;
+        touch(MotionEvent.ACTION_MOVE, X + 1, Y);
+        holdLongEnough();
+        assertEquals("React Native taking the press stopped the hold", 1, savedAfterSaves());
+        assertEquals("the press didn't end for the listing", MotionEvent.ACTION_CANCEL, (int) pressable.taken.get(pressable.taken.size() - 1));
+    }
+
+    @Test
+    public void aTapOrASwipeReactNativeTookSavesNothing() throws Exception {
+        listing(new Source(FULL, 2048, 1536));
+        touch(MotionEvent.ACTION_DOWN, X, Y);
+        pressable.responder = true;
+        touch(MotionEvent.ACTION_MOVE, X + 1, Y);
+        waitFor(100);
+        touch(MotionEvent.ACTION_UP, X + 1, Y);
+        holdLongEnough();
+        assertEquals("a tap saved", 0, savedAfterSaves());
+        assertEquals("the tap reached the screen whole",
+                List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP), screen.heard);
+
+        pressable.responder = false;
+        int slop = ViewConfiguration.get(photo.getContext()).getScaledTouchSlop();
+        touch(MotionEvent.ACTION_DOWN, X, Y);
+        pressable.responder = true;
+        touch(MotionEvent.ACTION_MOVE, X + slop + 10, Y);
+        holdLongEnough();
+        assertEquals("a swipe saved", 0, savedAfterSaves());
+    }
+
+    @Test
+    public void aPressTheRootNeverHandedOverSavesNothing() throws Exception {
+        // Nothing would hear the rest of such a press, so a swipe would save.
+        screen.dispatching = false;
+        listing(new Source(FULL, 2048, 1536));
+        touch(MotionEvent.ACTION_DOWN, X, Y);
+        holdLongEnough();
+        assertEquals(0, savedAfterSaves());
     }
 
     @Test
@@ -378,12 +477,12 @@ public class ListingPhotoTest {
     }
 
     @Test
-    public void aPhotoWithNoAddressLeavesTheFingerToTheScreen() throws Exception {
+    public void aPhotoWithNoAddressLeavesTheFingerToTheListing() throws Exception {
         touch(MotionEvent.ACTION_DOWN, X, Y);
         holdLongEnough();
         assertEquals(0, savedAfterSaves());
         assertNull(ShadowToast.getTextOfLatestToast());
-        assertEquals(List.of(MotionEvent.ACTION_DOWN), screen.leftToIt);
+        assertEquals(List.of(MotionEvent.ACTION_DOWN), pressable.taken);
     }
 
     @Test
@@ -394,7 +493,7 @@ public class ListingPhotoTest {
         touch(MotionEvent.ACTION_DOWN, 50, 50);
         holdLongEnough();
         assertEquals("an icon saved", 0, savedAfterSaves());
-        assertEquals("the icon took the finger", List.of(MotionEvent.ACTION_DOWN), screen.leftToIt);
+        assertEquals("the icon kept the finger from the listing", List.of(MotionEvent.ACTION_DOWN), pressable.taken);
 
         touch(MotionEvent.ACTION_UP, 50, 50);
         resize(300, 50);
@@ -438,7 +537,7 @@ public class ListingPhotoTest {
         touch(MotionEvent.ACTION_DOWN, X, Y);
         holdLongEnough();
         assertEquals(0, savedAfterSaves());
-        assertEquals("off, the photo still took the finger", List.of(MotionEvent.ACTION_DOWN), screen.leftToIt);
+        assertEquals("off, the photo kept the finger from the listing", List.of(MotionEvent.ACTION_DOWN), pressable.taken);
     }
 
     @Test

@@ -25,25 +25,72 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Long press to save Marketplace photos over a stand-in React Native image manager: its typed
- * setSource and setSrc each hand their view and sources to the extension first, a bridge setter
- * taking any View is left alone, and the patch refuses a build with no manager, no typed setter, two
- * typed setters under one name, a view that isn't an ImageView, or where something jumps back to a
- * setter's first instruction, which would skip the call.
+ * Long press to save Marketplace photos over a stand-in React Native image manager and touch
+ * dispatcher. The manager's typed setSource and setSrc each hand their view and sources to the
+ * extension first, a bridge setter taking any View is left alone, and the patch refuses a build with
+ * no manager, no typed setter, two typed setters under one name, a view that isn't an ImageView, or
+ * where something jumps back to a setter's first instruction, which would skip the call. The
+ * dispatcher's handleTouchEvent, an obfuscated method found by the line it logs, hands each touch
+ * over first; a string table also holding that line is passed over, and the patch refuses a build
+ * with no such method, two, one that doesn't take the touch first, or one that jumps back to its
+ * first instruction.
  */
 class ListingPhotoShapesTest {
     private val view = "Lfixture/ImageView;"
     private val array = "Lcom/facebook/react/bridge/ReadableArray;"
+    private val dispatcher = "Lfixture/TouchDispatcher;"
+    private val motionEvent = "Landroid/view/MotionEvent;"
 
-    private fun method(owner: String, name: String, parameters: List<String>, returns: String, locals: Int, smali: String): Method {
-        val ins = parameters.size + 1
+    private fun method(
+        owner: String, name: String, parameters: List<String>, returns: String, locals: Int, smali: String, static: Boolean = false,
+    ): Method {
+        val ins = parameters.size + if (static) 0 else 1
+        val flags = AccessFlags.PUBLIC.value or if (static) AccessFlags.STATIC.value else 0
         return MutableMethod(
             ImmutableMethod(
-                owner, name, parameters.map { ImmutableMethodParameter(it, null, null) }, returns, AccessFlags.PUBLIC.value,
+                owner, name, parameters.map { ImmutableMethodParameter(it, null, null) }, returns, flags,
                 null, null, ImmutableMethodImplementation(locals + ins, emptyList(), null, null),
             ),
         ).apply { addInstructionsWithLabels(0, smali) }
     }
+
+    /** handleTouchEvent as Facebook's React Native builds it: the touch, the bridge's context and the event dispatcher. */
+    private fun handleTouchEvent(owner: String = dispatcher, locals: Int = 2, loopToStart: Boolean = false, first: String = motionEvent) = method(
+        owner, "A02", listOf(first, "Ljava/lang/Object;", "Ljava/lang/Object;"), "V", locals,
+        if (loopToStart) {
+            """
+                :top
+                const/4 v0, 0x0
+                const-string v1, "$TOUCH_DOWN_TWICE"
+                if-eqz v0, :top
+                return-void
+            """
+        } else {
+            """
+                invoke-virtual/range { p1 .. p1 }, $first->getAction()I
+                move-result v0
+                if-nez v0, :done
+                const-string v1, "$TOUCH_DOWN_TWICE"
+                :done
+                return-void
+            """
+        },
+    )
+
+    /** A Redex string table that holds the line as well, the way 586 moved some of its strings. */
+    private fun stringTable() = classOf(
+        "Lfixture/Strings;", "Ljava/lang/Object;",
+        method("Lfixture/Strings;", "A00", listOf("I"), "Ljava/lang/String;", 1,
+            """
+                const-string v0, "$TOUCH_DOWN_TWICE"
+                return-object v0
+            """, static = true),
+    )
+
+    private fun dispatcherClass(vararg methods: Method) = classOf(dispatcher, "Ljava/lang/Object;", *methods)
+
+    private fun dispatcherCode(context: BytecodePatchContext) =
+        context.mutableClassDefBy(dispatcher).methods.single { it.name == "A02" }.implementation!!.instructions.toList()
 
     private fun classOf(type: String, superclass: String, vararg methods: Method): ClassDef =
         ImmutableClassDef(type, AccessFlags.PUBLIC.value, superclass, null, null, null, emptyList(), methods.toList())
@@ -159,6 +206,62 @@ class ListingPhotoShapesTest {
     fun `a jump back to the first instruction is refused`() {
         assertThrows(PatchException::class.java) {
             PatchContexts.of(listOf(manager(typedSetter("setSource"), typedSetter("setSrc", loopToStart = true)), imageView())).listingPhotoSave()
+        }
+    }
+
+    // ---- React Native's touch dispatcher ----------------------------------------------------------
+
+    @Test
+    fun `the touch dispatcher hands every touch over first`() {
+        val context = PatchContexts.of(listOf(dispatcherClass(handleTouchEvent()), stringTable()))
+        val before = dispatcherCode(context).map { it.opcode }
+        val step = context.listingPhotoTouches()
+        assertEquals("nothing changes before the step runs", before, dispatcherCode(context).map { it.opcode })
+        step()
+
+        val code = dispatcherCode(context)
+        assertEquals("the hook comes first", Opcode.INVOKE_STATIC_RANGE, code[0].opcode)
+        assertEquals(LISTING_ROOT, (code[0] as ReferenceInstruction).reference.toString())
+        // Two locals, then p0 = v2, so the touch is v3.
+        assertEquals("the touch", 3, (code[0] as RegisterRangeInstruction).startRegister)
+        assertEquals(1, (code[0] as RegisterRangeInstruction).registerCount)
+        assertEquals("the rest is kept", before, code.drop(1).map { it.opcode })
+        val table = context.mutableClassDefBy("Lfixture/Strings;").methods.single().implementation!!.instructions.toList()
+        assertEquals("the string table was hooked", listOf(Opcode.CONST_STRING, Opcode.RETURN_OBJECT), table.map { it.opcode })
+    }
+
+    @Test
+    fun `the touch is read from the dispatcher's own registers`() {
+        val context = PatchContexts.of(listOf(dispatcherClass(handleTouchEvent(locals = 20))))
+        context.listingPhotoTouches()()
+        val call = dispatcherCode(context).first()
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, call.opcode)
+        // Past v15, so only a range call can hand it over.
+        assertEquals(21, (call as RegisterRangeInstruction).startRegister)
+    }
+
+    @Test
+    fun `no touch dispatcher or two are refused`() {
+        assertThrows("none", PatchException::class.java) {
+            PatchContexts.of(listOf(stringTable())).listingPhotoTouches()
+        }
+        assertThrows("two", PatchException::class.java) {
+            PatchContexts.of(listOf(dispatcherClass(handleTouchEvent()), classOf("Lfixture/Other;", "Ljava/lang/Object;", handleTouchEvent("Lfixture/Other;"))))
+                .listingPhotoTouches()
+        }
+    }
+
+    @Test
+    fun `a dispatcher that doesn't take the touch first is refused`() {
+        assertThrows(PatchException::class.java) {
+            PatchContexts.of(listOf(dispatcherClass(handleTouchEvent(first = "Landroid/view/KeyEvent;")))).listingPhotoTouches()
+        }
+    }
+
+    @Test
+    fun `a jump back to the dispatcher's first instruction is refused`() {
+        assertThrows(PatchException::class.java) {
+            PatchContexts.of(listOf(dispatcherClass(handleTouchEvent(loopToStart = true)))).listingPhotoTouches()
         }
     }
 }
