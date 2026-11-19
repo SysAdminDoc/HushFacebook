@@ -3017,3 +3017,7 @@ A reel you take out of Clean mode will go back into it when the comments or a me
 A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Temiz moddan çıkardığın bir reel, %1$d saniye dokunulmadığında bu moda geri dönecek.
 Hide New for you on reels	Reels'te “Senin için yeni” yazısını gizle
 Takes "New for you", and other reasons Facebook gives for showing you a reel, off the line under its author, so the date and the song show right away. A change shows from the next reel.	“Senin için yeni” ve Facebook'un sana bir reel göstermek için verdiği diğer nedenleri paylaşan kişinin adının altındaki satırdan kaldırır, böylece tarih ve şarkı hemen görünür. Değişiklik bir sonraki reel'den itibaren görünür.
+# context: switch title under Comments and writing; it turns Facebook's own comment translation on for every comment as it loads
+Translate every comment	Her yorumu çevir
+# context: description of that switch; See translation is the name of Facebook's own link under a comment that translates it on request
+Comments in another language show Facebook's translation as they load, as if you'd tapped See translation on each one.	Başka dildeki yorumlar yüklenirken Facebook'un çevirisiyle görünür, sanki her birinde Çevirisini gör'e dokunmuşsun gibi.

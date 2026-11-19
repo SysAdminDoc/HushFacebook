@@ -3017,3 +3017,7 @@ A reel you take out of Clean mode will go back into it when the comments or a me
 A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Reel ที่คุณออกจากโหมดคลีนจะกลับเข้าโหมดนี้หลังจากไม่ได้แตะ %1$d วินาที
 Hide New for you on reels	ซ่อน "ใหม่สำหรับคุณ" ใน Reels
 Takes "New for you", and other reasons Facebook gives for showing you a reel, off the line under its author, so the date and the song show right away. A change shows from the next reel.	นำ "ใหม่สำหรับคุณ" และเหตุผลอื่นที่ Facebook ใช้แสดง Reel ให้คุณออกจากบรรทัดใต้ชื่อผู้โพสต์ เพื่อให้เห็นวันที่และเพลงได้ทันที การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
+# context: switch title under Comments and writing; it turns Facebook's own comment translation on for every comment as it loads
+Translate every comment	แปลทุกความคิดเห็น
+# context: description of that switch; See translation is the name of Facebook's own link under a comment that translates it on request
+Comments in another language show Facebook's translation as they load, as if you'd tapped See translation on each one.	ความคิดเห็นในภาษาอื่นจะแสดงคำแปลของ Facebook ทันทีที่โหลด เหมือนคุณแตะ "ดูคำแปล" ที่ความคิดเห็นแต่ละรายการ

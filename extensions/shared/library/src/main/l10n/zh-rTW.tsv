@@ -3021,3 +3021,7 @@ A reel you take out of Clean mode will go back into it when the comments or a me
 A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	你離開簡潔模式的 Reel 會在 %1$d 秒沒有觸碰後回到簡潔模式。
 Hide New for you on reels	在 Reels 上隱藏「為你推薦」
 Takes "New for you", and other reasons Facebook gives for showing you a reel, off the line under its author, so the date and the song show right away. A change shows from the next reel.	把「為你推薦」以及 Facebook 推薦某個 Reel 給你的其他原因從發佈者名字下方那一行移除，這樣日期和歌曲會馬上顯示。從下一個 Reel 開始生效。
+# context: switch title under Comments and writing; it turns Facebook's own comment translation on for every comment as it loads
+Translate every comment	翻譯每則留言
+# context: description of that switch; See translation is the name of Facebook's own link under a comment that translates it on request
+Comments in another language show Facebook's translation as they load, as if you'd tapped See translation on each one.	其他語言的留言在載入時就顯示 Facebook 的翻譯，就像你在每則留言上都點了「查看翻譯」.

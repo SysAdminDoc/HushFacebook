@@ -2903,3 +2903,7 @@ A reel you take out of Clean mode will go back into it when the comments or a me
 A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Um reel que você tirar do modo limpo vai voltar para ele depois de %1$d segundos sem toque.
 Hide New for you on reels	Ocultar “Novo para você” nos reels
 Takes "New for you", and other reasons Facebook gives for showing you a reel, off the line under its author, so the date and the song show right away. A change shows from the next reel.	Tira “Novo para você” e outros motivos que o Facebook dá para mostrar um reel da linha abaixo do nome de quem publicou, para que a data e a música apareçam na hora. A mudança aparece a partir do próximo reel.
+# context: switch title under Comments and writing; it turns Facebook's own comment translation on for every comment as it loads
+Translate every comment	Traduzir todos os comentários
+# context: description of that switch; See translation is the name of Facebook's own link under a comment that translates it on request
+Comments in another language show Facebook's translation as they load, as if you'd tapped See translation on each one.	Comentários em outro idioma mostram a tradução do Facebook ao carregar, como se você tivesse tocado em Ver tradução em cada um.

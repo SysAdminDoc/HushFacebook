@@ -202,6 +202,7 @@ public final class SettingsBackup {
             Settings.SEE_WHO_SHARED,
             Settings.PHOTO_CAROUSEL,
             Settings.TURN_OFF_AUTO_TRANSLATION,
+            Settings.TRANSLATE_EVERY_COMMENT,
             Settings.HIDE_FEEDS_HEADER,
             Settings.HIDE_SPONSORED_STORIES,
             Settings.HIDE_SUGGESTED_STORIES,

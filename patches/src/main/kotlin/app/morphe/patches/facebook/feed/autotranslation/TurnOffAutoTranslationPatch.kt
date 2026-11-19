@@ -93,6 +93,12 @@ internal const val COMMENT_TOGGLE = "updateState:CommentBodyComponent.updateIsTr
  * through the extension, which says ORIGINAL while the switch is on, so the comment starts in its
  * own words and See translation fetches the translation when tapped, as on comments Facebook never
  * translated.
+ *
+ * Every comment (#522): the render also builds the See translation link's click handler, and that
+ * handler goes to the extension as soon as it's built ([hookCommentTranslationLink]). With Translate
+ * every comment on, the extension sends it the click a tap would, through a helper on the body that
+ * first checks the comment isn't translated or tapped already, so a comment in another language
+ * shows Facebook's translation as it loads.
  */
 @Suppress("unused")
 val turnOffAutoTranslationPatch = bytecodePatch(
@@ -111,9 +117,11 @@ val turnOffAutoTranslationPatch = bytecodePatch(
         val getter = findTranslationTypeGetter()
         val reads = findCaptionReads()
         val comments = findCommentTypeReads()
+        val link = findCommentTranslationLink(comments.first().method.definingClass)
         hookTranslationType(getter)
         reads.forEach { hookCaptionRead(it) }
         comments.forEach { hookCommentTypeRead(it) }
+        hookCommentTranslationLink(link)
         enableStatus("autoTranslation")
     }
 }

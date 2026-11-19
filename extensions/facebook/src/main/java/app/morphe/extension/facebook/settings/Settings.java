@@ -3577,6 +3577,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_auto_translation", FALSE);
 
     /**
+     * Comments in another language show Facebook's translation as they load, the way a tap on See
+     * translation shows it ({@link app.morphe.extension.facebook.feed.TranslateComments}, #522). A
+     * change shows on the comments drawn after it.
+     */
+    public static final BooleanSetting TRANSLATE_EVERY_COMMENT =
+            new BooleanSetting("hushfacebook_translate_every_comment", FALSE);
+
+    /**
      * The Feeds tab opens on its posts, without the title row or the filters under it
      * ({@link app.morphe.extension.facebook.feed.FeedsHeader}). Facebook settles both as the tab is
      * built, so a change waits for a restart.

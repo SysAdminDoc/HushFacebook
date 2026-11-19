@@ -1866,6 +1866,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/TranslateComments.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/autotranslation/CommentTranslationLink.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #522: Translate every comment. In the class that records CommentBodyComponent.updateIsTranslated, the render's one call that builds the See translation click handler (a builder whose last argument is the click id the event method also checks) hands the handler and the body's class to the extension as soon as it lands. Two helpers join the body: one passes the handler on, and one reads the comment's state the way the event method does (handler scope, component context, state with lazy updates applied) and, when neither of its two flags is set, sends the handler an event, which Facebook takes as a tap on See translation. While the switch is on, the extension calls that tap helper on the main thread, so a comment in another language shows Facebook's translation as it loads, through Facebook's own translation path."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/MarkColors.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/MarkColorsPatch.kt"
       ],

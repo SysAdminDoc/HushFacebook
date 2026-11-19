@@ -92,7 +92,7 @@ public enum PatchFamily {
     PHOTO_CAROUSEL(FamilyNames.PHOTO_CAROUSEL, "photoCarousel", null,
             Settings.PHOTO_CAROUSEL),
     AUTO_TRANSLATION(FamilyNames.AUTO_TRANSLATION, "autoTranslation", null,
-            Settings.TURN_OFF_AUTO_TRANSLATION),
+            Settings.TURN_OFF_AUTO_TRANSLATION, Settings.TRANSLATE_EVERY_COMMENT),
     FEEDS_HEADER(FamilyNames.FEEDS_HEADER, "feedsHeader", null,
             Settings.HIDE_FEEDS_HEADER),
     SPONSORED_STORIES(FamilyNames.SPONSORED_STORIES, "sponsoredStories", null,

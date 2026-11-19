@@ -977,7 +977,9 @@ final class FeedPages {
         boolean pictures = build.contains(PatchFamily.PROFILE_PICTURES);
         boolean ask = build.contains(PatchFamily.ASK_BEFORE_LIKE);
         boolean fold = build.contains(PatchFamily.FOLD_LONG_TEXT);
-        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures && !ask && !fold) return;
+        boolean translate = build.contains(PatchFamily.AUTO_TRANSLATION);
+        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures && !ask && !fold
+                && !translate) return;
         PreferenceCategory comments = category(screen, L10n.t("Comments and writing"));
         if (order) {
             comments.addPreference(toggle(context, Settings.DEFAULT_COMMENT_ORDER,
@@ -999,6 +1001,12 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_PROFILE_PICTURES,
                     L10n.t("Takes the profile picture off comments, so the name and text start where the picture "
                             + "was. A change shows on the comments drawn after it.")));
+        }
+        if (translate) {
+            // Read as each comment's See translation link is built, so a change shows on the comments drawn after it.
+            comments.addPreference(toggle(context, Settings.TRANSLATE_EVERY_COMMENT,
+                    L10n.t("Comments in another language show Facebook's translation as they load, as if you'd tapped "
+                            + "See translation on each one.")));
         }
         if (fold) {
             // Read as each comment's text is cut, so a change shows on the comments drawn after it.
