@@ -87,6 +87,11 @@ internal val SUBATTACHMENTS_FIELD = "subattachments".hashCode()
  *
  * A comment's long-press sheet gets Save GIF on a GIF comment, next to where Facebook puts Save
  * photo on a photo one (#226, CommentGifAnchors.kt), behind the first switch.
+ *
+ * Its fourth switch saves a Marketplace listing's photo on a long press, in the listing's photo
+ * strip or opened full screen (#515): React Native's image manager on Fresco Vito hands the
+ * extension's ListingPhoto each photo's view and sources, and ListingPhoto listens on that view
+ * for the press (ListingPhotoAnchors.kt).
  */
 @Suppress("unused")
 val downloadPhotoPatch = bytecodePatch(
@@ -107,11 +112,13 @@ val downloadPhotoPatch = bytecodePatch(
         val addPostMenuItem = postMenuPhotoItem()
         val addCommentGifRow = commentSheetGifRow()
         val addCommentPhotoRow = commentSheetPhotoRow()
+        val addListingPhoto = listingPhotoSave()
         unlockPhotoSave()
         fillCdnResize()
         addPostMenuItem()
         addCommentGifRow()
         addCommentPhotoRow()
+        addListingPhoto()
         enableStatus("photoDownload")
     }
 }

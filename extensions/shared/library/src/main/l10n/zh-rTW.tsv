@@ -3025,3 +3025,7 @@ Takes "New for you", and other reasons Facebook gives for showing you a reel, of
 Translate every comment	翻譯每則留言
 # context: description of that switch; See translation is the name of Facebook's own link under a comment that translates it on request
 Comments in another language show Facebook's translation as they load, as if you'd tapped See translation on each one.	其他語言的留言在載入時就顯示 Facebook 的翻譯，就像你在每則留言上都點了「查看翻譯」.
+# context: switch title under Downloads; holding a finger on a photo opened full screen from a Marketplace listing saves that photo to the phone
+Long press to save Marketplace photos	長按儲存 Marketplace 相片
+# context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
+With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	開啟「儲存任何相片」後，長按從 Marketplace 商品開啟的相片即可儲存.

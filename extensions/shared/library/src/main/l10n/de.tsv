@@ -3021,3 +3021,7 @@ Takes "New for you", and other reasons Facebook gives for showing you a reel, of
 Translate every comment	Jeden Kommentar übersetzen
 # context: description of that switch; See translation is the name of Facebook's own link under a comment that translates it on request
 Comments in another language show Facebook's translation as they load, as if you'd tapped See translation on each one.	Kommentare in einer anderen Sprache zeigen die Übersetzung von Facebook, sobald sie laden, als hättest du bei jedem auf „Übersetzung anzeigen“ getippt.
+# context: switch title under Downloads; holding a finger on a photo opened full screen from a Marketplace listing saves that photo to the phone
+Long press to save Marketplace photos	Marketplace-Fotos durch langes Drücken speichern
+# context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
+With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	Wenn „Jedes Foto speichern“ an ist, speichert langes Drücken ein Foto, das du aus einem Marketplace-Angebot öffnest.

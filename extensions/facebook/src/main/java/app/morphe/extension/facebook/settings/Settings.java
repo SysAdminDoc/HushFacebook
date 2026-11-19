@@ -2901,6 +2901,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_menu_photo_search", FALSE);
 
     /**
+     * Download any photo's fourth switch (#515): a long press on a photo opened full screen from a
+     * Marketplace listing saves it, the biggest size the listing sends, through the same save as
+     * every other photo. Off until you turn it on, and it needs {@link #DOWNLOAD_PHOTOS} on too.
+     */
+    public static final BooleanSetting MARKETPLACE_PHOTO_SAVE =
+            new BooleanSetting("hushfacebook_marketplace_photo_save", FALSE);
+
+    /**
      * Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of
      * its options list (issue #151). Facebook's sheet keeps the rows it tags itself above them, and
      * on photo posts that list is the More options page. The row under a post has no room for a
