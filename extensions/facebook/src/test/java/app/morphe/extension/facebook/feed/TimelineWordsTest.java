@@ -68,6 +68,10 @@ public class TimelineWordsTest {
         PauseForTests.resume();
         Settings.HIDE_POSTS_WITH_WORDS.resetToDefault();
         Settings.HIDE_LINK_POSTS.resetToDefault();
+        Settings.POST_WORDS_ON_TIMELINES.resetToDefault();
+        Settings.POST_WORDS_IN_GROUPS.resetToDefault();
+        Settings.LINK_POSTS_ON_TIMELINES.resetToDefault();
+        Settings.LINK_POSTS_IN_GROUPS.resetToDefault();
         Settings.HIDDEN_WORDS.resetToDefault();
         Settings.KEPT_WORDS.resetToDefault();
         PostWordsForTests.forget();
@@ -245,6 +249,40 @@ public class TimelineWordsTest {
         assertTrue(seen, seen.startsWith(TimelineWords.LISTS + ": 6 lists, 6 items, 0 removed"));
         assertTrue(seen, seen.endsWith(". Kinds: FEED 1, GROUPS_PENDING 1, PERMALINK 1, PROFILE_PAGE 1, SEARCH_RESULTS 1, "
                 + TimelineWords.UNNAMED_LIST + " 1"));
+    }
+
+    /**
+     * Profiles and Pages, and groups, each have their own switch under each rule (#458). They start
+     * on, so the rules reach where they did. One turned off keeps that place's posts and reads
+     * nothing for its rule there, and the other places still lose theirs.
+     */
+    @Test
+    public void eachPlacesSwitchKeepsItsOwnPosts() {
+        assertTrue(Settings.POST_WORDS_ON_TIMELINES.defaultValue);
+        assertTrue(Settings.POST_WORDS_IN_GROUPS.defaultValue);
+        assertTrue(Settings.LINK_POSTS_ON_TIMELINES.defaultValue);
+        assertTrue(Settings.LINK_POSTS_IN_GROUPS.defaultValue);
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+        Settings.POST_WORDS_ON_TIMELINES.save(false);
+        Settings.LINK_POSTS_IN_GROUPS.save(false);
+
+        assertFalse("words off on profiles keep the profile post", hides(post(SPOILER)));
+        assertTrue("links still go on profiles", hides(post(DRAMA)));
+        assertTrue("words still go in groups", hidesIn("GROUPS", post(SPOILER)));
+        assertFalse("links off in groups keep the group post", hidesIn("GROUPS", post(DRAMA)));
+        assertNull("no profile row was read for words", line(TimelineWords.WORDS.route));
+        assertNull("no group row was read for links", line(TimelineWords.GROUP_LINKS.route));
+
+        // Both rules off in groups, the story component's rows aren't read, and no list is asked for.
+        Settings.POST_WORDS_IN_GROUPS.save(false);
+        FeedFilterCounters.clear();
+        TimelineWords.ListReader broken = environment -> {
+            throw new IllegalStateException("asked with both group switches off");
+        };
+        assertFalse(TimelineWords.hideInList(post(SPOILER), environment("GROUPS"), broken, words, links));
+        assertNull(line(TimelineWords.LISTS));
+        assertFalse(HookStatus.report().toString(), HookStatus.report().toString().contains("group feed row"));
     }
 
     /** Both switches off, the story component's rows aren't read, and no list is asked for. */

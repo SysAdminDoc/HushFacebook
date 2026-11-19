@@ -95,6 +95,7 @@ public class PostTypesTest {
         Settings.HIDE_PHOTO_POSTS.resetToDefault();
         Settings.HIDE_VIDEO_POSTS.resetToDefault();
         Settings.HIDE_LINK_POSTS.resetToDefault();
+        Settings.LINK_POSTS_ON_FEED.resetToDefault();
         Settings.HIDE_BACKGROUND_POSTS.resetToDefault();
         PostText.cachedMembers = null;
         FeedFilterCounters.clear();
@@ -166,6 +167,31 @@ public class PostTypesTest {
         assertTrue("a later attachment's kind counts too",
                 guard(new GraphQLStory(null, stand.attachment(Style.FALLBACK), stand.attachment(Style.VIDEO_INLINE)),
                         stand.readers()));
+    }
+
+    /**
+     * The News feed has its own switch under Hide link posts (#458). It starts on, and off, Home's
+     * link posts stay and nothing is read for them, while the other kinds' switches still work.
+     */
+    @Test
+    public void theNewsFeedSwitchKeepsHomesLinkPosts() {
+        assertTrue(Settings.LINK_POSTS_ON_FEED.defaultValue);
+        Settings.HIDE_LINK_POSTS.save(true);
+        Settings.LINK_POSTS_ON_FEED.save(false);
+        Stand stand = new Stand();
+        GraphQLStory link = new GraphQLStory(new GraphQLStory(null, stand.attachment(Style.SHARE_LARGE_IMAGE)));
+
+        assertFalse(guard(link, stand.readers()));
+        assertEquals("nothing was read with the News feed switch off", 0, stand.calls);
+        assertNull(line(PostTypes.ROUTE));
+
+        Settings.HIDE_PHOTO_POSTS.save(true);
+        assertTrue("the photo switch still hides", guard(new GraphQLStory(null, stand.attachment(Style.PHOTO)),
+                stand.readers()));
+        assertFalse("and the link post still stays", guard(link, stand.readers()));
+
+        Settings.LINK_POSTS_ON_FEED.save(true);
+        assertTrue(guard(link, stand.readers()));
     }
 
     @Test

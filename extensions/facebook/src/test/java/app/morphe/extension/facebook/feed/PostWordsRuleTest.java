@@ -88,6 +88,7 @@ public class PostWordsRuleTest {
         PauseForTests.resume();
         Settings.HIDE_POSTS_WITH_WORDS.resetToDefault();
         Settings.POST_WORDS_WHOLE_WORDS.resetToDefault();
+        Settings.POST_WORDS_ON_FEED.resetToDefault();
         Settings.HIDDEN_WORDS.resetToDefault();
         Settings.KEPT_WORDS.resetToDefault();
         Settings.HIDE_SPONSORED_POSTS.resetToDefault();
@@ -143,6 +144,25 @@ public class PostWordsRuleTest {
         assertFalse(Settings.HIDE_POSTS_WITH_WORDS.defaultValue);
         assertEquals("", Settings.HIDDEN_WORDS.defaultValue);
         assertEquals("", Settings.KEPT_WORDS.defaultValue);
+    }
+
+    /**
+     * The News feed has its own switch under the rule (#458). It starts on, so the rule reaches
+     * Home as it did, and off, Home's posts keep their words and none is read.
+     */
+    @Test
+    public void theNewsFeedSwitchKeepsHomesPosts() {
+        assertTrue(Settings.POST_WORDS_ON_FEED.defaultValue);
+        listen("spoiler", "");
+        Settings.POST_WORDS_ON_FEED.save(false);
+        Answers answers = new Answers(FeedGuardForTests.postText("Huge SPOILER for tonight"));
+
+        assertFalse(guard(Category.ORGANIC, new GraphQLStory(), answers, new Answers(null)));
+        assertEquals("nothing was read with the News feed switch off", 0, answers.calls);
+        assertNull(wordsLine());
+
+        Settings.POST_WORDS_ON_FEED.save(true);
+        assertTrue(guard("Huge SPOILER for tonight"));
     }
 
     @Test

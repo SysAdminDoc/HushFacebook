@@ -35,7 +35,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * <p>The words are read the way a News feed post's are ({@link PostWords#storyKind}, a keep phrase
  * still winning), and the link rule is the Reels tab's ({@link PostTypes#captionLinkKind}): a post
  * whose card leads off Facebook, or whose words name a website off it. Both run on the News feed
- * switches.
+ * switches, each with its own switch for profiles and Pages and one for groups under it.
  *
  * <p>It fails open: switches off, a pause, settings that aren't ready, a unit that isn't a story or
  * can't be read, a list it can't name, or any failure in here, and Facebook draws the row. Each row
@@ -54,20 +54,22 @@ public final class TimelineWords {
         String name(@Nullable Object environment);
     }
 
-    /** One rule on a surface: its switch, its route, its reader and what takes a row off. */
+    /** One rule on a surface: its switch, the surface's own switch, its route and what takes a row off. */
     static final class Rule {
         final String route;
         private final BooleanSetting setting;
+        private final BooleanSetting place;
         private final Predicate<String> hides;
 
-        Rule(String route, BooleanSetting setting, Predicate<String> hides) {
+        Rule(String route, BooleanSetting setting, BooleanSetting place, Predicate<String> hides) {
             this.route = route;
             this.setting = setting;
+            this.place = place;
             this.hides = hides;
         }
 
         boolean switchedOn() {
-            return setting.get();
+            return setting.get() && place.get();
         }
 
         /** Whether [unit] comes off, counted on {@link #route} under what [reader] found. */
@@ -82,13 +84,13 @@ public final class TimelineWords {
     }
 
     static final Rule WORDS = new Rule("Profile posts with your words", Settings.HIDE_POSTS_WITH_WORDS,
-            PostWords::storyHides);
+            Settings.POST_WORDS_ON_TIMELINES, PostWords::storyHides);
     static final Rule LINKS = new Rule("Profile posts with links", Settings.HIDE_LINK_POSTS,
-            PostTypes::captionLinkHides);
+            Settings.LINK_POSTS_ON_TIMELINES, PostTypes::captionLinkHides);
     static final Rule GROUP_WORDS = new Rule("Group posts with your words", Settings.HIDE_POSTS_WITH_WORDS,
-            PostWords::storyHides);
+            Settings.POST_WORDS_IN_GROUPS, PostWords::storyHides);
     static final Rule GROUP_LINKS = new Rule("Group posts with links", Settings.HIDE_LINK_POSTS,
-            PostTypes::captionLinkHides);
+            Settings.LINK_POSTS_IN_GROUPS, PostTypes::captionLinkHides);
 
     /** Where each list the story component drew a row in is counted, while a switch is on. */
     static final String LISTS = "Story lists";

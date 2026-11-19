@@ -267,6 +267,19 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_words_whole_words", FALSE);
 
     /**
+     * Where {@link #HIDE_POSTS_WITH_WORDS} hides posts: Home, the Reels tab, groups, and profiles
+     * and Pages. Each starts on, so turning the switch on hides everywhere it did before.
+     */
+    public static final BooleanSetting POST_WORDS_ON_FEED =
+            new BooleanSetting("hushfacebook_post_words_on_feed", TRUE, Setting.parent(HIDE_POSTS_WITH_WORDS));
+    public static final BooleanSetting POST_WORDS_ON_REELS =
+            new BooleanSetting("hushfacebook_post_words_on_reels", TRUE, Setting.parent(HIDE_POSTS_WITH_WORDS));
+    public static final BooleanSetting POST_WORDS_IN_GROUPS =
+            new BooleanSetting("hushfacebook_post_words_in_groups", TRUE, Setting.parent(HIDE_POSTS_WITH_WORDS));
+    public static final BooleanSetting POST_WORDS_ON_TIMELINES =
+            new BooleanSetting("hushfacebook_post_words_on_timelines", TRUE, Setting.parent(HIDE_POSTS_WITH_WORDS));
+
+    /**
      * The words and phrases that hide a post while {@link #HIDE_POSTS_WITH_WORDS} is on, one per
      * line, bounded wherever it's read. It isn't a switch, and a paused Facebook reads it as empty.
      */
@@ -319,6 +332,16 @@ public class Settings extends BaseSettings {
     /** Feed posts whose attachment Facebook draws as a shared link, and shares of them. */
     public static final BooleanSetting HIDE_LINK_POSTS =
             new BooleanSetting("hushfacebook_hide_link_posts", FALSE);
+
+    /** Where {@link #HIDE_LINK_POSTS} hides posts, the same four places, each on to begin with. */
+    public static final BooleanSetting LINK_POSTS_ON_FEED =
+            new BooleanSetting("hushfacebook_link_posts_on_feed", TRUE, Setting.parent(HIDE_LINK_POSTS));
+    public static final BooleanSetting LINK_POSTS_ON_REELS =
+            new BooleanSetting("hushfacebook_link_posts_on_reels", TRUE, Setting.parent(HIDE_LINK_POSTS));
+    public static final BooleanSetting LINK_POSTS_IN_GROUPS =
+            new BooleanSetting("hushfacebook_link_posts_in_groups", TRUE, Setting.parent(HIDE_LINK_POSTS));
+    public static final BooleanSetting LINK_POSTS_ON_TIMELINES =
+            new BooleanSetting("hushfacebook_link_posts_on_timelines", TRUE, Setting.parent(HIDE_LINK_POSTS));
 
     /** Feed posts written on a colored background, which Facebook draws as large formatted text. */
     public static final BooleanSetting HIDE_BACKGROUND_POSTS =

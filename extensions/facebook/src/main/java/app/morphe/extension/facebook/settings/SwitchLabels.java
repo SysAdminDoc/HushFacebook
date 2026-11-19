@@ -93,9 +93,17 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_POSTS_WITH_WORDS) return L10n.t("Hide posts with words you choose");
         if (setting == Settings.HIDE_POSTS_FROM_SOURCES) return L10n.t("Hide posts from people, Pages and sites");
         if (setting == Settings.POST_WORDS_WHOLE_WORDS) return L10n.t("Match whole words");
+        if (setting == Settings.POST_WORDS_ON_FEED) return L10n.t("Your words on Home");
+        if (setting == Settings.POST_WORDS_ON_REELS) return L10n.t("Your words on the Reels tab");
+        if (setting == Settings.POST_WORDS_IN_GROUPS) return L10n.t("Your words in groups");
+        if (setting == Settings.POST_WORDS_ON_TIMELINES) return L10n.t("Your words on profiles and Pages");
         if (setting == Settings.HIDE_PHOTO_POSTS) return L10n.t("Hide photo posts");
         if (setting == Settings.HIDE_VIDEO_POSTS) return L10n.t("Hide video posts");
         if (setting == Settings.HIDE_LINK_POSTS) return L10n.t("Hide link posts");
+        if (setting == Settings.LINK_POSTS_ON_FEED) return L10n.t("Link posts on Home");
+        if (setting == Settings.LINK_POSTS_ON_REELS) return L10n.t("Link reels on the Reels tab");
+        if (setting == Settings.LINK_POSTS_IN_GROUPS) return L10n.t("Link posts in groups");
+        if (setting == Settings.LINK_POSTS_ON_TIMELINES) return L10n.t("Link posts on profiles and Pages");
         if (setting == Settings.HIDE_BACKGROUND_POSTS) return L10n.t("Hide posts on a colored background");
         if (setting == Settings.HIDE_REPOSTS) return L10n.t("Hide reposts");
         if (setting == Settings.HIDE_PAGE_POSTS) return L10n.t("Hide posts from Pages");

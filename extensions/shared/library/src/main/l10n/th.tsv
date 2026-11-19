@@ -3025,3 +3025,16 @@ Comments in another language show Facebook's translation as they load, as if you
 Long press to save Marketplace photos	กดค้างเพื่อบันทึกรูปภาพ Marketplace
 # context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
 With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	เมื่อเปิด "บันทึกรูปภาพใดก็ได้" การกดค้างที่รูปภาพที่คุณเปิดจากรายการใน Marketplace จะบันทึกรูปภาพนั้น
+# context: the eight switches under Hide posts with words you choose and Hide link posts that pick where each hides; Home, the Reels tab, the Groups tab and Pages are Facebook's own names for them
+Your words on Home	คำของคุณบนหน้าหลัก
+Your words on the Reels tab	คำของคุณในแท็บ Reels
+Your words in groups	คำของคุณในกลุ่ม
+Your words on profiles and Pages	คำของคุณบนโปรไฟล์และเพจ
+Link posts on Home	โพสต์ลิงก์บนหน้าหลัก
+Link reels on the Reels tab	Reels ที่มีลิงก์ในแท็บ Reels
+Link posts in groups	โพสต์ลิงก์ในกลุ่ม
+Link posts on profiles and Pages	โพสต์ลิงก์บนโปรไฟล์และเพจ
+Posts on Home, the feed Facebook opens on.	โพสต์บนหน้าหลัก ฟีดที่ Facebook เปิดขึ้นมาก่อน
+Reels on the Reels tab, going by their captions.	Reels ในแท็บ Reels ตามคำบรรยาย
+Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	โพสต์ในฟีดของกลุ่ม ในแท็บกลุ่ม และในโพสต์ของสมาชิกในกลุ่ม โพสต์ที่รอผู้ดูแลยังคงอยู่
+Posts on people's profiles and on Pages.	โพสต์บนโปรไฟล์ของผู้คนและบนเพจ

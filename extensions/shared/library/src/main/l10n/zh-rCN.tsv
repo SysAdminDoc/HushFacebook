@@ -3020,3 +3020,16 @@ Comments in another language show Facebook's translation as they load, as if you
 Long press to save Marketplace photos	长按保存 Marketplace 照片
 # context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
 With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	开启“保存任意照片”后，长按从 Marketplace 商品打开的照片即可保存.
+# context: the eight switches under Hide posts with words you choose and Hide link posts that pick where each hides; Home, the Reels tab, the Groups tab and Pages are Facebook's own names for them
+Your words on Home	在主页使用你的字词
+Your words on the Reels tab	在 Reels 标签页使用你的字词
+Your words in groups	在小组中使用你的字词
+Your words on profiles and Pages	在个人主页和公共主页使用你的字词
+Link posts on Home	主页上的链接帖子
+Link reels on the Reels tab	Reels 标签页中的链接 Reels
+Link posts in groups	小组中的链接帖子
+Link posts on profiles and Pages	个人主页和公共主页上的链接帖子
+Posts on Home, the feed Facebook opens on.	主页上的帖子，即 Facebook 打开时显示的动态。
+Reels on the Reels tab, going by their captions.	Reels 标签页中的 Reels，按说明文字判断。
+Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	小组动态、小组标签页以及成员在小组中的帖子。等待管理员处理的帖子会保留。
+Posts on people's profiles and on Pages.	个人主页和公共主页上的帖子。

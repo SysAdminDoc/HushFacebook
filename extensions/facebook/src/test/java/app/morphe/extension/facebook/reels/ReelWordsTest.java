@@ -75,6 +75,8 @@ public class ReelWordsTest {
         PauseForTests.resume();
         Settings.HIDE_POSTS_WITH_WORDS.resetToDefault();
         Settings.HIDE_LINK_POSTS.resetToDefault();
+        Settings.POST_WORDS_ON_REELS.resetToDefault();
+        Settings.LINK_POSTS_ON_REELS.resetToDefault();
         Settings.HIDDEN_WORDS.resetToDefault();
         Settings.KEPT_WORDS.resetToDefault();
         Settings.FOLLOWED_REELS_ONLY.resetToDefault();
@@ -141,6 +143,33 @@ public class ReelWordsTest {
         assertNotNull(FeedFilterCounters.report().toString(), pages);
         assertTrue(pages, pages.contains(FollowedReels.WORDS_REASON + " 1"));
         assertEquals("the settings row counts the reel with the posts", 1, PostWordsForTests.hidden());
+    }
+
+    /**
+     * The Reels tab has its own switch under each rule (#458). Both start on, so the rules reach the
+     * tab as they did. One turned off keeps its reels, and with both off the tab is stock.
+     */
+    @Test
+    public void theReelsTabSwitchesKeepTheirReels() {
+        assertTrue(Settings.POST_WORDS_ON_REELS.defaultValue);
+        assertTrue(Settings.LINK_POSTS_ON_REELS.defaultValue);
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+        Settings.POST_WORDS_ON_REELS.save(false);
+        Reel spoiler = reel(SPOILER);
+        Reel drama = reel(DRAMA);
+        Reel plain = reel(PLAIN);
+
+        assertEquals("words off on the tab keep the reel, and links still go",
+                Arrays.asList(spoiler, plain), new ArrayList<>(filter(Arrays.asList(spoiler, drama, plain))));
+        assertEquals("no reel was read for words", null, line(ReelWords.WORDS.route));
+
+        Settings.LINK_POSTS_ON_REELS.save(false);
+        List<Object> page = Arrays.asList(spoiler, drama, plain);
+        assertSame("both off, the page passes as it came", page, filter(page));
+
+        Settings.POST_WORDS_ON_REELS.save(true);
+        assertEquals(Arrays.asList(drama, plain), new ArrayList<>(filter(Arrays.asList(spoiler, drama, plain))));
     }
 
     /** Links on, a caption naming a website goes, with or without its https, and a Facebook link stays. */

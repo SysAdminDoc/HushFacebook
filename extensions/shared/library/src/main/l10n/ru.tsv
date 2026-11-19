@@ -3083,3 +3083,16 @@ Comments in another language show Facebook's translation as they load, as if you
 Long press to save Marketplace photos	Сохранять фото Marketplace долгим нажатием
 # context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
 With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	Когда включено «Сохранять любые фото», долгое нажатие на фото, открытое из объявления Marketplace, сохраняет его.
+# context: the eight switches under Hide posts with words you choose and Hide link posts that pick where each hides; Home, the Reels tab, the Groups tab and Pages are Facebook's own names for them
+Your words on Home	Ваши слова на Главной
+Your words on the Reels tab	Ваши слова во вкладке Reels
+Your words in groups	Ваши слова в группах
+Your words on profiles and Pages	Ваши слова в профилях и на Страницах
+Link posts on Home	Публикации со ссылками на Главной
+Link reels on the Reels tab	Reels со ссылками во вкладке Reels
+Link posts in groups	Публикации со ссылками в группах
+Link posts on profiles and Pages	Публикации со ссылками в профилях и на Страницах
+Posts on Home, the feed Facebook opens on.	Публикации на Главной, в ленте, с которой открывается Facebook.
+Reels on the Reels tab, going by their captions.	Видео во вкладке Reels, по их подписи.
+Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	Публикации в ленте группы, во вкладке «Группы» и в публикациях участника в группе. Публикации, ожидающие администратора, остаются.
+Posts on people's profiles and on Pages.	Публикации в профилях людей и на Страницах.

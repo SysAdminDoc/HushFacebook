@@ -34,20 +34,25 @@ final class ReelWords {
     static final class Rule {
         final String route;
         private final BooleanSetting setting;
+        private final BooleanSetting place;
         private final Predicate<String> hides;
         private final String failure;
 
-        Rule(String route, BooleanSetting setting, Predicate<String> hides, String failure) {
+        Rule(String route, BooleanSetting setting, BooleanSetting place, Predicate<String> hides, String failure) {
             this.route = route;
             this.setting = setting;
+            this.place = place;
             this.hides = hides;
             this.failure = failure;
         }
 
-        /** The switch, shared with News feed. Off, unreadable, or asked before the settings are ready, reels stay. */
+        /**
+         * The switch, shared with News feed, and the Reels tab's own switch under it. Off, unreadable,
+         * or asked before the settings are ready, reels stay.
+         */
         boolean switchedOn() {
             try {
-                return Utils.settingsReady() && setting.get();
+                return Utils.settingsReady() && setting.get() && place.get();
             } catch (Throwable thrown) {
                 HookStatus.threw(FamilyNames.REEL_DECLUTTER, failure + " switch read", thrown);
                 return false;
@@ -77,9 +82,9 @@ final class ReelWords {
     }
 
     static final Rule WORDS = new Rule("Reels with your words", Settings.HIDE_POSTS_WITH_WORDS,
-            PostWords::storyHides, "reel caption words");
+            Settings.POST_WORDS_ON_REELS, PostWords::storyHides, "reel caption words");
     static final Rule LINKS = new Rule("Reels with links", Settings.HIDE_LINK_POSTS,
-            PostTypes::captionLinkHides, "reel caption links");
+            Settings.LINK_POSTS_ON_REELS, PostTypes::captionLinkHides, "reel caption links");
 
     /** The readers each rule judges a reel's story with: the patch's, or a test's stand-ins. */
     static final class Readers {

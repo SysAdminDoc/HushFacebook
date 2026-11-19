@@ -3025,3 +3025,16 @@ Comments in another language show Facebook's translation as they load, as if you
 Long press to save Marketplace photos	Tekan lama untuk menyimpan foto Marketplace
 # context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
 With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	Dengan Simpan foto apa pun aktif, menekan lama foto yang kamu buka dari tawaran Marketplace akan menyimpannya.
+# context: the eight switches under Hide posts with words you choose and Hide link posts that pick where each hides; Home, the Reels tab, the Groups tab and Pages are Facebook's own names for them
+Your words on Home	Kata-katamu di Beranda
+Your words on the Reels tab	Kata-katamu di tab Reels
+Your words in groups	Kata-katamu di grup
+Your words on profiles and Pages	Kata-katamu di profil dan Halaman
+Link posts on Home	Postingan tautan di Beranda
+Link reels on the Reels tab	Reel tautan di tab Reels
+Link posts in groups	Postingan tautan di grup
+Link posts on profiles and Pages	Postingan tautan di profil dan Halaman
+Posts on Home, the feed Facebook opens on.	Postingan di Beranda, feed yang pertama dibuka Facebook.
+Reels on the Reels tab, going by their captions.	Reel di tab Reels, menurut keterangannya.
+Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	Postingan di feed grup, di tab Grup, dan di postingan anggota dalam grup. Postingan yang menunggu admin tetap ada.
+Posts on people's profiles and on Pages.	Postingan di profil orang dan di Halaman.

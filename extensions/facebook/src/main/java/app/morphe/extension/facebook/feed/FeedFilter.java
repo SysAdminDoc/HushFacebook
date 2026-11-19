@@ -570,7 +570,8 @@ public final class FeedFilter {
                 reason = flagReason(GenAiLabel.SELF_LABEL, AI_LABEL_ROUTE, feedUnit, aiLabelAccessor);
             }
             if (reason == null) kind = HiddenTally.Kind.YOUR_FILTERS;
-            if (reason == null && wordsPatched && Settings.HIDE_POSTS_WITH_WORDS.get()) {
+            if (reason == null && wordsPatched && Settings.HIDE_POSTS_WITH_WORDS.get()
+                    && Settings.POST_WORDS_ON_FEED.get()) {
                 reason = wordsReason(feedUnit, messageAccessor, attachedAccessor, PostSources.ATTACHMENTS,
                         PostText.ACTION_LINKS);
             }
@@ -988,7 +989,7 @@ public final class FeedFilter {
      */
     static String typesReason(Object feedUnit, PostTypes.Readers readers, StoryFlag.Accessor attached) {
         PostTypes.Wanted wanted = new PostTypes.Wanted(Settings.HIDE_PHOTO_POSTS.get(), Settings.HIDE_VIDEO_POSTS.get(),
-                Settings.HIDE_LINK_POSTS.get(), Settings.HIDE_BACKGROUND_POSTS.get());
+                Settings.HIDE_LINK_POSTS.get() && Settings.LINK_POSTS_ON_FEED.get(), Settings.HIDE_BACKGROUND_POSTS.get());
         if (!wanted.any()) return null;
         FeedFilterCounters.sawList(PostTypes.ROUTE, 1);
         String kind = PostTypes.read(feedUnit, readers, attached, wanted);

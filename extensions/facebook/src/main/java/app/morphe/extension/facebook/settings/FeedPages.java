@@ -52,6 +52,7 @@ import app.morphe.extension.facebook.settings.SettingsRows.Row;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BaseSettings;
+import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.StringSetting;
 
 /**
@@ -469,6 +470,8 @@ final class FeedPages {
                 feed.addPreference(page.wordsRow(context, Settings.KEPT_WORDS, false));
                 feed.addPreference(toggle(context, Settings.POST_WORDS_WHOLE_WORDS,
                         L10n.t("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".")));
+                placeRows(feed, context, Settings.HIDE_POSTS_WITH_WORDS, Settings.POST_WORDS_ON_FEED,
+                        Settings.POST_WORDS_ON_REELS, Settings.POST_WORDS_IN_GROUPS, Settings.POST_WORDS_ON_TIMELINES);
                 feed.addPreference(toggle(context, Settings.HIDE_POSTS_FROM_SOURCES,
                         L10n.t("Hides posts by people or Pages on your list below, or linking to sites on it, including shares. "
                                 + "Your list stays on this phone unless you export it.")));
@@ -480,6 +483,8 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_LINK_POSTS,
                         L10n.t("Hides posts that share a link to a website, with its preview card. On profiles, Pages, groups and "
                                 + "the Reels tab, a post or reel whose words name a website goes too.")));
+                placeRows(feed, context, Settings.HIDE_LINK_POSTS, Settings.LINK_POSTS_ON_FEED,
+                        Settings.LINK_POSTS_ON_REELS, Settings.LINK_POSTS_IN_GROUPS, Settings.LINK_POSTS_ON_TIMELINES);
                 feed.addPreference(toggle(context, Settings.HIDE_BACKGROUND_POSTS,
                         L10n.t("Hides short posts shown as big text on a colored background.")));
                 feed.addPreference(toggle(context, Settings.HIDE_REPOSTS,
@@ -725,6 +730,23 @@ final class FeedPages {
             row.setSummary(feedTypesSummary(FeedTypeNames.hidden()));
             list.dismiss();
         });
+    }
+
+    /**
+     * The four places a words or links switch reaches, each with its own switch under it (#458), so
+     * one can stay while the others still go. Greyed out while the switch above is off.
+     */
+    private static void placeRows(PreferenceCategory feed, Context context, BooleanSetting parent, BooleanSetting home,
+                                  BooleanSetting reels, BooleanSetting groups, BooleanSetting timelines) {
+        feed.addPreference(toggle(context, home,
+                L10n.t("Posts on Home, the feed Facebook opens on.")).needs(parent));
+        feed.addPreference(toggle(context, reels,
+                L10n.t("Reels on the Reels tab, going by their captions.")).needs(parent));
+        feed.addPreference(toggle(context, groups,
+                L10n.t("Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting "
+                        + "for an admin stay.")).needs(parent));
+        feed.addPreference(toggle(context, timelines,
+                L10n.t("Posts on people's profiles and on Pages.")).needs(parent));
     }
 
     /**

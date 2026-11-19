@@ -3025,3 +3025,16 @@ Comments in another language show Facebook's translation as they load, as if you
 Long press to save Marketplace photos	Mantener pulsado para guardar fotos de Marketplace
 # context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
 With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	Con Guardar cualquier foto activado, mantener pulsada una foto que abres desde un artículo de Marketplace la guarda.
+# context: the eight switches under Hide posts with words you choose and Hide link posts that pick where each hides; Home, the Reels tab, the Groups tab and Pages are Facebook's own names for them
+Your words on Home	Tus palabras en Inicio
+Your words on the Reels tab	Tus palabras en la pestaña Reels
+Your words in groups	Tus palabras en grupos
+Your words on profiles and Pages	Tus palabras en perfiles y páginas
+Link posts on Home	Publicaciones con enlaces en Inicio
+Link reels on the Reels tab	Reels con enlaces en la pestaña Reels
+Link posts in groups	Publicaciones con enlaces en grupos
+Link posts on profiles and Pages	Publicaciones con enlaces en perfiles y páginas
+Posts on Home, the feed Facebook opens on.	Publicaciones en Inicio, el feed con el que se abre Facebook.
+Reels on the Reels tab, going by their captions.	Reels de la pestaña Reels, según su descripción.
+Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	Publicaciones en el feed de un grupo, en la pestaña Grupos y en las publicaciones de un miembro en un grupo. Las publicaciones pendientes de un administrador se quedan.
+Posts on people's profiles and on Pages.	Publicaciones en perfiles de personas y en páginas.

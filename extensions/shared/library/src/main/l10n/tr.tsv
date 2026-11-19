@@ -3025,3 +3025,16 @@ Comments in another language show Facebook's translation as they load, as if you
 Long press to save Marketplace photos	Marketplace fotoğraflarını uzun basarak kaydet
 # context: description of that switch; Save any photo is the title of the Downloads switch it needs, Marketplace is Facebook's buy-and-sell section
 With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.	Her fotoğrafı kaydet açıkken, bir Marketplace ilanından açtığın fotoğrafa uzun basmak onu kaydeder.
+# context: the eight switches under Hide posts with words you choose and Hide link posts that pick where each hides; Home, the Reels tab, the Groups tab and Pages are Facebook's own names for them
+Your words on Home	Ana Sayfa'da sözcükleriniz
+Your words on the Reels tab	Reels sekmesinde sözcükleriniz
+Your words in groups	Gruplarda sözcükleriniz
+Your words on profiles and Pages	Profillerde ve Sayfalarda sözcükleriniz
+Link posts on Home	Ana Sayfa'da bağlantı gönderileri
+Link reels on the Reels tab	Reels sekmesinde bağlantılı reeller
+Link posts in groups	Gruplarda bağlantı gönderileri
+Link posts on profiles and Pages	Profillerde ve Sayfalarda bağlantı gönderileri
+Posts on Home, the feed Facebook opens on.	Ana Sayfa'daki gönderiler, Facebook'un açıldığı akış.
+Reels on the Reels tab, going by their captions.	Reels sekmesindeki reeller, açıklamalarına göre.
+Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	Bir grubun akışındaki, Gruplar sekmesindeki ve bir üyenin gruptaki gönderilerindeki gönderiler. Yönetici bekleyen gönderiler kalır.
+Posts on people's profiles and on Pages.	Kişilerin profillerindeki ve Sayfalardaki gönderiler.
