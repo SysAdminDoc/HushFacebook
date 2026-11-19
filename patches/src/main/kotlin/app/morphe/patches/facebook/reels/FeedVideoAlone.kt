@@ -110,6 +110,10 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   screen, while the seed checks still get Facebook's answer (#421, S22 2026-11-08: "Up next: Gb
  *   Flowers" under the reel). The extension gets the data source and the page ahead of the branch on
  *   the answer: code added where the branch lands goes in front of its label, so the branch skips it.
+ *   Its answer is or'd into the seed check's, so a yes takes Facebook's own way past the page (#457:
+ *   a page that comes after a tapped video already in its data source holds only the next videos).
+ *   The vend reads the data source's videos through a public interface's argument-free call
+ *   answering an ImmutableList (588 `LX/0AEq;->EXs()`), and the patch fills a stub with that call.
  *
  * The Warion step tells the extension a feed video is opening, the reels viewer's entry tells it
  * where the video opens from, and the fragment tells it when a Warion viewer opens and closes.
@@ -170,7 +174,10 @@ internal const val SEED_TAIL = "onFetchMore skipped: suppressing tail load for s
 /** The line the same loader's vend logs, when Facebook keeps a seed video alone and hands its viewer no page. */
 internal const val SEED_VEND = "EmitResult skipped: suppressing CSR vend for seed video"
 
-internal const val VENDING = "$FEED_VIDEO_ALONE->vending(Ljava/lang/Object;Ljava/lang/Object;)V"
+internal const val VENDING = "$FEED_VIDEO_ALONE->vending(Ljava/lang/Object;Ljava/lang/Object;)Z"
+
+/** The extension's stub the patch fills with the data source's videos read, which come as an IMMUTABLE_LIST. */
+internal const val SOURCE_VIDEOS = "sourceVideos"
 
 private const val PATCH = "Clean up Reels"
 
@@ -537,8 +544,11 @@ internal fun seedCheck(loaderFetchMore: Method): MethodReference? =
         ?.let { (it as ReferenceInstruction).reference as MethodReference }
         ?.takeIf { it.returnType == "Z" && it.parameterTypes.isEmpty() }
 
-/** Where the loader's vend has the seed check's answer: the branch on it, and the data source and reels page registers. */
-internal data class VendAsk(val index: Int, val source: Int, val reels: Int)
+/**
+ * Where the loader's vend has the seed check's answer: the branch on it, the data source, reels page
+ * and answer registers, and where the vend goes on when the answer is no.
+ */
+internal data class VendAsk(val index: Int, val source: Int, val reels: Int, val answer: Int, val vend: Int)
 
 /** Whether [instruction] is an interface call of [check]. */
 private fun asks(instruction: Instruction, check: MethodReference): Boolean {
@@ -592,7 +602,27 @@ internal fun vendAsk(method: Method, check: MethodReference): VendAsk? {
     val size = (vend until code.size).firstOrNull { isListSize(code[it]) } ?: return null
     val reels = onlyRegister(code[size]) ?: return null
     if (source == answer || reels == answer || (vend until size).any { writes(code[it], reels) }) return null
-    return VendAsk(ask + 2, source, reels)
+    return VendAsk(ask + 2, source, reels, answer, vend)
+}
+
+/**
+ * The call [method], the loader's vend, reads its data source's videos with past the branch at
+ * [ask]: an argument-free interface call on the data source's register, with nothing from the
+ * branch's target on writing that register first, answering an ImmutableList (588
+ * `LX/0AEq;->EXs()`). The suppress path before the target reuses the register (588 arm64 moves a
+ * null into it for its log call), so the scan starts at the target. Null unless there's one such
+ * call by reference.
+ */
+internal fun sourceVideosRead(method: Method, ask: VendAsk): MethodReference? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val reads = (ask.vend until code.size).mapNotNull { at ->
+        val instruction = code[at]
+        if (instruction.opcode != Opcode.INVOKE_INTERFACE && instruction.opcode != Opcode.INVOKE_INTERFACE_RANGE) return@mapNotNull null
+        if (onlyRegister(instruction) != ask.source || (ask.vend until at).any { writes(code[it], ask.source) }) return@mapNotNull null
+        ((instruction as ReferenceInstruction).reference as? MethodReference)
+            ?.takeIf { it.parameterTypes.isEmpty() && it.returnType == IMMUTABLE_LIST }
+    }
+    return reads.distinctBy(MethodReference::toString).singleOrNull()
 }
 
 /** Whether [method] of [classDef] is a concrete [check] of a class implementing its interface. */
@@ -647,6 +677,13 @@ internal val feedVideoOpeningPatch = bytecodePatch {
     }
 }
 
+/** The extension's static Object [name](Object) stub the patch fills, refusing without one. */
+private fun BytecodePatchContext.extensionStub(name: String): MutableMethod =
+    mutableClassDefBy(FEED_VIDEO_ALONE).methods.singleOrNull {
+        it.name == name && it.returnType == OBJECT && AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.parameterTypes.map(CharSequence::toString) == listOf(OBJECT)
+    } ?: throw PatchException("$PATCH: $FEED_VIDEO_ALONE has no static Object $name(Object)")
+
 /** Whether [instruction] calls [hook]. */
 private fun calls(instruction: Instruction, hook: String) =
     ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == hook
@@ -680,10 +717,7 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
     val paging = paginationRead(list, paramsType) { buildsPaginationPage(it) }
         ?: throw PatchException("$PATCH: the reels list builder doesn't read whether to add its pagination page")
     if (classDefByOrNull(FEED_VIDEO_ALONE) == null) throw PatchException("$PATCH: the extension has no $FEED_VIDEO_ALONE")
-    val stub = mutableClassDefBy(FEED_VIDEO_ALONE).methods.singleOrNull {
-        it.name == VIEWER_ORIGIN && it.returnType == OBJECT && AccessFlags.STATIC.isSet(it.accessFlags) &&
-            it.parameterTypes.map(CharSequence::toString) == listOf(OBJECT)
-    } ?: throw PatchException("$PATCH: $FEED_VIDEO_ALONE has no static Object $VIEWER_ORIGIN(Object)")
+    val stub = extensionStub(VIEWER_ORIGIN)
 
     stub.addInstructions(
         0,
@@ -717,7 +751,23 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
         ?: throw PatchException("$PATCH: expected one void vend holding \"$SEED_VEND\" beside the loader's fetch more, found ${vends.size}")
     val ask = vendAsk(vend, check)
         ?: throw PatchException("$PATCH: the loader's vend doesn't branch on $check right after asking it, past a reels page")
+    val videos = sourceVideosRead(vend, ask)
+        ?: throw PatchException("$PATCH: the loader's vend reads no $IMMUTABLE_LIST from its data source past the seed check")
+    val videosOwner = classDefByOrNull(videos.definingClass)
+    if (videosOwner == null || !AccessFlags.PUBLIC.isSet(videosOwner.accessFlags) || !AccessFlags.INTERFACE.isSet(videosOwner.accessFlags)) {
+        throw PatchException("$PATCH: ${videos.definingClass} isn't a public interface the extension can call")
+    }
+    extensionStub(SOURCE_VIDEOS).addInstructions(
+        0,
+        """
+            check-cast p0, ${videos.definingClass}
+            invoke-interface { p0 }, $videos
+            move-result-object p0
+            return-object p0
+        """,
+    )
     // Ahead of the branch, so only the way on from the answer reaches the call; a jump to the branch lands past it.
+    // The extension's yes is or'd into the answer, so the branch takes Facebook's way past the page.
     val (asker, page) = vend.freeLocalsAt(PATCH, ask.index, 2)
     vend.addInstructions(
         ask.index,
@@ -725,6 +775,8 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
             move-object/from16 v$asker, v${ask.source}
             move-object/from16 v$page, v${ask.reels}
             invoke-static { v$asker, v$page }, $VENDING
+            move-result v$asker
+            or-int v${ask.answer}, v${ask.answer}, v$asker
         """,
     )
 

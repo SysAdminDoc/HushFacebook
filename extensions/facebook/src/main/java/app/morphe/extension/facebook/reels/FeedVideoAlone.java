@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +47,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * seed video alone, in the data source's case, a reel or a feed's ordinary video alike) then and on
  * every later ask, except the data source's first seed check, which starts the video loading and
  * keeps Facebook's answer ({@link #seedCheck}), while the page it lets through keeps the tapped
- * video only ({@link #vending}, #457). One held for a Warion
+ * video only, or is skipped whole when the data source holds the video already ({@link #vending},
+ * #457). One held for a Warion
  * viewer is decided again on its first ask after that viewer closes. One that first asked from the
  * main screen with no viewer open, the Reels and Video tabs' among them, keeps Facebook's answer, and
  * so does one asking in a viewer or player screen no feed video opened: the Watch page on a screen of
@@ -592,52 +594,102 @@ public final class FeedVideoAlone {
      * feed videos on their own: now and then one more video, then nothing). That page keeps its first
      * video only as well, and so does the first page of a data source a shared reel's viewer starts
      * after its reel is on screen (#421, a reel opened from a chat inside Facebook: one more reel,
-     * then nothing). Every other page, and any page held back anyway, is left as it is. Never
-     * throws.
+     * then nothing). A tapped feed video's pass can land on the loader's ask while its data source
+     * already holds the video, though, and that page carries only the videos after it, so keeping
+     * its first still let one more video in (#457 on 0.23.0, a home feed video). That page is
+     * skipped whole, the way Facebook skips every page for a seed video alone, and the pass goes
+     * back to the data source's own next ask. Every other page, and any page held back anyway, is
+     * left as it is. Never throws.
      *
      * @param source the data source the loader just asked.
      * @param reels  the reels the loader is about to hand over, a list Facebook made for this page.
+     * @return true to answer the loader's ask yes, so it hands the viewer no page.
      */
-    public static void vending(@Nullable Object source, @Nullable Object reels) {
+    public static boolean vending(@Nullable Object source, @Nullable Object reels) {
         try {
             HookStatus.invoked(FAMILY);
-            if (source == null || !(reels instanceof List) || !on()) return;
-            Opening from = null;
+            if (source == null || !(reels instanceof List) || !on()) return false;
+            Feed record = null;
             boolean passed = false;
             synchronized (FEEDS) {
                 for (Feed seen : FEEDS) {
                     if (seen.feed.get() == source) {
                         if (seen.player) {
-                            from = seen.opening;
+                            record = seen;
                             passed = seen.passed;
                         }
                         break;
                     }
                 }
             }
+            Opening from = record == null ? null : record.opening;
             // A data source the viewer starts after its shared reel is on screen gets its one first
             // ask too (#421, a chat's reel: a second data source 0.4 s after the reel showed), and
             // the page that ask lets through carries the next reel as well.
-            if (from == null || (!passed && (!from.shared || from.reelShown))) return;
+            if (from == null || (!passed && (!from.shared || from.reelShown))) return false;
             boolean shared = from.shared;
             HookStatus.bound(FAMILY, "reels page");
             List<?> page = (List<?>) reels;
             int size = page.size();
+            int held = shared ? UNKNOWN : heldVideos(source);
+            if (passed && held > 0) {
+                synchronized (FEEDS) {
+                    record.asked = false;
+                    record.passed = false;
+                }
+                for (int left = 0; left < size; left++) HookStatus.counted(FAMILY, NEXT_LEFT_OUT);
+                Logger.printDebug(() -> "Feed videos on their own: a page of " + size + " video(s) comes after the tapped feed video, already one of its data source's "
+                        + held + ", so it's skipped like a seed video's, and the data source's next ask keeps Facebook's answer");
+                return true;
+            }
+            String holding = held == UNKNOWN ? "" : " (its data source holds " + held + ")";
             if (size <= 1) {
                 Logger.printDebug(() -> shared
                         ? "Shared reels on their own: a page of " + size + " reel(s) for the shared reel's viewer, nothing to leave out"
-                        : "Feed videos on their own: a page of " + size + " video(s) brings the tapped feed video in, nothing to leave out");
-                return;
+                        : "Feed videos on their own: a page of " + size + " video(s) brings the tapped feed video in" + holding + ", nothing to leave out");
+                return false;
             }
             page.subList(1, size).clear();
             for (int left = 1; left < size; left++) HookStatus.counted(FAMILY, shared ? LEFT_OUT : NEXT_LEFT_OUT);
             Logger.printDebug(() -> shared
                     ? "Shared reels on their own: a page of " + size + " reels for the shared reel's viewer keeps its first, the linked reel"
-                    : "Feed videos on their own: a page of " + size + " videos bringing the tapped feed video in keeps its first, that video");
+                    : "Feed videos on their own: a page of " + size + " videos bringing the tapped feed video in" + holding + " keeps its first, that video");
+            return false;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reels page", failure);
+            return false;
         }
     }
+
+    /** What {@link #heldVideos} answers for a data source whose videos it can't read. */
+    private static final int UNKNOWN = -1;
+
+    /** How many videos [source] holds already, through {@link #sourceVideos}, or UNKNOWN. */
+    private static int heldVideos(Object source) {
+        Function<Object, Object> forced = sourceVideosForTests;
+        Object videos;
+        try {
+            videos = forced != null ? forced.apply(source) : sourceVideos(source);
+        } catch (ClassCastException other) {
+            // A data source of another kind than the one the vend reads its videos from.
+            Logger.printDebug(() -> "Feed videos on their own: the loader's data source is a " + source.getClass().getName() + ", whose videos aren't read");
+            return UNKNOWN;
+        }
+        return videos instanceof Collection ? ((Collection<?>) videos).size() : UNKNOWN;
+    }
+
+    /**
+     * Filled in by the patch: the videos a reels data source holds, the list the loader's vend reads
+     * from it. Only the data source the vend asks may be passed. Unpatched there's none.
+     */
+    @Nullable
+    public static Object sourceVideos(Object source) {
+        return null;
+    }
+
+    /** Stands in for {@link #sourceVideos} when a test sets it. */
+    @Nullable
+    static volatile Function<Object, Object> sourceVideosForTests;
 
     /**
      * Called as Facebook's Reels controller is handed the player of the reel taking the screen, or
@@ -775,6 +827,7 @@ public final class FeedVideoAlone {
         clockForTests = null;
         loadingPageLogged = new WeakReference<>(null);
         originForTests = null;
+        sourceVideosForTests = null;
         inFront(null);
     }
 }

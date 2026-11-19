@@ -791,6 +791,52 @@ public class FeedVideoAloneTest {
     }
 
     /**
+     * #457 again on 0.23.0 (2026-11-19, a home feed video): the first ask can be the loader's, with
+     * the tapped video already in its data source. Its page then carries only the videos after it,
+     * so keeping its first still let one more video in. That ask is answered the way Facebook
+     * answers it for a seed video alone, which hands the viewer no page at all, and the data
+     * source's own next ask still gets Facebook's answer. A data source holding nothing yet, or one
+     * the extension can't read, keeps the page's first video as before.
+     */
+    @Test
+    public void aFirstPageAfterTheTappedVideoIsAlreadyInIsSkippedWhole() {
+        FeedVideoAlone.feedVideoTapped();
+        Object source = new Object();
+        Object empty = new Object();
+        FeedVideoAlone.sourceVideosForTests = asked -> asked == source ? List.of("tapped") : asked == empty ? List.of() : null;
+        assertFalse("its first seed check keeps Facebook's answer", FeedVideoAlone.seedCheck(source));
+        List<String> page = new ArrayList<>(List.of("next", "after"));
+        assertTrue("the page is skipped like a seed video's", FeedVideoAlone.vending(source, page));
+        assertEquals("and left as Facebook made it", List.of("next", "after"), page);
+        assertTrue("two videos counted as left out: " + statusLine(),
+                statusLine().contains(FeedVideoAlone.NEXT_LEFT_OUT + " 2"));
+        assertFalse("the data source's own next ask still loads", FeedVideoAlone.seedCheck(source));
+        assertTrue("the next vend's ask is held", FeedVideoAlone.seedCheck(source));
+        List<String> later = new ArrayList<>(List.of("x", "y"));
+        assertFalse("so its page is Facebook's to skip", FeedVideoAlone.vending(source, later));
+        assertEquals(List.of("x", "y"), later);
+        assertFalse("and not counted again: " + statusLine(), statusLine().contains(FeedVideoAlone.NEXT_LEFT_OUT + " 3"));
+
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.feedVideoTapped();
+        assertFalse(FeedVideoAlone.seedCheck(empty));
+        List<String> first = new ArrayList<>(List.of("tapped", "next"));
+        assertFalse("a data source with nothing in it yet", FeedVideoAlone.vending(empty, first));
+        assertEquals("keeps the page's first video", List.of("tapped"), first);
+
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.feedVideoTapped();
+        Object unread = new Object();
+        assertFalse(FeedVideoAlone.seedCheck(unread));
+        List<String> unknown = new ArrayList<>(List.of("tapped", "next"));
+        assertFalse("a data source the extension can't read", FeedVideoAlone.vending(unread, unknown));
+        assertEquals(List.of("tapped"), unknown);
+
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        assertFalse("off", FeedVideoAlone.vending(source, new ArrayList<>(List.of("a", "b"))));
+    }
+
+    /**
      * #421: a reel link opened inside the app gives the viewer's entry the link's origin, but the
      * viewer's list reads "unknown::unknown" (S22 2026-11-08), and its loading page never filled. The
      * first such list read soon after a shared opening is that viewer's and shows none, then and

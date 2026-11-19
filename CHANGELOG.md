@@ -52,6 +52,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * With `View stories anonymously` on, a story you watch counts as watched on your phone again, so its ring turns gray and `Hide seen stories` can take it out. Hushfacebook read the wrong flag on the viewer and took every story for a quick peek, so none of them were kept as watched. (#165, #514)
 * `Show the post date on reels` now dates a video posted in a group too. Facebook's full screen viewer gives a group's video no date line under its author, so the date goes after the poster's name, like "Ana Lima · 3 weeks ago". (#520)
 * With `Hide posts you've already seen` or another switch that hides a lot of the feed, Home fills in by itself when you open Facebook fresh. When the first pages were all posts the switch hides, Home sat on stories, the Reels shelf and its loading row until you swiped, since Facebook only asks for more posts as the feed scrolls. It now asks again on its own a few times, and a swipe still asks too. (#493)
+* With `Open feed videos on their own` on, a video you tap after it played for a while in the feed opens alone too. Facebook had already loaded it by then, so the first batch it handed the viewer held only the videos after yours, and the 0.23.0 trim let one of them through. That batch is skipped now. (#457)
 
 ## 0.23.0 (2026-11-17)
 
