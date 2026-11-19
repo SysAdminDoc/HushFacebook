@@ -5,11 +5,14 @@
 package app.morphe.patches.facebook.feed.hook
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableClass
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -19,6 +22,7 @@ import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -26,6 +30,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
 /*
  * Why Home could stop loading with most of it hidden (read from 582, 2026-10-14).
@@ -43,6 +49,14 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * the number of rows, and goes to the ask Facebook would have made when told to. The ask is the
  * block that logs "dispatchTailFetch"; its "isTailVisible" value reads those same two fields off the
  * fetcher, and the code here reads them the same way.
+ *
+ * onScroll runs only when the list scrolls or its rows on screen change (#493, read from 588,
+ * 2026-11-19). Its one other caller is the feed's own scroll to the top, which hands it the first
+ * row on screen, the rows on screen and the rows in the list off the list itself. On a cold start
+ * the guard can empty the first pages with the end of the list already on screen, and then nothing
+ * runs onScroll and Home waits for a swipe. So onScroll hands the extension the fetcher and what it
+ * was given first thing, and the fetcher gets a method the extension calls to run onScroll again
+ * with the same.
  */
 
 /** Kept literal: the trace section onScroll opens with, which no other method loads. */
@@ -55,6 +69,15 @@ internal const val DISPATCH_TAIL_FETCH = "dispatchTailFetch"
 internal const val TAIL_VISIBLE = "isTailVisible"
 
 internal const val ASK_AGAIN = "$EXTENSION_PACKAGE/feed/TailFetch;->askAgain(II)Z"
+
+/** What onScroll hands the extension first thing: the fetcher, the list and its three rows. */
+internal const val SCROLLED = "$EXTENSION_PACKAGE/feed/TailFetch;->scrolled(Ljava/lang/Object;Ljava/lang/Object;III)V"
+
+/** The extension's view of the fetcher, which the patch makes it implement. */
+internal const val SCROLLER = "$EXTENSION_PACKAGE/feed/TailFetch\$Scroller;"
+
+/** The method the fetcher gets, which runs onScroll again with what it's handed. */
+internal const val SCROLL_AGAIN = "hushfacebookScroll"
 
 /** How a refusal of the tail fetch hook names it. */
 private const val TAIL_FETCH = "Feed filter (tail fetch)"
@@ -151,6 +174,47 @@ internal fun MutableMethod.askAgainAtTail(site: TailFetchSite) {
 }
 
 /**
+ * Lets the extension run [onScroll] again with no scroll: [onScroll] opens by handing [SCROLLED] the
+ * fetcher and its four arguments, and the fetcher implements [SCROLLER] with a [SCROLL_AGAIN] that
+ * casts the list back and calls [onScroll] with them. Goes on after [askAgainAtTail], whose indices
+ * are the stock ones. Nothing in onScroll jumps back to its first instruction (the fixture test
+ * reads that), so the hook runs once for each call.
+ */
+internal fun MutableClass.letScrollAgain(onScroll: MutableMethod) {
+    val parameters = onScroll.parameterTypes.map { it.toString() }
+    if (parameters.size != 4 || parameters.drop(1).any { it != "I" }) {
+        throw PatchException("$TAIL_FETCH: $type's onScroll takes $parameters, not a list and three rows")
+    }
+    if (methods.any { it.name == SCROLL_AGAIN }) throw PatchException("$TAIL_FETCH: $type already has a $SCROLL_AGAIN")
+
+    onScroll.addInstructions(0, "invoke-static/range { p0 .. p4 }, $SCROLLED")
+
+    if (SCROLLER !in interfaces) interfaces.add(SCROLLER)
+    val invoke = if (AccessFlags.PRIVATE.isSet(onScroll.accessFlags)) "invoke-direct" else "invoke-virtual"
+    val target = "$type->${onScroll.name}(${parameters.joinToString("")})V"
+    ImmutableMethod(
+        type,
+        SCROLL_AGAIN,
+        listOf("Ljava/lang/Object;", "I", "I", "I").map { ImmutableMethodParameter(it, null, null) },
+        "V",
+        AccessFlags.PUBLIC.value,
+        null,
+        null,
+        MutableMethodImplementation(5),
+    ).toMutable().apply {
+        addInstructions(
+            0,
+            """
+                check-cast p1, ${parameters[0]}
+                $invoke { p0, p1, p2, p3, p4 }, $target
+                return-void
+            """,
+        )
+        methods.add(this)
+    }
+}
+
+/**
  * Keeps Home asking for posts when the feed guard empties a page (TailFetch in the extension). Every
  * feed patch brings it with the guard, so it runs only where something can hide an edge, and the
  * extension asks only after one was hidden and never while paused.
@@ -160,9 +224,12 @@ internal val homeTailFetchPatch = bytecodePatch {
 
     execute {
         val site = tailFetchSite()
-        mutableClassDefBy(site.method.definingClass).methods.single {
+        val fetcher = mutableClassDefBy(site.method.definingClass)
+        val onScroll = fetcher.methods.single {
             it.name == site.method.name && it.returnType == "V" &&
                 it.parameterTypes.map { type -> type.toString() } == site.method.parameterTypes.map { type -> type.toString() }
-        }.askAgainAtTail(site)
+        }
+        onScroll.askAgainAtTail(site)
+        fetcher.letScrollAgain(onScroll)
     }
 }

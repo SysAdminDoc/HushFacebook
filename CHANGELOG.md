@@ -51,6 +51,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * A Threads post in your feed opens that post in Threads instead of the Threads home feed. The 0.23.0 fix missed the redirect link Facebook now sends the card through, which Threads opens on the feed, and Threads' list form of the post number. Both open the post now. (#385)
 * With `View stories anonymously` on, a story you watch counts as watched on your phone again, so its ring turns gray and `Hide seen stories` can take it out. Hushfacebook read the wrong flag on the viewer and took every story for a quick peek, so none of them were kept as watched. (#165, #514)
 * `Show the post date on reels` now dates a video posted in a group too. Facebook's full screen viewer gives a group's video no date line under its author, so the date goes after the poster's name, like "Ana Lima · 3 weeks ago". (#520)
+* With `Hide posts you've already seen` or another switch that hides a lot of the feed, Home fills in by itself when you open Facebook fresh. When the first pages were all posts the switch hides, Home sat on stories, the Reels shelf and its loading row until you swiped, since Facebook only asks for more posts as the feed scrolls. It now asks again on its own a few times, and a swipe still asks too. (#493)
 
 ## 0.23.0 (2026-11-17)
 
