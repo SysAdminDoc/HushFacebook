@@ -224,6 +224,8 @@ public final class ReelDeclutter {
     static final String DATE_ON_SOUND = "date on sound label";
     /** Counted under the date's name each time the date goes ahead of a reel's "New for you" (#520). */
     static final String DATE_BEFORE_REASON = "date before reason";
+    /** Counted under the date's name each time the date goes after the poster's name on a group's video (#520). */
+    static final String DATE_BESIDE_POSTER = "date beside poster";
     /** Counted under its own name each time a reel's "New for you" is left off the line under its author (#520). */
     static final String NEW_FOR_YOU_ROUTE = "Reel New for you";
     static final String NEW_FOR_YOU_HIDDEN = "left out";
@@ -964,6 +966,32 @@ public final class ReelDeclutter {
         }
     }
 
+    /**
+     * Injection point, in the author row of a group's video in the full-screen viewer, handed the
+     * poster's name and the video's story (#520). That row shows the group's name over the poster's
+     * and has no date line at all, so a group's video showed no date even with the switch on. With
+     * the switch on the date goes after the poster's name. Never throws: anything going wrong answers
+     * what it was handed.
+     */
+    @Nullable
+    public static String groupPosterText(@Nullable String name, @Nullable Object story) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (name == null || name.isEmpty() || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return name;
+            Date posted = PostDetails.postedOf(story);
+            if (posted == null) return name;
+            String dated = groupPoster(name, posted.getTime() / 1000, System.currentTimeMillis(),
+                    Settings.REEL_POST_DATE_STYLE.get(), L10n.locale(), TimeZone.getDefault());
+            if (dated.equals(name)) return name;
+            FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BESIDE_POSTER);
+            logOnce(DATE_BESIDE_POSTER, () -> "Reel post date: put after a group video's poster");
+            return dated;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_BESIDE_POSTER, failure);
+            return name;
+        }
+    }
+
     /** The story the soundtrack's own ticker label was asked for with, kept for {@link #soundTickerText}. */
     private static final ThreadLocal<WeakReference<Object>> SOUND_STORY = new ThreadLocal<>();
 
@@ -1038,6 +1066,16 @@ public final class ReelDeclutter {
     static String audioLine(String line, long seconds, long nowMillis, ReelDateStyle style, Locale locale, TimeZone zone) {
         String date = postDate(null, seconds, nowMillis, style, true, locale, zone);
         return date == null || date.isEmpty() ? line : date + DOT + line;
+    }
+
+    /**
+     * A group video's poster [name] with the day it was posted, at [seconds], after it: "Ana Lima ·
+     * 3 weeks ago". A blank name, or a time that can't be a post's, keeps the name as it was.
+     */
+    static String groupPoster(String name, long seconds, long nowMillis, ReelDateStyle style, Locale locale, TimeZone zone) {
+        if (name.isEmpty()) return name;
+        String date = postDate(null, seconds, nowMillis, style, true, locale, zone);
+        return date == null || date.isEmpty() ? name : name + DOT + date;
     }
 
     /**

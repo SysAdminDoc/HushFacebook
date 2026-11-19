@@ -285,6 +285,93 @@ class ReelPostDateFixtureTest {
     }
 
     /**
+     * #520: a group's video in each declared build's full-screen viewer has an author row of its own
+     * that never asks the post date helper for its line. Its render names the poster in one call whose
+     * String is the text of both of its name spans, and that String goes to the extension with the
+     * story right after the call, so the extension's answer reaches both spans.
+     */
+    @Test
+    fun `each declared build hands a group video's poster to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val helper = FixtureDex.methodsWhere(bundle, { true }, ::isReelPostDate).single()
+                val storyType = helper.parameterTypes[1].toString()
+                val holders = FixtureDex.classesHolding(bundle, GROUP_AUTHOR)
+                val renders = holders.flatMap { owner -> owner.methods.filter { groupPosterName(it) >= 0 } }
+                assertEquals("$name: group author renders", 1, renders.size)
+                val render = renders.single()
+                assertEquals("$name: the row's render", "render", render.name)
+                val original = render.code()
+                assertTrue("$name: the row never asks the post date helper", original.none {
+                    val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+                    call?.definingClass == helper.definingClass && call.name == helper.name
+                })
+                val spans = original.indices.filter {
+                    val call = (original[it] as? ReferenceInstruction)?.reference as? MethodReference
+                    original[it].opcode == Opcode.INVOKE_DIRECT && call?.name == "<init>" &&
+                        call.parameterTypes.map(CharSequence::toString).drop(1) == listOf("Ljava/lang/CharSequence;", "Ljava/lang/Integer;")
+                }
+                assertEquals("$name: a name span on each of two ways", 2, spans.size)
+                val nameAt = groupPosterName(render)
+                val nameRegister = (original[nameAt] as OneRegisterInstruction).registerA
+                for (span in spans) {
+                    assertEquals("$name: the span at $span reads the poster's name", listOf(nameAt),
+                        render.writersReaching(span, original[span].namedRegisters()[2]))
+                }
+                val call = (original[nameAt - 1] as ReferenceInstruction).reference as MethodReference
+                assertEquals("$name: the name comes from a String call", "Ljava/lang/String;", call.returnType)
+                val story = storyHeld(render, nameAt + 1, storyType)
+                assertNotNull("$name: the render holds the story where it names the poster", story)
+                assertThrows("$name: no row must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).dateGroupPoster(storyType)
+                }
+                val context = PatchContexts.of(holders)
+                context.dateGroupPoster(storyType)
+                val patched = context.mutableClassDefBy(render.definingClass).methods.single {
+                    it.name == render.name &&
+                        it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
+                }
+                val code = patched.code()
+                val hooks = code.indices.filter {
+                    ((code[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == GROUP_POSTER_TEXT
+                }
+                assertEquals("$name: one poster hook", 1, hooks.size)
+                val hook = hooks.single()
+                val passed = code[hook] as FiveRegisterInstruction
+                assertEquals("$name: the hook takes two registers", 2, passed.registerCount)
+                assertTrue("$name: the hook goes in right after the name", hook in nameAt + 1..nameAt + 3)
+                fun copiedFrom(register: Int) = (nameAt + 1 until hook).map { code[it] }
+                    .lastOrNull { it.opcode == Opcode.MOVE_OBJECT_FROM16 && (it as TwoRegisterInstruction).registerA == register }
+                    ?.let { (it as TwoRegisterInstruction).registerB } ?: register
+                assertEquals("$name: the hook passes the poster's name", nameRegister, copiedFrom(passed.registerC))
+                assertEquals("$name: and the video's story", story, copiedFrom(passed.registerD))
+                assertEquals("$name: the extension's name comes back", Opcode.MOVE_RESULT_OBJECT, code[hook + 1].opcode)
+                assertEquals("$name: into the register passed", passed.registerC, (code[hook + 1] as OneRegisterInstruction).registerA)
+                val last = if (passed.registerC == nameRegister) hook + 1 else hook + 2
+                val spanInit = (original[spans.first()] as ReferenceInstruction).reference.toString()
+                val datedSpans = code.indices.filter {
+                    code[it].opcode == Opcode.INVOKE_DIRECT && (code[it] as? ReferenceInstruction)?.reference?.toString() == spanInit
+                }
+                assertEquals("$name: both spans are still there", 2, datedSpans.size)
+                for (span in datedSpans) {
+                    assertEquals("$name: the span at $span reads the extension's name", listOf(last),
+                        patched.writersReaching(span, code[span].namedRegisters()[2]))
+                }
+                assertEquals("$name: only the hook and its copies added",
+                    original.count { it.opcode != Opcode.NOP } + (last - nameAt), code.count { it.opcode != Opcode.NOP })
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
+    /**
      * #496: each declared build's reel footer words every attribution's label with one helper and
      * builds a ticker label from it, and a second method in the helper's class builds the soundtrack's
      * ticker label alone. Both labels go to the extension right before the ticker's new-instance, the
@@ -451,7 +538,7 @@ class ReelPostDateFixtureTest {
         assertTrue("reasonAlone isn't static", AccessFlags.STATIC.isSet(reason.accessFlags))
         for ((method, shape) in listOf(
             "soundLabelText" to SOUND_LABEL_TEXT, "soundStory" to SOUND_STORY, "soundTickerText" to SOUND_TICKER_TEXT,
-            "slotNewForYou" to SLOT_NEW_FOR_YOU,
+            "slotNewForYou" to SLOT_NEW_FOR_YOU, "groupPosterText" to GROUP_POSTER_TEXT,
         )) {
             val sound = ExtensionDex.classDef(type).methods.singleOrNull { it.name == method }
             assertNotNull("the extension has no ReelDeclutter.$method", sound)

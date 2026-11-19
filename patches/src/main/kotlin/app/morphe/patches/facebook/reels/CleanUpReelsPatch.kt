@@ -159,6 +159,12 @@ val cleanUpReelsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so a reel without sound shows no date beside its sound label.")
         }
+        // #520: and after the poster's name on a group's video, whose author row has no date line.
+        try {
+            dateGroupPoster(storyType)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a group's video shows no date beside its poster.")
+        }
         // #520: "New for you" and the reason Facebook picked a reel, slotted in at the top of that line.
         try {
             slotNewForYou()

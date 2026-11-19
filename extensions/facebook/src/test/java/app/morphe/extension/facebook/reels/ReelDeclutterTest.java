@@ -761,6 +761,46 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * A group's video in the full-screen viewer shows the group's name over the poster's and no date
+     * line (#520), so the date goes after the poster's name, worded the same way. A blank name, a time
+     * that can't be a post's, a story that holds none, the switch off, a pause and unready settings
+     * all keep the name.
+     */
+    @Test
+    public void theDateGoesAfterAGroupVideosPoster() {
+        String poster = "Ana Lima";
+        long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
+        assertEquals(poster + ReelDeclutter.DOT + "3 weeks ago",
+                ReelDeclutter.groupPoster(poster, threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        assertEquals(poster + ReelDeclutter.DOT + "Oct 12",
+                ReelDeclutter.groupPoster(poster, 1791817200L, NOW, ReelDateStyle.DATE, Locale.US, UTC));
+        assertSame("a blank name", "", ReelDeclutter.groupPoster("", threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        for (ReelDateStyle style : ReelDateStyle.values()) {
+            assertSame(poster, ReelDeclutter.groupPoster(poster, 0, NOW, style, Locale.US, UTC));
+            assertSame(poster, ReelDeclutter.groupPoster(poster, NOW / 1000 + 3600, NOW, style, Locale.US, UTC));
+        }
+
+        long posted = System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60;
+        TreeJNI story = new TreeJNI().with("creation_time", posted);
+        assertSame("off by default, the name stays", poster, ReelDeclutter.groupPosterText(poster, story));
+        assertNull(line(ReelDeclutter.DATE_ROUTE));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertEquals(poster + ReelDeclutter.DOT + "3 weeks ago", ReelDeclutter.groupPosterText(poster, story));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_BESIDE_POSTER));
+        assertSame("a story with no time", poster, ReelDeclutter.groupPosterText(poster, new TreeJNI()));
+        assertSame("a story that isn't a tree", poster, ReelDeclutter.groupPosterText(poster, "story"));
+        assertSame("no story", poster, ReelDeclutter.groupPosterText(poster, null));
+        assertNull("no name stays no name", ReelDeclutter.groupPosterText(null, story));
+        assertSame("a blank name stays blank", "", ReelDeclutter.groupPosterText("", story));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("dated while paused", poster, ReelDeclutter.groupPosterText(poster, story));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertSame("dated before the settings were ready", poster, ReelDeclutter.groupPosterText(poster, story)));
+    }
+
+    /**
      * A reel without sound has no song line, and its soundtrack's "Reel has no sound" label takes that
      * spot (#496), so the date goes in front of that label, and of no other attribution's. The story
      * the soundtrack's own helper was handed on the way in dates its label once, and a story that

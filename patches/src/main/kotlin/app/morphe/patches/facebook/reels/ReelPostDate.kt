@@ -204,17 +204,28 @@ internal fun dateReelsTabAudioLine(method: MutableMethod, storyType: String) {
     val line = (method.code[join + 1] as OneRegisterInstruction).registerA
     val story = audioLineStory(method, at, storyType)
         ?: throw PatchException("$PATCH: the audio line in $owner holds no story of $storyType where its song is joined")
+    handTextAndStory(method, at, line, story, AUDIO_LINE_TEXT)
+}
+
+/**
+ * Puts a call of [hook], handed the String in [text] and the story in [story], in front of [at] in
+ * [method], its answer taking the String's place. The registers are copied down below v16 through
+ * ones nothing reads there when they sit higher.
+ */
+private fun handTextAndStory(method: MutableMethod, at: Int, text: Int, story: Int, hook: String) {
     val live = RegisterLiveness.of(method).liveInto(at)
-    val spare = (0 until minOf(16, method.implementation!!.registerCount)).filter { it !in live && it != line && it != story }
-    val lineLow = if (line < 16) line else spare.getOrNull(0)
-    val storyLow = if (story < 16) story else spare.getOrNull(if (line < 16) 0 else 1)
-    if (lineLow == null || storyLow == null) throw PatchException("$PATCH: no spare register below v16 in $owner for the post date")
+    val spare = (0 until minOf(16, method.implementation!!.registerCount)).filter { it !in live && it != text && it != story }
+    val textLow = if (text < 16) text else spare.getOrNull(0)
+    val storyLow = if (story < 16) story else spare.getOrNull(if (text < 16) 0 else 1)
+    if (textLow == null || storyLow == null) {
+        throw PatchException("$PATCH: no spare register below v16 in ${method.definingClass} for the post date")
+    }
     val code = buildString {
-        if (lineLow != line) appendLine("move-object/from16 v$lineLow, v$line")
+        if (textLow != text) appendLine("move-object/from16 v$textLow, v$text")
         if (storyLow != story) appendLine("move-object/from16 v$storyLow, v$story")
-        appendLine("invoke-static { v$lineLow, v$storyLow }, $AUDIO_LINE_TEXT")
-        appendLine("move-result-object v$lineLow")
-        if (lineLow != line) appendLine("move-object/from16 v$line, v$lineLow")
+        appendLine("invoke-static { v$textLow, v$storyLow }, $hook")
+        appendLine("move-result-object v$textLow")
+        if (textLow != text) appendLine("move-object/from16 v$text, v$textLow")
     }
     method.addInstructions(at, code)
 }
@@ -370,6 +381,113 @@ internal fun BytecodePatchContext.slotNewForYou() {
             },
         )
     }
+}
+
+/*
+ * The date on a group's video in the full-screen viewer (#520, read from 588, 2026-11-19, arm64 and
+ * armeabi-v7a).
+ *
+ * - A group's video doesn't use the reel footer above. Its author row is a component of its own
+ *   (arm64 LX/0X81, v7 LX/0X82), whose class initializer names it GROUP_AUTHOR, and its render shows
+ *   the group's name over the poster's with the privacy icon after, and no date line at all, so
+ *   the switch's hooks never reached it.
+ * - The render keeps the video's story in a field of its own, the type the post date helper takes
+ *   second, and copies it into a high register at the top. The poster's name is one static call of
+ *   one object answering a String, and that String is the text of the row's name spans, each a
+ *   constructor of (something, CharSequence, Integer). One span is built on each of two ways, and
+ *   the row's accessibility label reads the same String.
+ * - The hook hands the name and the story to the extension right after the call, and its answer,
+ *   the name with the date after it, takes the name's place on every way.
+ */
+internal const val GROUP_AUTHOR = "FbShortsViewerVideoGroupAuthorKComponent"
+internal const val GROUP_POSTER_TEXT =
+    "$EXTENSION_PACKAGE/reels/ReelDeclutter;->groupPosterText(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/String;"
+private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/** Whether [instruction] builds a text span: a constructor of (something, CharSequence, Integer). */
+private fun buildsNameSpan(instruction: Instruction): Boolean {
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    val params = reference.params()
+    return instruction.opcode == Opcode.INVOKE_DIRECT && reference.name == "<init>" && params.size == 3 &&
+        params[0].startsWith("L") && params[1] == CHAR_SEQUENCE && params[2] == "Ljava/lang/Integer;"
+}
+
+/**
+ * Where [method], a group video's author row, gets the poster's name: the move-result-object of the
+ * one static call of one object answering a String that is the text of every name span. -1 unless
+ * the spans all take their text from that one call.
+ */
+internal fun groupPosterName(method: Method): Int {
+    val code = method.code
+    val spans = code.indices.filter { buildsNameSpan(code[it]) }
+    if (spans.isEmpty()) return -1
+    val names = spans.map { at ->
+        val text = code[at].namedRegisters().getOrNull(2) ?: return -1
+        method.writersReaching(at, text).singleOrNull() ?: return -1
+    }.toSet()
+    val name = names.singleOrNull()?.takeIf { it > 0 && code[it].opcode == Opcode.MOVE_RESULT_OBJECT } ?: return -1
+    val call = code[name - 1]
+    val reference = (call as? ReferenceInstruction)?.reference as? MethodReference ?: return -1
+    val static = call.opcode == Opcode.INVOKE_STATIC || call.opcode == Opcode.INVOKE_STATIC_RANGE
+    return if (static && reference.returnType == STRING && reference.parameterTypes.size == 1) name else -1
+}
+
+/**
+ * The register holding the video's story where code put at [at] in [method] runs: the one read of
+ * the method's own field of [storyType], or a copy of it, when that's the only write of the register
+ * reaching [at]. The lowest such register, or null when none holds it.
+ */
+internal fun storyHeld(method: Method, at: Int, storyType: String): Int? {
+    val code = method.code
+    val read = code.indices.filter { index ->
+        val field = (code[index] as? ReferenceInstruction)?.reference as? FieldReference ?: return@filter false
+        code[index].opcode == Opcode.IGET_OBJECT && field.definingClass == method.definingClass && field.type == storyType
+    }.singleOrNull()?.takeIf { it < at } ?: return null
+    val held = (code[read] as TwoRegisterInstruction).registerA
+    val copies = code.indices.filter { index ->
+        code[index].opcode in OBJECT_MOVES && (code[index] as TwoRegisterInstruction).registerB == held &&
+            method.writersReaching(index, held) == listOf(read)
+    }
+    val candidates = mapOf(held to read) + copies.associateBy { (code[it] as TwoRegisterInstruction).registerA }
+    return candidates.filter { (register, writer) -> method.writersReaching(at, register) == listOf(writer) }.keys.minOrNull()
+}
+
+/** Whether anything but the instruction before [at] in [method] can go on to it: a branch, a switch arm or a handler. */
+private fun landedOn(method: Method, at: Int): Boolean {
+    val flow = ControlFlow.of(method)
+    return flow.normal.indices.any { from -> from != at - 1 && at in flow.normal[from] } ||
+        flow.exceptional.any { at in it }
+}
+
+/** The render of a group video's author row: the one method of a [GROUP_AUTHOR] class whose name spans read one call. */
+private fun BytecodePatchContext.groupAuthorRender(): MutableMethod {
+    val renders = classDefByStrings(GROUP_AUTHOR, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { classDef -> classDef.methods.filter { groupPosterName(it) >= 0 }.map { classDef.type to it } }
+    val (owner, render) = renders.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one \"$GROUP_AUTHOR\" render that names its poster in one call, found ${renders.size}",
+    )
+    return mutableClassDefBy(owner).methods.single {
+        it.name == render.name && it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
+    }
+}
+
+/**
+ * Puts the post date after the poster's name on a group's video, in the render [groupAuthorRender]
+ * finds: the name and the video's story, of [storyType], go to the extension right after the name's
+ * call, and its answer takes the name's place.
+ */
+internal fun BytecodePatchContext.dateGroupPoster(storyType: String) {
+    val method = groupAuthorRender()
+    val owner = method.definingClass
+    val name = groupPosterName(method)
+    val at = name + 1
+    if (landedOn(method, at)) throw PatchException("$PATCH: something in $owner branches onto the poster's name")
+    val register = (method.code[name] as OneRegisterInstruction).registerA
+    val story = storyHeld(method, at, storyType)
+        ?: throw PatchException("$PATCH: $owner holds no story of $storyType where it names the poster")
+    handTextAndStory(method, at, register, story, GROUP_POSTER_TEXT)
 }
 
 /*
