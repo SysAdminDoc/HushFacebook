@@ -20,7 +20,10 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 import app.morphe.extension.facebook.settings.Settings;
@@ -367,5 +370,101 @@ public class TimelineWordsTest {
         };
         assertFalse(TimelineWords.hideInList(post(SPOILER), environment("GROUPS"), broken, words, links));
         assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains("group feed row"));
+    }
+
+    /** Stands in for a module of a search results page: a post's module carries its story, any other none. */
+    private static final class SearchModule {
+        final GraphQLStory story;
+
+        SearchModule(GraphQLStory story) {
+            this.story = story;
+        }
+    }
+
+    private final TimelineWords.ModuleReader stories =
+            module -> module instanceof SearchModule ? ((SearchModule) module).story : null;
+
+    private List<Object> keptPage(List<?> modules) {
+        return TimelineWords.keptSearchResults(modules, stories, words, links);
+    }
+
+    /**
+     * Search's Posts tab and the posts mixed into All come as page modules, each carrying its story,
+     * and the story component never draws them (#458, seen on the phone). With a search switch on, a
+     * module whose post goes by that rule comes off the page, the rest keep their order, and a module
+     * that isn't a post (a person, a Page, a suggestion) stays.
+     */
+    @Test
+    public void searchPagesLosePostsByTheirSearchSwitches() {
+        SearchModule person = new SearchModule(null);
+        SearchModule spoiler = new SearchModule(post(SPOILER));
+        SearchModule kept = new SearchModule(post(KEPT_SPOILER));
+        SearchModule drama = new SearchModule(post(DRAMA));
+        Object other = new Object();
+        SearchModule plain = new SearchModule(post(PLAIN));
+        List<Object> page = Arrays.asList(person, spoiler, kept, drama, other, plain);
+
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+        assertNull("the search switches start off", keptPage(page));
+        assertNull("nothing was read", line(TimelineWords.SEARCH_MODULES));
+
+        Settings.POST_WORDS_IN_SEARCH.save(true);
+        assertEquals(Arrays.asList(person, kept, drama, other, plain), keptPage(page));
+        Settings.LINK_POSTS_IN_SEARCH.save(true);
+        assertEquals(Arrays.asList(person, kept, other, plain), keptPage(page));
+        assertNull("nothing to take off keeps Facebook's list", keptPage(Arrays.asList(person, plain, kept)));
+
+        String modules = line(TimelineWords.SEARCH_MODULES);
+        assertNotNull(FeedFilterCounters.report().toString(), modules);
+        assertTrue(modules, modules.startsWith(TimelineWords.SEARCH_MODULES + ": 3 lists, 15 items"));
+        assertTrue(modules, modules.contains(TimelineWords.SEARCH_NOT_A_POST + " 5"));
+        assertTrue(modules, modules.contains(TimelineWords.SEARCH_POST + " 10"));
+        String wordsRow = line(TimelineWords.SEARCH_WORDS.route);
+        assertTrue(wordsRow, wordsRow.contains("Removed: " + PostWordsForTests.HIDE_WORD + " 2"));
+        String linksRow = line(TimelineWords.SEARCH_LINKS.route);
+        assertTrue(linksRow, linksRow.contains("Removed: " + PostWordsForTests.CAPTION_LINK + " 1"));
+        assertNull("no group or profile row was read", line(TimelineWords.GROUP_WORDS.route));
+        assertNull(line(TimelineWords.WORDS.route));
+
+        Settings.HIDE_POSTS_WITH_WORDS.save(false);
+        Settings.HIDE_LINK_POSTS.save(false);
+        assertNull("the main switches off, the search switches do nothing", keptPage(page));
+    }
+
+    /** Paused, before the settings are ready, with no modules or with a reader that throws, the page is kept whole. */
+    @Test
+    public void searchPagesPausedNotReadyOrFailingKeepEveryModule() {
+        SearchModule plain = new SearchModule(post(PLAIN));
+        List<Object> page = Arrays.asList(new SearchModule(post(SPOILER)), plain);
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.POST_WORDS_IN_SEARCH.save(true);
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull(keptPage(page));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertNull(keptPage(page)));
+        assertNull(keptPage(null));
+        assertNull(keptPage(Collections.emptyList()));
+
+        TimelineWords.ModuleReader broken = module -> {
+            throw new IllegalStateException("module released");
+        };
+        assertNull(TimelineWords.keptSearchResults(page, broken, words, links));
+        assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains("search results page"));
+        assertEquals("the next page still goes by your words", Arrays.asList(plain), keptPage(page));
+    }
+
+    /** Before the patch fills in the stubs, no module reads as a post, so the page is kept whole. */
+    @Test
+    public void unpatchedStubsReadNoSearchPost() {
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.POST_WORDS_IN_SEARCH.save(true);
+
+        assertNull(TimelineWords.searchStoryOf(new SearchModule(post(SPOILER))));
+        assertNull(TimelineWords.searchStoryOf(null));
+        assertNull(TimelineWords.keptSearchResults(Arrays.asList(new SearchModule(post(SPOILER))), "search"));
+        String modules = line(TimelineWords.SEARCH_MODULES);
+        assertTrue(modules, modules.contains(TimelineWords.SEARCH_NOT_A_POST + " 1"));
     }
 }

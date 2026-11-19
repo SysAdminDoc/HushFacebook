@@ -79,7 +79,7 @@ public class SearchResultsPageTest {
 
     @Test
     public void withBothPatchesEachTakesOutItsOwnAndCountsItsOwn() {
-        assertEquals(Arrays.asList(person, post), SearchResultsPage.keptModules(page, "search_results", META_AI, ADS));
+        assertEquals(Arrays.asList(person, post), SearchResultsPage.keptModules(page, "search_results", META_AI, ADS, null));
         List<String> counters = FeedFilterCounters.report();
         assertTrue(line(counters, "Search results"), line(counters, "Search results").contains(" 2 removed"));
         assertTrue(line(counters, "Search ads"), line(counters, "Search ads").startsWith("Search ads: 1 lists, 3 items, 1 removed"));
@@ -91,36 +91,36 @@ public class SearchResultsPageTest {
     /** A build with only one of the two patches asks only that one, and the other family stays out of the report. */
     @Test
     public void aPatchThatIsntInTheBuildIsntAsked() {
-        assertEquals(Arrays.asList(answer, person, prompts, post), SearchResultsPage.keptModules(page, null, null, ADS));
+        assertEquals(Arrays.asList(answer, person, prompts, post), SearchResultsPage.keptModules(page, null, null, ADS, null));
         assertNull(line(HookStatus.report(), FamilyNames.META_AI_SEARCH));
         HookStatus.clear();
-        assertEquals(Arrays.asList(person, ad, post), SearchResultsPage.keptModules(page, null, META_AI, null));
+        assertEquals(Arrays.asList(person, ad, post), SearchResultsPage.keptModules(page, null, META_AI, null, null));
         assertNull(line(HookStatus.report(), FamilyNames.SPONSORED_SEARCH));
-        assertNull("neither patch in the build keeps Facebook's list", SearchResultsPage.keptModules(page, null, null, null));
+        assertNull("neither patch in the build keeps Facebook's list", SearchResultsPage.keptModules(page, null, null, null, null));
     }
 
     /** Each switch is its own: one off leaves only that patch's modules. */
     @Test
     public void theSwitchesAreIndependent() {
         Settings.HIDE_SPONSORED_SEARCH_RESULTS.save(false);
-        assertEquals(Arrays.asList(person, ad, post), SearchResultsPage.keptModules(page, null, META_AI, ADS));
+        assertEquals(Arrays.asList(person, ad, post), SearchResultsPage.keptModules(page, null, META_AI, ADS, null));
         Settings.HIDE_SPONSORED_SEARCH_RESULTS.save(true);
         Settings.HIDE_META_AI_IN_SEARCH.save(false);
-        assertEquals(Arrays.asList(answer, person, prompts, post), SearchResultsPage.keptModules(page, null, META_AI, ADS));
+        assertEquals(Arrays.asList(answer, person, prompts, post), SearchResultsPage.keptModules(page, null, META_AI, ADS, null));
         Settings.HIDE_SPONSORED_SEARCH_RESULTS.save(false);
-        assertNull("both off keeps Facebook's list", SearchResultsPage.keptModules(page, null, META_AI, ADS));
+        assertNull("both off keeps Facebook's list", SearchResultsPage.keptModules(page, null, META_AI, ADS, null));
     }
 
     @Test
     public void aPageWithNothingToTakeOutKeepsFacebooksList() {
-        assertNull(SearchResultsPage.keptModules(Arrays.asList(person, post), null, META_AI, ADS));
-        assertNull(SearchResultsPage.keptModules(null, null, META_AI, ADS));
+        assertNull(SearchResultsPage.keptModules(Arrays.asList(person, post), null, META_AI, ADS, null));
+        assertNull(SearchResultsPage.keptModules(null, null, META_AI, ADS, null));
     }
 
     /** The Meta AI tab's own page is what someone asked for, and neither filter touches it. */
     @Test
     public void theMetaAiTabPageIsLeftWhole() {
-        assertNull(SearchResultsPage.keptModules(page, MetaAiSearch.META_AI_TAB_PAGE, META_AI, ADS));
+        assertNull(SearchResultsPage.keptModules(page, MetaAiSearch.META_AI_TAB_PAGE, META_AI, ADS, null));
     }
 
     /** A filter that throws past its own guard costs the page nothing: Facebook's list, and both families told. */
@@ -129,10 +129,37 @@ public class SearchResultsPageTest {
         SearchResultsPage.Filter broken = (modules, name) -> {
             throw new IllegalStateException("filter broke");
         };
-        assertNull(SearchResultsPage.keptModules(page, null, META_AI, broken));
+        assertNull(SearchResultsPage.keptModules(page, null, META_AI, broken, null));
         List<String> status = HookStatus.report();
         assertTrue(line(status, FamilyNames.SPONSORED_SEARCH), line(status, FamilyNames.SPONSORED_SEARCH).contains("IllegalStateException"));
         assertTrue(line(status, FamilyNames.META_AI_SEARCH), line(status, FamilyNames.META_AI_SEARCH).contains("IllegalStateException"));
+    }
+
+    /**
+     * Hide posts by words goes last (#458): it gets what Meta AI's and the ads filter kept, its own
+     * answer is the page, and when it keeps everything the other two's list stands.
+     */
+    @Test
+    public void postWordsJudgesWhatTheOtherTwoKept() {
+        List<List<?>> handed = new java.util.ArrayList<>();
+        SearchResultsPage.Filter words = (modules, name) -> {
+            handed.add(modules);
+            return modules.contains(post) ? Arrays.asList(new Object[]{person}) : null;
+        };
+        assertEquals(Arrays.asList(person), SearchResultsPage.keptModules(page, null, META_AI, ADS, words));
+        assertEquals("it reads only what the other two left", Arrays.asList(person, post), handed.get(0));
+
+        SearchResultsPage.Filter keepsAll = (modules, name) -> null;
+        assertEquals(Arrays.asList(person, post), SearchResultsPage.keptModules(page, null, META_AI, ADS, keepsAll));
+        assertEquals("alone, it can take a post out", Arrays.asList(person),
+                SearchResultsPage.keptModules(Arrays.asList(person, post), null, null, null, words));
+
+        SearchResultsPage.Filter broken = (modules, name) -> {
+            throw new IllegalStateException("words broke");
+        };
+        assertNull(SearchResultsPage.keptModules(page, null, null, null, broken));
+        assertTrue(HookStatus.report().toString(),
+                line(HookStatus.report(), FamilyNames.POST_WORDS).contains("IllegalStateException"));
     }
 
     /** The public entry asks SettingsStatus, which answers no patch until the patches switch it on. */

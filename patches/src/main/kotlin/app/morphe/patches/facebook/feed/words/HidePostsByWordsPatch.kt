@@ -72,7 +72,11 @@ internal const val PATCH = "Hide posts by words"
  * Facebook's story component, which draws a post on every surface, so this patch puts a check first
  * in its render method too, handing the extension the story and the row's environment, and fills
  * TimelineWords' two stubs with the getters that name the row's list (see StoryListAnchors.kt). The
- * extension judges only a group's list, and a build without the component keeps the rest.
+ * extension judges only a group's list, and a build without the component keeps the rest. Search's
+ * Posts tab and the posts in All come as modules of a search results page instead, so this patch
+ * asks for the page hook Hide sponsored search results and Hide Meta AI in search share, and fills
+ * TimelineWords' two search stubs with the module class and its post (see SearchPostAnchors.kt).
+ * Those posts go only by the search switches, which start off.
  *
  * The lists live in Hushfacebook's settings on the phone. Nothing here reads a post until a
  * switch is on and its list has something in it, and nothing of the text, the names or the lists
@@ -84,7 +88,7 @@ val hidePostsByWordsPatch = bytecodePatch(
     description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
         "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
         "posts in languages you don't read can go too. Your words and link posts also work on profiles, Pages and " +
-        "in groups. " +
+        "in groups, and in search results once you turn that on. " +
         "On the Reels tab they go by each reel's caption, and so do other languages. Starts off. Turn it on in " +
         "Hushfacebook settings > News feed.",
     default = true,
@@ -136,6 +140,15 @@ val hidePostsByWordsPatch = bytecodePatch(
             null
         }
 
+        // And search results (#458): the Posts tab and the posts in All are modules of a search
+        // page, which the story component never draws, so the page's own hook hands them over.
+        val search = try {
+            searchPosts()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without search results.")
+            null
+        }
+
         // The extension reads the text and the model's type tag through these, by reflection.
         if (!hasPublicStringReader(classDefBy(BASE_MODEL_WITH_TREE))) {
             throw PatchException("$PATCH: BaseModelWithTree has no public getCachedString(int)")
@@ -170,6 +183,7 @@ val hidePostsByWordsPatch = bytecodePatch(
             fillStoryModelStub(TIMELINE_WORDS_CLASS, LIST_NAME_STUB, lists.listName)
             mutableStoryRender(lists).judgeStoryRows(lists)
         }
+        if (search != null) judgeSearchPosts(search)
         enableStatus("postWords")
     }
 }

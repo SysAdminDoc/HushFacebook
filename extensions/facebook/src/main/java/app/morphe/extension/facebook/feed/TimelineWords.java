@@ -6,9 +6,11 @@ package app.morphe.extension.facebook.feed;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -31,6 +33,11 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * judges only a row whose environment names one of {@link #GROUP_LISTS} or {@link #SEARCH_LISTS}. A
  * post opened on its own and the News feed (which the feed guard judges) are drawn as they come. True answers no component,
  * which a render method already does for a row it won't draw, so the post leaves no gap.
+ *
+ * <p>The cards on a search's Posts tab and the posts mixed into All aren't drawn by that component.
+ * Each comes in a page of search results as a module carrying its post as a GraphQLStory, so
+ * {@link #keptSearchResults} judges every module's story before the page is built, and a module the
+ * search switches take off never reaches the list on screen.
  *
  * <p>The words are read the way a News feed post's are ({@link PostWords#storyKind}, a keep phrase
  * still winning), and the link rule is the Reels tab's ({@link PostTypes#captionLinkKind}): a post
@@ -115,9 +122,21 @@ public final class TimelineWords {
     /** The list of posts a search turns up, by Facebook's own name for it. */
     static final Set<String> SEARCH_LISTS = Collections.singleton("SEARCH_RESULTS");
 
+    /** What reads the post a search results module carries: the patch's stubs, or a test's stand-in. */
+    interface ModuleReader {
+        @Nullable
+        Object story(@Nullable Object module);
+    }
+
+    /** Where each module of a page of search results is counted while a search switch is on. */
+    static final String SEARCH_MODULES = "Search result modules";
+    static final String SEARCH_POST = "post";
+    static final String SEARCH_NOT_A_POST = "not a post";
+
     static final Reader WORDS_READER = PostWords::storyKind;
     static final Reader LINKS_READER = PostTypes::captionLinkKind;
     static final ListReader LIST_READER = TimelineWords::listNameOf;
+    static final ModuleReader MODULE_READER = TimelineWords::searchStoryOf;
 
     private TimelineWords() {
     }
@@ -185,6 +204,56 @@ public final class TimelineWords {
         }
     }
 
+    /**
+     * Called by the search page hook (SearchResultsPage) with a page's modules, after the Meta AI
+     * and ads filters. Null keeps the list it was handed; otherwise the modules to keep, in their
+     * order. Never throws.
+     *
+     * @param modules the page's module list.
+     * @param page    the page's name, which this doesn't need.
+     */
+    @Nullable
+    public static List<Object> keptSearchResults(@Nullable List<?> modules, @Nullable String page) {
+        return keptSearchResults(modules, MODULE_READER, WORDS_READER, LINKS_READER);
+    }
+
+    /** {@link #keptSearchResults(List, String)} with the readers passed in, so a test can stand in for them. */
+    @Nullable
+    static List<Object> keptSearchResults(@Nullable List<?> modules, ModuleReader stories, Reader words, Reader links) {
+        try {
+            HookStatus.invoked(FamilyNames.POST_WORDS);
+            if (modules == null || modules.isEmpty() || !Utils.settingsReady()) return null;
+            if (!SEARCH_WORDS.switchedOn() && !SEARCH_LINKS.switchedOn()) return null;            FeedFilterCounters.sawList(SEARCH_MODULES, modules.size());
+            ArrayList<Object> kept = null;
+            int posts = 0;
+            for (int index = 0; index < modules.size(); index++) {
+                Object module = modules.get(index);
+                Object story = stories.story(module);
+                FeedFilterCounters.sawKind(SEARCH_MODULES, story == null ? SEARCH_NOT_A_POST : SEARCH_POST);
+                boolean hidden = false;
+                if (story != null) {
+                    posts++;
+                    hidden = judge(story, SEARCH_WORDS, SEARCH_LINKS, words, links, "Search result");
+                }
+                if (hidden) {
+                    if (kept == null) kept = new ArrayList<>(modules.subList(0, index));
+                } else if (kept != null) {
+                    kept.add(module);
+                }
+            }
+            final int total = modules.size();
+            final int read = posts;
+            final int left = kept == null ? total : kept.size();
+            Logger.printDebug(() -> "Search results: " + total + " modules, " + read + " posts read, "
+                    + (total - left) + " taken off");
+            return kept;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.POST_WORDS, "search results page", failure);
+            Logger.printException(() -> "Post words: could not judge a page of search results", failure);
+            return null;
+        }
+    }
+
     /** Whether [unit] comes off by [wordsRule], or else by [linksRule], each when its switch is on. */
     private static boolean judge(@Nullable Object unit, Rule wordsRule, Rule linksRule, Reader words, Reader links,
                                  String where) {
@@ -228,5 +297,30 @@ public final class TimelineWords {
      */
     public static Object listName(Object listType) {
         return StoryFlag.NOT_PATCHED;
+    }
+
+    /** The post [module] carries, or null when it isn't a search module or carries none. */
+    @Nullable
+    static Object searchStoryOf(@Nullable Object module) {
+        if (module == null || !isSearchModule(module)) return null;
+        return searchStory(module);
+    }
+
+    /**
+     * Injection point, filled in by Hide posts by words: whether an item of a page of search results
+     * is a search module. The patch replaces this body with an instance-of the module class, whose
+     * name changes every build. Until then nothing is, so no module is read.
+     */
+    public static boolean isSearchModule(Object item) {
+        return false;
+    }
+
+    /**
+     * Injection point, filled in by Hide posts by words: the GraphQLStory a search module carries,
+     * or null. The patch replaces this body with a read of the module's story field. Only an item
+     * {@link #isSearchModule} took may be passed.
+     */
+    public static Object searchStory(Object module) {
+        return null;
     }
 }
