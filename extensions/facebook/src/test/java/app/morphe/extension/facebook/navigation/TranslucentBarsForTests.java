@@ -12,6 +12,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.content.res.ColorStateList;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -88,6 +89,23 @@ public final class TranslucentBarsForTests {
         activity.setContentView(window, new FrameLayout.LayoutParams(720, 1600));
         layOut();
         bars = new TranslucentBars.Bars(window, TopBar.class.getName(), TabBar.class.getName());
+    }
+
+    /**
+     * Adds Facebook's strip behind the status bar: [height] pixels of [colour] along the top of the
+     * content view, with the screen below it, the way 588 lays it out on Android 15 (#507).
+     */
+    public View strip(int height, int colour) {
+        ViewGroup content = activity.findViewById(android.R.id.content);
+        View strip = new View(activity);
+        strip.setBackground(new ColorDrawable(colour));
+        content.addView(strip, 0, new FrameLayout.LayoutParams(720, height, Gravity.TOP));
+        ((FrameLayout.LayoutParams) window.getLayoutParams()).topMargin = height;
+        ShadowLooper.idleMainLooper();
+        content.measure(View.MeasureSpec.makeMeasureSpec(720, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1600 + height, View.MeasureSpec.EXACTLY));
+        content.layout(0, 0, 720, 1600 + height);
+        return strip;
     }
 
     /** Lays the screen out at 720 by 1600, as a frame would. */

@@ -839,18 +839,25 @@ public class TranslucentBarsTest {
         }
     }
 
-    /** A canvas that keeps its translation, each cleared box and each node drawn, in its starting coordinates. */
+    /**
+     * A canvas that keeps its translation and scale, each cleared box, each node drawn, in its
+     * starting coordinates, whether it was drawn upside down, and each colour drawn over it all.
+     */
     private static final class Tracking extends Canvas {
         final List<Rect> cleared = new ArrayList<>();
         final List<Rect> nodes = new ArrayList<>();
+        final List<Boolean> turned = new ArrayList<>();
+        final List<Integer> colours = new ArrayList<>();
         boolean hardware;
         private final Deque<float[]> stack = new ArrayDeque<>();
         private float x;
         private float y;
+        private float scaleX = 1f;
+        private float scaleY = 1f;
 
         @Override
         public int save() {
-            stack.push(new float[]{x, y});
+            stack.push(new float[]{x, y, scaleX, scaleY});
             return stack.size();
         }
 
@@ -859,6 +866,8 @@ public class TranslucentBarsTest {
             float[] top = stack.pop();
             x = top[0];
             y = top[1];
+            scaleX = top[2];
+            scaleY = top[3];
         }
 
         @Override
@@ -868,8 +877,19 @@ public class TranslucentBarsTest {
 
         @Override
         public void translate(float dx, float dy) {
-            x += dx;
-            y += dy;
+            x += dx * scaleX;
+            y += dy * scaleY;
+        }
+
+        @Override
+        public void scale(float sx, float sy) {
+            scaleX *= sx;
+            scaleY *= sy;
+        }
+
+        @Override
+        public void drawColor(int colour) {
+            colours.add(colour);
         }
 
         @Override
@@ -886,9 +906,102 @@ public class TranslucentBarsTest {
 
         @Override
         public void drawRenderNode(RenderNode node) {
-            nodes.add(new Rect(Math.round(node.getLeft() + x), Math.round(node.getTop() + y),
-                    Math.round(node.getRight() + x), Math.round(node.getBottom() + y)));
+            float left = x + node.getLeft() * scaleX;
+            float right = x + node.getRight() * scaleX;
+            float top = y + node.getTop() * scaleY;
+            float bottom = y + node.getBottom() * scaleY;
+            nodes.add(new Rect(Math.round(Math.min(left, right)), Math.round(Math.min(top, bottom)),
+                    Math.round(Math.max(left, right)), Math.round(Math.max(top, bottom))));
+            turned.add(scaleY < 0f);
         }
+    }
+
+    @Test
+    public void theStripBehindTheStatusBarIsFoundByItsShape() {
+        // #507: on Android 15 Facebook 588 paints its own strip behind the status bar, a plain view
+        // along the top of the content view as tall as the status bar, and lays its screen out below.
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        View strip = screen.strip(75, TranslucentBarsForTests.TOP_COLOUR);
+        assertSame(strip, TranslucentBars.stripOf(screen.window, 75));
+        assertNull("not as tall as the status bar", TranslucentBars.stripOf(screen.window, 80));
+        assertNull("no status bar to sit behind", TranslucentBars.stripOf(screen.window, 0));
+        strip.setVisibility(View.INVISIBLE);
+        assertNull(TranslucentBars.stripOf(screen.window, 75));
+        strip.setVisibility(View.VISIBLE);
+        strip.setBackground(new ColorDrawable(0));
+        assertNull("a clear strip shows what's under it already", TranslucentBars.stripOf(screen.window, 75));
+        strip.setBackground(new GradientDrawable());
+        assertNull("only a plain colour", TranslucentBars.stripOf(screen.window, 75));
+    }
+
+    @Test
+    @Config(sdk = 34)
+    public void theStripIsFrostedWithTheBandUnderItTurnedOver() {
+        // #507: nothing of the feed runs behind the strip, so it gets the band of the top bar's host
+        // just under it, blurred the way the bar's frost is and drawn turned over, so the two blurs
+        // meet at the strip's bottom edge, under the strip's colour as see-through as a frosted bar's.
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        View strip = screen.strip(75, TranslucentBarsForTests.TOP_COLOUR);
+        screen.bars.frostStrip(screen.window, screen.page, 75);
+        TranslucentBars.StripFrost frost = (TranslucentBars.StripFrost) screen.bars.strip;
+        assertNotNull("the strip got its frost", frost);
+        assertSame(strip, frost.strip);
+        assertEquals("the page's band just under the strip", new Rect(0, 0, 720, 75), frost.band);
+        assertEquals(new Rect(0, 0, 720, 75),
+                new Rect(frost.node.getLeft(), frost.node.getTop(), frost.node.getRight(), frost.node.getBottom()));
+        assertEquals("blurred at a quarter of the size", 180, frost.blur.getRight());
+        assertEquals(19, frost.blur.getBottom());
+        int kept = TranslucentBars.seeThrough(255, true);
+        assertEquals((kept << 24) | 0x242526, TranslucentBars.stripTint(strip));
+        assertEquals("Facebook's own colour stays under it", TranslucentBarsForTests.TOP_COLOUR,
+                ((ColorDrawable) strip.getBackground()).getColor());
+
+        Tracking turned = new Tracking();
+        TranslucentBars.StripFrost.turnOver(turned, frost.blur, 75, 0x80123456);
+        assertEquals("drawn back over the whole strip", new Rect(0, -1, 720, 75), turned.nodes.get(0));
+        assertTrue("upside down, the band's top row along the strip's bottom", turned.turned.get(0));
+        assertEquals("then the tint over it", 1, turned.colours.size());
+        assertEquals(0x80123456, (int) turned.colours.get(0));
+
+        Tracking drawn = new Tracking();
+        drawn.hardware = true;
+        frost.draw(drawn);
+        assertEquals(new Rect(0, 0, 720, 75), drawn.nodes.get(0));
+
+        screen.bars.frostStrip(screen.window, null, 75);
+        assertNull("no top bar over a page, the strip as Facebook paints it", screen.bars.strip);
+        screen.bars.frostStrip(screen.window, screen.page, 75);
+        assertNotNull(screen.bars.strip);
+        screen.bars.giveBack();
+        assertNull("the switch going off takes it away", screen.bars.strip);
+    }
+
+    @Test
+    @Config(sdk = 34)
+    public void noFrostDrawsIntoAFrostsCopy() {
+        // #507: the strip copies the page, whose overlay holds the top bar's frost, and a frost drawn
+        // into another's copy would be blurred twice.
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        View strip = screen.strip(75, TranslucentBarsForTests.TOP_COLOUR);
+        TranslucentBars.Frost frost = new TranslucentBars.Frost(screen.page, 47f);
+        frost.update(new Rect(0, 75, 720, 163), 1f, 1, 0f);
+        TranslucentBars.StripFrost stripFrost = new TranslucentBars.StripFrost(strip, screen.page, 47f);
+        stripFrost.update(0x80242526, 1);
+        Tracking canvas = new Tracking();
+        canvas.hardware = true;
+        TranslucentBars.copying = true;
+        try {
+            frost.draw(canvas);
+            stripFrost.draw(canvas);
+            assertTrue(canvas.nodes.isEmpty());
+        } finally {
+            TranslucentBars.copying = false;
+        }
+        frost.draw(canvas);
+        stripFrost.draw(canvas);
+        assertEquals(2, canvas.nodes.size());
+        frost.remove();
+        stripFrost.remove();
     }
 
     @Test

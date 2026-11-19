@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide New for you on reels` under Reels and Watch takes "New for you", and the other reasons Facebook gives for showing you a reel, off the line under its author. It's part of `Clean up Reels` and starts off. With the label kept and `Show the post date on reels` on, the date now shows first, so you don't wait for the line to turn over to see when the reel was posted. (#520)
 * `Translate every comment` under Comments and writing shows Facebook's translation on comments in another language as they load, the same as tapping See translation on each one. It comes with `Turn off auto-translation` and starts off. (#522)
 * `Long press to save Marketplace photos` under Downloads saves a Marketplace listing's photo when you hold your finger on it, in the listing or opened full screen. It lands in the same folder as every other photo you save. It needs `Save any photo` and starts off. (#515)
+* With `See-through bars` on, the strip behind the clock and battery icons is frosted glass too on Android 12 and newer, so the glass runs from the top bar up to the edge of the screen instead of stopping under a solid band. (#507)
 
 ### Changed
 
