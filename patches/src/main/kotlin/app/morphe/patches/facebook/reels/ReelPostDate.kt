@@ -689,3 +689,125 @@ internal fun BytecodePatchContext.dateSoundLabels(storyType: String) {
     val kept = parameterRegister(method, storyType)!!
     method.addInstructions(0, "invoke-static/range { v$kept .. v$kept }, $SOUND_STORY")
 }
+
+/*
+ * The date kept in sight under a reel's author (#503, read from 588, 2026-11-19, arm64).
+ *
+ * - The Reels tab's song line is a chip (arm64 LX/09H2) built from the line's text and two flags
+ *   last. The last one makes it a marquee that scrolls the text sideways, so the date in front of
+ *   the song slid out of sight within a second. The hook hands that flag to the extension right
+ *   before the chip's constructor, and the extension says no while the date is on.
+ * - On a reel without a song the footer's builder hands the rows under the author, the date row
+ *   first, to a view (arm64 LX/0aU0) of (FbUserSession, something, List, Function0, boolean,
+ *   boolean) that flips through them when there are two or more, so the date gave way to the
+ *   location or New for you after a few seconds. Each row the post date helper answers goes to the
+ *   extension, and the rows go to it right before that view is built: while the date is on and one
+ *   of those rows is among them, the view gets that row alone and holds still.
+ */
+internal const val AUDIO_LINE_SCROLLS = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->audioLineScrolls(I)Z"
+internal const val FOOTER_DATE_ROW = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->footerDateRow(Ljava/lang/Object;)V"
+internal const val FOOTER_ROWS = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->footerRows(Ljava/util/List;)Ljava/util/List;"
+private const val ROWS = "Ljava/util/List;"
+private val CONSTRUCTS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+private val STATICS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+
+/** The constructor [instruction] calls, or null when it calls none. */
+private fun constructed(instruction: Instruction): MethodReference? {
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return null
+    return reference.takeIf { instruction.opcode in CONSTRUCTS && it.name == "<init>" }
+}
+
+/**
+ * Where [method], the Reels tab's audio line, builds its chip: the one constructor past
+ * [audioLineJoin] whose last three parameters are a String and two booleans. -1 unless one.
+ */
+internal fun audioLineChip(method: Method): Int {
+    val code = method.code
+    val join = audioLineJoin(method)
+    if (join < 0) return -1
+    return code.indices.filter { at ->
+        val params = constructed(code[at])?.params() ?: return@filter false
+        at > join && params.size >= 3 && params.takeLast(3) == listOf(STRING, "Z", "Z")
+    }.singleOrNull() ?: -1
+}
+
+/**
+ * Hands the song chip's scrolling flag in [method], the Reels tab's audio line, to the extension
+ * right before the chip is built. Refuses when the flag's register goes in twice, is read after
+ * the constructor, or something branches onto the constructor.
+ */
+internal fun stillAudioLine(method: MutableMethod) {
+    val owner = method.definingClass
+    val chip = audioLineChip(method)
+    if (chip < 0) throw PatchException("$PATCH: the audio line in $owner builds no chip of its line and two flags")
+    val registers = method.code[chip].namedRegisters()
+    val flag = registers.last()
+    if (registers.count { it == flag } != 1 || flag in RegisterLiveness.of(method).liveInto(chip + 1) || landedOn(method, chip)) {
+        throw PatchException("$PATCH: the song chip's scrolling flag in $owner can't be handed over where the chip is built")
+    }
+    method.addInstructions(
+        chip,
+        """
+            invoke-static/range { v$flag .. v$flag }, $AUDIO_LINE_SCROLLS
+            move-result v$flag
+        """,
+    )
+}
+
+/**
+ * Where [method], the reel footer, builds the view that flips through the rows under the author:
+ * the one constructor of (FbUserSession, something, List, Function0, boolean, boolean). -1 unless one.
+ */
+internal fun footerFlipper(method: Method): Int {
+    val code = method.code
+    return code.indices.filter { at ->
+        val params = constructed(code[at])?.params() ?: return@filter false
+        params.size == 6 && params[0] == USER_SESSION && params[2] == ROWS && params[3] == FUNCTION0 &&
+            params[4] == "Z" && params[5] == "Z"
+    }.singleOrNull() ?: -1
+}
+
+/**
+ * Where [method] gets a row from the post date helper: the move-result-object after each static
+ * call whose method [isDate] says is that helper.
+ */
+internal fun footerDateRows(method: Method, isDate: (MethodReference) -> Boolean): List<Int> {
+    val code = method.code
+    return code.indices.filter { at ->
+        val reference = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return@filter false
+        val params = reference.params()
+        code[at].opcode in STATICS && reference.returnType.startsWith("L") && params.size >= 3 &&
+            params.first() == USER_SESSION && params.last() == "Z" &&
+            code.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT && isDate(reference)
+    }.map { it + 1 }
+}
+
+/**
+ * Holds the line under a reel's author on the date while it shows: each row the post date helper
+ * answers in the reel footer goes to the extension, and the rows go to it right before the view
+ * that flips through them is built, its answer taking their place.
+ */
+internal fun BytecodePatchContext.holdFooterOnDate() {
+    val method = reelFooter()
+    val owner = method.definingClass
+    val flipper = footerFlipper(method)
+    if (flipper < 0) throw PatchException("$PATCH: the reel footer in $owner builds no view that flips through its rows")
+    val rows = footerDateRows(method) { reference ->
+        classDefByOrNull(reference.definingClass)?.methods?.any {
+            it.name == reference.name && it.parameterTypes.map(CharSequence::toString) == reference.params() && isReelPostDate(it)
+        } == true
+    }
+    if (rows.isEmpty()) throw PatchException("$PATCH: the reel footer in $owner never asks the post date helper for its row")
+    val list = method.code[flipper].namedRegisters()[3]
+    // A row hook may sit where a branch lands: 588 jumps onto the instruction after the helper's
+    // row from paths that never asked it, and a branch keeps landing on that instruction, past
+    // the hook, so only a row the helper just answered is handed over.
+    if (landedOn(method, flipper)) {
+        throw PatchException("$PATCH: something in $owner branches onto where its rows would be handed over")
+    }
+    // From the bottom up, so the indices above still hold.
+    val inserts = rows.map { it + 1 to "invoke-static/range { v${(method.code[it] as OneRegisterInstruction).registerA} .. " +
+        "v${(method.code[it] as OneRegisterInstruction).registerA} }, $FOOTER_DATE_ROW" } +
+        (flipper to "invoke-static/range { v$list .. v$list }, $FOOTER_ROWS\nmove-result-object v$list")
+    inserts.sortedByDescending { it.first }.forEach { (at, code) -> method.addInstructions(at, code) }
+}

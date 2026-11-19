@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.reels
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -23,6 +24,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import org.junit.Assert.assertEquals
@@ -513,6 +515,180 @@ class ReelPostDateFixtureTest {
             code.count { it.opcode != Opcode.NOP } + (end - start) + 1 + shift + added, patched.count { it.opcode != Opcode.NOP })
     }
 
+    private val moves = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+    /** The instruction in [method] whose value [register] holds at [at], followed back through plain moves. */
+    private fun source(method: Method, at: Int, register: Int): Instruction? {
+        val writer = method.writersReaching(at, register).singleOrNull()?.takeIf { it >= 0 } ?: return null
+        val code = method.code()
+        val written = code[writer]
+        return if (written.opcode in moves) source(method, writer, (written as TwoRegisterInstruction).registerB) else written
+    }
+
+    /** The patched copy of [method] in [context]. */
+    private fun patchedMethodOf(context: BytecodePatchContext, method: Method) =
+        context.mutableClassDefBy(method.definingClass).methods.single {
+            it.name == method.name && it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+        }
+
+    private fun patchedOf(context: BytecodePatchContext, method: Method) = patchedMethodOf(context, method).code()
+
+    private fun List<Instruction>.calling(hook: String) =
+        indices.filter { ((this[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == hook }
+
+    /**
+     * #503: each declared build's Reels tab song line is a chip whose last flag, one of the render's
+     * own boolean fields, makes it scroll. In the patch's order, after the hide and the date, that
+     * flag goes to the extension right before the chip's constructor and comes back in its register.
+     */
+    @Test
+    fun `each declared build hands the song chip's scrolling flag to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val storyType = FixtureDex.methodsWhere(bundle, { true }, ::isReelPostDate).single().parameterTypes[1].toString()
+                val chipHolders = FixtureDex.classesHolding(bundle, SOUNDTRACK_CHIP)
+                val render = chipHolders.flatMap { owner -> owner.methods.filter(::isAudioLineRender) }.single()
+                val original = render.code()
+                val chip = audioLineChip(render)
+                assertTrue("$name: the render builds its chip past the join", chip > audioLineJoin(render))
+                val chipInit = (original[chip] as ReferenceInstruction).reference as MethodReference
+                assertEquals("$name: a constructor", "<init>", chipInit.name)
+                assertEquals("$name: whose last two parameters are flags", listOf("Z", "Z"),
+                    chipInit.parameterTypes.takeLast(2).map(CharSequence::toString))
+                val flag = original[chip].namedRegisters().last()
+                val read = source(render, chip, flag)
+                assertNotNull("$name: the last flag comes from one place", read)
+                assertEquals("$name: a boolean field", Opcode.IGET_BOOLEAN, read!!.opcode)
+                assertEquals("$name: of the render's own class", render.definingClass,
+                    ((read as ReferenceInstruction).reference as FieldReference).definingClass)
+                val audio = PatchContexts.of(chipHolders)
+                val audioLine = audio.reelsTabAudioLine()
+                val other = audio.mutableClassDefBy(render.definingClass).methods.first { audioLineChip(it) < 0 && it.implementation != null }
+                assertThrows("$name: a method with no chip must refuse the patch", PatchException::class.java) {
+                    stillAudioLine(other)
+                }
+                audioLine.returnNullWhen(HIDE_AUDIO_LINE)
+                dateReelsTabAudioLine(audioLine, storyType)
+                val dated = audioLine.implementation!!.instructions.count { it.opcode != Opcode.NOP }
+                stillAudioLine(audioLine)
+                val patched = patchedOf(audio, render)
+                val hooks = patched.calling(AUDIO_LINE_SCROLLS)
+                assertEquals("$name: one scrolling hook", 1, hooks.size)
+                val at = hooks.single()
+                assertEquals("$name: the hook passes the flag", flag, (patched[at] as RegisterRangeInstruction).startRegister)
+                assertEquals("$name: and only the flag", 1, (patched[at] as RegisterRangeInstruction).registerCount)
+                assertEquals("$name: the extension's answer comes back", Opcode.MOVE_RESULT, patched[at + 1].opcode)
+                assertEquals("$name: into the flag's register", flag, (patched[at + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: right before the chip's constructor", chipInit.toString(),
+                    ((patched[at + 2] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: which still takes the flag last", flag, patched[at + 2].namedRegisters().last())
+                assertEquals("$name: the song line hook is still there", 1, patched.calling(AUDIO_LINE_TEXT).size)
+                assertEquals("$name: two executable instructions added", dated + 2, patched.count { it.opcode != Opcode.NOP })
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
+    /**
+     * #503: each declared build's reel footer asks the post date helper for its row and hands the
+     * rows under the author, a List, to one view of (FbUserSession, something, List, Function0,
+     * boolean, boolean). Each row the helper answers goes to the extension right after it comes back,
+     * and the rows go to it right before that view's constructor, its answer taking their register.
+     * In the patch's order the footer's other hooks all still land.
+     */
+    @Test
+    fun `each declared build hands the footer's date row and rows to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val helper = FixtureDex.methodsWhere(bundle, { true }, ::isReelPostDate).single()
+                val helperParams = helper.parameterTypes.map(CharSequence::toString)
+                val dateClasses = FixtureDex.classes(bundle, setOf(helper.definingClass)).values.toList()
+                val holders = FixtureDex.classesHolding(bundle, REASON_ALONE_FLAG)
+                val footer = holders.flatMap { owner -> owner.methods.filter { reasonAloneRead(it) >= 0 } }.single()
+                val original = footer.code()
+                val asked = original.indices.filter {
+                    val call = (original[it] as? ReferenceInstruction)?.reference as? MethodReference
+                    call != null && call.definingClass == helper.definingClass && call.name == helper.name &&
+                        call.parameterTypes.map(CharSequence::toString) == helperParams
+                }
+                assertTrue("$name: the footer asks the post date helper for its row", asked.isNotEmpty())
+                asked.forEach { assertEquals("$name: and takes its row at $it", Opcode.MOVE_RESULT_OBJECT, original[it + 1].opcode) }
+                val flipper = footerFlipper(footer)
+                assertTrue("$name: the footer builds one view that flips through its rows", flipper >= 0)
+                val flipperInit = (original[flipper] as ReferenceInstruction).reference as MethodReference
+                assertEquals("$name: whose third parameter is the rows", "Ljava/util/List;", flipperInit.parameterTypes[2].toString())
+                val list = original[flipper].namedRegisters()[3]
+                assertThrows("$name: no footer must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).holdFooterOnDate()
+                }
+                assertThrows("$name: a footer without the date helper must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(holders).holdFooterOnDate()
+                }
+                val alone = PatchContexts.of(holders + dateClasses)
+                alone.holdFooterOnDate()
+                val patched = patchedOf(alone, footer)
+                val kept = patched.calling(FOOTER_DATE_ROW)
+                assertEquals("$name: one date row hook for each time the helper is asked", asked.size, kept.size)
+                // A branch onto the instruction after a row lands past its hook (588 has three).
+                val flow = ControlFlow.of(patchedMethodOf(alone, footer))
+                for (at in kept) {
+                    assertTrue("$name: only the row's move-result reaches the hook at $at",
+                        flow.normal.indices.none { from -> from != at - 1 && at in flow.normal[from] } &&
+                            flow.exceptional.none { at in it })
+                }
+                for (at in kept) {
+                    val row = (patched[at - 1] as OneRegisterInstruction).registerA
+                    assertEquals("$name: the hook follows the row's move-result", Opcode.MOVE_RESULT_OBJECT, patched[at - 1].opcode)
+                    assertEquals("$name: of the helper's call", helper.name,
+                        ((patched[at - 2] as ReferenceInstruction).reference as MethodReference).name)
+                    assertEquals("$name: and passes that row alone", listOf(row), patched[at].namedRegisters())
+                }
+                val handed = patched.calling(FOOTER_ROWS)
+                assertEquals("$name: one rows hook", 1, handed.size)
+                val at = handed.single()
+                assertEquals("$name: the hook passes the rows", listOf(list), patched[at].namedRegisters())
+                assertEquals("$name: the extension's rows come back", Opcode.MOVE_RESULT_OBJECT, patched[at + 1].opcode)
+                assertEquals("$name: into the rows' register", list, (patched[at + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: right before the view's constructor", flipperInit.toString(),
+                    ((patched[at + 2] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: which still takes them", list, patched[at + 2].namedRegisters()[3])
+                assertEquals("$name: one instruction per row hook and two for the rows",
+                    original.count { it.opcode != Opcode.NOP } + asked.size + 2, patched.count { it.opcode != Opcode.NOP })
+                // In the patch's order, beside the footer's other hooks.
+                val storyType = helperParams[1]
+                val call = subtitleLabelCall(footer, storyType)
+                val soundHelper = (original[call] as ReferenceInstruction).reference as MethodReference
+                val soundClasses = FixtureDex.classes(bundle, setOf(soundHelper.definingClass)).values.toList()
+                val all = PatchContexts.of(holders + dateClasses + soundClasses)
+                all.keepPostDateBesideReason()
+                all.holdFooterOnDate()
+                all.dateSoundLabels(storyType)
+                all.slotNewForYou()
+                val together = patchedOf(all, footer)
+                assertEquals("$name: the reason-alone hook", 1, together.calling(REASON_ALONE).size)
+                assertEquals("$name: the date row hooks", asked.size, together.calling(FOOTER_DATE_ROW).size)
+                assertEquals("$name: the rows hook", 1, together.calling(FOOTER_ROWS).size)
+                assertEquals("$name: the sound label hook", 1, together.calling(SOUND_LABEL_TEXT).size)
+                assertEquals("$name: the New for you hooks", 2, together.calling(SLOT_NEW_FOR_YOU).size)
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
     @Test
     fun `the extension has the hook`() {
         val type = SHOW_POST_DATE.substringBefore("->")
@@ -539,6 +715,7 @@ class ReelPostDateFixtureTest {
         for ((method, shape) in listOf(
             "soundLabelText" to SOUND_LABEL_TEXT, "soundStory" to SOUND_STORY, "soundTickerText" to SOUND_TICKER_TEXT,
             "slotNewForYou" to SLOT_NEW_FOR_YOU, "groupPosterText" to GROUP_POSTER_TEXT,
+            "audioLineScrolls" to AUDIO_LINE_SCROLLS, "footerDateRow" to FOOTER_DATE_ROW, "footerRows" to FOOTER_ROWS,
         )) {
             val sound = ExtensionDex.classDef(type).methods.singleOrNull { it.name == method }
             assertNotNull("the extension has no ReelDeclutter.$method", sound)

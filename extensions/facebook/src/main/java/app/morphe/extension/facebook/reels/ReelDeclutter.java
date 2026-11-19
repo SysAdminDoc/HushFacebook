@@ -226,6 +226,12 @@ public final class ReelDeclutter {
     static final String DATE_BEFORE_REASON = "date before reason";
     /** Counted under the date's name each time the date goes after the poster's name on a group's video (#520). */
     static final String DATE_BESIDE_POSTER = "date beside poster";
+    /** Counted under the date's name each time a dated song line holds still instead of scrolling (#503). */
+    static final String DATE_SONG_STILL = "song line held still";
+    /** Counted under the date's name for each row the line under a reel's author no longer turns to (#503). */
+    static final String DATE_HELD = "line held on date";
+    /** How many date rows {@link #footerDateRow} keeps on one thread until the footer's rows come by. */
+    static final int FOOTER_DATES_KEPT = 4;
     /** Counted under its own name each time a reel's "New for you" is left off the line under its author (#520). */
     static final String NEW_FOR_YOU_ROUTE = "Reel New for you";
     static final String NEW_FOR_YOU_HIDDEN = "left out";
@@ -964,6 +970,93 @@ public final class ReelDeclutter {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_ON_SONG, failure);
             return line;
         }
+    }
+
+    /**
+     * Injection point, in the Reels tab's audio line, handed the flag that makes the song chip scroll
+     * its line sideways, non-zero for yes (#503). With the date in front of the song, the scroll
+     * carried the date out of sight within a second. No while the date's switch is on, so the line
+     * holds still with the date first and ends in "..." where it runs long. Never throws: anything
+     * going wrong answers what it was handed.
+     */
+    public static boolean audioLineScrolls(int scrolls) {
+        boolean handed = scrolls != 0;
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!handed || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return handed;
+            FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_SONG_STILL);
+            logOnce(DATE_SONG_STILL, () -> "Reel post date: the song line held still");
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_SONG_STILL, failure);
+            return handed;
+        }
+    }
+
+    /** The date rows the reel footer's builder made on this thread since its rows last came by, oldest first. */
+    private static final ThreadLocal<List<WeakReference<Object>>> FOOTER_DATES = new ThreadLocal<>();
+
+    /**
+     * Injection point, in the reel footer's builder, handed each row the post date helper answers,
+     * null where it draws none (#503). Kept for {@link #footerRows}, which looks for it among the
+     * rows the line under the author turns through.
+     */
+    public static void footerDateRow(@Nullable Object row) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (row == null) return;
+            List<WeakReference<Object>> kept = FOOTER_DATES.get();
+            if (kept == null) {
+                kept = new ArrayList<>(FOOTER_DATES_KEPT);
+                FOOTER_DATES.set(kept);
+            }
+            if (kept.size() >= FOOTER_DATES_KEPT) kept.remove(0);
+            kept.add(new WeakReference<>(row));
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_HELD, failure);
+        }
+    }
+
+    /**
+     * Injection point, in the reel footer's builder, handed the rows the line under a reel's author
+     * turns through, right before they go to the view that flips between them (#503). The date row
+     * leads and a location or "New for you" row follows, so the line showed the date for a few
+     * seconds and then something else. While the date's switch is on and a row
+     * {@link #footerDateRow} kept is among them, the line gets that row alone and holds on it.
+     * Never throws: anything going wrong answers what it was handed.
+     */
+    @Nullable
+    public static List<Object> footerRows(@Nullable List<Object> rows) {
+        List<WeakReference<Object>> kept = FOOTER_DATES.get();
+        FOOTER_DATES.remove();
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (rows == null || rows.size() < 2 || kept == null || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) {
+                return rows;
+            }
+            Object date = heldRow(rows, kept);
+            if (date == null) return rows;
+            List<Object> held = new ArrayList<>(1);
+            held.add(date);
+            FeedFilterCounters.removed(DATE_ROUTE, rows.size() - 1, DATE_HELD);
+            logOnce(DATE_HELD, () -> "Reel post date: the line under the author held on the date");
+            return held;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_HELD, failure);
+            return rows;
+        }
+    }
+
+    /** The first of [rows] that is one of the [kept] rows itself, not just equal to one, or null. */
+    @Nullable
+    static Object heldRow(List<Object> rows, List<WeakReference<Object>> kept) {
+        for (Object row : rows) {
+            if (row == null) continue;
+            for (WeakReference<Object> reference : kept) {
+                if (reference.get() == row) return row;
+            }
+        }
+        return null;
     }
 
     /**

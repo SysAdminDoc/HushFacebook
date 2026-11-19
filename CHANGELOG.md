@@ -16,7 +16,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Back to Clean mode` under Reels and Watch puts a reel back in Clean mode by itself after you bring its buttons back. Pick when: once the comments or a menu you opened close, or after 3, 5 or 10 seconds without touching the screen. It starts on Never. (#519)
 * `Hide the line along the tab bar` under Tabs and navigation takes away the thin line Facebook draws along the edge of the tab bar, on every tab. It starts off, and a change shows on the next tab you tap. (#521)
 * `Plain slide between people` under Stories turns the cube Facebook plays when you swipe from one person's stories to the next into a flat slide. Facebook only uses the cube on some accounts, and others already get a plain slide or a tilt. It's part of `Clean up the story viewer` and starts off. (#521)
-* `Hide New for you on reels` under Reels and Watch takes "New for you", and the other reasons Facebook gives for showing you a reel, off the line under its author. It's part of `Clean up Reels` and starts off. With the label kept and `Show the post date on reels` on, the date now shows first and "New for you" after it, so you don't wait for the line to turn over to see when the reel was posted. (#520)
+* `Hide New for you on reels` under Reels and Watch takes "New for you", and the other reasons Facebook gives for showing you a reel, off the line under its author. It's part of `Clean up Reels` and starts off. With the label kept and `Show the post date on reels` on, the date now shows first, so you don't wait for the line to turn over to see when the reel was posted. (#520)
 * `Translate every comment` under Comments and writing shows Facebook's translation on comments in another language as they load, the same as tapping See translation on each one. It comes with `Turn off auto-translation` and starts off. (#522)
 * `Long press to save Marketplace photos` under Downloads saves a Marketplace listing's photo when you hold your finger on it, in the listing or opened full screen. It lands in the same folder as every other photo you save. It needs `Save any photo` and starts off. (#515)
 
@@ -30,6 +30,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* With `Show the post date on reels` on, the date under a reel's author stays put. On a reel with a song, the song line no longer scrolls the date out of sight, and on the others the line holds on the date instead of turning over to the location or "New for you" a few seconds later. (#503)
 * With `Keep playing in the background` on, a video playing in the picture-in-picture window keeps its sound when you lock the phone and plays on in the window when you unlock it. (#495)
 * With `Open comments at` on `Full height` or `Half height`, Comment on the Reels tab now slides the regular sheet straight up over the reel. Before, the reel shrank into the top of the screen first, the way Facebook's split view opens, and at full height the sheet covered it a moment later. (#501)
 * With the tab bar at the bottom and `See-through bars` or `Rounded tab bar` on, a reel's buttons and caption sit above the tab bar again instead of behind it. Each reel stops at the top of the bar now, and the strip under the bar stays black, so the next reel still doesn't peek out there. (#503)

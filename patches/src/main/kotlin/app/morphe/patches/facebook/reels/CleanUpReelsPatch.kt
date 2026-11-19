@@ -151,8 +151,20 @@ val cleanUpReelsPatch = bytecodePatch(
         val storyType = showReelPostDate()
         // #357: and in front of the song line, which takes that spot on most reels in the Reels tab.
         dateReelsTabAudioLine(audioLine, storyType)
+        // #503: and that song line holds still, so its scroll doesn't carry the date out of sight.
+        try {
+            stillAudioLine(audioLine)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a dated song line still scrolls the date out of sight.")
+        }
         // #496: and where a recommendation reason would push the date and every label off that line.
         keepPostDateBesideReason()
+        // #503: and the line under the author holds on the date instead of flipping to a location or New for you.
+        try {
+            holdFooterOnDate()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the line under a reel's author still flips from the date to its other labels.")
+        }
         // #496: and in front of a silent reel's "Reel has no sound", which takes the song line's place.
         try {
             dateSoundLabels(storyType)

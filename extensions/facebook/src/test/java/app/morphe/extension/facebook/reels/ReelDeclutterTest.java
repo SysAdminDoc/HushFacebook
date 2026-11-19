@@ -761,6 +761,100 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * The song chip scrolls its line sideways, which carried the date in front of the song out of
+     * sight (#503). While the date's switch is on the chip holds still; off, paused or before the
+     * settings are ready it scrolls the way Facebook asked, and a chip that wasn't going to scroll
+     * never starts.
+     */
+    @Test
+    public void aDatedSongLineHoldsStill() {
+        assertTrue("off by default, the line scrolls", ReelDeclutter.audioLineScrolls(1));
+        assertFalse(ReelDeclutter.audioLineScrolls(0));
+        assertNull(line(ReelDeclutter.DATE_ROUTE));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertFalse("the date shows, the line holds still", ReelDeclutter.audioLineScrolls(1));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_SONG_STILL));
+        assertFalse("any non-zero flag is yes", ReelDeclutter.audioLineScrolls(-1));
+        assertFalse("a still chip stays still", ReelDeclutter.audioLineScrolls(0));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("held still while paused", ReelDeclutter.audioLineScrolls(1));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertTrue("held still before the settings were ready", ReelDeclutter.audioLineScrolls(1)));
+    }
+
+    /**
+     * The line under a reel's author flips between its rows, the date first, so the date gave way to
+     * a location or "New for you" after a few seconds (#503). While the date's switch is on and the
+     * date row the helper answered is among the rows, the line gets that row alone. Rows that are only
+     * equal to it, a single row, a footer with no date row kept, the switch off, a pause and unready
+     * settings keep the rows, and the kept row is used up once the rows come by.
+     */
+    @Test
+    public void theLineUnderTheAuthorHoldsOnTheDate() {
+        Object date = new SameAsEveryRow();
+        Object location = new Object();
+        Object newForYou = new Object();
+        List<Object> rows = new ArrayList<>(Arrays.asList(date, location, newForYou));
+
+        ReelDeclutter.footerDateRow(date);
+        assertSame("off by default, the rows stay", rows, ReelDeclutter.footerRows(rows));
+        assertNull(line(ReelDeclutter.DATE_ROUTE));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertSame("no date row kept", rows, ReelDeclutter.footerRows(rows));
+        ReelDeclutter.footerDateRow(date);
+        List<Object> held = ReelDeclutter.footerRows(rows);
+        assertEquals("the date row alone", Collections.singletonList(date), held);
+        assertSame(date, held.get(0));
+        assertEquals("Facebook's rows aren't touched", 3, rows.size());
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_HELD));
+        assertSame("the kept row is used up", rows, ReelDeclutter.footerRows(rows));
+
+        ReelDeclutter.footerDateRow(date);
+        List<Object> later = new ArrayList<>(Arrays.asList(location, date));
+        assertSame("found wherever it sits", date, ReelDeclutter.footerRows(later).get(0));
+
+        ReelDeclutter.footerDateRow(new SameAsEveryRow());
+        assertSame("a row only equal to the date's", rows, ReelDeclutter.footerRows(rows));
+        ReelDeclutter.footerDateRow(null);
+        assertSame("a helper that drew no date", rows, ReelDeclutter.footerRows(rows));
+        ReelDeclutter.footerDateRow(date);
+        List<Object> one = new ArrayList<>(Collections.singletonList(date));
+        assertSame("a single row already holds", one, ReelDeclutter.footerRows(one));
+        ReelDeclutter.footerDateRow(date);
+        assertNull("no rows stay no rows", ReelDeclutter.footerRows(null));
+
+        ReelDeclutter.footerDateRow(date);
+        for (int i = 0; i < ReelDeclutter.FOOTER_DATES_KEPT * 3; i++) ReelDeclutter.footerDateRow(new Object());
+        assertSame("only the newest few rows are kept", rows, ReelDeclutter.footerRows(rows));
+        ReelDeclutter.footerDateRow(date);
+        for (int i = 0; i < ReelDeclutter.FOOTER_DATES_KEPT - 1; i++) ReelDeclutter.footerDateRow(new Object());
+        assertSame("and those are", date, ReelDeclutter.footerRows(rows).get(0));
+
+        ReelDeclutter.footerDateRow(date);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("held while paused", rows, ReelDeclutter.footerRows(rows));
+        PauseForTests.resume();
+        ReelDeclutter.footerDateRow(date);
+        SettingsContextRule.withoutContext(() ->
+                assertSame("held before the settings were ready", rows, ReelDeclutter.footerRows(rows)));
+    }
+
+    /** A row equal to every other, so only the date row itself can be the one held. */
+    private static final class SameAsEveryRow {
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof SameAsEveryRow;
+        }
+
+        @Override
+        public int hashCode() {
+            return 1;
+        }
+    }
+
+    /**
      * A group's video in the full-screen viewer shows the group's name over the poster's and no date
      * line (#520), so the date goes after the poster's name, worded the same way. A blank name, a time
      * that can't be a post's, a story that holds none, the switch off, a pause and unready settings
