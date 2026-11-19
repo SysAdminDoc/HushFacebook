@@ -850,6 +850,8 @@ public final class TranslucentBars {
         final Map<View, Stretch> stretched = new WeakHashMap<>();
         /** Facebook's video controls held above the tab bar while pages run under it (#412). */
         final ControlsLift controls = new ControlsLift();
+        /** Each reel's name, caption and buttons held above the tab bar while its video runs under it (#466). */
+        final ReelDetailsLift details = new ReelDetailsLift();
         /** Each paging list's black under its gap, by the list (#412). */
         final Map<View, Backdrop> backdrops = new WeakHashMap<>();
         /** The pages one look finds stopping at the tab bar, and the stretched lists found to page. */
@@ -964,6 +966,7 @@ public final class TranslucentBars {
                 }
             }
             controls.place(cover);
+            details.place(TabBarScrollAway.reelsListShown(), cover);
             if (stretchWaits && !stretchLooked) wakeAfter(window, nextStretch - now);
             if (!seeThrough) return;
             forgetUnseen();
@@ -1333,6 +1336,7 @@ public final class TranslucentBars {
         void giveBack() {
             unstretch();
             controls.giveBack();
+            details.giveBack();
             giveBackFills();
         }
 

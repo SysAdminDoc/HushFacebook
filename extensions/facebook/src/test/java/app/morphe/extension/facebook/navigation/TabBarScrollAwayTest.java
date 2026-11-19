@@ -16,6 +16,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.Arrays;
 
@@ -38,6 +39,7 @@ import com.facebook.video.videohome.tab.WatchTab;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.ShimmerTitleTest;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BaseSettings;
@@ -81,7 +83,7 @@ public class TabBarScrollAwayTest {
         TabBarScrollAway.mainScreenCreated(null);
         TabBarScrollAway.forgetBuilt();
         TabBarScrollAway.Stored.ROW_MADE.resetToDefault();
-        TabBarScrollAway.Stored.LIST_ROOM.resetToDefault();
+        TabBarScrollAway.Stored.LIST_HEIGHT.resetToDefault();
         TabBarScrollAway.Stored.ROW_SETUP.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
@@ -633,11 +635,12 @@ public class TabBarScrollAwayTest {
     }
 
     @Test
-    public void aReelsRowStopsAtTheTopOfATabBarAlongTheBottom() {
-        // #503 on 587 (1080x2400, 2026-11-18): tabs at the bottom with See-through bars, Rounded
-        // tab bar and the status bar hidden ran the Reels list the whole 2400 under the 210 px
-        // bar. Facebook made each row 2062, and a row grown to the whole list put the reel's
-        // name, caption and buttons behind the bar.
+    public void aReelsRowFillsTheWholeListUnderATabBarAlongTheBottom() throws Exception {
+        // #466 on 588 (S22, 2026-11-19): tabs at the bottom with See-through bars, Rounded tab bar
+        // and the status bar hidden run the Reels list the whole screen down under the bar. Rows
+        // that stopped at the bar's top (#503) left the reel's video ending there over black, so
+        // it never ran under the bar and the gesture bar. A row fills the list again, and
+        // ReelDetailsLift holds the reel's name, caption and buttons above the bar.
         Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
         FrameLayout window = new FrameLayout(activity);
         View list = new View(activity);
@@ -646,30 +649,22 @@ public class TabBarScrollAwayTest {
         place(window, bar, 2190, 2400);
         activity.setContentView(window);
         layOut(activity);
-        assertEquals("the part of the list under the bar", 210, TabBarScrollAway.underTabBar(list, bar, 2400));
+        TabBarScrollAway.reelsList = new WeakReference<>(list);
         Settings.BOTTOM_TAB_BAR.save(true);
         Settings.TRANSLUCENT_BARS.save(true);
         Settings.HIDE_STATUS_BAR.save(true);
         TabBarScrollAway.topBarsLetGo();
         onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
-        assertEquals("the row fills the list down to the bar's top", 2190, TabBarScrollAway.rowFor(2062, -1, 2400 - 210));
+        ShimmerTitleTest.appVisible(list, true);
+        assertTrue("the list is in the window", list.isAttachedToWindow());
+        assertEquals("and the window shows", View.VISIBLE, list.getWindowVisibility());
+        assertEquals(2400, list.getHeight());
+        assertEquals("the list's whole height, the part under the bar too", 2400, TabBarScrollAway.reelsListHeight());
+        assertEquals("the row fills the list", 2400, TabBarScrollAway.rowFor(2062, -1, TabBarScrollAway.reelsListHeight()));
         onTabOf(new FeedTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
-        assertEquals("and rows made ahead on Home take the same", 2190, TabBarScrollAway.rowFor(2062, -1, 0));
-
-        bar.setTranslationY(210);
-        assertEquals("a bar sliding away keeps the room it's laid out with", 210, TabBarScrollAway.underTabBar(list, bar, 2400));
-        bar.setTranslationY(0);
-        bar.setVisibility(View.GONE);
-        assertEquals("a hidden bar covers nothing", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
-        bar.setVisibility(View.VISIBLE);
-        assertEquals("no bar", 0, TabBarScrollAway.underTabBar(list, null, 2400));
-        list.setPadding(0, 0, 0, 210);
-        assertEquals("a list padded clear of the bar", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
-        list.setPadding(0, 0, 0, 0);
-        ((FrameLayout.LayoutParams) bar.getLayoutParams()).topMargin = 0;
-        bar.requestLayout();
-        layOut(activity);
-        assertEquals("a bar at the top", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
+        assertEquals("and rows made ahead on Home take the same", 2400, TabBarScrollAway.rowFor(2062, -1, 0));
+        list.setPadding(0, 30, 0, 50);
+        assertEquals("inside the list's padding", 2320, TabBarScrollAway.reelsListHeight());
     }
 
     /** A main screen that says whether it shows in a picture in picture window. */
