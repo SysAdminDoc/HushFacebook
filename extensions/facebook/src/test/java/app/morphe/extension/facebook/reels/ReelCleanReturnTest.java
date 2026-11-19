@@ -47,6 +47,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class ReelCleanReturnTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
+    /** Facebook's store, held here the way Facebook holds it: ReelCleanMode keeps only a weak reference. */
+    private final Object store = new Object();
     private ActivityController<Activity> controller;
     private Activity activity;
 
@@ -56,7 +58,7 @@ public class ReelCleanReturnTest {
         BurnInGuard.resetForTests();
         ReelCleanReturn.resetForTests();
         HookStatus.clear();
-        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.keepStore(store);
         Settings.REEL_CLEAN_MODE.save(true);
         controller = Robolectric.buildActivity(Activity.class).setup();
         activity = controller.get();
@@ -176,7 +178,7 @@ public class ReelCleanReturnTest {
         leaveClean();
         assertFalse("armed without a store", ReelCleanReturn.armedForTests());
 
-        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.keepStore(store);
         Settings.REEL_CLEAN_MODE.save(false);
         leaveClean();
         assertFalse("armed with both Clean mode switches off", ReelCleanReturn.armedForTests());
