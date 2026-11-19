@@ -3002,3 +3002,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	Emoji-Schri
 Couldn't go back to your phone's emoji. Try again.	Die Rückkehr zu den Emojis deines Handys hat nicht geklappt. Versuche es noch einmal.
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	Die App, in der die Schriftdatei liegt, braucht zu lange, deshalb wartet Hushfacebook nicht mehr. Deine Emojis haben sich nicht geändert.
+Never	Nie
+Back to Clean mode	Zurück in den Clean-Modus
+When the comments or a menu close	Wenn sich die Kommentare oder ein Menü schließen
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	Wenn sich die Kommentare oder ein Menü schließen. Ein Reel, das du aus dem Clean-Modus geholt hast, geht zurück in den Modus, sobald sich das schließt, was du darüber geöffnet hast.
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s. Ein Reel, das du aus dem Clean-Modus geholt hast, geht zurück in den Modus, sobald du den Bildschirm so lange nicht berührt hast. Ein offenes Blatt hält die Zeit an.
+Never. A reel you take out of Clean mode stays out until you put it back.	Nie. Ein Reel, das du aus dem Clean-Modus holst, bleibt draußen, bis du es zurückschaltest.
+A reel you take out of Clean mode will stay out until you put it back.	Ein Reel, das du aus dem Clean-Modus holst, bleibt draußen, bis du es zurückschaltest.
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	Ein Reel, das du aus dem Clean-Modus holst, geht zurück in den Modus, wenn sich die Kommentare oder ein Menü schließen.
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Ein Reel, das du aus dem Clean-Modus holst, geht nach %1$d Sekunden ohne Berührung zurück in den Modus.

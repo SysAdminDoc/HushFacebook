@@ -89,7 +89,7 @@ public final class ReelCleanMode {
     }
 
     @Nullable
-    private static Object keptStore() {
+    static Object keptStore() {
         WeakReference<Object> kept = store;
         return kept == null ? null : kept.get();
     }
@@ -202,15 +202,18 @@ public final class ReelCleanMode {
 
     /**
      * Injection point, the overlay's state update as it hears Clean mode switch, holding the new
-     * value as its only element. While the switch is on, a no becomes {@link #LEFT_CLEAN}. The same
-     * array comes back. Never throws.
+     * value as its only element. While the switch is on, a no becomes {@link #LEFT_CLEAN}. Back to
+     * Clean mode hears either answer ({@link ReelCleanReturn#heard}, #519). The same array comes
+     * back. Never throws.
      *
      * @param state Facebook's state update.
      */
     public static Object[] markLeftClean(Object[] state) {
         try {
-            if (state != null && state.length == 1 && Boolean.FALSE.equals(state[0]) && on()) {
-                state[0] = LEFT_CLEAN;
+            if (state != null && state.length == 1 && state[0] instanceof Boolean) {
+                boolean clean = (Boolean) state[0];
+                if (!clean && on()) state[0] = LEFT_CLEAN;
+                ReelCleanReturn.heard(clean);
             }
         } catch (Throwable failure) {
             Logger.printException(() -> "Reel Clean mode: could not mark a reel leaving it", failure);

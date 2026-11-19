@@ -73,7 +73,7 @@ public class RowChevronTest {
             "Tab bar position", "Tab bar while scrolling", "Tab order", "Tab to open on", "Feeds opens on", "Home shows", "Keep seen posts hidden for", "Words to hide", "Words that keep a post", "People, Pages and sites to hide", "Reels order", "Comment order", "Hide reaction counts", "Open comments at", "Recently watched", "Keep watched entries for","Default quality", "Reels quality", "Stories quality", "Font file", "Emoji font file", "Home header text", "Emoji after the logo", "Home header picture", "Download quality", "Save on", "Save to", "Save folder",
             "Video subfolder", "Photo subfolder",
             "Video file name", "Photo file name", "When you tap Download", "App to send to", "Share sheet items to hide", "Supported links", "Meta App Manager", "Messenger", "Instagram",
-            "Quiet hours start", "Quiet hours end", "Lock after", "In-app proxy", "Burn-in guard", "Dim after", "Show the post date as", "Box darkness",
+            "Quiet hours start", "Quiet hours end", "Lock after", "In-app proxy", "Burn-in guard", "Dim after", "Back to Clean mode", "Show the post date as", "Box darkness",
             "Friends shown", "Followers shown", "Following shown", "Round picture size",
             "Bar opacity", "Tab bar width", "Tab bar height", "Refresh rate", "3-dot menu items to hide",
             "Ads in the feed", "Ads on profiles", "Ads in Stories", "Ads in Reels", "Ads in search results",

@@ -48,6 +48,7 @@ import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.CleanReturn;
 import app.morphe.extension.facebook.reels.GrayOver;
 import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -113,6 +114,7 @@ import app.morphe.extension.facebook.settings.ValueRows.PauseLengthRow;
 import app.morphe.extension.facebook.settings.ValueRows.WatchedKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
+import app.morphe.extension.facebook.settings.ValueRows.CleanReturnRow;
 import app.morphe.extension.facebook.settings.ValueRows.FoldLinesRow;
 import app.morphe.extension.facebook.settings.ValueRows.HoldReactionRow;
 import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
@@ -1955,6 +1957,50 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 + "stay faded.", burnInWaitLabel(wait));
     }
 
+    /** When a reel taken out of Clean mode goes back into it by itself (#519). */
+    static CleanReturnRow cleanReturnRow(Context context) {
+        CleanReturnRow row = new CleanReturnRow(context);
+        row.setKey(Settings.REEL_CLEAN_RETURN.key);
+        row.setTitle(L10n.t("Back to Clean mode"));
+        row.setDialogTitle(L10n.t("Back to Clean mode"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        CleanReturn[] choices = CleanReturn.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = cleanReturnLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.REEL_CLEAN_RETURN.savedValue().name());
+        return row;
+    }
+
+    /** What the list calls [choice]. */
+    static String cleanReturnLabel(CleanReturn choice) {
+        if (choice == CleanReturn.OFF) return L10n.t("Never");
+        if (choice == CleanReturn.WHEN_A_SHEET_CLOSES) return L10n.t("When the comments or a menu close");
+        return L10n.f("After %1$d seconds", (int) (choice.millis / 1000));
+    }
+
+    /** What the choice does, for the row's summary. */
+    static String cleanReturnSummary(CleanReturn choice) {
+        switch (choice) {
+            case WHEN_A_SHEET_CLOSES:
+                return L10n.t("When the comments or a menu close. A reel you took out of Clean mode goes back into it "
+                        + "once whatever you opened over it closes.");
+            case THREE_SECONDS:
+            case FIVE_SECONDS:
+            case TEN_SECONDS:
+                return L10n.f("%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the "
+                        + "screen for that long. An open sheet holds the time.", cleanReturnLabel(choice));
+            case OFF:
+            default:
+                return L10n.t("Never. A reel you take out of Clean mode stays out until you put it back.");
+        }
+    }
+
     /** What a hold to react gives, right under its two switches (#454). */
     static HoldReactionRow holdReactionRow(Context context) {
         HoldReactionRow row = new HoldReactionRow(context);
@@ -3070,6 +3116,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((BurnInGuardRow) listPreference).showSummary();
         } else if (listPreference instanceof BurnInWaitRow) {
             ((BurnInWaitRow) listPreference).showSummary();
+        } else if (listPreference instanceof CleanReturnRow) {
+            ((CleanReturnRow) listPreference).showSummary();
         } else if (listPreference instanceof HoldReactionRow) {
             ((HoldReactionRow) listPreference).showSummary();
         } else if (listPreference instanceof FoldLinesRow) {

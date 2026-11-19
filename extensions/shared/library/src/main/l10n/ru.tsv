@@ -3060,3 +3060,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	Файл ш
 Couldn't go back to your phone's emoji. Try again.	Не удалось вернуться к эмодзи телефона. Повторите попытку.
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	Приложение, в котором находится файл шрифта, слишком долго не отвечает, поэтому Hushfacebook прекратил ожидание. Эмодзи не изменены.
+Never	Никогда
+Back to Clean mode	Возврат в чистый режим
+When the comments or a menu close	Когда закрываются комментарии или меню
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	Когда закрываются комментарии или меню. Reels, выведенный из чистого режима, возвращается в него, как только закроется то, что вы открыли поверх.
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s. Reels, выведенный из чистого режима, возвращается в него, если вы столько времени не касаетесь экрана. Открытая панель останавливает отсчёт.
+Never. A reel you take out of Clean mode stays out until you put it back.	Никогда. Reels, выведенный из чистого режима, остаётся вне его, пока вы не вернёте его сами.
+A reel you take out of Clean mode will stay out until you put it back.	Reels, выведенный из чистого режима, останется вне его, пока вы не вернёте его сами.
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	Reels, выведенный из чистого режима, вернётся в него, когда закроются комментарии или меню.
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Reels, выведенный из чистого режима, вернётся в него через %1$d секунд без касания.

@@ -660,6 +660,11 @@ public enum PatchFamily {
                 line.append(", ").append(Settings.REEL_POST_DATE_STYLE.key).append('=')
                         .append(Settings.REEL_POST_DATE_STYLE.savedValue());
             }
+            // When a reel goes back into Clean mode follows Clean mode's two switches (#519).
+            if (setting == Settings.REEL_CLEAN_BUTTON) {
+                line.append(", ").append(Settings.REEL_CLEAN_RETURN.key).append('=')
+                        .append(Settings.REEL_CLEAN_RETURN.savedValue());
+            }
             // What a hold gives follows its two switches, once after the second (#454).
             if (setting == Settings.HOLD_VIDEO_TO_REACT) {
                 line.append(", ").append(Settings.HOLD_REACTION.key).append('=')

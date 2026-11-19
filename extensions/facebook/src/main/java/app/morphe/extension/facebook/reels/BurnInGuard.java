@@ -244,6 +244,8 @@ public final class BurnInGuard {
             if (!observer.isAlive()) return;
             observer.addOnWindowFocusChangeListener(FOCUS);
             observed = new WeakReference<>(decor);
+            // A window that already has focus hears no change, so Back to Clean mode is told now.
+            if (decor.hasWindowFocus()) ReelCleanReturn.focused(true);
             touchedAt = SystemClock.uptimeMillis();
             fingerDown = false;
             pass();
@@ -263,6 +265,7 @@ public final class BurnInGuard {
 
     private static void leave() {
         Activity activity = front.get();
+        if (activity != null) ReelCleanReturn.focused(false);
         undim();
         if (activity != null) place(activity, false, 0L);
         watchLayouts(false);
@@ -772,6 +775,15 @@ public final class BurnInGuard {
         return handler;
     }
 
+    /**
+     * Back to Clean mode armed: the window in front gets the touch watch whatever the guard's
+     * choice, so a touch holds the timed return. Main thread.
+     */
+    static void watchFront() {
+        Activity activity = front.get();
+        if (activity != null) watch(activity.getWindow());
+    }
+
     /** Wraps [window]'s callback once, to see touches. */
     private static void watch(@Nullable Window window) {
         if (window == null || WRAPPED.containsKey(window)) return;
@@ -798,6 +810,11 @@ public final class BurnInGuard {
                 } catch (Throwable failure) {
                     HookStatus.threw(FAMILY, "burn-in guard touch", failure);
                 }
+                try {
+                    ReelCleanReturn.touched(((MotionEvent) args[0]).getActionMasked());
+                } catch (Throwable failure) {
+                    HookStatus.threw(FAMILY, "Back to Clean mode touch", failure);
+                }
             }
             try {
                 return method.invoke(inner, args);
@@ -807,9 +824,17 @@ public final class BurnInGuard {
         }
     }
 
-    /** The window getting focus back: the settings closing, or a screen over it going away. */
+    /**
+     * The window getting focus back: the settings closing, or a screen over it going away. Back to
+     * Clean mode hears it lose focus too, as a sheet opens over a reel.
+     */
     private static final class Focus implements ViewTreeObserver.OnWindowFocusChangeListener {
         @Override public void onWindowFocusChanged(boolean hasFocus) {
+            try {
+                ReelCleanReturn.focused(hasFocus);
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "Back to Clean mode focus", failure);
+            }
             if (!hasFocus) return;
             try {
                 touched(-1);

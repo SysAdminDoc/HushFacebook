@@ -3002,3 +3002,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	ล้า�
 Couldn't go back to your phone's emoji. Try again.	ไม่สามารถเปลี่ยนกลับไปใช้อิโมจิของโทรศัพท์ได้ โปรดลองอีกครั้ง
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	แอปที่มีไฟล์ฟอนต์ใช้เวลานานเกินไป Hushfacebook จึงหยุดรอ อิโมจิของคุณจึงไม่เปลี่ยนแปลง
+Never	ไม่เลย
+Back to Clean mode	กลับสู่โหมดคลีน
+When the comments or a menu close	เมื่อปิดความคิดเห็นหรือเมนู
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	เมื่อปิดความคิดเห็นหรือเมนู Reel ที่คุณออกจากโหมดคลีนจะกลับเข้าโหมดนี้เมื่อสิ่งที่คุณเปิดทับไว้ปิดลง
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s Reel ที่คุณออกจากโหมดคลีนจะกลับเข้าโหมดนี้เมื่อคุณไม่ได้แตะหน้าจอนานเท่านั้น ชีตที่เปิดอยู่จะหยุดการนับเวลา
+Never. A reel you take out of Clean mode stays out until you put it back.	ไม่เลย Reel ที่คุณออกจากโหมดคลีนจะอยู่นอกโหมดจนกว่าคุณจะเปิดกลับ
+A reel you take out of Clean mode will stay out until you put it back.	Reel ที่คุณออกจากโหมดคลีนจะอยู่นอกโหมดจนกว่าคุณจะเปิดกลับ
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	Reel ที่คุณออกจากโหมดคลีนจะกลับเข้าโหมดนี้เมื่อปิดความคิดเห็นหรือเมนู
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Reel ที่คุณออกจากโหมดคลีนจะกลับเข้าโหมดนี้หลังจากไม่ได้แตะ %1$d วินาที

@@ -3002,3 +3002,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	File font e
 Couldn't go back to your phone's emoji. Try again.	Tidak dapat kembali ke emoji ponsel Anda. Coba lagi.
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	Aplikasi yang menyimpan file font itu terlalu lama, jadi Hushfacebook berhenti menunggu. Emoji Anda tidak berubah.
+Never	Tidak pernah
+Back to Clean mode	Kembali ke mode bersih
+When the comments or a menu close	Saat komentar atau menu ditutup
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	Saat komentar atau menu ditutup. Reel yang kamu keluarkan dari mode bersih kembali ke mode itu setelah apa pun yang kamu buka di atasnya ditutup.
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s. Reel yang kamu keluarkan dari mode bersih kembali ke mode itu setelah kamu tidak menyentuh layar selama itu. Lembar yang terbuka menahan waktunya.
+Never. A reel you take out of Clean mode stays out until you put it back.	Tidak pernah. Reel yang kamu keluarkan dari mode bersih tetap di luar sampai kamu mengembalikannya.
+A reel you take out of Clean mode will stay out until you put it back.	Reel yang kamu keluarkan dari mode bersih akan tetap di luar sampai kamu mengembalikannya.
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	Reel yang kamu keluarkan dari mode bersih akan kembali ke mode itu saat komentar atau menu ditutup.
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Reel yang kamu keluarkan dari mode bersih akan kembali ke mode itu setelah %1$d detik tanpa sentuhan.

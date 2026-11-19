@@ -13,6 +13,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Ask before downloading` under Downloads puts a Continue or Cancel question in front of a reel's Download button, the Download button under a post and a video's `Download to phone`. It starts off. (#511)
 * `Emoji font file` under Appearance lets you pick your own .ttf or .otf emoji font for `Use the phone's emoji`. Facebook needs a restart to pick it up, and a font with no emoji in it gets refused. (#513)
 * A video opened from a post with several photos or videos now has `Download to phone` in the three-dot menu at the top. (#509)
+* `Back to Clean mode` under Reels and Watch puts a reel back in Clean mode by itself after you bring its buttons back. Pick when: once the comments or a menu you opened close, or after 3, 5 or 10 seconds without touching the screen. It starts on Never. (#519)
 
 ### Changed
 

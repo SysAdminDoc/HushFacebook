@@ -3002,3 +3002,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	Đã xóa t
 Couldn't go back to your phone's emoji. Try again.	Không thể quay lại emoji của điện thoại. Hãy thử lại.
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	Ứng dụng chứa tệp phông chữ đó phản hồi quá lâu nên Hushfacebook đã ngừng chờ. Emoji của bạn không đổi.
+Never	Không bao giờ
+Back to Clean mode	Trở lại Chế độ gọn gàng
+When the comments or a menu close	Khi đóng bình luận hoặc menu
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	Khi đóng bình luận hoặc menu. Reel bạn đã đưa ra khỏi Chế độ gọn gàng sẽ quay lại chế độ đó khi thứ bạn mở phía trên đóng lại.
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s. Reel bạn đã đưa ra khỏi Chế độ gọn gàng sẽ quay lại chế độ đó khi bạn không chạm vào màn hình trong khoảng thời gian đó. Một bảng đang mở sẽ giữ thời gian lại.
+Never. A reel you take out of Clean mode stays out until you put it back.	Không bao giờ. Reel bạn đưa ra khỏi Chế độ gọn gàng sẽ ở ngoài cho đến khi bạn bật lại.
+A reel you take out of Clean mode will stay out until you put it back.	Reel bạn đưa ra khỏi Chế độ gọn gàng sẽ ở ngoài cho đến khi bạn bật lại.
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	Reel bạn đưa ra khỏi Chế độ gọn gàng sẽ quay lại chế độ đó khi bình luận hoặc menu đóng.
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Reel bạn đưa ra khỏi Chế độ gọn gàng sẽ quay lại chế độ đó sau %1$d giây không chạm.

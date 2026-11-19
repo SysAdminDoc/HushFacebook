@@ -52,6 +52,7 @@ import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.CleanReturn;
 import app.morphe.extension.facebook.reels.GrayOver;
 import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -456,6 +457,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.reelsOrderChange() != null) parts.add(reelsOrderSentence(snapshot.reelsOrderChange()));
             if (snapshot.burnInChange() != null) parts.add(burnInSentence(snapshot.burnInChange()));
             if (snapshot.burnInWaitChange() != null) parts.add(burnInWaitSentence(snapshot.burnInWaitChange()));
+            if (snapshot.cleanReturnChange() != null) parts.add(cleanReturnSentence(snapshot.cleanReturnChange()));
             if (snapshot.holdReactionChange() != null) parts.add(holdReactionSentence(snapshot.holdReactionChange()));
             if (snapshot.foldPostsChange() != null) parts.add(foldPostsSentence(snapshot.foldPostsChange()));
             if (snapshot.foldCommentsChange() != null) parts.add(foldCommentsSentence(snapshot.foldCommentsChange()));
@@ -672,6 +674,16 @@ public class SettingsBackupPreference extends Preference {
     static String burnInWaitSentence(BurnInWait wait) {
         if (wait == BurnInWait.AT_ONCE) return L10n.t("Burn-in guard will dim the Reels screen as soon as you stop touching it.");
         return L10n.f("Burn-in guard will dim the Reels screen after %1$d seconds without a touch.", (int) (wait.millis / 1000));
+    }
+
+    /** The sentence that says when a reel goes back into Clean mode after an import (#519). */
+    static String cleanReturnSentence(CleanReturn choice) {
+        if (choice == CleanReturn.OFF) return L10n.t("A reel you take out of Clean mode will stay out until you put it back.");
+        if (choice == CleanReturn.WHEN_A_SHEET_CLOSES) {
+            return L10n.t("A reel you take out of Clean mode will go back into it when the comments or a menu close.");
+        }
+        return L10n.f("A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.",
+                (int) (choice.millis / 1000));
     }
 
     /** The sentence that says what a hold to react gives after an import, for a photo and a video alike (#454). */
@@ -1172,6 +1184,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.reelsOrderChange() == null ? "" : " " + reelsOrderSentence(snapshot.reelsOrderChange()))
                     + (snapshot.burnInChange() == null ? "" : " " + burnInSentence(snapshot.burnInChange()))
                     + (snapshot.burnInWaitChange() == null ? "" : " " + burnInWaitSentence(snapshot.burnInWaitChange()))
+                    + (snapshot.cleanReturnChange() == null ? "" : " " + cleanReturnSentence(snapshot.cleanReturnChange()))
                     + (snapshot.holdReactionChange() == null ? "" : " " + holdReactionSentence(snapshot.holdReactionChange()))
                     + (snapshot.foldPostsChange() == null ? "" : " " + foldPostsSentence(snapshot.foldPostsChange()))
                     + (snapshot.foldCommentsChange() == null ? "" : " " + foldCommentsSentence(snapshot.foldCommentsChange()))

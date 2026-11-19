@@ -23,6 +23,7 @@ import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.CleanReturn;
 import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.reels.GrayOver;
 import app.morphe.extension.facebook.reels.HoldReaction;
@@ -795,6 +796,15 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting REEL_CLEAN_BUTTON =
             new BooleanSetting("hushfacebook_reel_clean_button", FALSE);
+
+    /**
+     * Back to Clean mode (#519): once the buttons are brought back over a reel with Always use
+     * Clean mode or the Clean mode button on, the reel goes back into Clean mode on its own, when a
+     * sheet opened over it closes or after a few seconds with no touch ({@link
+     * app.morphe.extension.facebook.reels.ReelCleanReturn}). Starts off.
+     */
+    public static final EnumSetting<CleanReturn> REEL_CLEAN_RETURN =
+            new EnumSetting<>("hushfacebook_reel_clean_return", CleanReturn.OFF);
 
     /**
      * A reel stops on its last frame instead of starting over, so a tap plays it again and a swipe

@@ -35,6 +35,7 @@ import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.CleanReturn;
 import app.morphe.extension.facebook.reels.GrayOver;
 import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -709,6 +710,12 @@ public final class SettingsBackup {
     static final EnumSetting<BurnInWait> BURN_IN_WAIT = Settings.BURN_IN_WAIT;
 
     /**
+     * Back to Clean mode (#519), held in a file as its {@link CleanReturn#fileValue}. Anything else
+     * refuses the whole file, as a Dim after wait does.
+     */
+    static final EnumSetting<CleanReturn> CLEAN_RETURN = Settings.REEL_CLEAN_RETURN;
+
+    /**
      * Hold to react's Reaction (#454), held in a file as its {@link HoldReaction#fileValue}.
      * Anything else refuses the whole file, as a Dim after wait does.
      */
@@ -852,7 +859,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, REFRESH_RATE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -981,6 +988,7 @@ public final class SettingsBackup {
         private static final String REELS_ORDER_NAME = "reels_order";
         private static final String BURN_IN_NAME = "burn_in_guard";
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
+        private static final String CLEAN_RETURN_NAME = "reel_clean_return";
         private static final String HOLD_REACTION_NAME = "hold_reaction";
         private static final String FOLD_POSTS_NAME = "fold_post_text";
         private static final String FOLD_COMMENTS_NAME = "fold_comments";
@@ -1130,6 +1138,9 @@ public final class SettingsBackup {
         /** The Dim after wait the file holds, the same way. */
         @Nullable
         BurnInWait burnInWait;
+        /** The Back to Clean mode choice the file holds, the same way. */
+        @Nullable
+        CleanReturn cleanReturn;
         /** The Hold to react choice the file holds, the same way. */
         @Nullable
         HoldReaction holdReaction;
@@ -1402,6 +1413,8 @@ public final class SettingsBackup {
             if (burnInChange != null) changes.put(BURN_IN, burnInChange);
             BurnInWait burnInWaitChange = burnInWaitChange();
             if (burnInWaitChange != null) changes.put(BURN_IN_WAIT, burnInWaitChange);
+            CleanReturn cleanReturnChange = cleanReturnChange();
+            if (cleanReturnChange != null) changes.put(CLEAN_RETURN, cleanReturnChange);
             HoldReaction holdReactionChange = holdReactionChange();
             if (holdReactionChange != null) changes.put(HOLD_REACTION, holdReactionChange);
             FoldLines foldPostsChange = foldPostsChange();
@@ -1719,6 +1732,12 @@ public final class SettingsBackup {
             return burnInWait == null || burnInWait == BURN_IN_WAIT.savedValue() ? null : burnInWait;
         }
 
+        /** The Back to Clean mode choice after this file, the same way. */
+        @Nullable
+        CleanReturn cleanReturnChange() {
+            return cleanReturn == null || cleanReturn == CLEAN_RETURN.savedValue() ? null : cleanReturn;
+        }
+
         /** The Hold to react choice after this file, the same way. */
         @Nullable
         HoldReaction holdReactionChange() {
@@ -1827,6 +1846,7 @@ public final class SettingsBackup {
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
+            if (cleanReturn != null) state.putString(CLEAN_RETURN_NAME, cleanReturn.fileValue);
             if (holdReaction != null) state.putString(HOLD_REACTION_NAME, holdReaction.fileValue);
             if (foldPosts != null) state.putString(FOLD_POSTS_NAME, foldPosts.fileValue);
             if (foldComments != null) state.putString(FOLD_COMMENTS_NAME, foldComments.fileValue);
@@ -1911,6 +1931,7 @@ public final class SettingsBackup {
             read.reelsOrder = ReelsOrder.fromFile(state.get(REELS_ORDER_NAME));
             read.burnIn = BurnInMode.fromFile(state.get(BURN_IN_NAME));
             read.burnInWait = BurnInWait.fromFile(state.get(BURN_IN_WAIT_NAME));
+            read.cleanReturn = CleanReturn.fromFile(state.get(CLEAN_RETURN_NAME));
             read.holdReaction = HoldReaction.fromFile(state.get(HOLD_REACTION_NAME));
             read.foldPosts = FoldLines.fromFile(state.get(FOLD_POSTS_NAME));
             read.foldComments = FoldLines.fromFile(state.get(FOLD_COMMENTS_NAME));
@@ -1994,6 +2015,7 @@ public final class SettingsBackup {
             switches.put(REELS_ORDER.key, of(REELS_ORDER).fileValue);
             switches.put(BURN_IN.key, of(BURN_IN).fileValue);
             switches.put(BURN_IN_WAIT.key, of(BURN_IN_WAIT).fileValue);
+            switches.put(CLEAN_RETURN.key, of(CLEAN_RETURN).fileValue);
             switches.put(HOLD_REACTION.key, of(HOLD_REACTION).fileValue);
             switches.put(FOLD_POSTS.key, of(FOLD_POSTS).fileValue);
             switches.put(FOLD_COMMENTS.key, of(FOLD_COMMENTS).fileValue);
@@ -2190,6 +2212,7 @@ public final class SettingsBackup {
         ReelsOrder reelsOrder = null;
         BurnInMode burnIn = null;
         BurnInWait burnInWait = null;
+        CleanReturn cleanReturn = null;
         HoldReaction holdReaction = null;
         FoldLines foldPosts = null;
         FoldLines foldComments = null;
@@ -2356,6 +2379,11 @@ public final class SettingsBackup {
             if (BURN_IN_WAIT.key.equals(name)) {
                 burnInWait = BurnInWait.fromFile(values.opt(name));
                 if (burnInWait == null) throw new Rejected(Reason.VALUE, "Not a dim after wait: " + name);
+                continue;
+            }
+            if (CLEAN_RETURN.key.equals(name)) {
+                cleanReturn = CleanReturn.fromFile(values.opt(name));
+                if (cleanReturn == null) throw new Rejected(Reason.VALUE, "Not a back to Clean mode choice: " + name);
                 continue;
             }
             if (HOLD_REACTION.key.equals(name)) {
@@ -2600,6 +2628,7 @@ public final class SettingsBackup {
         read.reelsOrder = reelsOrder;
         read.burnIn = burnIn;
         read.burnInWait = burnInWait;
+        read.cleanReturn = cleanReturn;
         read.holdReaction = holdReaction;
         read.foldPosts = foldPosts;
         read.foldComments = foldComments;

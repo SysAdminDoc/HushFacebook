@@ -2888,3 +2888,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	Arquivo de 
 Couldn't go back to your phone's emoji. Try again.	Não foi possível voltar para os emojis do seu celular. Tente de novo.
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	O app que guarda esse arquivo de fonte está demorando demais, então o Hushfacebook parou de esperar. Seus emojis não mudaram.
+Never	Nunca
+Back to Clean mode	Voltar ao modo limpo
+When the comments or a menu close	Quando os comentários ou um menu fecharem
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	Quando os comentários ou um menu fecharem. Um reel que você tirou do modo limpo volta para ele assim que o que você abriu por cima fecha.
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s. Um reel que você tirou do modo limpo volta para ele quando você fica esse tempo sem tocar na tela. Uma folha aberta segura o tempo.
+Never. A reel you take out of Clean mode stays out until you put it back.	Nunca. Um reel que você tira do modo limpo fica fora até você colocá-lo de volta.
+A reel you take out of Clean mode will stay out until you put it back.	Um reel que você tirar do modo limpo vai ficar fora até você colocá-lo de volta.
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	Um reel que você tirar do modo limpo vai voltar para ele quando os comentários ou um menu fecharem.
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	Um reel que você tirar do modo limpo vai voltar para ele depois de %1$d segundos sem toque.

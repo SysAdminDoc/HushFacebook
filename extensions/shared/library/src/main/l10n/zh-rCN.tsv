@@ -2997,3 +2997,12 @@ Emoji font file cleared. Restart Facebook to apply the emoji change.	表情符�
 Couldn't go back to your phone's emoji. Try again.	无法恢复为手机的表情符号。请重试。
 # context: toast when the app holding the emoji font doesn't answer in time
 The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your emoji didn't change.	持有该字体文件的应用响应太慢，Hushfacebook 已停止等待。你的表情符号没有更改。
+Never	从不
+Back to Clean mode	回到简洁模式
+When the comments or a menu close	评论或菜单关闭时
+When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.	评论或菜单关闭时。你退出简洁模式的 Reel 会在你打开的内容关闭后回到简洁模式。
+%1$s. A reel you took out of Clean mode goes back into it once you haven't touched the screen for that long. An open sheet holds the time.	%1$s。你退出简洁模式的 Reel 会在你这么久没有触摸屏幕后回到简洁模式。打开的面板会暂停计时。
+Never. A reel you take out of Clean mode stays out until you put it back.	从不。你退出简洁模式的 Reel 会一直保持退出，直到你重新打开。
+A reel you take out of Clean mode will stay out until you put it back.	你退出简洁模式的 Reel 会一直保持退出，直到你重新打开。
+A reel you take out of Clean mode will go back into it when the comments or a menu close.	你退出简洁模式的 Reel 会在评论或菜单关闭时回到简洁模式。
+A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	你退出简洁模式的 Reel 会在 %1$d 秒没有触摸后回到简洁模式。
