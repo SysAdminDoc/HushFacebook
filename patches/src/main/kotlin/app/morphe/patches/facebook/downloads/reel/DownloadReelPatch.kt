@@ -323,7 +323,6 @@ val downloadReelPatch = bytecodePatch(
         }
 
         val modeType = parameters[1]
-        val primaryType = parameters[2]
         val labelType = parameters[layout.label]
         val iconType = parameters[layout.icon]
 
@@ -442,7 +441,6 @@ val downloadReelPatch = bytecodePatch(
                 icon = icon,
                 iconWrapperClass = iconWrapper.definingClass,
                 iconEnumType = iconEnumType,
-                primaryType = primaryType,
                 labelType = labelType,
                 scopedType = scopedType,
                 contextField = contextField.name,
@@ -1121,7 +1119,9 @@ $it
  * arguments and an `iget` both take **4-bit** registers, so everything they touch has to sit in
  * `v0` to `v15`. The factory takes nineteen to twenty-one arguments, and thus needs as many
  * **consecutive** registers, so its block sits high at `v40` and each value is moved up once it is
- * built. 586's second accessibility action gets the same action as the first.
+ * built. The accessibility actions (two since 586) go in as null, as Facebook's own sidebar button
+ * passes them: an action makes the button long-clickable, and its long press opened an empty gray
+ * pop-up (#518).
  * `new-instance` and `const-string` take 8-bit registers, so those can write high directly.
  *
  * The six parameters are the session, the scoped context, the player, the reel's story and the
@@ -1138,7 +1138,6 @@ private fun buildButton(
     icon: String,
     iconWrapperClass: String,
     iconEnumType: String,
-    primaryType: String,
     labelType: String,
     scopedType: String,
     contextField: String,
@@ -1167,8 +1166,7 @@ ${handlers(hdField, sdField, manifestField, kind)}
         invoke-static { }, $label
         move-result-object v1
 
-        new-instance v2, $primaryType
-        invoke-direct { v2, v1, v8 }, $primaryType-><init>(Ljava/lang/String;$FUNCTION1)V
+        const/4 v2, 0x0
         move-object/from16 v42, v2
 ${(1..shift).joinToString("") { "        move-object/from16 v${42 + it}, v2\n" }}
         new-instance v2, $labelType
@@ -1226,15 +1224,15 @@ private fun trailingBooleanArguments(count: Int, first: Int): String =
     }
 
 /**
- * One handler for each slot the factory takes, each knowing which slot it is.
+ * One handler for each slot the factory takes past its accessibility actions, each knowing which
+ * slot it is. The actions (slot 0) stay null, as in Facebook's own button (#518).
  *
- * Only the tap slot saves. The others are still given a handler rather than null, because the
- * factory is not documented to accept null, and a handler that returns without a word costs
- * nothing. Each gets the player (v4), the context (v5) and the reel's story (v3), and the [kind] of
+ * Only the tap slot saves. The others are still given a handler, which returns without a word,
+ * and the touch slot's carries a long press on the button (#41, #449). Each gets the player (v4), the context (v5) and the reel's story (v3), and the [kind] of
  * button it belongs to: the Cast button's tap casts and the Clean mode button's hides the sidebar
  * instead of saving.
  */
-private fun handlers(hd: String, sd: String, manifest: String, kind: Int) = (0..6).joinToString("\n") { slot ->
+private fun handlers(hd: String, sd: String, manifest: String, kind: Int) = (1..6).joinToString("\n") { slot ->
     val saves = if (slot == TAP_SLOT) 1 else 0
 
     """

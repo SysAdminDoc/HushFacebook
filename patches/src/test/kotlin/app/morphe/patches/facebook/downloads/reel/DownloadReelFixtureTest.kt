@@ -326,12 +326,20 @@ class DownloadReelFixtureTest {
                     ),
                     gates,
                 )
+                // Facebook's own sidebar button passes no accessibility action, and one made ours
+                // long-clickable, its long press opening an empty gray pop-up (#518).
+                val actionType = factory.parameterTypes[2].toString()
+                assertEquals(
+                    "${bundle.name}: no button gets an accessibility action",
+                    0,
+                    helperBody.count { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == actionType },
+                )
                 val handlerFlags = helperBody.indices.filter { at ->
                     helperBody[at].called()?.let { it.definingClass == reelDownload && it.name == "<init>" } == true
                 }.map { at -> (helperBody[at - 1] as NarrowLiteralInstruction).narrowLiteral }
                 assertEquals(
-                    "${bundle.name}: seven handlers that save, seven that cast, then seven that turn on Clean mode",
-                    List(7) { 0 } + List(7) { 1 } + List(7) { 2 },
+                    "${bundle.name}: six handlers that save, six that cast, then six that turn on Clean mode",
+                    List(6) { 0 } + List(6) { 1 } + List(6) { 2 },
                     handlerFlags,
                 )
                 assertEquals(

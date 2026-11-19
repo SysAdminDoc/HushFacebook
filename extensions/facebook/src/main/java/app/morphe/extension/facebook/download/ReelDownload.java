@@ -43,8 +43,9 @@ import kotlin.jvm.functions.Function1;
  * got one of these with its own number, and the events they received named them. The touch
  * slot fires twice per press with a {@code MotionEvent}. A visibility slot fires on its own. One
  * slot fires once per press with an event that carries nothing but the {@code View}. That last one
- * is the tap, and it is the only slot that saves. The others are kept rather than left null. The
- * factory is not documented to accept null, and a silent handler costs nothing.
+ * is the tap, and it is the only slot that saves. The others keep a silent handler. The
+ * accessibility actions get none: Facebook's own button passes null there, and an action made the
+ * button long-clickable, so a long press opened an empty gray pop-up (#518).
  *
  * <p>The same class sits behind the Cast button the patch adds under it (#182). A cast handler's
  * tap hands the reel's file to a casting app ({@link OpenInAnotherApp#castReel}) instead of saving.
@@ -357,8 +358,7 @@ public final class ReelDownload implements Function1<Object, Object> {
                 if (saves) ReelCleanMode.enterClean();
                 return null;
             }
-            // Only the tap slot saves. The others get the same object, so that no parameter of
-            // the factory is null, and they return without a word. They fire on every touch and
+            // Only the tap slot saves. The others get the same object and return without a word. They fire on every touch and
             // every visibility change, which buries the log that this feature needs. While links
             // are sent, the touch slot's lift after a long press copies the link (#41).
             if (!saves) {
