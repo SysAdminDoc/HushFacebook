@@ -32,7 +32,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the bottom.
  *
  * <p>The same method fades out the thin line Facebook draws along the bar: on Reels whenever the
- * bar goes, and on every tab while {@link Settings#HIDE_TAB_BAR_LINE} is on (#521).
+ * bar goes, and on every tab while {@link Settings#HIDE_TAB_BAR_LINE} is on (#521). With that
+ * switch on, the bar's own layout hands it to {@link #barLaidOut} as well, so the line is gone from
+ * the start rather than from the first tab tapped.
  *
  * <p>The switch off, settings that aren't ready yet or a failure in here, and the bar, the line and
  * the margin stay Facebook's.
@@ -117,6 +119,23 @@ public final class ReelsTabBarHidden {
     /** Whether the line along the bar goes on every tab: its switch on and the settings ready. */
     static boolean lineOff() {
         return Utils.settingsReady() && Settings.HIDE_TAB_BAR_LINE.get();
+    }
+
+    /**
+     * Injection point, at the start of the tab bar's own layout: the bar. Facebook restyles the bar
+     * only as a tab is picked (its start-up restyle waits on its own flags), so with the line switch
+     * on, the line goes here as the app starts too, before any tab is tapped. Never throws.
+     */
+    public static void barLaidOut(@Nullable View bar) {
+        if (bar == null) return;
+        try {
+            if (!lineOff()) return;
+            HookStatus.bound(FAMILY, LINE_HOOK);
+            // The line beside the bar is laid out after it, so it may not have a size yet.
+            if (!hideDivider(bar)) bar.post(() -> dividerLater(bar));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, LINE_HOOK, failure);
+        }
     }
 
     private static void dividerLater(View bar) {

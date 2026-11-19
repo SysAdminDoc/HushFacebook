@@ -296,6 +296,47 @@ public class ReelsTabBarHiddenTest {
         assertTrue(found, found.contains(ReelsTabBarHidden.LINE_HIDDEN + " 1"));
     }
 
+    /** #521: Facebook doesn't restyle the bar as it starts, so the line stayed until a tab was tapped. */
+    @Test
+    public void theLineGoesAtTheBarsLayoutBeforeAnyTabIsTapped() {
+        View line = addLine(headerAroundTheBar());
+        line.setAlpha(0.5f);
+        ReelsTabBarHidden.barLaidOut(bar);
+        assertEquals("the line went with the switch off", 0.5f, line.getAlpha(), 0f);
+
+        Settings.HIDE_TAB_BAR_LINE.save(true);
+        ReelsTabBarHidden.barLaidOut(null);
+        ReelsTabBarHidden.barLaidOut(bar);
+        assertEquals("the line stayed until a tab was tapped", 0f, line.getAlpha(), 0f);
+        assertEquals("Facebook's own visibility was changed", View.VISIBLE, line.getVisibility());
+        ReelsTabBarHidden.barLaidOut(bar);
+        boolean countedOnce = false;
+        for (String reported : HookStatus.report()) {
+            if (reported.startsWith(FamilyNames.BOTTOM_TAB_BAR + ":") && reported.contains(ReelsTabBarHidden.LINE_HIDDEN + " 1")) {
+                countedOnce = true;
+            }
+        }
+        assertTrue("a second layout faded the line again: " + HookStatus.report(), countedOnce);
+
+        Settings.HIDE_TAB_BAR_LINE.save(false);
+        ReelsTabBarHidden.tabShown(bar, new FeedTab());
+        assertEquals("the line didn't come back as it was", 0.5f, line.getAlpha(), 0f);
+    }
+
+    @Test
+    public void theBarsLayoutLeavesTheLineWhilePausedOrBeforeTheSettingsAreReady() {
+        View line = addLine(headerAroundTheBar());
+        Settings.HIDE_TAB_BAR_LINE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ReelsTabBarHidden.barLaidOut(bar);
+        assertEquals("the line went while paused", 1f, line.getAlpha(), 0f);
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> {
+            ReelsTabBarHidden.barLaidOut(bar);
+            assertEquals("the line went before the settings were ready", 1f, line.getAlpha(), 0f);
+        });
+    }
+
     private static String line() {
         for (String line : HookStatus.report()) {
             if (line.startsWith(FamilyNames.BOTTOM_TAB_BAR + ":") && line.contains(ReelsTabBarHidden.HIDDEN)) return line;

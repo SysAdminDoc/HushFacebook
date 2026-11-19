@@ -141,11 +141,42 @@ class ReelsTabBarHiddenFixtureTest {
         }
     }
 
+    /** #521: the restyle doesn't run as Facebook starts, so the bar's own layout hands it over too. */
     @Test
-    fun `the extension has all three hooks`() {
+    fun `each declared build hands the bar to the extension as it lays itself out`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val container = FixtureDex.classes(bundle, setOf(TAB_BAR_CONTAINER)).values.single()
+                val layout = container.methods.mapNotNull(::barLayout).singleOrNull()
+                assertNotNull("$name: the tab bar has an onLayout of its own", layout)
+                val before = layout!!.body()
+                val self = layout.implementation!!.registerCount - 6
+                assertTrue("$name: Facebook's onLayout does something", before.isNotEmpty())
+                assertTrue("$name: Facebook's onLayout already starts with the hook",
+                    before.none { (it as? ReferenceInstruction)?.reference.toString().contains("barLaidOut") })
+
+                val context = PatchContexts.of(listOf(container))
+                with(context) { hookTabBarLineAtLayout() }
+
+                val after = context.mutableClassDefBy(TAB_BAR_CONTAINER).methods.mapNotNull(::barLayout).single().body()
+                val hand = after[0] as FiveRegisterInstruction
+                assertEquals("$name: the layout hands the bar over first",
+                    listOf("$REELS_TAB_BAR_HIDDEN->barLaidOut(Landroid/view/View;)V", 1, self),
+                    listOf(hand.call(), hand.registerCount, hand.registerC))
+                assertEquals("$name: the rest of the layout is Facebook's", before.opcodes(), after.drop(1).opcodes())
+            }
+        }
+    }
+
+    @Test
+    fun `the extension has all four hooks`() {
         val methods = ExtensionDex.classDef(REELS_TAB_BAR_HIDDEN).methods
         for (signature in listOf(
             "tabShown(Landroid/view/View;Ljava/lang/Object;)V",
+            "barLaidOut(Landroid/view/View;)V",
             "pageBottomMargin(ILjava/lang/Object;)I",
             "reelBottomBars(I)I",
         )) {

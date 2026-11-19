@@ -106,6 +106,7 @@ val bottomTabBarPatch = bytecodePatch(
         hookStatusBarStrip(paddings)
         hookLightReelsTabBars()
         hookReelsTabBarHidden()
+        hookTabBarLineAtLayout()
         reads.groupBy { it.method }.forEach { (method, sites) ->
             mutableClassDefBy(method.definingClass).findMutableMethodOf(method).hookOverrideReads(sites)
         }
