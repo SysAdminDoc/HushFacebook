@@ -71,7 +71,15 @@ public final class ReelsStatusBar {
      * for the tab it shows, [tab]: the strip closes with the Reels tab and opens with the others.
      */
     static void tabShown(View bar, Object tab) {
+        boolean was = reels;
         reels = StartTab.VIDEO.isTab(tab.getClass().getName());
+        if (!told || was != reels) {
+            boolean reelsNow = reels;
+            Logger.printDebug(() -> "Reels status bar: the tab bar shows " + tab.getClass().getName()
+                    + (reelsNow ? ", the Reels tab" : "") + "; see-through " + Settings.TRANSLUCENT_BARS.get()
+                    + ", tabs at the bottom " + Settings.BOTTOM_TAB_BAR.get() + ", tabs on top "
+                    + TabBarScrollAway.tabsOnTop() + ", paused " + Setting.isPaused());
+        }
         told = true;
         refresh(bar);
     }
@@ -111,6 +119,10 @@ public final class ReelsStatusBar {
             return top;
         }
         boolean close = reels && wanted();
+        if (close != closed) {
+            Logger.printDebug(() -> "Reels status bar: Facebook's " + top + " px for the status bar answered "
+                    + (close ? "0" : "as it is"));
+        }
         closed = close;
         if (!close) return top;
         HookStatus.invoked(FAMILY);
