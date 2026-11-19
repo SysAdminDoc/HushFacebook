@@ -62,21 +62,27 @@ public class BurnInGuardSettingsTest {
         Settings.BURN_IN_GUARD.resetToDefault();
         Settings.BURN_IN_WAIT.resetToDefault();
         Settings.BURN_IN_STAY_DIM.resetToDefault();
+        Settings.BURN_IN_LEVEL.resetToDefault();
+        Settings.BURN_IN_FADE.resetToDefault();
     }
 
     @Test
-    public void theThreeRowsFollowTheTopButtonsSwitchUnderReelsAndStartOff() {
+    public void theRowsFollowTheTopButtonsSwitchUnderReelsAndStartOff() {
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
             List<Preference> rows = rowsOf(page(controller));
             int top = indexOfKey(rows, Settings.HIDE_VIEWER_TOP_BUTTONS.key);
             int guard = indexOfKey(rows, Settings.BURN_IN_GUARD.key);
             int wait = indexOfKey(rows, Settings.BURN_IN_WAIT.key);
+            int level = indexOfKey(rows, Settings.BURN_IN_LEVEL.key);
             int stay = indexOfKey(rows, Settings.BURN_IN_STAY_DIM.key);
+            int fade = indexOfKey(rows, Settings.BURN_IN_FADE.key);
             assertTrue("Hide the top right buttons on opened videos is missing", top >= 0);
             assertEquals(top + 1, guard);
             assertEquals(guard + 1, wait);
-            assertEquals(wait + 1, stay);
-            assertEquals(stay + 1, indexOfKey(rows, Settings.HIDE_REEL_COUNTS.key));
+            assertEquals(wait + 1, level);
+            assertEquals(level + 1, stay);
+            assertEquals(stay + 1, fade);
+            assertEquals(fade + 1, indexOfKey(rows, Settings.HIDE_REEL_COUNTS.key));
 
             assertTrue(rows.get(guard) instanceof ValueRows.BurnInGuardRow);
             assertTrue(rows.get(wait) instanceof ValueRows.BurnInWaitRow);
@@ -88,6 +94,34 @@ public class BurnInGuardSettingsTest {
                     String.valueOf(stayDim.getSummary()));
             assertFalse(stayDim.isChecked());
             assertFalse(Settings.BURN_IN_STAY_DIM.defaultValue);
+
+            SwitchPreference smooth = (SwitchPreference) rows.get(fade);
+            assertEquals("Smooth fade", String.valueOf(smooth.getTitle()));
+            assertEquals("The buttons, caption and bars fade out slowly as they dim and fade back in when they return, "
+                    + "rather than changing at once.", String.valueOf(smooth.getSummary()));
+            assertFalse(smooth.isChecked());
+            assertFalse(Settings.BURN_IN_FADE.defaultValue);
+        }
+    }
+
+    /** Dim to (#523): blank is the quarter Burn-in guard always dimmed to, and a number is held to 0 to 100. */
+    @Test
+    public void dimToTakesAPercentAndSaysWhatItShows() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(page(controller));
+            ValueRows.PercentRow row = (ValueRows.PercentRow) rows.get(indexOfKey(rows, Settings.BURN_IN_LEVEL.key));
+            assertEquals("Dim to", String.valueOf(row.getTitle()));
+            assertEquals("How much of the buttons, caption and bars still shows once they dim, in percent, from 0 to "
+                    + "100. Leave it blank for 25.", String.valueOf(row.getDialogMessage()));
+            assertEquals("Once dimmed, the buttons, caption and bars show at 25 percent. Type a number to change it.",
+                    String.valueOf(row.getSummary()));
+            row.setText("40");
+            assertEquals("Once dimmed, the buttons, caption and bars show at 40 percent.", String.valueOf(row.getSummary()));
+            row.setText("250");
+            assertEquals("Once dimmed, the buttons, caption and bars show at 100 percent.", String.valueOf(row.getSummary()));
+            row.setText("0");
+            assertEquals("Once dimmed, the buttons, caption and bars show at 0 percent.", String.valueOf(row.getSummary()));
+            assertEquals("", Settings.BURN_IN_LEVEL.defaultValue);
         }
     }
 
@@ -99,6 +133,8 @@ public class BurnInGuardSettingsTest {
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_GUARD.key));
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_WAIT.key));
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_STAY_DIM.key));
+            assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_LEVEL.key));
+            assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_FADE.key));
         }
     }
 

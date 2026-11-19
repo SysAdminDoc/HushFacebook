@@ -6,6 +6,7 @@
  */
 package app.morphe.extension.facebook.reels;
 
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.stories.StorySeenButton;
@@ -66,8 +68,10 @@ import app.morphe.extension.shared.settings.Setting;
  * fill the screen with a preview too, and their shutter and tools are never dimmed ({@link #camera}).
  *
  * <p>The dim: once the Reels screen has gone the Dim after choice ({@link BurnInWait}) without a
- * touch, what shows beside the video is drawn at {@link #IDLE_LEVEL} of what Facebook draws it at,
- * and the next touch brings it back. Going up from each shown surface to the content frame, the
+ * touch, what shows beside the video is drawn at the Dim to share ({@link #level}, {@link #IDLE_LEVEL}
+ * when it's blank) of what Facebook draws it at, and the next touch brings it back. With Smooth fade
+ * on ({@link #fade}) it eases down over {@link #FADE_DIM_MS} and back up over {@link #FADE_BACK_MS},
+ * unless the phone's animations are off; leaving the Reels screen still brings it back at once. Going up from each shown surface to the content frame, the
  * shown views at each level that hold no surface are dimmed: the reel's buttons, author and caption,
  * the top bar and the tab bar. A surface's own branch never is, so a reel the pager holds ready
  * beside the one playing isn't dimmed whole. Only alpha changes, so a dimmed button still takes its
@@ -103,8 +107,19 @@ import app.morphe.extension.shared.settings.Setting;
 public final class BurnInGuard {
     private static final String FAMILY = FamilyNames.REEL_DECLUTTER;
 
-    /** The share of Facebook's own opacity the controls dim to. */
+    /** The share of Facebook's own opacity the controls dim to with Dim to left blank. */
     static final float IDLE_LEVEL = 0.25f;
+    /** Dim to's least and most percent, and the one a blank row stands for: {@link #IDLE_LEVEL}'s (#523). */
+    public static final int MIN_LEVEL = 0;
+    public static final int MAX_LEVEL = 100;
+    public static final int DEFAULT_LEVEL = 25;
+    /** With Smooth fade on, how long the controls take to dim, and to come back (#523). */
+    static final long FADE_DIM_MS = 600L;
+    static final long FADE_BACK_MS = 250L;
+    /** How often a Smooth fade steps, about one frame. */
+    static final long FADE_FRAME_MS = 16L;
+    /** A step later than this after the last one moves the fade on by one frame only. */
+    static final long FADE_GAP_MS = 50L;
     /**
      * The least share of the window the largest video surface shows over on the Reels screen, and of
      * the video a view that takes taps covers for a tap on it to be a tap on the video.
@@ -174,6 +189,15 @@ public final class BurnInGuard {
     private static boolean guarding;
     /** The last pass dimmed the controls, and nothing has brought them back since. */
     private static boolean dimming;
+    /** How far into the dim the controls are: 0 up, 1 all the way to Dim to's share. */
+    private static float depth;
+    /** A Smooth fade is running: {@link #FADE_STEP} is posted. */
+    private static boolean fading;
+    /** The depth the fade running now set out from, and the one it's heading to. */
+    private static float fadeFrom, fadingTo;
+    /** How long the fade running now takes, how far into it the steps are, and when the last one ran. */
+    private static long fadeMs, fadeRan, fadeStepAt;
+    private static final Runnable FADE_STEP = BurnInGuard::fadeStep;
     /** The finger now down went down on the video itself, and hasn't swiped. */
     private static boolean quiet;
     /** Where on the screen that finger went down. */
@@ -226,6 +250,22 @@ public final class BurnInGuard {
         return Settings.BURN_IN_STAY_DIM.get();
     }
 
+    /** The Dim to percent typed as [saved], held to 0 to 100: 25 when it's blank or not a number. */
+    public static int levelPercent(@Nullable String saved) {
+        return TranslucentBars.percent(saved, MIN_LEVEL, MAX_LEVEL, DEFAULT_LEVEL);
+    }
+
+    /** The share of Facebook's own opacity the controls dim to: the Dim to choice. */
+    static float level() {
+        int percent = levelPercent(Settings.BURN_IN_LEVEL.get());
+        return percent == DEFAULT_LEVEL ? IDLE_LEVEL : percent / 100f;
+    }
+
+    /** Smooth fade: the controls ease down and back up rather than changing in one frame. */
+    static boolean fade() {
+        return Settings.BURN_IN_FADE.get();
+    }
+
     /** The place the content is in at [now], in steps of {@link #STEP_DP}. */
     static int[] placeAt(long now) {
         return PLACES[(int) ((now / SHIFT_EVERY_MS) % PLACES.length)];
@@ -266,7 +306,7 @@ public final class BurnInGuard {
     private static void leave() {
         Activity activity = front.get();
         if (activity != null) ReelCleanReturn.focused(false);
-        undim();
+        putBack();
         if (activity != null) place(activity, false, 0L);
         watchLayouts(false);
         View decor = observed.get();
@@ -317,10 +357,21 @@ public final class BurnInGuard {
             long wait = idleAfter();
             boolean dim = on && !fingerDown && now - touchedAt >= wait;
             if (dim) {
+                if (!dimming) {
+                    dimming = true;
+                    if (fade() && animatorsOn()) {
+                        fadeTo(1f, FADE_DIM_MS);
+                    } else {
+                        stopFade();
+                        depth = 1f;
+                    }
+                }
                 dimAll(decor, surfaces);
-                dimming = true;
-            } else {
+            } else if (on) {
                 undim();
+            } else {
+                // Off the Reels screen: back at once, not faded in over what's there now.
+                putBack();
             }
             boolean shifting = on && mode == BurnInMode.DIM_AND_SHIFT && !frontSeeThrough;
             place(activity, shifting, now);
@@ -330,7 +381,7 @@ public final class BurnInGuard {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "burn-in guard", failure);
             try {
-                undim();
+                putBack();
                 place(activity, false, 0L);
             } catch (Throwable again) {
                 HookStatus.threw(FAMILY, "burn-in guard put back", again);
@@ -530,7 +581,8 @@ public final class BurnInGuard {
             if (view != null && view.getAlpha() == entry.getValue()[1]) view.setAlpha(entry.getValue()[0]);
             entries.remove();
         }
-        for (View view : beside) dim(view);
+        float factor = factor(level());
+        for (View view : beside) dim(view, factor);
     }
 
     @Nullable
@@ -539,24 +591,63 @@ public final class BurnInGuard {
         return parent instanceof View ? (View) parent : null;
     }
 
-    private static void dim(View view) {
-        float alpha = view.getAlpha();
-        float[] held = DIMMED.get(view);
-        if (held == null) {
-            held = new float[]{alpha, alpha * IDLE_LEVEL};
-            DIMMED.put(view, held);
-            HookStatus.counted(FAMILY, COUNT_DIMMED);
-        } else if (alpha != held[1]) {
-            // Facebook set its own since; that's what the dim is taken from now.
-            held[0] = alpha;
-            held[1] = alpha * IDLE_LEVEL;
-        }
-        if (alpha != held[1]) view.setAlpha(held[1]);
+    /** The share of Facebook's alpha drawn at {@link #depth} into a dim to [level]. */
+    static float factor(float level) {
+        if (depth >= 1f) return level;
+        if (depth <= 0f) return 1f;
+        return 1f - depth * (1f - level);
     }
 
-    /** Brings back each view dimmed here, if its alpha is still the one written here. */
+    /** The phone's animations are on: off, Smooth fade changes in one frame like the rest of Android. */
+    static boolean animatorsOn() {
+        return animationScale() > 0f;
+    }
+
+    /** The phone's animation duration scale, which Smooth fade's length follows. */
+    static float animationScale() {
+        return ValueAnimator.getDurationScale();
+    }
+
+    private static void dim(View view, float factor) {
+        float[] held = DIMMED.get(view);
+        if (held == null) {
+            float alpha = view.getAlpha();
+            held = new float[]{alpha, alpha};
+            DIMMED.put(view, held);
+            HookStatus.counted(FAMILY, COUNT_DIMMED);
+        }
+        write(view, held, factor);
+    }
+
+    /** Draws [view] at [factor] of Facebook's alpha, taking Facebook's new one if it set its own since. */
+    private static void write(View view, float[] held, float factor) {
+        float alpha = view.getAlpha();
+        if (alpha != held[1]) held[0] = alpha;
+        float to = held[0] * factor;
+        held[1] = to;
+        if (alpha != to) view.setAlpha(to);
+    }
+
+    /** A touch on the Reels screen: the controls come back, eased up with Smooth fade on. */
     private static void undim() {
         dimming = false;
+        if (DIMMED.isEmpty()) {
+            stopFade();
+            depth = 0f;
+            return;
+        }
+        if (depth > 0f && fade() && animatorsOn()) {
+            fadeTo(0f, FADE_BACK_MS);
+            return;
+        }
+        putBack();
+    }
+
+    /** Brings back at once each view dimmed here, if its alpha is still the one written here. */
+    private static void putBack() {
+        dimming = false;
+        stopFade();
+        depth = 0f;
         if (DIMMED.isEmpty()) return;
         for (Map.Entry<View, float[]> entry : DIMMED.entrySet()) {
             View view = entry.getKey();
@@ -564,6 +655,81 @@ public final class BurnInGuard {
             if (view != null && view.getAlpha() == held[1]) view.setAlpha(held[0]);
         }
         DIMMED.clear();
+    }
+
+    /**
+     * Eases {@link #depth} to [to] over [fullMs] for the whole way, less for part of it, scaled by the
+     * phone's animation scale. It steps every {@link #FADE_FRAME_MS} on the main thread.
+     */
+    private static void fadeTo(float to, long fullMs) {
+        if (fading && fadingTo == to) return;
+        stopFade();
+        long duration = Math.round(fullMs * Math.abs(to - depth) * animationScale());
+        if (duration <= 0L) {
+            depth = to;
+            if (to <= 0f) putBack();
+            else applyDepth();
+            return;
+        }
+        fading = true;
+        fadeFrom = depth;
+        fadingTo = to;
+        fadeMs = duration;
+        fadeRan = 0L;
+        fadeStepAt = SystemClock.uptimeMillis();
+        handler().postDelayed(FADE_STEP, FADE_FRAME_MS);
+    }
+
+    /**
+     * One step of the fade running now. A step that comes more than {@link #FADE_GAP_MS} after the
+     * last one, the main thread having been busy, moves on by one frame only, so the fade doesn't
+     * skip ahead over the gap.
+     */
+    private static void fadeStep() {
+        if (!fading) return;
+        try {
+            long now = SystemClock.uptimeMillis();
+            long gap = Math.max(0L, now - fadeStepAt);
+            fadeStepAt = now;
+            fadeRan += gap > FADE_GAP_MS ? FADE_FRAME_MS : gap;
+            if (fadeRan >= fadeMs) {
+                fading = false;
+                depth = fadingTo;
+                if (fadingTo <= 0f) putBack();
+                else applyDepth();
+                return;
+            }
+            depth = fadeFrom + (fadingTo - fadeFrom) * ((float) fadeRan / fadeMs);
+            applyDepth();
+            handler().postDelayed(FADE_STEP, FADE_FRAME_MS);
+        } catch (Throwable failure) {
+            fading = false;
+            HookStatus.threw(FAMILY, "burn-in guard fade", failure);
+        }
+    }
+
+    private static void stopFade() {
+        if (!fading) return;
+        fading = false;
+        handler().removeCallbacks(FADE_STEP);
+    }
+
+    /**
+     * Writes {@link #depth} to every view dimmed here. On the way back up, a view whose alpha Facebook
+     * changed since is left the way Facebook set it.
+     */
+    private static void applyDepth() {
+        float factor = factor(level());
+        for (Iterator<Map.Entry<View, float[]>> entries = DIMMED.entrySet().iterator(); entries.hasNext(); ) {
+            Map.Entry<View, float[]> entry = entries.next();
+            View view = entry.getKey();
+            float[] held = entry.getValue();
+            if (view == null || (!dimming && view.getAlpha() != held[1])) {
+                entries.remove();
+                continue;
+            }
+            write(view, held, factor);
+        }
     }
 
     private static void place(Activity activity, boolean shifting, long now) {
@@ -762,10 +928,12 @@ public final class BurnInGuard {
      * flash bright for up to a second. Done before the frame is drawn, the flash never shows.
      */
     private static void redim() {
-        if (DIMMED.isEmpty()) return;
+        // Easing back up, what Facebook changed is its own again.
+        if (!dimming || DIMMED.isEmpty()) return;
+        float factor = factor(level());
         for (Map.Entry<View, float[]> entry : DIMMED.entrySet()) {
             View view = entry.getKey();
-            if (view != null && view.getAlpha() != entry.getValue()[1]) dim(view);
+            if (view != null && view.getAlpha() != entry.getValue()[1]) dim(view, factor);
         }
     }
 

@@ -16,6 +16,7 @@ import java.util.Set;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.notifications.PushDiagnostics;
+import app.morphe.extension.facebook.reels.BurnInGuard;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
 import app.morphe.extension.shared.L10n;
@@ -151,7 +152,7 @@ public enum PatchFamily {
             Settings.FOLLOWED_REELS_ONLY,
             Settings.REEL_CLEAN_MODE, Settings.REEL_CLEAN_BUTTON, Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO, Settings.HIDE_REEL_SEARCH_PILL, Settings.HIDE_VIEWER_TOP_BUTTONS, Settings.HIDE_REELS_TAB_TITLE,
-            Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM,
+            Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM, Settings.BURN_IN_FADE,
             Settings.GRAY_REELS, Settings.REELS_MINUTES, Settings.HIDE_REEL_COUNTS,
             Settings.HIDE_REEL_SAVE_BUTTON, Settings.HIDE_REEL_WHATSAPP_BUTTON, Settings.HIDE_REEL_LIKE_BUTTON,
             Settings.HIDE_REEL_COMMENT_BUTTON, Settings.HIDE_REEL_REPOST_BUTTON, Settings.HIDE_REEL_SHARE_BUTTON,
@@ -630,11 +631,13 @@ public enum PatchFamily {
                 if (setting != Settings.NOTIFICATION_QUIET_HOURS) anyOn |= setting.savedValue();
             }
         }
-        // Burn-in guard runs by its list; Stay dim when I tap does nothing with the guard off (#288).
+        // Burn-in guard runs by its list; Stay dim when I tap and Smooth fade do nothing with the guard off (#288, #523).
         if (this == REEL_DECLUTTER) {
             anyOn = Settings.BURN_IN_GUARD.savedValue() != BurnInMode.OFF;
             for (BooleanSetting setting : switches) {
-                if (setting != Settings.BURN_IN_STAY_DIM) anyOn |= setting.savedValue();
+                if (setting != Settings.BURN_IN_STAY_DIM && setting != Settings.BURN_IN_FADE) {
+                    anyOn |= setting.savedValue();
+                }
             }
         }
         if (this == POST_WORDS) {
@@ -653,10 +656,12 @@ public enum PatchFamily {
         for (int i = 0; i < switches.size(); i++) {
             if (i > 0) line.append(", ");
             BooleanSetting setting = switches.get(i);
-            // Burn-in guard's two lists, which no switch holds, sit before its switch (#288).
+            // Burn-in guard's two lists and its Dim to percent, which no switch holds, sit before its switch (#288, #523).
             if (setting == Settings.BURN_IN_STAY_DIM) {
                 line.append(Settings.BURN_IN_GUARD.key).append('=').append(Settings.BURN_IN_GUARD.savedValue()).append(", ")
-                        .append(Settings.BURN_IN_WAIT.key).append('=').append(Settings.BURN_IN_WAIT.savedValue()).append(", ");
+                        .append(Settings.BURN_IN_WAIT.key).append('=').append(Settings.BURN_IN_WAIT.savedValue()).append(", ")
+                        .append(Settings.BURN_IN_LEVEL.key).append('=')
+                        .append(BurnInGuard.levelPercent(Settings.BURN_IN_LEVEL.savedValue())).append(", ");
             }
             line.append(setting.key).append(setting.savedValue() ? "=on" : "=off");
             // How the post date is worded follows its switch (#357).

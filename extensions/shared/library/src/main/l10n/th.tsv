@@ -2617,6 +2617,14 @@ After %1$d seconds	หลังจาก %1$d วินาที
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	คงความหรี่แสงไว้เมื่อฉันแตะ
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	เมื่อการป้องกันหน้าจอเบิร์นทำให้ปุ่มจางลงแล้ว ปุ่มจะยังคงจางอยู่บน Reels ไม่ว่าคุณจะแตะหรือปัด รวมถึงใน Reel ถัดไปด้วย ปุ่มยังคงทำงานได้ตามปกติ การออกจาก Reels จะเรียกปุ่มกลับมา
+# context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
+Dim to	หรี่แสงเหลือ
+How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	ปุ่ม คำบรรยาย และแถบต่างๆ ยังมองเห็นได้มากแค่ไหนหลังหรี่แสง เป็นเปอร์เซ็นต์ ตั้งแต่ %1$s ถึง %2$s เว้นว่างไว้เพื่อใช้ %3$s
+Once dimmed, the buttons, caption and bars show at %1$s percent. Type a number to change it.	เมื่อหรี่แสง ปุ่ม คำบรรยาย และแถบต่างๆ จะแสดงที่ %1$s เปอร์เซ็นต์ พิมพ์ตัวเลขเพื่อเปลี่ยน
+Once dimmed, the buttons, caption and bars show at %1$s percent.	เมื่อหรี่แสง ปุ่ม คำบรรยาย และแถบต่างๆ จะแสดงที่ %1$s เปอร์เซ็นต์
+# context: Reels: Burn-in guard's switch that fades the buttons out and back in slowly instead of at once
+Smooth fade	ค่อยๆ จาง
+The buttons, caption and bars fade out slowly as they dim and fade back in when they return, rather than changing at once.	ปุ่ม คำบรรยาย และแถบต่างๆ จะค่อยๆ จางลงเมื่อหรี่แสงและค่อยๆ กลับมา แทนที่จะเปลี่ยนทันที
 # context: Reels: switch that shows the Reels screen and its video in black and white
 Show Reels in gray	แสดง Reels เป็นระดับสีเทา
 Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels และปุ่มจะแสดงเป็นขาวดำ ซึ่งช่วยให้คุณวางมือจากการดูได้ง่ายขึ้น ฟีด สตอรี่ รูปภาพ และแชทของคุณจะยังคงมีสีสันตามปกติ จะเริ่มต้นตั้งแต่ Reel ถัดไป และ Reels จะใช้แบตเตอรี่เพิ่มขึ้นเล็กน้อย

@@ -2612,6 +2612,14 @@ After %1$d seconds	%1$d 秒后
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	点按时保持淡化
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	防烧屏保护淡化按钮后，无论在 Reels 点按或滑动什么，按钮都会保持淡化，下一个 Reel 也一样。按钮仍可使用，离开 Reels 后会恢复显示。
+# context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
+Dim to	淡化程度
+How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	按钮、说明文字和栏淡化后仍显示的程度，按百分比计，范围 %1$s 到 %2$s。留空则使用 %3$s。
+Once dimmed, the buttons, caption and bars show at %1$s percent. Type a number to change it.	淡化后，按钮、说明文字和栏以百分之 %1$s 显示。输入数字即可更改。
+Once dimmed, the buttons, caption and bars show at %1$s percent.	淡化后，按钮、说明文字和栏以百分之 %1$s 显示。
+# context: Reels: Burn-in guard's switch that fades the buttons out and back in slowly instead of at once
+Smooth fade	平滑淡化
+The buttons, caption and bars fade out slowly as they dim and fade back in when they return, rather than changing at once.	按钮、说明文字和栏会慢慢淡化，再慢慢恢复，而不是立即切换。
 # context: Reels: switch that shows the Reels screen and its video in black and white
 Show Reels in gray	以灰色显示 Reels
 Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels 及其按钮以黑白显示，让你更容易放下手机。你的动态、快拍、照片和聊天保持原有颜色。从下一个 reel 开始生效，Reels 会稍微多耗一点电。

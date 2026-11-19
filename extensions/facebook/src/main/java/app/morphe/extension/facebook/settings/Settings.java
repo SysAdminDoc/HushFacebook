@@ -924,6 +924,23 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_burn_in_stay_dim", FALSE);
 
     /**
+     * Dim to (#523): how much of the buttons, caption and bars still shows once Burn-in guard dims
+     * them, a percent from 0 to 100, digits only, blank for 25, the level from before it could be
+     * picked ({@link app.morphe.extension.facebook.reels.BurnInGuard#levelPercent}). Not a switch.
+     * Read on each pass.
+     */
+    public static final StringSetting BURN_IN_LEVEL =
+            new StringSetting("hushfacebook_burn_in_level", "");
+
+    /**
+     * Smooth fade (#523): Burn-in guard eases the controls down as it dims them and back up as they
+     * come back, rather than in one frame. Leaving the Reels screen still brings them back at once.
+     * Off by default.
+     */
+    public static final BooleanSetting BURN_IN_FADE =
+            new BooleanSetting("hushfacebook_burn_in_fade", FALSE);
+
+    /**
      * Show Reels in gray: the Reels screen shows in black and white, video and buttons alike, and
      * every other screen keeps its colors ({@link app.morphe.extension.facebook.reels.GrayReels}).
      * The reels viewer's players draw into a TextureView while it's on, so the gray reaches the

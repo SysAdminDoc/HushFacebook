@@ -2617,6 +2617,14 @@ After %1$d seconds	Nach %1$d Sekunden
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Gedimmt bleiben, wenn ich tippe
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Sobald der Einbrennschutz die Schaltflächen abblendet, bleiben sie bei Reels abgeblendet, egal was du tippst oder wischst, auch beim nächsten Reel. Sie funktionieren weiterhin. Wenn du Reels verlässt, sind sie wieder da.
+# context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
+Dim to	Abdunkeln auf
+How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Wie viel von Schaltflächen, Beschreibung und Leisten nach dem Abdunkeln noch zu sehen ist, in Prozent, von %1$s bis %2$s. Leer lassen für %3$s.
+Once dimmed, the buttons, caption and bars show at %1$s percent. Type a number to change it.	Abgedunkelt sind Schaltflächen, Beschreibung und Leisten zu %1$s Prozent zu sehen. Gib eine Zahl ein, um das zu ändern.
+Once dimmed, the buttons, caption and bars show at %1$s percent.	Abgedunkelt sind Schaltflächen, Beschreibung und Leisten zu %1$s Prozent zu sehen.
+# context: Reels: Burn-in guard's switch that fades the buttons out and back in slowly instead of at once
+Smooth fade	Sanft überblenden
+The buttons, caption and bars fade out slowly as they dim and fade back in when they return, rather than changing at once.	Schaltflächen, Beschreibung und Leisten werden beim Abdunkeln langsam blasser und kommen langsam wieder, statt sofort umzuschalten.
 # context: Reels: switch that shows the Reels screen and its video in black and white
 Show Reels in gray	Reels in Graustufen zeigen
 Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels und ihre Schaltflächen erscheinen in Schwarzweiß, so legst du sie leichter weg. Dein Feed, Storys, Fotos und Chats behalten ihre Farben. Das gilt ab dem nächsten Reel, und Reels brauchen etwas mehr Akku.

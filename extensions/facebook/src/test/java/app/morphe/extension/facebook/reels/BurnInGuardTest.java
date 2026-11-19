@@ -12,6 +12,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -38,6 +39,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSystemClock;
 import org.robolectric.util.ReflectionHelpers;
 
 import java.time.Duration;
@@ -85,6 +87,8 @@ public class BurnInGuardTest {
         Settings.BURN_IN_GUARD.resetToDefault();
         Settings.BURN_IN_WAIT.resetToDefault();
         Settings.BURN_IN_STAY_DIM.resetToDefault();
+        Settings.BURN_IN_LEVEL.resetToDefault();
+        Settings.BURN_IN_FADE.resetToDefault();
         PauseForTests.resume();
         BurnInGuard.resetForTests();
         HookStatus.clear();
@@ -126,6 +130,9 @@ public class BurnInGuardTest {
         Settings.BURN_IN_GUARD.resetToDefault();
         Settings.BURN_IN_WAIT.resetToDefault();
         Settings.BURN_IN_STAY_DIM.resetToDefault();
+        Settings.BURN_IN_LEVEL.resetToDefault();
+        Settings.BURN_IN_FADE.resetToDefault();
+        animationScale(1f);
         PauseForTests.resume();
         HookStatus.clear();
     }
@@ -676,6 +683,118 @@ public class BurnInGuardTest {
         assertEquals("a hidden eye isn't dimmed", 1f, eye.getAlpha(), 0f);
     }
 
+    /**
+     * Dim to (#523): the controls dim to the percent picked, blank or a typo keeping the quarter they
+     * always dimmed to, 0 hiding them and 100 leaving them be. A tap on a button brings them back from
+     * any of those, and with Stay dim when I tap on, a new level shows once the settings close.
+     */
+    @Test
+    public void dimToPicksHowMuchOfTheControlsStillShows() {
+        assertEquals("blank", BurnInGuard.IDLE_LEVEL, BurnInGuard.level(), 0f);
+        Settings.BURN_IN_LEVEL.save("abc");
+        assertEquals("not a number", BurnInGuard.IDLE_LEVEL, BurnInGuard.level(), 0f);
+        Settings.BURN_IN_LEVEL.save("250");
+        assertEquals("over 100 is 100", 1f, BurnInGuard.level(), 0f);
+
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        Settings.BURN_IN_LEVEL.save("40");
+        BurnInGuard.resumed(activity);
+        after(IDLE + 100);
+        assertDimmedTo("40", 0.4f);
+        tapOn(like);
+        assertUp("a tap on Like at 40");
+
+        Settings.BURN_IN_LEVEL.save("0");
+        after(IDLE + 100);
+        assertDimmedTo("0", 0f);
+        tapOn(like);
+        assertUp("a tap where the hidden Like is");
+
+        Settings.BURN_IN_LEVEL.save("100");
+        after(IDLE + 100);
+        assertUp("100 leaves them as Facebook draws them");
+
+        Settings.BURN_IN_STAY_DIM.save(true);
+        Settings.BURN_IN_LEVEL.save("");
+        after(IDLE + 100);
+        assertDimmed("blank again");
+        Settings.BURN_IN_LEVEL.save("10");
+        focusBack();
+        assertDimmedTo("a new level as the settings close, Stay dim on", 0.1f);
+    }
+
+    /**
+     * Smooth fade (#523): the controls ease down over {@link BurnInGuard#FADE_DIM_MS} and back up
+     * over {@link BurnInGuard#FADE_BACK_MS}, a change Facebook makes on the way back up is kept,
+     * leaving the screen mid fade puts them back at once, and with the phone's animations off they
+     * change in one frame as they always did.
+     */
+    @Test
+    public void smoothFadeEasesThemDownAndBackUp() {
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        Settings.BURN_IN_FADE.save(true);
+        BurnInGuard.resumed(activity);
+        after(IDLE + BurnInGuard.FADE_DIM_MS / 3);
+        float early = column.getAlpha();
+        assertTrue("a third of the way down: " + early, early > BurnInGuard.IDLE_LEVEL && early < 1f);
+        assertEquals("the caption fades with the column", early, caption.getAlpha(), 0f);
+        assertEquals("and the top bar", early, topBar.getAlpha(), 0f);
+        assertEquals("the video never fades", 1f, video.getAlpha(), 0f);
+        after(BurnInGuard.FADE_DIM_MS);
+        assertDimmed("the fade down done");
+
+        tapOn(like);
+        assertTrue("a tap starts them back up, not at once: " + column.getAlpha(), column.getAlpha() < 1f);
+        after(BurnInGuard.FADE_BACK_MS / 2);
+        float half = column.getAlpha();
+        assertTrue("half way back: " + half, half > BurnInGuard.IDLE_LEVEL && half < 1f);
+        after(BurnInGuard.FADE_BACK_MS);
+        assertUp("the fade back done");
+
+        after(IDLE + BurnInGuard.FADE_DIM_MS);
+        assertDimmed("idle again");
+        tapOn(like);
+        after(BurnInGuard.FADE_BACK_MS / 2);
+        column.setAlpha(0.5f);
+        after(BurnInGuard.FADE_BACK_MS);
+        assertEquals("Facebook's change on the way back up is kept", 0.5f, column.getAlpha(), 0f);
+        assertEquals("the rest came all the way back", 1f, caption.getAlpha(), 0f);
+
+        column.setAlpha(1f);
+        tapOn(like);
+        after(IDLE + BurnInGuard.FADE_DIM_MS / 3);
+        assertTrue("fading down again: " + caption.getAlpha(),
+                caption.getAlpha() > BurnInGuard.IDLE_LEVEL && caption.getAlpha() < 1f);
+        BurnInGuard.paused(activity);
+        assertUp("leaving the screen mid fade");
+        after(BurnInGuard.FADE_DIM_MS);
+        assertUp("and the fade doesn't carry on after");
+
+        animationScale(0f);
+        BurnInGuard.resumed(activity);
+        after(IDLE + 1);
+        assertDimmed("the phone's animations off: one frame");
+        tapOn(like);
+        assertUp("and back in one frame");
+    }
+
+    /** A main thread busy for longer than the whole fade moves it on by one frame, not to its end. */
+    @Test
+    public void aBusyMainThreadDoesNotMakeTheFadeJump() {
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        Settings.BURN_IN_FADE.save(true);
+        BurnInGuard.resumed(activity);
+        after(IDLE + BurnInGuard.FADE_DIM_MS / 3);
+        float before = column.getAlpha();
+        ShadowSystemClock.advanceBy(Duration.ofMillis(BurnInGuard.FADE_DIM_MS * 2));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        float gapped = column.getAlpha();
+        assertTrue("one frame on, not the rest of the fade: " + before + " then " + gapped,
+                gapped < before && gapped > BurnInGuard.IDLE_LEVEL);
+        after(BurnInGuard.FADE_DIM_MS);
+        assertDimmed("then it finishes");
+    }
+
     @Test
     public void theWatcherPassesTouchesOnToTheActivity() {
         Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
@@ -696,6 +815,19 @@ public class BurnInGuardTest {
         assertEquals(why + ": the caption", BurnInGuard.IDLE_LEVEL, caption.getAlpha(), 0f);
         assertEquals(why + ": the top bar", BurnInGuard.IDLE_LEVEL, topBar.getAlpha(), 0f);
         assertEquals(why + ": the video itself", 1f, video.getAlpha(), 0f);
+    }
+
+    private void assertDimmedTo(String why, float level) {
+        assertEquals(why + ": the button column", level, column.getAlpha(), 0f);
+        assertEquals(why + ": the caption", level, caption.getAlpha(), 0f);
+        assertEquals(why + ": the top bar", level, topBar.getAlpha(), 0f);
+        assertEquals(why + ": the video itself", 1f, video.getAlpha(), 0f);
+    }
+
+    /** The phone's animator duration scale, 0 being animations off in the developer options. */
+    private static void animationScale(float scale) {
+        ReflectionHelpers.callStaticMethod(ValueAnimator.class, "setDurationScale",
+                ReflectionHelpers.ClassParameter.from(float.class, scale));
     }
 
     private void assertUp(String why) {

@@ -46,6 +46,7 @@ import java.util.TimeZone;
 import app.morphe.extension.facebook.coexist.FamilySignatureTrust;
 import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
+import app.morphe.extension.facebook.reels.BurnInGuard;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.CleanReturn;
@@ -2888,6 +2889,25 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                     CaptionBackdrop.DEFAULT_DARKNESS);
         }
         return L10n.f("The dark boxes are %1$s percent black.", CaptionBackdrop.darknessPercent(text));
+    }
+
+    /** Burn-in guard's Dim to row: how much of the dimmed controls still shows (#523). */
+    static ValueRows.PercentRow burnInLevelRow(Context context) {
+        return percentRow(context, Settings.BURN_IN_LEVEL, L10n.t("Dim to"),
+                L10n.f("How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s "
+                        + "to %2$s. Leave it blank for %3$s.", BurnInGuard.MIN_LEVEL, BurnInGuard.MAX_LEVEL,
+                        BurnInGuard.DEFAULT_LEVEL),
+                BurnInGuard.DEFAULT_LEVEL, HushfacebookPreferenceFragment::burnInLevelSummary);
+    }
+
+    /** What the Dim to row says for [text], the digits typed there. */
+    static String burnInLevelSummary(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return L10n.f("Once dimmed, the buttons, caption and bars show at %1$s percent. Type a number to "
+                    + "change it.", BurnInGuard.DEFAULT_LEVEL);
+        }
+        return L10n.f("Once dimmed, the buttons, caption and bars show at %1$s percent.",
+                BurnInGuard.levelPercent(text));
     }
 
     /** Rounded tab bar's Tab bar width row (#425). */

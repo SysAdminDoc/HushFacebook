@@ -7,6 +7,7 @@
 package app.morphe.extension.facebook.settings;
 
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInGuardRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInLevelRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInWaitRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.category;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.cleanReturnRow;
@@ -193,9 +194,13 @@ final class VideoPages {
             // Burn-in guard (#288): read on each pass, so a change shows right away.
             reels.addPreference(burnInGuardRow(context));
             reels.addPreference(burnInWaitRow(context));
+            reels.addPreference(burnInLevelRow(context));
             reels.addPreference(toggle(context, Settings.BURN_IN_STAY_DIM,
                     L10n.t("Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, "
                             + "the next reel too. They still work. Leaving Reels brings them back.")));
+            reels.addPreference(toggle(context, Settings.BURN_IN_FADE,
+                    L10n.t("The buttons, caption and bars fade out slowly as they dim and fade back in when they "
+                            + "return, rather than changing at once.")));
             // The gray needs the reel's player on a TextureView, a Turn off HDR brightness hook that
             // works as each player is built, and the screen stays in color over one that isn't, so
             // it starts from the next reel.

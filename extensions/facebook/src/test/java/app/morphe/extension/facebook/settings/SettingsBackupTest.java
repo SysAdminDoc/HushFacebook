@@ -170,6 +170,9 @@ public class SettingsBackupTest {
         out.put("hushfacebook_text_box_darkness",
                 "it is picked by eye for this phone's screen, like See-through opacity, and the same number reads "
                         + "darker on an AMOLED one.");
+        out.put("hushfacebook_burn_in_level",
+                "it is picked by eye for this phone's screen, like Box darkness, and how much a dimmed button can "
+                        + "show before it burns in differs between screens.");
         out.put("hushfacebook_tab_bar_width",
                 "it is a size picked for this phone's screen, which reads differently on another phone.");
         out.put("hushfacebook_tab_bar_height",

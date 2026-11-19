@@ -21,6 +21,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Translate every comment` under Comments and writing shows Facebook's translation on comments in another language as they load, the same as tapping See translation on each one. It comes with `Turn off auto-translation` and starts off. (#522)
 * `Long press to save Marketplace photos` under Downloads saves a Marketplace listing's photo when you hold your finger on it, in the listing or opened full screen. It lands in the same folder as every other photo you save. It needs `Save any photo` and starts off. (#515)
 * With `See-through bars` on, the strip behind the clock and battery icons is frosted glass too on Android 12 and newer, so the glass runs from the top bar up to the edge of the screen instead of stopping under a solid band. (#507)
+* `Dim to` under Reels and Watch picks how much of a reel's buttons, caption and bars still shows once `Burn-in guard` dims them, from 0 to 100 percent. Left blank it stays at the 25 it always used. `Smooth fade` next to it eases them out and back in instead of switching at once, and it starts off. (#523)
 
 ### Changed
 

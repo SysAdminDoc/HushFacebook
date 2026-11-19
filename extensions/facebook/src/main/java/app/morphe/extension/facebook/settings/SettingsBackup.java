@@ -285,6 +285,7 @@ public final class SettingsBackup {
             Settings.HIDE_REELS_TAB_TITLE,
             Settings.HIDE_VIEWER_BACK_BUTTON,
             Settings.BURN_IN_STAY_DIM,
+            Settings.BURN_IN_FADE,
             Settings.GRAY_REELS,
             Settings.REELS_MINUTES,
             Settings.HIDE_REEL_COUNTS,
