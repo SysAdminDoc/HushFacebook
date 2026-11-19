@@ -179,6 +179,47 @@ public class FamilyLinkHandoffTest {
         }
     }
 
+    // Facebook 588 opens a Threads card through its family-app redirect, the post riding in
+    // destination_url. Threads 455 lands that redirect on its home feed, while the media link
+    // opens the post itself (both seen on the S22, #385).
+    @Test
+    public void aThreadsInterAppRedirectOpensAsThePostItself() {
+        List<?> targets = Collections.singletonList(THREADS_LINKS);
+        Uri post = Uri.parse("barcelona://media?id=3714360682692465464");
+        for (String destination : new String[] {
+                "https://www.threads.com/@zuck/post/DOMD1yDj9M4",
+                "https://www.threads.net/t/DOMD1yDj9M4",
+                "barcelona://mainfeed?injected_media_ids=[3714360682692465464]",
+        }) {
+            String redirect = redirect(destination);
+            assertEquals(redirect, post, FamilyLinkHandoff.publicLink(threadsCard(redirect), targets).getData());
+            assertEquals(redirect, post, FamilyLinkHandoff.publicLink(dropped(redirect), targets).getData());
+        }
+    }
+
+    @Test
+    public void aThreadsInterAppRedirectToNoPostStaysAsItCame() {
+        List<?> targets = Collections.singletonList(THREADS_LINKS);
+        for (String link : new String[] {
+                "https://www.threads.com/inter_app/redirect?account_id=1&initiator_app=FACEBOOK",
+                redirect("https://www.threads.com/@zuck"),
+                redirect("https://example.com/@zuck/post/DOMD1yDj9M4"),
+                redirect(redirect("https://www.threads.com/@zuck/post/DOMD1yDj9M4")),
+        }) {
+            assertEquals(link, Uri.parse(link), FamilyLinkHandoff.publicLink(threadsCard(link), targets).getData());
+        }
+    }
+
+    private static String redirect(String destination) {
+        return new Uri.Builder().scheme("https").authority("www.threads.com").appendPath("inter_app").appendPath("redirect")
+                .appendQueryParameter("account_id", "1")
+                .appendQueryParameter("initiator_app", "FACEBOOK")
+                .appendQueryParameter("deeplink_source", "fb")
+                .appendQueryParameter("destination_url", destination)
+                .appendQueryParameter("xapp_session_id", "x")
+                .build().toString();
+    }
+
     @Test
     public void aThreadsLinkThatIsNoPostStaysAWebLink() {
         List<?> targets = Collections.singletonList(THREADS_LINKS);

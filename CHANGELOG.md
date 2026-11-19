@@ -45,7 +45,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * A long press on a reel's Download, Cast or Clean mode button no longer opens an empty gray box. (#518)
 * With `Hide the tab bar on the Reels tab` on, a reel's time, caption and seek bar sit above the gesture bar again, so the seek bar can be tapped and held. (#516)
 * With `Tap to play` on, video stories play by themselves again, the way Facebook plays them. Before, the story after the first one, or one you swiped to, could sit frozen at the start, since a tap on a story moves on instead of playing it. Stories that wait for you are what `Video stories wait for a tap` is for. (#521)
-* A Threads post in your feed opens that post in Threads instead of the Threads home feed, also when Facebook sends the post in Threads' list form. The 0.23.0 fix only read a single post number, so those cards still landed on the feed. (#385)
+* A Threads post in your feed opens that post in Threads instead of the Threads home feed. The 0.23.0 fix missed the redirect link Facebook now sends the card through, which Threads opens on the feed, and Threads' list form of the post number. Both open the post now. (#385)
 * With `View stories anonymously` on, a story you watch counts as watched on your phone again, so its ring turns gray and `Hide seen stories` can take it out. Hushfacebook read the wrong flag on the viewer and took every story for a quick peek, so none of them were kept as watched. (#165, #514)
 * `Show the post date on reels` now dates a video posted in a group too. Facebook's full screen viewer gives a group's video no date line under its author, so the date goes after the poster's name, like "Ana Lima · 3 weeks ago". (#520)
 
