@@ -72,6 +72,8 @@ public class TimelineWordsTest {
         Settings.POST_WORDS_IN_GROUPS.resetToDefault();
         Settings.LINK_POSTS_ON_TIMELINES.resetToDefault();
         Settings.LINK_POSTS_IN_GROUPS.resetToDefault();
+        Settings.POST_WORDS_IN_SEARCH.resetToDefault();
+        Settings.LINK_POSTS_IN_SEARCH.resetToDefault();
         Settings.HIDDEN_WORDS.resetToDefault();
         Settings.KEPT_WORDS.resetToDefault();
         PostWordsForTests.forget();
@@ -232,7 +234,10 @@ public class TimelineWordsTest {
         assertNull("profile routes stay apart", line(TimelineWords.WORDS.route));
     }
 
-    /** Search, an opened post, the News feed, a profile and an admin's queue are drawn as they come. */
+    /**
+     * With the search switches as they ship, search, an opened post, the News feed, a profile and an
+     * admin's queue are drawn as they come.
+     */
     @Test
     public void otherListsAreDrawnAsTheyCome() {
         Settings.HIDE_POSTS_WITH_WORDS.save(true);
@@ -283,6 +288,45 @@ public class TimelineWordsTest {
         assertFalse(TimelineWords.hideInList(post(SPOILER), environment("GROUPS"), broken, words, links));
         assertNull(line(TimelineWords.LISTS));
         assertFalse(HookStatus.report().toString(), HookStatus.report().toString().contains("group feed row"));
+    }
+
+    /**
+     * Search results have their own switch under each rule (#458), and it starts off, so what you
+     * search for still shows. On, a search result's post goes by its rule while the group switches
+     * keep their own posts, and no other list is reached.
+     */
+    @Test
+    public void searchResultsHaveTheirOwnSwitchThatStartsOff() {
+        assertFalse(Settings.POST_WORDS_IN_SEARCH.defaultValue);
+        assertFalse(Settings.LINK_POSTS_IN_SEARCH.defaultValue);
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+        assertFalse("off to begin with", hidesIn("SEARCH_RESULTS", post(SPOILER)));
+        assertFalse(hidesIn("SEARCH_RESULTS", post(DRAMA)));
+        assertNull("no search row was read", line(TimelineWords.SEARCH_WORDS.route));
+
+        Settings.POST_WORDS_IN_SEARCH.save(true);
+        Settings.LINK_POSTS_IN_SEARCH.save(true);
+        Settings.POST_WORDS_IN_GROUPS.save(false);
+        Settings.LINK_POSTS_IN_GROUPS.save(false);
+        assertTrue("words go in search", hidesIn("SEARCH_RESULTS", post(SPOILER)));
+        assertFalse("a keep phrase wins", hidesIn("SEARCH_RESULTS", post(KEPT_SPOILER)));
+        assertTrue("links go in search", hidesIn("SEARCH_RESULTS", post(DRAMA)));
+        assertFalse(hidesIn("SEARCH_RESULTS", post(PLAIN)));
+        assertFalse("the group switches are off, so groups keep theirs", hidesIn("GROUPS", post(SPOILER)));
+        assertFalse("search reaches no other list", hidesIn("PERMALINK", post(SPOILER)));
+
+        String wordsRow = line(TimelineWords.SEARCH_WORDS.route);
+        assertNotNull(FeedFilterCounters.report().toString(), wordsRow);
+        assertTrue(wordsRow, wordsRow.contains("Removed: " + PostWordsForTests.HIDE_WORD + " 1"));
+        String linksRow = line(TimelineWords.SEARCH_LINKS.route);
+        assertNotNull(FeedFilterCounters.report().toString(), linksRow);
+        assertTrue(linksRow, linksRow.contains("Removed: " + PostWordsForTests.CAPTION_LINK + " 1"));
+        assertNull("no group row was read", line(TimelineWords.GROUP_WORDS.route));
+        assertEquals("the settings row counts it with the feed's", 1, PostWordsForTests.hidden());
+
+        Settings.HIDE_POSTS_WITH_WORDS.save(false);
+        assertFalse("the main switch off, its search switch does nothing", hidesIn("SEARCH_RESULTS", post(SPOILER)));
     }
 
     /** Both switches off, the story component's rows aren't read, and no list is asked for. */

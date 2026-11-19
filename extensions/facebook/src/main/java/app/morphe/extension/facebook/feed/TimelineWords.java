@@ -21,21 +21,22 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
- * Hide posts with words you choose and Hide link posts on a profile's or a Page's timeline and in
- * groups (#458).
+ * Hide posts with words you choose and Hide link posts on a profile's or a Page's timeline, in
+ * groups and in search results (#458).
  *
  * <p>Every post on a timeline is drawn by the one timeline story component Hide sponsored profile
  * posts judges, and Hide posts by words goes first in its render method too, with the unit the row
- * draws. Group posts are drawn by Facebook's story component, the one that draws a post on every
- * surface, so its check is handed the story and the row's environment too, and judges only a row
- * whose environment names one of {@link #GROUP_LISTS}. Search results, a post opened on its own and
- * the News feed (which the feed guard judges) are drawn as they come. True answers no component,
+ * draws. Group posts and search results are drawn by Facebook's story component, the one that draws
+ * a post on every surface, so its check is handed the story and the row's environment too, and
+ * judges only a row whose environment names one of {@link #GROUP_LISTS} or {@link #SEARCH_LISTS}. A
+ * post opened on its own and the News feed (which the feed guard judges) are drawn as they come. True answers no component,
  * which a render method already does for a row it won't draw, so the post leaves no gap.
  *
  * <p>The words are read the way a News feed post's are ({@link PostWords#storyKind}, a keep phrase
  * still winning), and the link rule is the Reels tab's ({@link PostTypes#captionLinkKind}): a post
  * whose card leads off Facebook, or whose words name a website off it. Both run on the News feed
- * switches, each with its own switch for profiles and Pages and one for groups under it.
+ * switches, each with its own switch for profiles and Pages, one for groups and one for search
+ * results under it. The search ones start off.
  *
  * <p>It fails open: switches off, a pause, settings that aren't ready, a unit that isn't a story or
  * can't be read, a list it can't name, or any failure in here, and Facebook draws the row. Each row
@@ -91,6 +92,10 @@ public final class TimelineWords {
             Settings.POST_WORDS_IN_GROUPS, PostWords::storyHides);
     static final Rule GROUP_LINKS = new Rule("Group posts with links", Settings.HIDE_LINK_POSTS,
             Settings.LINK_POSTS_IN_GROUPS, PostTypes::captionLinkHides);
+    static final Rule SEARCH_WORDS = new Rule("Search posts with your words", Settings.HIDE_POSTS_WITH_WORDS,
+            Settings.POST_WORDS_IN_SEARCH, PostWords::storyHides);
+    static final Rule SEARCH_LINKS = new Rule("Search posts with links", Settings.HIDE_LINK_POSTS,
+            Settings.LINK_POSTS_IN_SEARCH, PostTypes::captionLinkHides);
 
     /** Where each list the story component drew a row in is counted, while a switch is on. */
     static final String LISTS = "Story lists";
@@ -106,6 +111,9 @@ public final class TimelineWords {
      */
     static final Set<String> GROUP_LISTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "GROUPS", "GROUPS_PINNED", "GROUPS_MEMBER_BIO_FEED", "CROSS_GROUP_FEED", "GROUP_SET_FEED")));
+
+    /** The list of posts a search turns up, by Facebook's own name for it. */
+    static final Set<String> SEARCH_LISTS = Collections.singleton("SEARCH_RESULTS");
 
     static final Reader WORDS_READER = PostWords::storyKind;
     static final Reader LINKS_READER = PostTypes::captionLinkKind;
@@ -156,12 +164,20 @@ public final class TimelineWords {
             if (!Utils.settingsReady()) return false;
             // The story component draws every post, the News feed's included, so nothing is read
             // until a switch is on.
-            if (!GROUP_WORDS.switchedOn() && !GROUP_LINKS.switchedOn()) return false;
+            boolean groups = GROUP_WORDS.switchedOn() || GROUP_LINKS.switchedOn();
+            boolean search = SEARCH_WORDS.switchedOn() || SEARCH_LINKS.switchedOn();
+            if (!groups && !search) return false;
             String list = lists.name(environment);
             FeedFilterCounters.sawList(LISTS, 1);
             FeedFilterCounters.sawKind(LISTS, list == null ? UNNAMED_LIST : list);
-            if (list == null || !GROUP_LISTS.contains(list)) return false;
-            return judge(story, GROUP_WORDS, GROUP_LINKS, words, links, "Group feed row");
+            if (list == null) return false;
+            if (groups && GROUP_LISTS.contains(list)) {
+                return judge(story, GROUP_WORDS, GROUP_LINKS, words, links, "Group feed row");
+            }
+            if (search && SEARCH_LISTS.contains(list)) {
+                return judge(story, SEARCH_WORDS, SEARCH_LINKS, words, links, "Search result row");
+            }
+            return false;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.POST_WORDS, "group feed row", failure);
             Logger.printException(() -> "Post words: could not judge a group feed row", failure);

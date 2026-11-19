@@ -3038,3 +3038,7 @@ Posts on Home, the feed Facebook opens on.	โพสต์บนหน้าห�
 Reels on the Reels tab, going by their captions.	Reels ในแท็บ Reels ตามคำบรรยาย
 Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	โพสต์ในฟีดของกลุ่ม ในแท็บกลุ่ม และในโพสต์ของสมาชิกในกลุ่ม โพสต์ที่รอผู้ดูแลยังคงอยู่
 Posts on people's profiles and on Pages.	โพสต์บนโปรไฟล์ของผู้คนและบนเพจ
+# context: the search results switches under Hide posts with words you choose and Hide link posts, which start off; search results is Facebook's own name for the page a search opens
+Your words in search results	คำของคุณในผลการค้นหา
+Link posts in search results	โพสต์ลิงก์ในผลการค้นหา
+Posts in search results. Off to begin with, so what you search for still shows.	โพสต์ในผลการค้นหา ปิดไว้ตั้งแต่แรก เพื่อให้สิ่งที่คุณค้นหายังแสดงอยู่

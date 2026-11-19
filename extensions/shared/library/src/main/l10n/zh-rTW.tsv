@@ -3042,3 +3042,7 @@ Posts on Home, the feed Facebook opens on.	首頁上的貼文，也就是 Facebo
 Reels on the Reels tab, going by their captions.	Reels 分頁中的 Reels，依說明文字判斷。
 Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	社團動態、社團分頁以及成員在社團中的貼文。等待管理員處理的貼文會保留。
 Posts on people's profiles and on Pages.	個人檔案和粉絲專頁上的貼文。
+# context: the search results switches under Hide posts with words you choose and Hide link posts, which start off; search results is Facebook's own name for the page a search opens
+Your words in search results	在搜尋結果中使用你的字詞
+Link posts in search results	搜尋結果中的連結貼文
+Posts in search results. Off to begin with, so what you search for still shows.	搜尋結果中的貼文。預設為關閉，你搜尋的內容仍會顯示。

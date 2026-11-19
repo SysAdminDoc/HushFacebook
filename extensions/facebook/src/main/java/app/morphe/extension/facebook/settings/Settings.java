@@ -278,6 +278,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_words_in_groups", TRUE, Setting.parent(HIDE_POSTS_WITH_WORDS));
     public static final BooleanSetting POST_WORDS_ON_TIMELINES =
             new BooleanSetting("hushfacebook_post_words_on_timelines", TRUE, Setting.parent(HIDE_POSTS_WITH_WORDS));
+    /** Search results, the one place that starts off, so what you search for still shows. */
+    public static final BooleanSetting POST_WORDS_IN_SEARCH =
+            new BooleanSetting("hushfacebook_post_words_in_search", FALSE, Setting.parent(HIDE_POSTS_WITH_WORDS));
 
     /**
      * The words and phrases that hide a post while {@link #HIDE_POSTS_WITH_WORDS} is on, one per
@@ -333,7 +336,10 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_LINK_POSTS =
             new BooleanSetting("hushfacebook_hide_link_posts", FALSE);
 
-    /** Where {@link #HIDE_LINK_POSTS} hides posts, the same four places, each on to begin with. */
+    /**
+     * Where {@link #HIDE_LINK_POSTS} hides posts, the same places, each on to begin with but search
+     * results.
+     */
     public static final BooleanSetting LINK_POSTS_ON_FEED =
             new BooleanSetting("hushfacebook_link_posts_on_feed", TRUE, Setting.parent(HIDE_LINK_POSTS));
     public static final BooleanSetting LINK_POSTS_ON_REELS =
@@ -342,6 +348,8 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_link_posts_in_groups", TRUE, Setting.parent(HIDE_LINK_POSTS));
     public static final BooleanSetting LINK_POSTS_ON_TIMELINES =
             new BooleanSetting("hushfacebook_link_posts_on_timelines", TRUE, Setting.parent(HIDE_LINK_POSTS));
+    public static final BooleanSetting LINK_POSTS_IN_SEARCH =
+            new BooleanSetting("hushfacebook_link_posts_in_search", FALSE, Setting.parent(HIDE_LINK_POSTS));
 
     /** Feed posts written on a colored background, which Facebook draws as large formatted text. */
     public static final BooleanSetting HIDE_BACKGROUND_POSTS =

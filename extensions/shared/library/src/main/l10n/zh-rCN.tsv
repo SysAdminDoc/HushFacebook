@@ -3033,3 +3033,7 @@ Posts on Home, the feed Facebook opens on.	主页上的帖子，即 Facebook 打
 Reels on the Reels tab, going by their captions.	Reels 标签页中的 Reels，按说明文字判断。
 Posts in a group's feed, on the Groups tab and in a member's posts in a group. Posts waiting for an admin stay.	小组动态、小组标签页以及成员在小组中的帖子。等待管理员处理的帖子会保留。
 Posts on people's profiles and on Pages.	个人主页和公共主页上的帖子。
+# context: the search results switches under Hide posts with words you choose and Hide link posts, which start off; search results is Facebook's own name for the page a search opens
+Your words in search results	在搜索结果中使用你的字词
+Link posts in search results	搜索结果中的链接帖子
+Posts in search results. Off to begin with, so what you search for still shows.	搜索结果中的帖子。默认关闭，你搜索的内容仍会显示。
