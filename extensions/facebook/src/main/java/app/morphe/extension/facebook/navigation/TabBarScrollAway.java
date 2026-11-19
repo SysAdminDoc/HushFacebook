@@ -5,6 +5,8 @@
 package app.morphe.extension.facebook.navigation;
 
 import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
 import android.view.View;
 import android.view.WindowInsets;
 
@@ -159,6 +161,42 @@ public final class TabBarScrollAway {
     /** A new main screen, as it's created. */
     static void mainScreenCreated(Activity screen) {
         mainScreen = new WeakReference<>(screen);
+        frontScreen = new WeakReference<>(screen);
+        if (screen != null) watchScreens(screen.getApplication());
+    }
+
+    /** The Facebook screen last made or brought back, held weakly: the one in front. */
+    private static volatile WeakReference<Activity> frontScreen = new WeakReference<>(null);
+
+    /** The application the screen watch went on, so a second main screen adds none. */
+    private static volatile WeakReference<Application> watching = new WeakReference<>(null);
+
+    private static synchronized void watchScreens(@Nullable Application application) {
+        if (application == null || watching.get() == application) return;
+        application.registerActivityLifecycleCallbacks(new FrontScreen());
+        watching = new WeakReference<>(application);
+    }
+
+    /** Notes the screen in front as each one is made or comes back. */
+    private static final class FrontScreen implements Application.ActivityLifecycleCallbacks {
+        @Override public void onActivityCreated(Activity activity, @Nullable Bundle state) { frontScreen = new WeakReference<>(activity); }
+        @Override public void onActivityStarted(Activity activity) { }
+        @Override public void onActivityResumed(Activity activity) { frontScreen = new WeakReference<>(activity); }
+        @Override public void onActivityPaused(Activity activity) { }
+        @Override public void onActivityStopped(Activity activity) { }
+        @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
+        @Override public void onActivityDestroyed(Activity activity) { }
+    }
+
+    /**
+     * Whether another of Facebook's screens covers the main one, such as a saved video opened from
+     * the Reels tab's library. Its reels come from the same code as the Reels tab's, in a screen of
+     * its own with no tab or top bars, while the main screen behind it still shows the Reels tab.
+     */
+    private static boolean behindAnotherScreen() {
+        Activity main = mainScreen.get();
+        Activity front = frontScreen.get();
+        return main != null && front != null && front != main && !front.isFinishing() && !front.isDestroyed();
     }
 
     /**
@@ -244,8 +282,9 @@ public final class TabBarScrollAway {
      * made before the list is laid out; where the Reels tab runs its reel
      * under the bars once it shows, with the tabs at the top, the padding Facebook handed the list
      * for the tab bar ({@link #tabPadding}), or on the Reels tab, the padding {@link #pagesTop}
-     * dropped. Anywhere else, in a picture in picture window, paused, before the settings are ready
-     * or on a failure, it's Facebook's own height.
+     * dropped. Anywhere else, in a picture in picture window, for a screen over the main one such as
+     * a saved video opened from the Reels tab's library ({@link #behindAnotherScreen}), paused,
+     * before the settings are ready or on a failure, it's Facebook's own height.
      *
      * @param height the row height Facebook worked out.
      * @param maker  the list's maker, which holds the tab bar padding.
@@ -271,6 +310,11 @@ public final class TabBarScrollAway {
         if (inWindow()) {
             Logger.printDebug(() -> "Top bars: a Reels row of " + height
                     + " in a picture in picture window, left as Facebook made it");
+            return height;
+        }
+        if (behindAnotherScreen()) {
+            Logger.printDebug(() -> "Top bars: a Reels row of " + height
+                    + " for a screen over the main one, left as Facebook made it");
             return height;
         }
         boolean tabsOnTop = tabsOnTop();

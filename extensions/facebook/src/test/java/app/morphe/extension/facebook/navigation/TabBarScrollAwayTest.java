@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import com.facebook.feed.tab.FeedTab;
@@ -703,6 +704,34 @@ public class TabBarScrollAwayTest {
         windowed.inWindow = false;
         assertEquals("full screen again, the row seen before the window is still the one kept", 2062,
                 TabBarScrollAway.rowFor(1900, -1, 0));
+    }
+
+    @Test
+    public void aReelsRowForAScreenOverTheMainOneKeepsFacebooksHeight() {
+        // On 588 (S22, 2026-11-19, tabs at the top): a saved video opened from the Reels tab's
+        // library plays in a screen of its own over the main one, which still shows the Reels tab
+        // behind it. That screen's rows of 2105 got the 126 the Reels tab drops under the top bars,
+        // so the bottom of the reel's overlay, Clear mode's way out included, ran under the
+        // comment box below the reel.
+        Settings.TOP_TAB_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        ActivityController<FbMainTabActivity> main = Robolectric.buildActivity(FbMainTabActivity.class).setup();
+        screen = main.get();
+        screen.currentTab = new WatchTab();
+        TabBarScrollAway.mainScreenCreated(screen);
+        StartTabRouteForTests.tabBar(screen, StartTabRouteForTests.tabs(new FeedTab(), new FeedTab(), new WatchTab()), null);
+        assertEquals(0, TabBarScrollAway.pagesTop(126));
+        assertEquals("on the Reels tab the row gets the dropped padding back", 2231, TabBarScrollAway.rowFor(2105, -1, 0));
+
+        main.pause();
+        ActivityController<Activity> viewer = Robolectric.buildActivity(Activity.class).setup();
+        assertEquals("a saved video's screen over the main one", 2105, TabBarScrollAway.rowFor(2105, -1, 0));
+        assertEquals("nor the list's height seen for the Reels tab", 2105, TabBarScrollAway.rowFor(2105, -1, 2231));
+
+        viewer.pause();
+        main.resume();
+        viewer.stop().destroy();
+        assertEquals("back on the main screen", 2231, TabBarScrollAway.rowFor(2105, -1, 0));
     }
 
     private static void place(FrameLayout parent, View child, int top, int bottom) {
