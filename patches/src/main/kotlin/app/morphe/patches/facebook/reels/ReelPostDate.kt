@@ -6,10 +6,12 @@ package app.morphe.patches.facebook.reels
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.shared.MOBILE_CONFIG
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
@@ -307,6 +309,67 @@ internal fun BytecodePatchContext.keepPostDateBesideReason() {
             move-result v$flag
         """,
     )
+}
+
+/*
+ * "New for you" under a reel's author (#520, read from 588, 2026-11-19, arm64 and armeabi-v7a).
+ *
+ * - The footer builder above slots its New-for-you item, the reason Facebook picked the reel, in at
+ *   a place the server names: a long read from MobileConfigUnsafeContext, made an int, less one,
+ *   clamped to the list's size by one static (III)I call and handed to List.add(int, Object). It does
+ *   that twice (arm64 LX/08yM;->A1B, v7 LX/08yP;->A1B): once into the rows the date row leads, once
+ *   into the ticker labels the song or sound label sits in. The server's place is the top, so the
+ *   item showed first and the date only after the line turned over.
+ * - The builder's other positioned adds use a place it counts itself, never one read from the server.
+ * - The hook swaps both adds for one extension call taking the list, the place and the item, which
+ *   leaves the item out while the switch is on and puts it after the date while the date is on.
+ */
+internal const val SLOT_NEW_FOR_YOU = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->slotNewForYou(Ljava/util/List;ILjava/lang/Object;)V"
+
+/** The List.add(int, Object) calls in [method] whose place is a server long clamped to the list. */
+internal fun newForYouInserts(method: Method): List<Int> {
+    val code = method.code
+    val adds = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
+    val statics = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+    val configs = setOf(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
+    return code.indices.filter { at ->
+        val add = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return@filter false
+        if (code[at].opcode !in adds || add.name != "add" || add.returnType != "V" ||
+            !add.definingClass.startsWith("Ljava/util/") || add.params() != listOf("I", "Ljava/lang/Object;")
+        ) return@filter false
+        val place = code[at].namedRegisters().getOrNull(1) ?: return@filter false
+        val clamped = method.writersReaching(at, place).singleOrNull() ?: return@filter false
+        val clamp = (code.getOrNull(clamped - 1) as? ReferenceInstruction)?.reference as? MethodReference
+        if (code[clamped].opcode != Opcode.MOVE_RESULT || code[clamped - 1].opcode !in statics || clamp == null ||
+            clamp.returnType != "I" || clamp.params() != listOf("I", "I", "I")
+        ) return@filter false
+        (maxOf(0, clamped - 17) until clamped - 1).any { read ->
+            val config = (code[read] as? ReferenceInstruction)?.reference as? MethodReference
+            code[read].opcode in configs && config != null && config.definingClass == MOBILE_CONFIG &&
+                config.returnType == "J" && config.params() == listOf("J")
+        }
+    }
+}
+
+/** Hands the reel footer's two New-for-you inserts to the extension. */
+internal fun BytecodePatchContext.slotNewForYou() {
+    val method = reelFooter()
+    val sites = newForYouInserts(method)
+    if (sites.size != 2) {
+        throw PatchException("$PATCH: expected the reel footer to slot New for you in at a server place twice, found ${sites.size}")
+    }
+    sites.forEach { at ->
+        val add = method.code[at]
+        val registers = add.namedRegisters()
+        method.replaceInstruction(
+            at,
+            if (add is RegisterRangeInstruction) {
+                "invoke-static/range { v${registers.first()} .. v${registers.last()} }, $SLOT_NEW_FOR_YOU"
+            } else {
+                "invoke-static { ${registers.joinToString { "v$it" }} }, $SLOT_NEW_FOR_YOU"
+            },
+        )
+    }
 }
 
 /*

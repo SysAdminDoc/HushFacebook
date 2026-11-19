@@ -233,6 +233,9 @@ final class VideoPages {
                             + "who posted it. A change shows from the next reel.")));
             // Asked as each reel's date is worded, so a change shows from the next reel (#357).
             reels.addPreference(reelDateStyleRow(context));
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_NEW_FOR_YOU,
+                    L10n.t("Takes \"New for you\", and other reasons Facebook gives for showing you a reel, off the line "
+                            + "under its author, so the date and the song show right away. A change shows from the next reel.")));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SOUND_BUTTON,
                     L10n.t("Takes the speaker button off the bottom of the side of reels. "
                             + "A change shows from the next reel.")));

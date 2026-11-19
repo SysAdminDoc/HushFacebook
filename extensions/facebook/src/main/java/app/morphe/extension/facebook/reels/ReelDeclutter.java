@@ -222,6 +222,12 @@ public final class ReelDeclutter {
     static final String DATE_BESIDE_REASON = "date beside reason";
     /** Counted under the date's name each time the date goes in front of a silent reel's sound label (#496). */
     static final String DATE_ON_SOUND = "date on sound label";
+    /** Counted under the date's name each time the date goes ahead of a reel's "New for you" (#520). */
+    static final String DATE_BEFORE_REASON = "date before reason";
+    /** Counted under its own name each time a reel's "New for you" is left off the line under its author (#520). */
+    static final String NEW_FOR_YOU_ROUTE = "Reel New for you";
+    static final String NEW_FOR_YOU_HIDDEN = "left out";
+    static final String NEW_FOR_YOU_NOT_ALONE = "line kept without it";
     /** The type of the attribution a reel's sound is labeled from, "Reel has no sound" on a silent one. */
     static final String SOUNDTRACK = "XFBFBShortsSoundtrackTitle";
     /** What goes between the date and the song, the dot Facebook joins the artist and title with. */
@@ -856,20 +862,57 @@ public final class ReelDeclutter {
      * Injection point, in the reel footer's builder, handed the server flag that swaps the line under
      * a reel's author for its recommendation reason alone, the date and every other label dropped
      * (#496). So a reel with a reason showed no date and the next one without did. No while the
-     * switch is on, so the date stays on the line. Never throws: anything going wrong answers what it
+     * date's switch is on, so the date stays on the line, and while Hide New for you on reels is on,
+     * since the reason isn't drawn then (#520). Never throws: anything going wrong answers what it
      * was handed.
      */
     public static boolean reasonAlone(boolean alone) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (!alone || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return alone;
-            FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BESIDE_REASON);
-            logOnce(DATE_BESIDE_REASON, () -> "Reel post date: kept beside a recommendation reason");
+            if (!alone || !Utils.settingsReady()) return alone;
+            if (Settings.SHOW_REEL_POST_DATE.get()) {
+                FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BESIDE_REASON);
+                logOnce(DATE_BESIDE_REASON, () -> "Reel post date: kept beside a recommendation reason");
+                return false;
+            }
+            if (!Settings.HIDE_REEL_NEW_FOR_YOU.get()) return alone;
+            FeedFilterCounters.removed(NEW_FOR_YOU_ROUTE, 1, NEW_FOR_YOU_NOT_ALONE);
+            logOnce(NEW_FOR_YOU_NOT_ALONE, () -> "Reel New for you: the line kept without it");
             return false;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_BESIDE_REASON, failure);
             return alone;
         }
+    }
+
+    /**
+     * Injection point, in the reel footer's builder, in place of the List.add(int, Object) that puts
+     * "New for you", the reason Facebook picked a reel, at a place a server switch names, the top of
+     * the line under the author (#520). So it showed first and the date only once the line turned
+     * over. Left out while Hide New for you on reels is on, and put last while the date shows.
+     * Anything going wrong adds it where Facebook asked.
+     */
+    public static void slotNewForYou(List<Object> line, int at, Object item) {
+        int place = at;
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (Utils.settingsReady()) {
+                if (Settings.HIDE_REEL_NEW_FOR_YOU.get()) {
+                    FeedFilterCounters.removed(NEW_FOR_YOU_ROUTE, 1, NEW_FOR_YOU_HIDDEN);
+                    logOnce(NEW_FOR_YOU_HIDDEN, () -> "Reel New for you: left off the line");
+                    return;
+                }
+                if (Settings.SHOW_REEL_POST_DATE.get() && at < line.size()) {
+                    place = line.size();
+                    FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BEFORE_REASON);
+                    logOnce(DATE_BEFORE_REASON, () -> "Reel post date: put ahead of New for you");
+                }
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, NEW_FOR_YOU_HIDDEN, failure);
+            place = at;
+        }
+        line.add(place, item);
     }
 
     /**

@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Back to Clean mode` under Reels and Watch puts a reel back in Clean mode by itself after you bring its buttons back. Pick when: once the comments or a menu you opened close, or after 3, 5 or 10 seconds without touching the screen. It starts on Never. (#519)
 * `Hide the line along the tab bar` under Tabs and navigation takes away the thin line Facebook draws along the edge of the tab bar, on every tab. It starts off, and a change shows on the next tab you tap. (#521)
 * `Plain slide between people` under Stories turns the cube Facebook plays when you swipe from one person's stories to the next into a flat slide. Facebook only uses the cube on some accounts, and others already get a plain slide or a tilt. It's part of `Clean up the story viewer` and starts off. (#521)
+* `Hide New for you on reels` under Reels and Watch takes "New for you", and the other reasons Facebook gives for showing you a reel, off the line under its author. It's part of `Clean up Reels` and starts off. With the label kept and `Show the post date on reels` on, the date now shows first and "New for you" after it, so you don't wait for the line to turn over to see when the reel was posted. (#520)
 
 ### Changed
 

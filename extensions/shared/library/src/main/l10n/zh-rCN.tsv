@@ -3010,3 +3010,5 @@ Never. A reel you take out of Clean mode stays out until you put it back.	从不
 A reel you take out of Clean mode will stay out until you put it back.	你退出简洁模式的 Reel 会一直保持退出，直到你重新打开。
 A reel you take out of Clean mode will go back into it when the comments or a menu close.	你退出简洁模式的 Reel 会在评论或菜单关闭时回到简洁模式。
 A reel you take out of Clean mode will go back into it after %1$d seconds without a touch.	你退出简洁模式的 Reel 会在 %1$d 秒没有触摸后回到简洁模式。
+Hide New for you on reels	在 Reels 上隐藏“为你推荐”
+Takes "New for you", and other reasons Facebook gives for showing you a reel, off the line under its author, so the date and the song show right away. A change shows from the next reel.	把“为你推荐”以及 Facebook 给你推荐某个 Reel 的其他理由从发布者名字下方的那一行去掉，这样日期和歌曲会马上显示。从下一个 Reel 开始生效。

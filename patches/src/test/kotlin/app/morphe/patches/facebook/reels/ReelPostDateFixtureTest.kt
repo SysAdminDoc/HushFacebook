@@ -222,6 +222,69 @@ class ReelPostDateFixtureTest {
     }
 
     /**
+     * #520: each declared build's reel footer slots its New-for-you item in at a server place twice,
+     * through List.add(int, Object), and every other positioned add in it counts its
+     * own place. The hook swaps those two adds, and only them, for the extension call with the same
+     * registers, so nothing else in the builder moves.
+     */
+    @Test
+    fun `each declared build hands New for you's two inserts to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        val config = "Lcom/facebook/mobileconfig/factory/MobileConfigUnsafeContext;"
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, REASON_ALONE_FLAG)
+                val builder = holders.flatMap { owner -> owner.methods.filter { reasonAloneRead(it) >= 0 } }.single()
+                assertThrows("$name: no footer must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).slotNewForYou()
+                }
+                val original = builder.code()
+                val positioned = original.indices.filter {
+                    val call = (original[it] as? ReferenceInstruction)?.reference as? MethodReference
+                    call != null && call.name == "add" && call.returnType == "V" &&
+                        call.parameterTypes.map(CharSequence::toString) == listOf("I", "Ljava/lang/Object;")
+                }
+                val serverPlaced = positioned.filter { at ->
+                    (maxOf(0, at - 20) until at).any {
+                        val call = (original[it] as? ReferenceInstruction)?.reference as? MethodReference
+                        call?.definingClass == config && call.returnType == "J"
+                    }
+                }
+                assertEquals("$name: adds at a place read from the server", 2, serverPlaced.size)
+                assertTrue("$name: the builder has positioned adds of its own too", positioned.size > serverPlaced.size)
+                assertEquals("$name: the finder", serverPlaced, newForYouInserts(builder))
+                val context = PatchContexts.of(holders)
+                context.slotNewForYou()
+                val patched = context.mutableClassDefBy(builder.definingClass).methods.single {
+                    it.name == builder.name &&
+                        it.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertEquals("$name: nothing added or taken away", original.size, patched.size)
+                val hooked = patched.indices.filter {
+                    ((patched[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == SLOT_NEW_FOR_YOU
+                }
+                assertEquals("$name: the hook sits where the server-placed adds were", serverPlaced, hooked)
+                for (at in hooked) {
+                    assertTrue("$name: a static call at $at",
+                        patched[at].opcode == Opcode.INVOKE_STATIC || patched[at].opcode == Opcode.INVOKE_STATIC_RANGE)
+                    assertEquals("$name: with the add's list, place and item at $at",
+                        original[at].namedRegisters(), patched[at].namedRegisters())
+                }
+                for (at in original.indices - hooked.toSet()) {
+                    assertEquals("$name: instruction $at moved", original[at].opcode, patched[at].opcode)
+                }
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
+    /**
      * #496: each declared build's reel footer words every attribution's label with one helper and
      * builds a ticker label from it, and a second method in the helper's class builds the soundtrack's
      * ticker label alone. Both labels go to the extension right before the ticker's new-instance, the
@@ -386,7 +449,10 @@ class ReelPostDateFixtureTest {
         assertEquals("reasonAlone's shape", REASON_ALONE,
             "${reason!!.definingClass}->${reason.name}(${reason.parameterTypes.joinToString("")})${reason.returnType}")
         assertTrue("reasonAlone isn't static", AccessFlags.STATIC.isSet(reason.accessFlags))
-        for ((method, shape) in listOf("soundLabelText" to SOUND_LABEL_TEXT, "soundStory" to SOUND_STORY, "soundTickerText" to SOUND_TICKER_TEXT)) {
+        for ((method, shape) in listOf(
+            "soundLabelText" to SOUND_LABEL_TEXT, "soundStory" to SOUND_STORY, "soundTickerText" to SOUND_TICKER_TEXT,
+            "slotNewForYou" to SLOT_NEW_FOR_YOU,
+        )) {
             val sound = ExtensionDex.classDef(type).methods.singleOrNull { it.name == method }
             assertNotNull("the extension has no ReelDeclutter.$method", sound)
             assertEquals("$method's shape", shape,

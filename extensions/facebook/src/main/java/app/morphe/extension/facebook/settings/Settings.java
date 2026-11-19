@@ -981,6 +981,14 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_reel_post_date_style", ReelDateStyle.AGO);
 
     /**
+     * "New for you", the reason Facebook picked a reel, is left off the line under its author
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#slotNewForYou}, #520). Off by
+     * default. A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_NEW_FOR_YOU =
+            new BooleanSetting("hushfacebook_hide_reel_new_for_you", FALSE);
+
+    /**
      * The speaker button at the bottom of a reel's right side isn't built
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#showsSoundButton}, #190). Off by
      * default. A change shows from the next reel.

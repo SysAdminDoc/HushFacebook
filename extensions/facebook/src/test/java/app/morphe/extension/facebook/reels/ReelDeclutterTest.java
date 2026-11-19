@@ -81,6 +81,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_SHARE_BUTTON.resetToDefault();
         Settings.SHOW_REEL_COMMENT_BUTTON.resetToDefault();
         Settings.SHOW_REEL_POST_DATE.resetToDefault();
+        Settings.HIDE_REEL_NEW_FOR_YOU.resetToDefault();
         Settings.REEL_POST_DATE_STYLE.resetToDefault();
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
@@ -591,6 +592,63 @@ public class ReelDeclutterTest {
         }
         Settings.SHOW_REEL_POST_DATE.save(false);
         assertTrue("turning the switch off didn't give the reason its line back", ReelDeclutter.reasonAlone(true));
+    }
+
+    /**
+     * "New for you", the reason Facebook picked a reel, went in at the top of the line under the
+     * author, so it showed first and the date only once the line turned over (#520). With Hide New
+     * for you on reels it's left out, with the date on and the hide off it goes last, and otherwise,
+     * paused, before the settings are ready or with a switch that can't be read it goes where
+     * Facebook put it.
+     */
+    @Test
+    public void newForYouGoesWhereTheSwitchesSay() {
+        assertFalse(Settings.HIDE_REEL_NEW_FOR_YOU.defaultValue);
+        assertFalse("asked as each reel's footer is built, so no restart", Settings.HIDE_REEL_NEW_FOR_YOU.rebootApp);
+        assertEquals("[nfy, date, song]", slotted(0));
+        assertEquals("[date, nfy, song]", slotted(1));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertEquals("the date still came after New for you", "[date, song, nfy]", slotted(0));
+        assertEquals("[date, song, nfy]", slotted(2));
+        Settings.HIDE_REEL_NEW_FOR_YOU.save(true);
+        assertEquals("New for you stayed on the line", "[date, song]", slotted(0));
+        Settings.SHOW_REEL_POST_DATE.save(false);
+        assertEquals("[date, song]", slotted(1));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("New for you went missing while paused", "[nfy, date, song]", slotted(0));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertEquals("New for you went missing before the settings were ready", "[nfy, date, song]", slotted(0)));
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_NEW_FOR_YOU);
+        try {
+            assertEquals("a switch that can't be read hid New for you", "[nfy, date, song]", slotted(0));
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_NEW_FOR_YOU);
+        }
+        Settings.HIDE_REEL_NEW_FOR_YOU.save(false);
+        assertEquals("turning the switch off didn't bring New for you back", "[nfy, date, song]", slotted(0));
+    }
+
+    /**
+     * With New for you hidden, Facebook's flag that leaves the reason alone on the line reads no, or
+     * the line would lose the date and every other label for a reason that isn't drawn (#520).
+     */
+    @Test
+    public void aHiddenNewForYouNeverTakesTheLineAlone() {
+        Settings.HIDE_REEL_NEW_FOR_YOU.save(true);
+        assertFalse("the hidden reason still took the line", ReelDeclutter.reasonAlone(true));
+        assertFalse(ReelDeclutter.reasonAlone(false));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("the reason lost its line while paused", ReelDeclutter.reasonAlone(true));
+        PauseForTests.resume();
+        Settings.HIDE_REEL_NEW_FOR_YOU.save(false);
+        assertTrue(ReelDeclutter.reasonAlone(true));
+    }
+
+    private static String slotted(int at) {
+        List<Object> line = new ArrayList<>(Arrays.asList("date", "song"));
+        ReelDeclutter.slotNewForYou(line, at, "nfy");
+        return line.toString();
     }
 
     private static final long NOW = 1793620800_000L; // 2026-11-02 12:00 UTC
