@@ -87,11 +87,21 @@ public final class FoldLongText {
     /** Room left on the last line for the " ... See more" Facebook adds. */
     static final int SEE_MORE_ROOM = 10;
 
-    /** The screen's width a comment's text doesn't get: the picture beside it and the bubble's sides. */
-    static final int COMMENT_SIDE_DP = 92;
+    /**
+     * The screen's width a comment's text doesn't get: the picture beside it and the bubble's sides.
+     * Measured on a Galaxy S22 on 588, where a comment's first line ran about 877 of 1080 pixels.
+     */
+    static final int COMMENT_SIDE_DP = 72;
 
-    /** The size of a comment's text. */
-    static final int COMMENT_TEXT_SP = 15;
+    /** The size of a comment's text, measured from 588's drawn comments on a Galaxy S22. */
+    static final int COMMENT_TEXT_SP = 16;
+
+    /**
+     * The share of that width the measure lays a comment out in. Facebook's lines came out 1 to 4
+     * percent shorter than this measure's, so a first line wrapped a word the measure kept and the
+     * See more fell onto one line more than picked (#506). A narrower measure never fits more on a line.
+     */
+    static final float COMMENT_MEASURED_WIDTH = 0.95f;
 
     /** How much of a long comment is measured for each line asked for, so its length costs nothing. */
     static final int COMMENT_MEASURED_CHARS_PER_LINE = 200;
@@ -250,7 +260,7 @@ public final class FoldLongText {
         try {
             DisplayMetrics metrics = Utils.getContext().getResources().getDisplayMetrics();
             int side = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, COMMENT_SIDE_DP, metrics));
-            int width = metrics.widthPixels - side;
+            int width = Math.round((metrics.widthPixels - side) * COMMENT_MEASURED_WIDTH);
             if (width <= 0) return fallback;
 
             TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);

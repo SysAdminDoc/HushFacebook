@@ -102,13 +102,34 @@ public class FoldLongTextTest {
         return all.toString();
     }
 
+    /**
+     * How much of a comment's line Facebook may really fill. On a Galaxy S22, 588 drew a comment a
+     * hair narrower than the measure, so its first line wrapped a word the measure kept (#506).
+     */
+    private static final float FACEBOOKS_SHARE = 0.96f;
+
+    /** Comments made of ordinary words, long enough to fold at any count picked here. */
+    private static final String[] WORDY_COMMENTS = {
+            "We call them our bonus plants every season we get a bonus plant. This spring we had a "
+                    + repeat("volunteer squash that took over the whole bed and climbed the fence before we noticed it. ", 8),
+            "My question would be ,in Nov zone 9. Why are some plants germinating and "
+                    + repeat("others are not, even when they went in the same day in the same soil and the same sun. ", 8),
+            repeat("Toss them. They will not get better, and several people have said how to stop it next time. ", 9),
+    };
+
     /** The lines [text] takes at the width and size a comment is measured at. */
     private static int laidOutLines(String text) {
+        return laidOutLines(text, 1f);
+    }
+
+    /** The lines [text] takes at the size a comment is measured at, in [share] of its width. */
+    private static int laidOutLines(String text, float share) {
         DisplayMetrics metrics = Utils.getContext().getResources().getDisplayMetrics();
         int side = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, FoldLongText.COMMENT_SIDE_DP, metrics));
         TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, FoldLongText.COMMENT_TEXT_SP, metrics));
-        return StaticLayout.Builder.obtain(text, 0, text.length(), paint, metrics.widthPixels - side)
+        int width = Math.round((metrics.widthPixels - side) * share);
+        return StaticLayout.Builder.obtain(text, 0, text.length(), paint, width)
                 .setIncludePad(false).build().getLineCount();
     }
 
@@ -188,6 +209,23 @@ public class FoldLongTextTest {
             assertTrue(text.length() + " characters, budget " + budget, budget < text.length());
             String shown = text.substring(0, budget).trim() + SEE_MORE;
             assertTrue(budget + " characters took " + laidOutLines(shown) + " lines", laidOutLines(shown) <= 8);
+        }
+    }
+
+    @Test
+    public void aFoldedCommentFitsWhenFacebooksLinesRunALittleShort() {
+        FoldLines[] counts = {FoldLines.ONE, FoldLines.TWO, FoldLines.THREE, FoldLines.FIVE, FoldLines.EIGHT, FoldLines.TEN};
+        for (FoldLines picked : counts) {
+            Settings.FOLD_COMMENTS.save(picked);
+            for (String text : WORDY_COMMENTS) {
+                assertTrue("this text has to run past " + picked.lines + " lines",
+                        laidOutLines(text, FACEBOOKS_SHARE) > picked.lines);
+                int budget = FoldLongText.commentChars(COMMENT_CHARS, COMMENT_LINES, text);
+                assertTrue(picked.lines + " lines, budget " + budget, budget < text.length());
+                String shown = text.substring(0, budget).trim() + SEE_MORE;
+                int lines = laidOutLines(shown, FACEBOOKS_SHARE);
+                assertTrue(picked.lines + " lines picked, but \"" + shown + "\" took " + lines, lines <= picked.lines);
+            }
         }
     }
 
