@@ -410,17 +410,17 @@ public class BackgroundPlayWindowLockTest {
      * its end Facebook put it at 0, stopped, then let the video go (0 of 0), so nothing could start
      * it. That's a player Facebook doesn't have as its current one, here because it made another one
      * current after the hand-back. It starts over just before the end instead, still playing, with no
-     * press of play.
+     * press of play. The hand-back here is far enough from the end to go on from there.
      */
     @Test
     public void aWindowVideoNearItsEndAfterALockStartsOverBeforeItGetsThere() {
         player.length = 9334;
         Player background = lockedAndCarriedOn();
-        background.position = 8744;
+        background.position = 7000;
         phoneInUse();
         handedBack(background);
         assertEquals(1, player.plays);
-        assertEquals(8744, player.positionAtPlay);
+        assertEquals(7000, player.positionAtPlay);
         new Player().activate();
 
         player.position = 9100;
@@ -437,6 +437,23 @@ public class BackgroundPlayWindowLockTest {
         player.position = 3000;
         looksPass(4);
         assertEquals("partway through it plays on", 3000, player.position);
+    }
+
+    /**
+     * #495 on 588, from the log: the background player handed the window's reel back at 7551 of 8033.
+     * The seek there landed on the frame before (6551), it buffered, and Facebook let the video go
+     * (0 of 0) when its loop came. A hand-back that close to the end starts the reel over instead.
+     */
+    @Test
+    public void aHandBackRightBeforeItsEndStartsTheReelOver() {
+        player.length = 8033;
+        Player background = lockedAndCarriedOn();
+        background.position = 7551;
+        phoneInUse();
+        handedBack(background);
+        assertEquals(1, player.plays);
+        assertEquals("from its start", 0, player.positionAtPlay);
+        assertTrue(player.playing);
     }
 
     /**

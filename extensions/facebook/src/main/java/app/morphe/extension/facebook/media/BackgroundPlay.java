@@ -101,6 +101,8 @@ public final class BackgroundPlay {
     static final int WINDOW_KEEP_MISSES = 4;
     /** How long before its end the window's video, back from a lock, starts over. */
     static final long WINDOW_START_OVER_LEAD_MS = 250;
+    /** How close to its end a hand-back starts the window's video over instead of going on. */
+    static final int WINDOW_NEAR_END_MS = 2000;
     private static final String WINDOW_RESUME = "window resume";
     private static final String WINDOW_BUTTONS = "window buttons";
     private static final int NO_POSITION = -1;
@@ -454,6 +456,8 @@ public final class BackgroundPlay {
      * locked just after the hand back, so a closed or locked window gets a few more looks. Playing or
      * paused, the window's own buttons go back to its player first: Facebook still had the background
      * player as its current one, gone with its session, so Pause and Play did nothing (#495 on 588).
+     * A hand-back in the last two seconds starts it over: at 7551 of 8033 the seek landed on the
+     * frame a second back, it buffered, and Facebook let the video go when its loop came (#495 on 588).
      */
     private static void resumeWindow(Object player, boolean goOn, int position, int tries) {
         try {
@@ -475,11 +479,18 @@ public final class BackgroundPlay {
                 keepGoing(player);
                 return;
             }
-            if (position > 0) reader.seek(player, position);
-            reader.play(player);
             int length = reader.length(player);
-            Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                    () -> "Background play: the window's video goes on from " + position + " of " + length);
+            boolean nearItsEnd = position > 0 && length > 0 && length - position < WINDOW_NEAR_END_MS;
+            if (nearItsEnd) {
+                reader.seek(player, 0);
+            } else if (position > 0) {
+                reader.seek(player, position);
+            }
+            reader.play(player);
+            Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> nearItsEnd
+                    ? "Background play: the window's video was back at " + position + " of " + length
+                            + ", too near its end, so it starts over"
+                    : "Background play: the window's video goes on from " + position + " of " + length);
             keepGoing(player);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
