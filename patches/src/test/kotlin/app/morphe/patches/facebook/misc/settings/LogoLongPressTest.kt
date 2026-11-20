@@ -342,13 +342,15 @@ class LogoLongPressTest {
      * to 140, where the path with no tap jumps and the path with the tap jumps over. 588's two build
      * it in a static `A0K`, with the touch listener at 153 and the hide at 158, and a new gated path
      * ahead of them wraps the logo in a LinearLayout with a touch listener of its own, which the
-     * call at 153 replaces on the logo. Last, where the title bar's constructor that builds it
-     * returns.
+     * call at 153 replaces on the logo. 588's Android 9 build keeps 587's static `A0I`, with the
+     * touch listener at 158 and the hide at 163. Last, where the title bar's constructor that builds
+     * it returns.
      */
     private val pins = mapOf(
         "588.0.0.42.55" to mapOf(
             "arm64-v8a" to Pin(153, listOf(6, 2), 158, listOf(6, 7), listOf(120)),
             "armeabi-v7a" to Pin(153, listOf(6, 2), 158, listOf(6, 7), listOf(120)),
+            "arm64-v8a-minapi28-storeless" to Pin(158, listOf(4, 2), 163, listOf(4, 5), listOf(120)),
         ),
     )
 

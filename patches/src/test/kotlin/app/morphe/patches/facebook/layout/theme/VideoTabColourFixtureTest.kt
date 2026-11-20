@@ -293,8 +293,15 @@ class VideoTabColourFixtureTest {
                 assertEquals("$name: the tab bar's navigation bar colour from the Video tab's bar read", 1, painters.size)
 
                 val check = darkCheck(bundle)
-                assertTrue("$name: the tab bar asks FDS's dark check $check before it picks that colour",
-                    painters.single().body().any { it.reference() == check })
+                val painter = painters.single()
+                // 588's Android 9 build drops the painter's own ask with its plain colours' route, and
+                // asks in the tab bar's own repaint (`LX/02KS;->A0G`), which the painter calls last.
+                val ownCalls = painter.body().mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+                    .filter { it.definingClass == painter.definingClass }.map { it.toString() }.toSet()
+                val own = FixtureDex.classes(bundle, setOf(painter.definingClass)).values.single().methods
+                    .filter { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" in ownCalls }
+                assertTrue("$name: the tab bar asks FDS's dark check $check where it picks that colour",
+                    painter.body().any { it.reference() == check } || own.any { method -> method.body().any { it.reference() == check } })
                 checked += version
             }
         }

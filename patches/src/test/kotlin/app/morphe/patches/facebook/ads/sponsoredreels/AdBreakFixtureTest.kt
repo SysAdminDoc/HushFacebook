@@ -53,12 +53,14 @@ class AdBreakFixtureTest {
      * The type the server API's video query declares in each declared build, by the bundle's ABI,
      * and the index of its executor call. 588's is Guava's transform future under an obfuscated
      * name, an AbstractFuture that a SettableFuture isn't. Each ABI is its own Redex output, though
-     * 588's two agree on both.
+     * 588's two agree on both, and its Android 9 build names the type differently but calls the
+     * executor at the same index.
      */
     private val videoQuery = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/02LJ;" to 553),
             "armeabi-v7a" to ("LX/02LJ;" to 553),
+            "arm64-v8a-minapi28-storeless" to ("LX/02MC;" to 553),
         ),
     )
 

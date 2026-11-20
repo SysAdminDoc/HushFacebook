@@ -48,12 +48,13 @@ class CaptionBackdropFixtureTest {
 
     /**
      * Each declared build's class holding the caption's builder method, by ABI, read from the dex with
-     * the probe. 587 has no Android 9 store-less fixture yet, so it has no entry for one.
+     * the probe.
      */
     private val expectedHost = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to "LX/09GM;",
             "armeabi-v7a" to "LX/09GP;",
+            "arm64-v8a-minapi28-storeless" to "LX/09LA;",
         ),
     )
 

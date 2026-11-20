@@ -44,7 +44,11 @@ class CaptionDeepDiveFixtureTest {
      * and the table's case hands the answer straight back to the collector (`LX/02sT;->A0A`, case 7).
      */
     private val answerUses = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(HANDED_BACK), "armeabi-v7a" to listOf(HANDED_BACK)),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to listOf(HANDED_BACK),
+            "armeabi-v7a" to listOf(HANDED_BACK),
+            "arm64-v8a-minapi28-storeless" to listOf(HANDED_BACK),
+        ),
     )
 
     private fun Instruction.called() = (this as? ReferenceInstruction)?.reference as? MethodReference

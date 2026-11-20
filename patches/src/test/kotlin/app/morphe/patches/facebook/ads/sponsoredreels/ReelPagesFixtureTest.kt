@@ -54,6 +54,7 @@ class ReelPagesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to listOf(6 to 5, 7 to 6, 13 to 12),
             "armeabi-v7a" to listOf(6 to 5, 7 to 6, 13 to 12),
+            "arm64-v8a-minapi28-storeless" to listOf(7 to 6, 7 to 6, 12 to 11),
         ),
     )
 
@@ -242,13 +243,14 @@ class ReelPagesFixtureTest {
      * The static placer's registers and its item's register, then the registers and page register
      * of each static append taking an out-list and a map, by ABI, read from each bundle's dex. 587's
      * arm64 placer `LX/04vS;->A05` has 7 registers with the item in v4, its appends `A03` 8 (page in
-     * v5) and `A0A` 6 (page in v3); the armeabi build's `LX/04v9;` has the same shapes. The Android 9
-     * bundle isn't in the fixtures folder, so it gets its pin from its own dex when it comes back.
+     * v5) and `A0A` 6 (page in v3); the armeabi build's `LX/04v9;` has the same shapes. 588's Android 9
+     * build has the same placer, and its appends have 7 registers (page in v4) and 6 (page in v3).
      */
     private val placers = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ((7 to 4) to setOf(8 to 5, 6 to 3)),
             "armeabi-v7a" to ((7 to 4) to setOf(8 to 5, 6 to 3)),
+            "arm64-v8a-minapi28-storeless" to ((7 to 4) to setOf(7 to 4, 6 to 3)),
         ),
     )
 

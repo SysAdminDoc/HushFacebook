@@ -49,6 +49,7 @@ class ReelItemStoryFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/0AE1;" to "Dxo"),
             "armeabi-v7a" to ("LX/0AE4;" to "Dxo"),
+            "arm64-v8a-minapi28-storeless" to ("LX/0Ub7;" to "DyA"),
         ),
     )
 

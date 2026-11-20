@@ -51,6 +51,7 @@ class ReelsAdPoolTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/06Oo;" to listOf("A0U", "A0W")),
             "armeabi-v7a" to ("LX/06Op;" to listOf("A0U", "A0W")),
+            "arm64-v8a-minapi28-storeless" to ("LX/06Sp;" to listOf("A0V", "A0X")),
         ),
     )
 
@@ -126,6 +127,7 @@ class ReelsAdPoolTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Triple("LX/05x2;", "LX/03Dt;", setOf("A0W")),
             "armeabi-v7a" to Triple("LX/05x2;", "LX/03Dt;", setOf("A0W")),
+            "arm64-v8a-minapi28-storeless" to Triple("LX/062i;", "LX/03Ck;", setOf("A0X")),
         ),
     )
 

@@ -43,6 +43,12 @@ import org.junit.Test
  * fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class CommentGifFixtureTest {
+    /**
+     * Bundles whose comment sheet render reuses the comment's register before the hook point, read from
+     * the dex. 586's Android 9 build did; 588's keeps it there, as the phone builds do.
+     */
+    private val reusesComment = emptySet<String>()
+
     /** One comment sheet row: what it's called, the step that adds it, and its extension hooks. */
     private data class Row(
         val label: String,
@@ -151,10 +157,9 @@ class CommentGifFixtureTest {
                 val original = render.body()
                 assertEquals("$name: the hook follows the empty test", Opcode.IF_NEZ, original[point.insert - 1].opcode)
                 assertTrue("$name: the short call forms take the context and list", point.context <= 15 && point.list <= 15)
-                // The phone builds keep the comment in its register up to the hook point. The
-                // Android 9 build reuses it, so the hook reads it again through render's own field.
-                val abi = name.substringAfter("-$version-").substringBefore(".apkm")
-                assertEquals("$name: the comment's register is reused", abi.contains("-minapi"), point.commentFields.isNotEmpty())
+                // Most builds keep the comment in its register up to the hook point. One that reuses
+                // it has the hook read it again through render's own field.
+                assertEquals("$name: the comment's register is reused", name in reusesComment, point.commentFields.isNotEmpty())
                 point.commentFields.firstOrNull()?.let {
                     assertEquals("$name: the comment's path starts at render's own field", owner.type, it.substringBefore("->"))
                 }

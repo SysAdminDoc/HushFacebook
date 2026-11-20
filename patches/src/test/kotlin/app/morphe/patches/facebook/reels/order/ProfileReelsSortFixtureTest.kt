@@ -55,9 +55,13 @@ class ProfileReelsSortFixtureTest {
 
     /**
      * Bundles with no play count reader: Redex folded it into every getter, which each hold the key
-     * (both 588 builds, read 2026-11-18), so the extension is handed the getter alone.
+     * (both 588 phone builds, read 2026-11-18, and its Android 9 build), so the extension is handed
+     * the getter alone.
      */
-    private val noReader = setOf("facebook-588.0.0.42.55-arm64-v8a.apkm", "facebook-588.0.0.42.55-armeabi-v7a.apkm")
+    private val noReader = setOf(
+        "facebook-588.0.0.42.55-arm64-v8a.apkm", "facebook-588.0.0.42.55-armeabi-v7a.apkm",
+        "facebook-588.0.0.42.55-arm64-v8a-minapi28-storeless.apkm",
+    )
 
     /** Whether [getter] is `this` handed to [reader] and its answer returned, and nothing else. */
     private fun onlyAsks(getter: Method, reader: Method): Boolean {

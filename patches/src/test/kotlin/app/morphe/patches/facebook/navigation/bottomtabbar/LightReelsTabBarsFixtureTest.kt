@@ -53,6 +53,7 @@ class LightReelsTabBarsFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to (setOf(DarkPaint.TOP_BAR) to true),
             "armeabi-v7a" to (setOf(DarkPaint.TOP_BAR) to true),
+            "arm64-v8a-minapi28-storeless" to (setOf(DarkPaint.TOP_BAR) to true),
         ),
     )
 

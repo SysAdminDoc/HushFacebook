@@ -59,7 +59,11 @@ class ReturnRefreshFixtureTest {
      * NewsFeedFragment's onSetUserVisibleHint calls both itself.
      */
     private val relayShapes = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to emptyList<String>(), "armeabi-v7a" to emptyList()),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to emptyList<String>(),
+            "armeabi-v7a" to emptyList(),
+            "arm64-v8a-minapi28-storeless" to emptyList(),
+        ),
     )
 
     private fun Method.body(): List<Instruction> = implementation!!.instructions.toList()

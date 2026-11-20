@@ -182,6 +182,8 @@ class ReelAnchorsFixtureTest {
                         // 588 puts both flags back in one lambda class, as 583 and 584 did.
                         "588.0.0.42.55 arm64-v8a" to "LX/09w5;:56:A08 LX/09w5;:57:A0f",
                         "588.0.0.42.55 armeabi-v7a" to "LX/09w8;:56:A08 LX/09w8;:57:A0f",
+                        // Its Android 9 build keeps them apart, the second flag read in a lambda's invoke as on 586's.
+                        "588.0.0.42.55 arm64-v8a-minapi28-storeless" to "LX/0A0p;:85:A09 LX/0A0s;:68:invoke",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {
