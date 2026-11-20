@@ -35,14 +35,18 @@ internal const val BUBBLE_ROW = "_collapse_repost_bubble_row"
 
 internal const val HIDE_REACTION_BUBBLES = "$POST_PROMPTS->hideReactionBubbles()Z"
 
+/** The loads of a narrow literal into one register a render can use for its null. */
+private val NULL_LOADS = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST)
+
 /**
  * Whether [method] is a render that already answers null on some path: it loads 0 into a register
- * with const/4 and returns that same register somewhere. The hook's null is then an answer its
- * caller already handles.
+ * and returns that same register somewhere. The hook's null is then an answer its caller already
+ * handles. The load is a const/4, or a const/16 when the register is past v15 (588's store-less
+ * build keeps its null in v16).
  */
 internal fun answersNullItself(method: Method): Boolean {
     val code = method.implementation?.instructions?.toList() ?: return false
-    val zeroed = code.filter { it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 0 }
+    val zeroed = code.filter { it.opcode in NULL_LOADS && (it as NarrowLiteralInstruction).narrowLiteral == 0 }
         .map { (it as OneRegisterInstruction).registerA }.toSet()
     return code.any { it.opcode == Opcode.RETURN_OBJECT && (it as OneRegisterInstruction).registerA in zeroed }
 }

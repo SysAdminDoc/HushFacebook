@@ -86,10 +86,18 @@ internal fun isServerReactorRowModelConstructor(method: Method): Boolean =
             types[5] == "I" && types[6] == "I" && types[7] == "Z"
     }
 
-/** The server row's builder: a static method taking (object, GraphQLStory) to the row's [model]. */
+/**
+ * The server row's builder: a static method taking (object, GraphQLStory) to the row's [model]. 588's
+ * Android 9 build (2026-11-20) builds the row in a private instance method of the same class instead
+ * (LX/03Ac;->A01) and keeps each story's row in a cache, through a static (object, its own class,
+ * GraphQLStory) the gate calls (LX/03Ac;->A00), so that is the builder there.
+ */
 internal fun isServerReactorRowBuilder(method: Method, model: String): Boolean =
     method.isStatic() && method.hasCode() && method.returnType == model &&
-        method.types().let { types -> types.size == 2 && types[0].startsWith("L") && types[1] == REACTOR_STORY }
+        method.types().let { types ->
+            (types.size == 2 && types[0].startsWith("L") && types[1] == REACTOR_STORY) ||
+                (types.size == 3 && types[0].startsWith("L") && types[1] == method.definingClass && types[2] == REACTOR_STORY)
+        }
 
 /** The server row's config check: a static (object, Integer, boolean) -> boolean. */
 internal fun isServerReactorRowCheck(method: Method): Boolean =

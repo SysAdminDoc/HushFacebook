@@ -25,7 +25,8 @@ import org.junit.Test
  * declares (arm64 and armv7): the whole app has one model and one builder for the server-written
  * reactor row, whose class has one config check of the expected shape among its static boolean
  * methods; one gate for the app-built row naming who reacted, which calls one sentence builder; and
- * the social sentence plugin has one check of the expected shape among its other boolean methods.
+ * the social sentence plugin has one check of the expected shape among its other boolean methods
+ * (beside its one object builder on 588's Android 9 build).
  * The compact social context plugin, which also named people, is gone since 588, and a build bringing
  * it back fails here so its check gets hooked again. After the hook each check asks the extension
  * first and answers false (the builder null) when told to. Reads the fixture bundles from
@@ -34,6 +35,19 @@ import org.junit.Test
 class ReactorNamesFixtureTest {
     private val droppedCompactPlugin =
         "Lcom/facebook/feedback/reactions/plugins/blingbar/compactsocialcontext/CompactSocialContextBlingBarReactionCountPlugin;"
+
+    /**
+     * Per build, the check classes that keep no boolean method besides the check. 588's Android 9
+     * build leaves the social sentence plugin with its check (`A00(LX/07fF;ZZ)Z`) and one object
+     * builder (`A01`), read 2026-11-20, so there the shape is told apart from that builder alone.
+     */
+    private val soleBooleanChecks = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to emptySet<String>(),
+            "armeabi-v7a" to emptySet<String>(),
+            "arm64-v8a-minapi28-storeless" to setOf(SOCIAL_SENTENCE),
+        ),
+    )
 
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
 
@@ -96,11 +110,11 @@ class ReactorNamesFixtureTest {
                 val serverCheck = with(context) { findServerReactorRowCheck() }
                 assertEquals("$name: the server row's check sits with its builder", rowType, serverCheck.definingClass)
                 assertTrue("$name: the server row's check is static", AccessFlags.STATIC.isSet(serverCheck.accessFlags))
-                // Negative control: the row's class has another static boolean method (the count check
-                // the builder uses) the shape leaves out.
-                assertTrue("$name: the server row's class has no other static boolean method, so the shape proves nothing",
+                // Negative control: the row's class has another boolean method the shape leaves out (the
+                // count check the builder uses, a static, and the gate; 588's Android 9 build has only the gate).
+                assertTrue("$name: the server row's class has no other boolean method, so the shape proves nothing",
                     classes.getValue(rowType).methods.any {
-                        it.returnType == "Z" && AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null && !it.sameAs(serverCheck)
+                        it.returnType == "Z" && it.implementation != null && !it.sameAs(serverCheck)
                     })
 
                 val checks = with(context) { findReactorChecks() }
@@ -116,11 +130,16 @@ class ReactorNamesFixtureTest {
                 assertEquals("$name: the sentence's check", SOCIAL_SENTENCE, checks[1].definingClass)
                 assertTrue("$name: the row's gate isn't static", !AccessFlags.STATIC.isSet(checks[0].accessFlags))
                 assertTrue("$name: the sentence check is static", AccessFlags.STATIC.isSet(checks[1].accessFlags))
-                // Negative control: each class has another boolean method the shape leaves out.
+                // Negative control: each class has another boolean method the shape leaves out, or
+                // where a build keeps none ([soleBooleanChecks]), another method of its own.
+                val sole = soleBooleanChecks[version]?.get(name.substringAfter("-$version-").substringBefore(".apkm"))
+                    ?: throw AssertionError("$name has no pin")
                 for (check in checks) {
                     val others = classes.getValue(check.definingClass).methods
-                        .filter { it.returnType == "Z" && it.implementation != null && !it.sameAs(check) }
-                    assertTrue("$name: ${check.definingClass} has no other boolean method, so the shape proves nothing",
+                        .filter { it.implementation != null && !it.sameAs(check) && it.name != "<init>" && it.name != "<clinit>" }
+                    assertEquals("$name: ${check.definingClass} keeps another boolean method",
+                        check.definingClass !in sole, others.any { it.returnType == "Z" })
+                    assertTrue("$name: ${check.definingClass} has no other method, so the shape proves nothing",
                         others.isNotEmpty())
                 }
 
