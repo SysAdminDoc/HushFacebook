@@ -41,8 +41,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Center the feed on big screens (#531): on a window 1000 dp wide, the feed keeps to a column 600
  * dp wide down the middle through its own side padding, with Facebook's top and bottom padding
- * kept. A list that pages (the Reels viewer), a list that scrolls sideways, a list narrower than
- * the column and a list inside the feed are left as they are. Facebook's own wider padding stays,
+ * kept, and so does a list whose rows all fit (Menu on a tablet). A list that pages (the Reels
+ * viewer), a list that scrolls sideways, cards side by side, a list narrower than the column and a
+ * list inside the feed are left as they are. Facebook's own wider padding stays,
  * Facebook setting its padding again is followed, and a list it keeps setting it on is left alone
  * for a while. Off, paused or failing, the feed gets Facebook's padding back.
  */
@@ -80,7 +81,11 @@ public class CenteredFeedTest {
 
     /** A list of [count] rows [tall] pixels each, filling the window's width unless [wide] says. */
     private RecyclerView listOf(boolean vertical, int count, int tall, int wide) {
-        RecyclerView list = new RecyclerView(activity, vertical);
+        return fill(new RecyclerView(activity, vertical), count, tall, wide);
+    }
+
+    /** [list] with [count] rows [tall] pixels each, in the window, filling its width unless [wide] says. */
+    private RecyclerView fill(RecyclerView list, int count, int tall, int wide) {
         for (int i = 0; i < count; i++) {
             list.addView(new View(activity), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, tall));
         }
@@ -118,7 +123,7 @@ public class CenteredFeedTest {
         RecyclerView inside = new RecyclerView(activity, true);
         inside.addView(new View(activity), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100));
         feed.addView(inside, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 300));
-        RecyclerView sideways = listOf(false, 3, 200, ViewGroup.LayoutParams.MATCH_PARENT);
+        RecyclerView sideways = fill(new Sideways(activity), 3, 200, ViewGroup.LayoutParams.MATCH_PARENT);
         RecyclerView narrow = listOf(true, 3, 300, 500);
         RecyclerView reels = listOf(true, 3, 1400, ViewGroup.LayoutParams.MATCH_PARENT);
         layOut();
@@ -224,6 +229,34 @@ public class CenteredFeedTest {
     }
 
     @Test
+    public void aListWhoseRowsAllFitIsCenteredToo() {
+        // Menu on a tablet: every row fits, so the list doesn't scroll, but its rows still stretch.
+        RecyclerView menu = listOf(false, 6, 60, ViewGroup.LayoutParams.MATCH_PARENT);
+        RecyclerView cards = new RecyclerView(activity, false);
+        for (int i = 0; i < 3; i++) {
+            cards.addView(new View(activity), new FrameLayout.LayoutParams(300, 200));
+        }
+        window.addView(cards, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 200));
+        RecyclerView page = listOf(false, 1, 1400, ViewGroup.LayoutParams.MATCH_PARENT);
+        RecyclerView empty = listOf(false, 0, 60, ViewGroup.LayoutParams.MATCH_PARENT);
+        layOut();
+
+        CenteredFeed.Columns columns = new CenteredFeed.Columns(window);
+        columns.check(0);
+        layOut();
+        assertPadding("Menu", menu, 200, 0, 200, 0);
+        assertEquals("its rows are the column's width", 600, menu.getChildAt(0).getWidth());
+        assertPadding("cards side by side", cards, 0, 0, 0, 0);
+        assertPadding("a single page", page, 0, 0, 0, 0);
+        assertPadding("a list with no rows yet", empty, 0, 0, 0, 0);
+
+        columns.check(100);
+        assertPadding("still centered once its rows are the column's width", menu, 200, 0, 200, 0);
+        assertTrue(statusLine(), statusLine().contains(CenteredFeed.CENTERED + " 1"));
+        assertFalse(statusLine(), statusLine().contains(CenteredFeed.GIVEN_BACK));
+    }
+
+    @Test
     public void aFailureGivesThePaddingBackAndStopsThatScreensChecks() {
         RecyclerView feed = listOf(true, 4, 300, ViewGroup.LayoutParams.MATCH_PARENT);
         Failing failing = new Failing(activity);
@@ -258,6 +291,18 @@ public class CenteredFeedTest {
         new CenteredFeed.Screens().onActivityResumed(page);
         assertNotNull(CenteredFeed.WINDOWS.get(page.getWindow().getDecorView()));
         assertFalse(statusLine(), statusLine().contains("threw"));
+    }
+
+    /** A list that scrolls sideways, like a row of cards. */
+    static final class Sideways extends RecyclerView {
+        Sideways(Context context) {
+            super(context, false);
+        }
+
+        @Override
+        public boolean canScrollHorizontally(int direction) {
+            return true;
+        }
     }
 
     /** A list that fails as it's asked whether it scrolls, once told to. */

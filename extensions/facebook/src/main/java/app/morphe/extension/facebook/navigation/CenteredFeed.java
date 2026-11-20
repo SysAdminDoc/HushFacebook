@@ -118,13 +118,34 @@ public final class CenteredFeed {
     }
 
     /**
-     * Whether [view] is a list this centers: a RecyclerView that scrolls up and down, wider than
-     * the column, and not one that pages.
+     * Whether [view] is a list this centers: a RecyclerView wider than the column that scrolls up
+     * and down and doesn't page, or one whose rows all fit and are stacked down it.
      */
     static boolean centers(View view, int column) {
-        return TranslucentBars.isList(view) && view.getWidth() > column
-                && (view.canScrollVertically(1) || view.canScrollVertically(-1))
-                && !TranslucentBars.pages(view, 0);
+        if (!TranslucentBars.isList(view) || view.getWidth() <= column) return false;
+        if (view.canScrollVertically(1) || view.canScrollVertically(-1)) return !TranslucentBars.pages(view, 0);
+        return stacksRows(view);
+    }
+
+    /**
+     * Whether [view], a list that doesn't scroll, holds rows stacked down it, as Menu does on a
+     * tablet where all of it fits. Each row spans nearly the list's width and none fills its
+     * height, so a row of cards side by side or a single page is left as it is. Judged against
+     * the width inside the padding, so it reads the same before and after centering.
+     */
+    static boolean stacksRows(View view) {
+        if (view.canScrollHorizontally(1) || view.canScrollHorizontally(-1)) return false;
+        ViewGroup list = (ViewGroup) view;
+        int across = list.getWidth() - list.getPaddingLeft() - list.getPaddingRight();
+        int down = list.getHeight() - list.getPaddingTop() - list.getPaddingBottom();
+        int rows = 0;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View row = list.getChildAt(i);
+            if (row.getVisibility() == View.GONE) continue;
+            if (row.getWidth() * 10 < across * 9 || Math.abs(row.getHeight() - down) <= 2) return false;
+            rows++;
+        }
+        return rows > 0;
     }
 
     /** The column's width in [view]'s pixels. */
