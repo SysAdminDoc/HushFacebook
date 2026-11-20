@@ -9,6 +9,10 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.upsells.isEnumNaming
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -23,6 +27,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -44,6 +49,18 @@ class PostMenuItemsFixtureTest {
     private fun ClassDef.method(like: Method): Method = methods.single {
         it.name == like.name && it.returnType == like.returnType &&
             it.parameterTypes.map(CharSequence::toString) == like.parameterTypes.map(CharSequence::toString)
+    }
+
+    /** The classes holding [string], and where one is a string table holding it, the classes asking it for [string]. */
+    private fun classesNaming(bundle: File, string: String): List<ClassDef> {
+        val held = FixtureDex.classesHolding(bundle, string)
+        val tables = held.filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, string) } }.associateBy { it.type }
+        if (tables.isEmpty()) return held
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val asking = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() in tables } }) {
+            !isStringTable(it) && !holdsString(it, string) && namesString(it, string, resolve)
+        }.map { it.definingClass }.toSet()
+        return (held + FixtureDex.classes(bundle, asking).values).distinctBy { it.type }
     }
 
     @Test
@@ -124,8 +141,11 @@ class PostMenuItemsFixtureTest {
                 val sorter = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == kind.type } }) {
                     isPostMenuSorter(it, kind.type)
                 }.single()
-                val loggerClasses = FixtureDex.classesHolding(bundle, REEL_INTERESTED)
-                val sheets = loggerClasses.flatMap { it.methods.mapNotNull(::reelSheetOf) }
+                // 588's Android 9 build has the logger ask a string table for the ids.
+                val loggerClasses = classesNaming(bundle, REEL_INTERESTED)
+                val byType = loggerClasses.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> byType[call.definingClass]?.let { resolveStatic(it, call) } }
+                val sheets = loggerClasses.flatMap { owner -> owner.methods.filter { !isStringTable(it) }.mapNotNull { reelSheetOf(it, resolve) } }
                     .distinctBy { "${it.rows}|${it.model}->${it.idMethod}" }
                 assertEquals("$name: reel More sheet loggers", 1, sheets.size)
                 val sheet = sheets.single()

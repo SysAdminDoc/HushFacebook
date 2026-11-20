@@ -4,13 +4,15 @@
  */
 package app.morphe.patches.facebook.feed.postmenu
 
-import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
-import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringsAsked
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -39,6 +41,10 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * A04(), so it names all three: the list method, the model class and the id method. In front of
  * each of A02's returns the list goes through a helper the patch adds to its class, which hands it
  * to the extension with the model's name and the id method's name and returns what it answers.
+ *
+ * 588's Android 9 build (2026-11-20) has the logger (LX/0jdE;->A02) ask a string table (LX/0vfR;->A00,
+ * indexes 394 and 393) for both ids instead of holding them; the rows are LX/0is0;->A00 and the id
+ * LX/0jQO;->A06.
  */
 
 internal const val REEL_INTERESTED = "fds_control_type_preference_signal_positive"
@@ -69,12 +75,14 @@ private fun ownClass(type: String) = type.startsWith("L") && !type.startsWith("L
 
 /**
  * The sheet [logger] names, when it is the reel More sheet's impression logger: a method holding
- * both preference ids that calls one method of Facebook's taking nothing and answering a List more
- * than once (the section rows), and one taking nothing and answering a String (the row id).
+ * both preference ids, its own or asked of the string tables [resolve] finds, that calls one method
+ * of Facebook's taking nothing and answering a List more than once (the section rows), and one
+ * taking nothing and answering a String (the row id).
  */
-internal fun reelSheetOf(logger: Method): ReelMenuSheet? {
+internal fun reelSheetOf(logger: Method, resolve: (MethodReference) -> Method? = { null }): ReelMenuSheet? {
     val code = logger.implementation?.instructions?.toList() ?: return null
-    val strings = code.mapNotNull { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }.toSet()
+    val own = code.mapNotNull { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }.toSet()
+    val strings = if (REEL_INTERESTED in own && REEL_NOT_INTERESTED in own) own else own + tableStringsAsked(logger, resolve)
     if (REEL_INTERESTED !in strings || REEL_NOT_INTERESTED !in strings) return null
     val calls = code.filter { it.opcode == Opcode.INVOKE_VIRTUAL || it.opcode == Opcode.INVOKE_VIRTUAL_RANGE }
         .mapNotNull { it.called() }
@@ -91,9 +99,9 @@ internal fun reelSheetOf(logger: Method): ReelMenuSheet? {
  * Refuses unless exactly one impression logger names them and the rows method has code to hook.
  */
 internal fun BytecodePatchContext.findReelMenuSheet(): ReelMenuSheet {
-    val found = classDefByStrings(REEL_INTERESTED, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-        .flatMap { classDef -> classDef.methods.mapNotNull(::reelSheetOf) }
+    val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+    val found = methodsNaming(REEL_INTERESTED) { !isStringTable(it) }
+        .mapNotNull { reelSheetOf(it, resolve) }
         .distinctBy { "${it.rows}|${it.model}->${it.idMethod}" }
     val sheet = found.singleOrNull()
         ?: refuseReelSheet("expected one sheet logger naming the rows and ids around \"$REEL_INTERESTED\", found ${found.size}")
