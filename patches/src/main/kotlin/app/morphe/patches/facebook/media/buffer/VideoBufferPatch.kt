@@ -268,15 +268,22 @@ private fun requireUnwritten(method: Method, what: String, register: Int, from: 
  * HeroPlayer's keep-loading check stores its final low mark in a wide field of its own, once,
  * right before comparing what's loaded against it and then against the high mark. Both go to the
  * extension in the gap after the store, and the store is made again with the answer.
+ *
+ * 588's Android 9+ build (#102, read 2026-11-19) stores a second wide field further down, a start
+ * time it reads the clock into (`LX/08nx;->LC6` stores `A04` at 275), which no compare reads next.
+ * Only a store whose value the next cmp-long compares against is the low mark's.
  */
 internal fun heroAhead(method: Method): AheadHook {
     val where = where(method)
     val code = method.implementation?.instructions?.toList() ?: throw PatchException("$where has no body")
     val stores = code.indices.filter { index ->
         code[index].opcode == Opcode.IPUT_WIDE &&
-            ((code[index] as ReferenceInstruction).reference as FieldReference).definingClass == method.definingClass
+            ((code[index] as ReferenceInstruction).reference as FieldReference).definingClass == method.definingClass &&
+            (index + 1 until code.size).firstOrNull { compares(code[it]) }
+                ?.let { comparesAgainst(code, it, (code[index] as TwoRegisterInstruction).registerA) } == true
     }
-    val store = stores.singleOrNull() ?: throw PatchException("$where stores ${stores.size} wide fields of its own")
+    val store = stores.singleOrNull()
+        ?: throw PatchException("$where stores ${stores.size} wide fields of its own that it compares against next")
     val put = code[store] as TwoRegisterInstruction
     val low = put.registerA
     val at = store + 1

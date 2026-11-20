@@ -262,5 +262,14 @@ class VideoBufferFixtureTest {
             method.addInstructions(hook.lowAt, "iput-wide v${hook.low}, v${hook.self}, ${hook.kept}")
             refuses("${bundle.name}: two wide stores", "stores 2 wide fields") { heroAhead(method) }
         }
+        // A wide store the next compare doesn't read, like 588 store-less's start time, isn't the low mark.
+        PatchContexts.of(owners(bundle)).let { context ->
+            val loading = context.loadControl(Player.HERO).loading
+            val hook = heroAhead(loading)
+            val method = context.mutable(loading)
+            method.addInstructions(hook.lowAt, "iput-wide v${hook.high}, v${hook.self}, ${hook.kept}")
+            val again = heroAhead(method)
+            assertEquals("${bundle.name}: the low mark stays the compared one", listOf(hook.low, hook.high), listOf(again.low, again.high))
+        }
     }
 }
