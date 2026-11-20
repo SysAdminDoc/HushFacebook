@@ -20,6 +20,8 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -689,6 +691,82 @@ class ReelPostDateFixtureTest {
         assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
+    /**
+     * #503: each declared build's reel caption render builds two date rows of the reel's
+     * creation_time after the caption, an object of (FbUserSession, long) made from the time it just
+     * read, each behind a server switch a few instructions up. Each switch's answer goes to the
+     * extension right after its move-result and comes back in that register, before the branch that
+     * tests it, and nothing else in the render goes on to the hook.
+     */
+    @Test
+    fun `each declared build hands the caption date's server switches to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        val captionRender = "FbShortsViewerDescriptionComponentSpec_Text_Component_"
+        val creationTime = "creation_time".hashCode()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, captionRender)
+                // Read off the dex itself: each (FbUserSession, long) constructor handed a creation_time read.
+                fun rowsOf(method: Method): List<Int> {
+                    val code = method.code()
+                    return code.indices.filter { at ->
+                        val made = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+                        code[at].opcode == Opcode.INVOKE_DIRECT && made != null && made.name == "<init>" &&
+                            made.parameterTypes.map(CharSequence::toString) == listOf("Lcom/facebook/auth/usersession/FbUserSession;", "J") &&
+                            (maxOf(0, at - 6) until at).any { read ->
+                                val call = (code[read] as? ReferenceInstruction)?.reference as? MethodReference
+                                call?.name == "getTimeValue" && code.subList(maxOf(0, read - 3), read).any {
+                                    it.opcode == Opcode.CONST && (it as NarrowLiteralInstruction)
+                                        .narrowLiteral == creationTime
+                                }
+                            }
+                    }
+                }
+                val renders = holders.flatMap { owner -> owner.methods.filter { rowsOf(it).isNotEmpty() } }
+                assertEquals("$name: one caption render dates its caption", 1, renders.size)
+                val render = renders.single()
+                assertEquals("$name: two caption date rows", 2, rowsOf(render).size)
+                assertThrows("$name: no caption render must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).dropCaptionDate()
+                }
+                val context = PatchContexts.of(holders)
+                context.dropCaptionDate()
+                val patched = patchedOf(context, render)
+                val hooks = patched.calling(CAPTION_DATE_SHOWS)
+                assertEquals("$name: one hook for each caption date row", 2, hooks.size)
+                val flow = ControlFlow.of(patchedMethodOf(context, render))
+                val rows = rowsOf(patchedMethodOf(context, render))
+                for ((at, row) in hooks.zip(rows)) {
+                    assertTrue("$name: the hook at $at sits above its row at $row", at < row && row - at <= 24)
+                    assertTrue("$name: only the switch's move-result reaches the hook at $at",
+                        flow.normal.indices.none { from -> from != at - 1 && at in flow.normal[from] } &&
+                            flow.exceptional.none { at in it })
+                    assertEquals("$name: the hook follows a move-result", Opcode.MOVE_RESULT, patched[at - 1].opcode)
+                    val switch = (patched[at - 2] as ReferenceInstruction).reference as MethodReference
+                    assertEquals("$name: of a switch answering a boolean", "Z", switch.returnType)
+                    assertEquals("$name: handed a Function0", "Lkotlin/jvm/functions/Function0;", switch.parameterTypes[1].toString())
+                    val result = (patched[at - 1] as OneRegisterInstruction).registerA
+                    assertEquals("$name: the hook passes that answer alone", listOf(result), patched[at].namedRegisters())
+                    assertEquals("$name: the extension's answer comes back", Opcode.MOVE_RESULT, patched[at + 1].opcode)
+                    assertEquals("$name: into the same register", result, (patched[at + 1] as OneRegisterInstruction).registerA)
+                    val test = patched[at + 2]
+                    assertTrue("$name: and the branch right after tests it", test is OffsetInstruction &&
+                        (test as OneRegisterInstruction).registerA == result)
+                }
+                val original = render.code()
+                assertEquals("$name: two instructions per hook", original.count { it.opcode != Opcode.NOP } + 4,
+                    patched.count { it.opcode != Opcode.NOP })
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
     @Test
     fun `the extension has the hook`() {
         val type = SHOW_POST_DATE.substringBefore("->")
@@ -716,6 +794,7 @@ class ReelPostDateFixtureTest {
             "soundLabelText" to SOUND_LABEL_TEXT, "soundStory" to SOUND_STORY, "soundTickerText" to SOUND_TICKER_TEXT,
             "slotNewForYou" to SLOT_NEW_FOR_YOU, "groupPosterText" to GROUP_POSTER_TEXT,
             "audioLineScrolls" to AUDIO_LINE_SCROLLS, "footerDateRow" to FOOTER_DATE_ROW, "footerRows" to FOOTER_ROWS,
+            "captionDateShows" to CAPTION_DATE_SHOWS,
         )) {
             val sound = ExtensionDex.classDef(type).methods.singleOrNull { it.name == method }
             assertNotNull("the extension has no ReelDeclutter.$method", sound)

@@ -165,6 +165,12 @@ val cleanUpReelsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so the line under a reel's author still flips from the date to its other labels.")
         }
+        // #503: and Facebook's own date after the caption stays out while that one shows.
+        try {
+            dropCaptionDate()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so accounts in Facebook's caption date test still see the date after the caption too.")
+        }
         // #496: and in front of a silent reel's "Reel has no sound", which takes the song line's place.
         try {
             dateSoundLabels(storyType)

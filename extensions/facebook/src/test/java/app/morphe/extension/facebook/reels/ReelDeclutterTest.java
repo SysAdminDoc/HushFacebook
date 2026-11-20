@@ -566,6 +566,33 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * #503: Facebook's own date after a reel's caption keeps the server's answer until the post date
+     * is on, then stays out so the date shows under the author only, and comes back paused, before
+     * the settings are ready, once the switch is off and when it can't be read. A no stays no.
+     */
+    @Test
+    public void theCaptionDateStaysOutWhileThePostDateShows() {
+        assertTrue("the caption date went with the switch off", ReelDeclutter.captionDateShows(true));
+        assertFalse(ReelDeclutter.captionDateShows(false));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertFalse("the date showed under the caption as well as under the author", ReelDeclutter.captionDateShows(true));
+        assertFalse(ReelDeclutter.captionDateShows(false));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("the caption date went while paused", ReelDeclutter.captionDateShows(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertTrue("the caption date went before the settings were ready", ReelDeclutter.captionDateShows(true)));
+        SettingReadsForTests.breakReads(Settings.SHOW_REEL_POST_DATE);
+        try {
+            assertTrue("a switch that can't be read took the caption date", ReelDeclutter.captionDateShows(true));
+        } finally {
+            SettingReadsForTests.mend(Settings.SHOW_REEL_POST_DATE);
+        }
+        Settings.SHOW_REEL_POST_DATE.save(false);
+        assertTrue("turning the switch off didn't bring the caption date back", ReelDeclutter.captionDateShows(true));
+    }
+
+    /**
      * A reel's recommendation reason took the whole line under the author when Facebook's flag said so,
      * date included, so one reel showed its date and the next didn't (#496). With the switch on the
      * flag reads no and the date stays; off, paused, before the settings are ready and when the switch

@@ -77,9 +77,12 @@ private val Method.code get() = implementation?.instructions?.toList().orEmpty()
 private fun MethodReference.params() = parameterTypes.map(CharSequence::toString)
 
 /** Where [method] reads [CREATION_TIME] through TreeJNI.getTimeValue, or -1 unless it does exactly once. */
-internal fun creationTimeRead(method: Method): Int {
+internal fun creationTimeRead(method: Method): Int = creationTimeReads(method).singleOrNull() ?: -1
+
+/** Each place [method] reads [CREATION_TIME] through TreeJNI.getTimeValue. */
+internal fun creationTimeReads(method: Method): List<Int> {
     val code = method.code
-    val reads = code.indices.filter { at ->
+    return code.indices.filter { at ->
         val call = code[at] as? FiveRegisterInstruction ?: return@filter false
         val reference = (call as ReferenceInstruction).reference as? MethodReference ?: return@filter false
         if (call.opcode != Opcode.INVOKE_VIRTUAL || reference.definingClass != TREE || reference.name != "getTimeValue" ||
@@ -90,7 +93,6 @@ internal fun creationTimeRead(method: Method): Int {
             it >= 0 && code[it].opcode in CONSTANTS && (code[it] as NarrowLiteralInstruction).narrowLiteral == CREATION_TIME
         }
     }
-    return reads.singleOrNull() ?: -1
 }
 
 /**
@@ -810,4 +812,76 @@ internal fun BytecodePatchContext.holdFooterOnDate() {
         "v${(method.code[it] as OneRegisterInstruction).registerA} }, $FOOTER_DATE_ROW" } +
         (flipper to "invoke-static/range { v$list .. v$list }, $FOOTER_ROWS\nmove-result-object v$list")
     inserts.sortedByDescending { it.first }.forEach { (at, code) -> method.addInstructions(at, code) }
+}
+
+/*
+ * Facebook's own date after a reel's caption (#503, read from 588, 2026-11-19, arm64 and armeabi-v7a).
+ *
+ * - The caption's render (arm64 LX/09Og;->A10, the method naming [CAPTION_RENDER]) adds a row of
+ *   the reel's creation_time below the caption, a new object of (FbUserSession, long) handed the
+ *   time it just read. It does that at two places, each behind a server switch of its own: the same
+ *   static (object, Function0, int) to boolean call the post date helper asks, a few instructions up.
+ * - Accounts in that test saw the date twice with the post date on, "Jul 15, 2025" under the name
+ *   and "July 15, 2025" after the caption. Each switch's answer goes to the extension, which says no
+ *   while the date is on, so the date shows under the name only.
+ */
+internal const val CAPTION_DATE_SHOWS = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->captionDateShows(Z)Z"
+
+/** The name a reel caption's render gives the text component it builds. */
+private const val CAPTION_RENDER = "FbShortsViewerDescriptionComponentSpec_Text_Component_"
+
+/** How far above its creation_time read a caption date's switch may sit. */
+private const val CAPTION_GATE_REACH = 16
+
+/**
+ * The server switches in [method] that let a caption's date row in: for each [CREATION_TIME] read
+ * whose time goes straight into a constructor of (FbUserSession, long), the [postDateGate]-shaped
+ * call closest above it, at most [CAPTION_GATE_REACH] instructions up. One call index per read.
+ */
+internal fun captionDateGates(method: Method): List<Int> {
+    val code = method.code
+    return creationTimeReads(method).mapNotNull { read ->
+        val time = (code.getOrNull(read + 1) as? OneRegisterInstruction)?.takeIf { it.opcode == Opcode.MOVE_RESULT_WIDE }?.registerA
+            ?: return@mapNotNull null
+        val dated = (read + 2..minOf(read + 6, code.lastIndex)).any { at ->
+            val made = constructed(code[at]) ?: return@any false
+            made.params() == listOf(USER_SESSION, "J") && code[at].namedRegisters().takeLast(2) == listOf(time, time + 1)
+        }
+        if (!dated) return@mapNotNull null
+        (maxOf(0, read - CAPTION_GATE_REACH) until read).lastOrNull { at ->
+            val reference = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return@lastOrNull false
+            val params = reference.params()
+            code[at].opcode in STATICS && reference.returnType == "Z" && params.size == 3 && params[0].startsWith("L") &&
+                params[1] == FUNCTION0 && params[2] == "I" && code.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT
+        }
+    }.distinct()
+}
+
+/** Hands each server switch that lets a reel caption's own date row in to the extension. */
+internal fun BytecodePatchContext.dropCaptionDate() {
+    val renders = classDefByStrings(CAPTION_RENDER, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { classDef -> classDef.methods.filter { captionDateGates(it).isNotEmpty() }.map { classDef.type to it } }
+    val (owner, render) = renders.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one reel caption render that dates its caption behind a server switch, found ${renders.size}",
+    )
+    val method = mutableClassDefBy(owner).methods.single {
+        it.name == render.name && it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
+    }
+    val gates = captionDateGates(method)
+    // A branch onto the instruction after the switch's move-result would land past the hook.
+    if (gates.any { landedOn(method, it + 2) }) {
+        throw PatchException("$PATCH: something in $owner branches onto where a caption date's switch would be handed over")
+    }
+    // From the bottom up, so the indices above still hold.
+    gates.sortedDescending().forEach { gate ->
+        val result = (method.code[gate + 1] as OneRegisterInstruction).registerA
+        method.addInstructions(
+            gate + 2,
+            """
+                invoke-static/range { v$result .. v$result }, $CAPTION_DATE_SHOWS
+                move-result v$result
+            """,
+        )
+    }
 }

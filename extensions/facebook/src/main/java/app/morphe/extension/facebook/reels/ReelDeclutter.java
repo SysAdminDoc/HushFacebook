@@ -230,6 +230,8 @@ public final class ReelDeclutter {
     static final String DATE_SONG_STILL = "song line held still";
     /** Counted under the date's name for each row the line under a reel's author no longer turns to (#503). */
     static final String DATE_HELD = "line held on date";
+    /** Counted under the date's name each time Facebook's own date after a reel's caption is left out (#503). */
+    static final String DATE_CAPTION_LEFT_OUT = "caption date left out";
     /** How many date rows {@link #footerDateRow} keeps on one thread until the footer's rows come by. */
     static final int FOOTER_DATES_KEPT = 4;
     /** Counted under its own name each time a reel's "New for you" is left off the line under its author (#520). */
@@ -844,6 +846,26 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, COMMENTS_OFF, failure);
             return canComment;
+        }
+    }
+
+    /**
+     * Injection point, in a reel caption's render, handed the server switch's answer to whether the
+     * caption gets a date row of its own after it (#503). Accounts in that test saw the date twice
+     * with the post date on, under the author and again after the caption. While the date is on this
+     * says no, so it shows under the author only. Never throws: anything going wrong answers what it
+     * was handed.
+     */
+    public static boolean captionDateShows(boolean shown) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!shown || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return shown;
+            FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_CAPTION_LEFT_OUT);
+            logOnce(DATE_CAPTION_LEFT_OUT, () -> "Reel post date: Facebook's date after the caption left out");
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_CAPTION_LEFT_OUT, failure);
+            return shown;
         }
     }
 
