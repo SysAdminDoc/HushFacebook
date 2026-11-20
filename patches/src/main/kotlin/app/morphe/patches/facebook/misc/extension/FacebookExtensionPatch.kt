@@ -16,6 +16,9 @@ import app.morphe.util.superclassChain
 /** The application class the manifest names. A manifest name is never obfuscated. */
 internal const val FACEBOOK_APPLICATION = "Lcom/facebook/katana/app/FacebookApplication;"
 
+/** Hands the crash handler its switch at every start, signed out included (#528). */
+internal const val CRASH_SWITCH_HAND_OVER = "Lapp/morphe/extension/facebook/settings/CrashFileSwitch;->handOver()V"
+
 /**
  * Merges the shared and Facebook extensions and hands them the application context.
  *
@@ -45,5 +48,8 @@ val facebookExtensionPatch = bytecodePatch {
             0,
             "invoke-static/range { p0 .. p0 }, $EXTENSION_CLASS_DESCRIPTOR->setContext(Landroid/content/Context;)V",
         )
+        // The crash switch otherwise comes only with the first hook that reads a setting, and a
+        // start on the login screen runs none, so the deaths it found were never filed (#528).
+        declaring.addInstruction(1, "invoke-static {}, $CRASH_SWITCH_HAND_OVER")
     }
 }

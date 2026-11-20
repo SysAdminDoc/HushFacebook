@@ -361,6 +361,32 @@ public class CrashFileTest {
     }
 
     /**
+     * A start that stays on the login screen runs no hook that reads a setting, so the switch never
+     * came and the limiter kill it found waited for nothing (#528). Facebook's start hands the switch
+     * over by itself, and the death gets its file with nothing else loading the settings.
+     */
+    @Test
+    public void aSignedOutStartStillFilesTheDeathsItFound() throws Exception {
+        nextStart();
+        markFiledUpTo(MARK);
+        died(ApplicationExitInfo.REASON_OTHER, MARK + 1_000, "MemoryLimiter:AnonSwap", null, null);
+        CrashFile.forgetSwitchForTests();
+        try {
+            PauseForTests.fileLastDeaths();
+            assertTrue("a file was written before the switch was known", downloads.ids().isEmpty());
+
+            app.morphe.extension.facebook.settings.CrashFileSwitch.handOver();
+            Utils.awaitBackgroundTasksForTests();
+            assertEquals("the start didn't hand the switch over", java.util.Collections.singletonList(1L), downloads.ids());
+            assertTrue(body(1), body(1).contains("death: killed by Android's memory limiter\n"));
+            assertEquals(Long.toString(MARK + 1_000), mark());
+        } finally {
+            CrashFile.useSwitch(Settings.SAVE_CRASH_FILE);
+            Utils.awaitBackgroundTasksForTests();
+        }
+    }
+
+    /**
      * A file that can't be written stops the run there: the mark stays at the last death that got
      * one, and the next start files the rest, each once.
      */
