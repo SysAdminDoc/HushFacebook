@@ -231,6 +231,26 @@ private data class ParamsLoad(val at: Int, val register: Int, val argument: Int?
 
 private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
 
+private val INT_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+/**
+ * Whether [register] holds 1 wherever [at] can be reached from: every write reaching it a constant 1,
+ * or a plain move of a register that holds 1 the same way.
+ */
+private fun onlyEverOne(method: Method, code: List<Instruction>, at: Int, register: Int, seen: MutableSet<Int> = mutableSetOf()): Boolean {
+    val writers = method.writersReaching(at, register)
+    return writers.isNotEmpty() && writers.all { writer ->
+        when {
+            writer < 0 -> false
+            code[writer].opcode in setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST) ->
+                (code[writer] as NarrowLiteralInstruction).narrowLiteral == 1
+            code[writer].opcode in INT_MOVES && seen.add(writer) ->
+                onlyEverOne(method, code, writer, (code[writer] as TwoRegisterInstruction).registerB, seen)
+            else -> false
+        }
+    }
+}
+
 /**
  * Where [method] gets the params: the first [paramsType] it loads from a field (583 to 585), or,
  * in Android 9's builder, a static method taking them as a parameter, its first copy of that
@@ -366,10 +386,18 @@ internal fun paginationRead(method: Method, paramsType: String, buildsPage: (Met
         // Android 9 also jumps onto the page's first instruction from its tail load error's when, which
         // 585 makes in LX/08ZJ;->A00 and builds its own page there. The branch's way in is still its own.
         if (branch < 2 || branch !in into[top] || !onlyFromAbove(branch) || !onlyFromAbove(branch - 1)) return@mapNotNull null
-        if (code[branch - 1].opcode != Opcode.MOVE_RESULT) return@mapNotNull null
-        val answer = (code[branch - 2] as? ReferenceInstruction)?.reference as? MethodReference
+        // 588's Android 9 build copies the 1 it tests against into the branch's other register between
+        // the answer and the branch (LX/0At1;->A02: move-result v3, move/from16 v2, v22, if-ne v3, v2).
+        val result = when {
+            code[branch - 1].opcode == Opcode.MOVE_RESULT -> branch - 1
+            code[branch - 1].opcode in INT_MOVES && branch >= 3 && onlyFromAbove(branch - 2) &&
+                code[branch - 2].opcode == Opcode.MOVE_RESULT -> branch - 2
+            else -> return@mapNotNull null
+        }
+        val answer = (code[result - 1] as? ReferenceInstruction)?.reference as? MethodReference
         if (answer?.returnType != "Z") return@mapNotNull null
-        val more = (code[branch - 1] as OneRegisterInstruction).registerA
+        val more = (code[result] as OneRegisterInstruction).registerA
+        if (result != branch - 1 && (code[branch - 1] as TwoRegisterInstruction).registerA == more) return@mapNotNull null
         val test = code[branch]
         val skipsOnFalse = when (test.opcode) {
             Opcode.IF_EQZ -> (test as OneRegisterInstruction).registerA == more
@@ -381,12 +409,7 @@ internal fun paginationRead(method: Method, paramsType: String, buildsPage: (Met
                     test.registerB -> test.registerA
                     else -> null
                 }
-                other != null && other != more && method.writersReaching(branch, other).let { writers ->
-                    writers.isNotEmpty() && writers.all { at ->
-                        at >= 0 && code[at].opcode in setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST) &&
-                            (code[at] as NarrowLiteralInstruction).narrowLiteral == 1
-                    }
-                }
+                other != null && other != more && onlyEverOne(method, code, branch, other)
             }
             else -> false
         }
@@ -487,14 +510,15 @@ private fun BytecodePatchContext.oneMethodBeside(
 /**
  * Answers [answer] before the method runs when the extension says so. At the first instruction no
  * local holds anything yet, so v0 is free, and `this` is copied down to it for the call, which names
- * its operand in four bits.
+ * its operand in four bits. [operand] names another parameter to hand over instead (588 Android 9's
+ * seed check helper, handed the data source as p1).
  */
-private fun MutableMethod.askWithThis(hook: String, answer: Boolean) {
+private fun MutableMethod.askWithThis(hook: String, answer: Boolean, operand: String = "p0") {
     requireLocals(PATCH, 1)
     addInstructionsWithLabels(
         0,
         """
-            move-object/from16 v0, p0
+            move-object/from16 v0, $operand
             invoke-static { v0 }, $hook
             move-result v0
             if-eqz v0, :facebooks_answer
@@ -538,20 +562,62 @@ internal fun warionRead(method: Method): WarionRead? {
     return WarionRead(result, store.registerB, value)
 }
 
-/** The data source's seed check [loaderFetchMore] asks: its first no-argument boolean interface call. */
-internal fun seedCheck(loaderFetchMore: Method): MethodReference? =
-    loaderFetchMore.implementation?.instructions?.firstOrNull { it.opcode == Opcode.INVOKE_INTERFACE }
+/**
+ * The data source's seed check [loaderFetchMore] asks: its first no-argument boolean interface call.
+ * 588's Android 9 build has no such interface method. Redex calls its body straight, a boolean
+ * method of a helper the data source holds in a field, handed the data source
+ * (`LX/063x;->A04(LX/063p;)Z`); that helper method is the seed check there, see [heldSeedCheck].
+ */
+internal fun seedCheck(loaderFetchMore: Method): MethodReference? {
+    val code = loaderFetchMore.implementation?.instructions?.toList() ?: return null
+    return code.firstOrNull { it.opcode == Opcode.INVOKE_INTERFACE }
         ?.let { (it as ReferenceInstruction).reference as MethodReference }
         ?.takeIf { it.returnType == "Z" && it.parameterTypes.isEmpty() }
+        ?: heldSeedCheck(code)
+}
+
+/** Whether [check] is the Android 9 shape, the helper's method handed the data source, not the data source's own. */
+internal fun isHeldSeedCheck(check: MethodReference): Boolean = check.parameterTypes.size == 1
+
+/**
+ * The first call of [code] when it is the data source's helper answering its seed check: a virtual
+ * boolean call of one class argument, the data source, on what the instruction just before it read
+ * out of the data source's own field of the helper's class.
+ */
+private fun heldSeedCheck(code: List<Instruction>): MethodReference? {
+    val first = code.indexOfFirst { (it as? ReferenceInstruction)?.reference is MethodReference }
+    if (first < 1 || code[first].opcode != Opcode.INVOKE_VIRTUAL) return null
+    val call = (code[first] as ReferenceInstruction).reference as MethodReference
+    val source = call.parameterTypes.singleOrNull()?.toString() ?: return null
+    if (call.returnType != "Z" || !source.startsWith("L")) return null
+    val invoke = code[first] as FiveRegisterInstruction
+    val held = code[first - 1]
+    if (invoke.registerCount != 2 || held.opcode != Opcode.IGET_OBJECT) return null
+    val field = (held as ReferenceInstruction).reference as FieldReference
+    held as TwoRegisterInstruction
+    if (field.definingClass != source || field.type != call.definingClass) return null
+    return call.takeIf { held.registerA == invoke.registerC && held.registerB == invoke.registerD }
+}
+
+/** Whether [called] is [check] by its class, name, arguments and answer. */
+private fun sameCall(called: MethodReference, check: MethodReference): Boolean =
+    called.definingClass == check.definingClass && called.name == check.name && called.returnType == check.returnType &&
+        called.parameterTypes.map(CharSequence::toString) == check.parameterTypes.map(CharSequence::toString)
 
 /**
  * Where the loader's vend has the seed check's answer: the branch on it, the data source, reels page
- * and answer registers, and where the vend goes on when the answer is no.
+ * and answer registers, and where the vend goes on when the answer is no. [copied] is the register
+ * the data source was copied from before its cast, when the vend reads it there as well (588's
+ * Android 9 vend asks the cast copy and reads its videos from the other).
  */
-internal data class VendAsk(val index: Int, val source: Int, val reels: Int, val answer: Int, val vend: Int)
+internal data class VendAsk(val index: Int, val source: Int, val reels: Int, val answer: Int, val vend: Int, val copied: Int? = null)
 
-/** Whether [instruction] is an interface call of [check]. */
+/** Whether [instruction] is an interface call of [check], or for a [held][isHeldSeedCheck] one a virtual call of it. */
 private fun asks(instruction: Instruction, check: MethodReference): Boolean {
+    if (isHeldSeedCheck(check)) {
+        if (instruction.opcode != Opcode.INVOKE_VIRTUAL && instruction.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return false
+        return ((instruction as ReferenceInstruction).reference as? MethodReference)?.let { sameCall(it, check) } == true
+    }
     if (instruction.opcode != Opcode.INVOKE_INTERFACE && instruction.opcode != Opcode.INVOKE_INTERFACE_RANGE) return false
     val called = (instruction as ReferenceInstruction).reference as? MethodReference ?: return false
     return called.definingClass == check.definingClass && called.name == check.name &&
@@ -587,12 +653,17 @@ private fun writes(instruction: Instruction, register: Int): Boolean {
  * on the answer, the register of the data source it asked, and the register of the reels page it
  * vends past the jump (what its first List.size() there reads, with nothing between the jump's
  * target and that call writing it). Null unless it asks [check] once, branches on the answer right
- * after, vends forward of the branch, and neither register is the answer's.
+ * after, vends forward of the branch, and neither register is the answer's. A [held][isHeldSeedCheck]
+ * check is handed the data source as its argument, and 588's Android 9 vend asks it twice: the
+ * second, the data source's own ask inlined further on, branches with an if-nez, so only the ask an
+ * if-eqz follows counts there.
  */
 internal fun vendAsk(method: Method, check: MethodReference): VendAsk? {
     val code = method.implementation?.instructions?.toList() ?: return null
-    val ask = code.indices.filter { asks(code[it], check) }.singleOrNull() ?: return null
-    val source = onlyRegister(code[ask]) ?: return null
+    val held = isHeldSeedCheck(check)
+    val asked = code.indices.filter { asks(code[it], check) }
+    val ask = (if (held) asked.filter { branchesOnAnswer(code, it) } else asked).singleOrNull() ?: return null
+    val source = (if (held) code[ask].namedRegisters().takeIf { it.size == 2 }?.last() else onlyRegister(code[ask])) ?: return null
     val result = code.getOrNull(ask + 1) ?: return null
     if (result.opcode != Opcode.MOVE_RESULT) return null
     val answer = (result as OneRegisterInstruction).registerA
@@ -602,7 +673,35 @@ internal fun vendAsk(method: Method, check: MethodReference): VendAsk? {
     val size = (vend until code.size).firstOrNull { isListSize(code[it]) } ?: return null
     val reels = onlyRegister(code[size]) ?: return null
     if (source == answer || reels == answer || (vend until size).any { writes(code[it], reels) }) return null
-    return VendAsk(ask + 2, source, reels, answer, vend)
+    return VendAsk(ask + 2, source, reels, answer, vend, if (held) castFrom(code, ask, source) else null)
+}
+
+/** Whether the call at [at] in [code] has its answer moved out and an if-eqz on it straight after. */
+private fun branchesOnAnswer(code: List<Instruction>, at: Int): Boolean {
+    val result = code.getOrNull(at + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT } as? OneRegisterInstruction ?: return false
+    val branch = code.getOrNull(at + 2)?.takeIf { it.opcode == Opcode.IF_EQZ } as? OneRegisterInstruction ?: return false
+    return branch.registerA == result.registerA
+}
+
+/**
+ * The register [source] was copied from before [at], when the last write of [source] ahead of it,
+ * past an in-place cast, is a plain object move from a register nothing else in [code] writes (588
+ * Android 9's vend: `move-object/from16 v4, v22`, then `check-cast v4`). Null otherwise.
+ */
+private fun castFrom(code: List<Instruction>, at: Int, source: Int): Int? {
+    var index = at - 1
+    while (index >= 0 && !writes(code[index], source)) index--
+    if (index < 0) return null
+    if (code[index].opcode == Opcode.CHECK_CAST) {
+        index--
+        while (index >= 0 && !writes(code[index], source)) index--
+        if (index < 0) return null
+    }
+    val move = code[index]
+    if (move.opcode !in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)) return null
+    val from = (move as TwoRegisterInstruction).registerB
+    if (from == source || code.count { writes(it, from) } != 1) return null
+    return from.takeIf { (0 until index).any { before -> writes(code[before], from) } }
 }
 
 /**
@@ -611,14 +710,17 @@ internal fun vendAsk(method: Method, check: MethodReference): VendAsk? {
  * branch's target on writing that register first, answering an ImmutableList (588
  * `LX/0AEq;->EXs()`). The suppress path before the target reuses the register (588 arm64 moves a
  * null into it for its log call), so the scan starts at the target. Null unless there's one such
- * call by reference.
+ * call by reference. 588's Android 9 vend reads the videos from the data source's uncast copy,
+ * [VendAsk.copied] (`LX/0AMa;->EYE()` on v22).
  */
 internal fun sourceVideosRead(method: Method, ask: VendAsk): MethodReference? {
     val code = method.implementation?.instructions?.toList() ?: return null
+    val holders = setOfNotNull(ask.source, ask.copied)
     val reads = (ask.vend until code.size).mapNotNull { at ->
         val instruction = code[at]
         if (instruction.opcode != Opcode.INVOKE_INTERFACE && instruction.opcode != Opcode.INVOKE_INTERFACE_RANGE) return@mapNotNull null
-        if (onlyRegister(instruction) != ask.source || (ask.vend until at).any { writes(code[it], ask.source) }) return@mapNotNull null
+        val on = onlyRegister(instruction)?.takeIf { it in holders } ?: return@mapNotNull null
+        if ((ask.vend until at).any { writes(code[it], on) }) return@mapNotNull null
         ((instruction as ReferenceInstruction).reference as? MethodReference)
             ?.takeIf { it.parameterTypes.isEmpty() && it.returnType == IMMUTABLE_LIST }
     }
@@ -799,6 +901,14 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
         """,
     )
 
+    if (isHeldSeedCheck(check)) {
+        // 588's Android 9 build: every ask, the data source's own included, calls the helper straight.
+        val helper = mutableClassDefByOrNull(check.definingClass)?.methods?.singleOrNull { sameCall(it, check) }
+            ?.takeIf { !AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null }
+            ?: throw PatchException("$PATCH: the seed check $check has no body of its own")
+        helper.askWithThis(SEED_CHECK, true, operand = "p1")
+        return
+    }
     val sources = mutableListOf<Pair<String, Method>>()
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE) || check.definingClass !in classDef.interfaces) return@classDefForEach

@@ -197,8 +197,16 @@ class FeedVideoAloneFixtureTest {
                 // The data source: the loader's first boolean interface call, answered by one class.
                 val check = seedCheck(loader)
                     ?: throw AssertionError("$name: the loader's fetch more asks no boolean interface method first")
+                // 588's Android 9 build calls the check's body straight, a helper's method handed the data source.
+                val held = isHeldSeedCheck(check)
                 val sources = mutableListOf<Pair<ClassDef, Method>>()
-                FixtureDex.forEach(bundle) { dex ->
+                if (held) {
+                    val helper = FixtureDex.classes(bundle, setOf(check.definingClass)).getValue(check.definingClass)
+                    helper.methods.filter {
+                        it.name == check.name && it.returnType == "Z" && it.implementation != null &&
+                            it.parameterTypes.map(CharSequence::toString) == check.parameterTypes.map(CharSequence::toString)
+                    }.mapTo(sources) { helper to it }
+                } else FixtureDex.forEach(bundle) { dex ->
                     for (classDef in dex.classes) {
                         if (classDef.type.startsWith(EXTENSION_PACKAGE) || check.definingClass !in classDef.interfaces) continue
                         val copy = ImmutableClassDef.of(classDef)
@@ -207,6 +215,10 @@ class FeedVideoAloneFixtureTest {
                 }
                 assertEquals("$name: classes answering $check", 1, sources.size)
                 val (sourceOwner, source) = sources.single()
+                val dataSourceType = if (held) check.parameterTypes.single().toString() else sourceOwner.type
+                val dataSource = if (held) FixtureDex.classes(bundle, setOf(dataSourceType)).getValue(dataSourceType) else sourceOwner
+                // Positive control: the held shape's data source keeps the helper in a field of its own.
+                if (held) assertTrue("$name: $dataSourceType holds no ${check.definingClass}", dataSource.fields.any { it.type == check.definingClass })
 
                 // The loader's vend, and the videos it reads from the data source through a public
                 // interface the data source implements, the read the extension's stub makes (#457).
@@ -220,9 +232,9 @@ class FeedVideoAloneFixtureTest {
                 val videosOwner = FixtureDex.classes(bundle, setOf(videos.definingClass)).getValue(videos.definingClass)
                 assertTrue("$name: ${videos.definingClass} isn't a public interface",
                     AccessFlags.PUBLIC.isSet(videosOwner.accessFlags) && AccessFlags.INTERFACE.isSet(videosOwner.accessFlags))
-                assertTrue("$name: the data source doesn't implement ${videos.definingClass}", videos.definingClass in sourceOwner.interfaces)
+                assertTrue("$name: the data source doesn't implement ${videos.definingClass}", videos.definingClass in dataSource.interfaces)
 
-                val classes = (listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
+                val classes = (listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, dataSource, listOwner, params,
                     videosOwner, ExtensionDex.classDef(FEED_VIDEO_ALONE)) + pageOwners + nameHolders).distinctBy { it.type }
                 // Positive control: Clean up Reels refuses when the opening hooks it rests on aren't in.
                 val unhooked = assertThrows(PatchException::class.java) { PatchContexts.of(classes).keepFeedVideosAlone() }
@@ -304,6 +316,11 @@ class FeedVideoAloneFixtureTest {
                     assertEquals("$where answers", answer, (asked[4] as NarrowLiteralInstruction).narrowLiteral)
                     assertEquals("$where: the rest is Facebook's",
                         method.code().map { it.opcode }, asked.drop(6).map { it.opcode })
+                }
+                if (held) {
+                    val helper = context.mutableClassDefBy(sourceOwner.type).methods.single { it.sameAs(source) }
+                    assertEquals("$name: the seed check's helper hands over the data source it's given, p1",
+                        helper.implementation!!.registerCount - 1, (helper.code()[0] as TwoRegisterInstruction).registerB)
                 }
                 // #421: the loader's vend hands the extension the data source and the page just ahead of
                 // its branch on the seed check, or's its answer into the check's (#457), and the branch
