@@ -3108,3 +3108,17 @@ Posts on people's profiles and on Pages.	Публикации в профиля�
 Your words in search results	Ваши слова в результатах поиска
 Link posts in search results	Публикации со ссылками в результатах поиска
 Posts in search results. Off to begin with, so what you search for still shows.	Публикации в результатах поиска. Сначала выключено, чтобы то, что вы ищете, по-прежнему показывалось.
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	Буфер видео
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	Низкий
+Medium	Средний
+Maximum	Максимальный
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	Видео запускаются, когда загружено полсекунды, и подгружают меньше наперёд.
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	Видео ждут загрузки 1,5 секунды перед запуском и подгружают больше наперёд.
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	Видео ждут загрузки 3 секунд перед запуском и подгружают до минуты наперёд.
+Facebook decides how much of a video loads before and while it plays.	Facebook сам решает, сколько видео загружается до и во время воспроизведения.
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	Facebook будет сам решать, сколько видео загружается.
+Video buffer will be set to %1$s.	Буфер видео будет установлен на %1$s.

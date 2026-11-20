@@ -86,6 +86,7 @@ public final class FamilyNames {
     public static final String BACKGROUND_PLAY = "Keep playing in the background";
     public static final String HDR_BRIGHTNESS = "Turn off HDR brightness";
     public static final String SKIP_SILENCE = "Skip silent parts";
+    public static final String VIDEO_BUFFER = "Video buffer";
     public static final String KEEP_FEED_VIDEOS_MUTED = "Keep feed videos muted";
     public static final String PROGRESS_BAR = "Keep the progress bar";
     public static final String SYSTEM_FONT = "Use the system font";

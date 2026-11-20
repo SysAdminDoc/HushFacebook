@@ -3050,3 +3050,17 @@ Posts on people's profiles and on Pages.	Bài viết trên trang cá nhân của
 Your words in search results	Từ của bạn trong kết quả tìm kiếm
 Link posts in search results	Bài viết có liên kết trong kết quả tìm kiếm
 Posts in search results. Off to begin with, so what you search for still shows.	Bài viết trong kết quả tìm kiếm. Mặc định tắt, để những gì bạn tìm vẫn hiện ra.
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	Bộ đệm video
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	Thấp
+Medium	Trung bình
+Maximum	Tối đa
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	Video bắt đầu khi đã tải được nửa giây, và tải trước ít hơn.
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	Video chờ tải 1,5 giây rồi mới bắt đầu, và tải trước nhiều hơn.
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	Video chờ tải 3 giây rồi mới bắt đầu, và tải trước tối đa một phút.
+Facebook decides how much of a video loads before and while it plays.	Facebook quyết định tải bao nhiêu phần của video trước và trong khi phát.
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	Facebook sẽ quyết định tải bao nhiêu phần của video.
+Video buffer will be set to %1$s.	Bộ đệm video sẽ được đặt thành %1$s.

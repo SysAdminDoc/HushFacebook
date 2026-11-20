@@ -28,6 +28,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.subheading;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.surfaceQualityRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.toggle;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.videoBufferRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.watchedKeepRow;
 
 import android.content.Context;
@@ -470,7 +471,8 @@ final class VideoPages {
                 || build.contains(PatchFamily.FRAME_STEP)
                 || build.contains(PatchFamily.PLAYBACK_QUALITY) || build.contains(PatchFamily.PICTURE_IN_PICTURE)
                 || build.contains(PatchFamily.BACKGROUND_PLAY) || build.contains(PatchFamily.HDR_BRIGHTNESS) || build.contains(PatchFamily.SKIP_SILENCE)
-                || build.contains(PatchFamily.KEEP_FEED_VIDEOS_MUTED) || build.contains(PatchFamily.PROGRESS_BAR)) {
+                || build.contains(PatchFamily.KEEP_FEED_VIDEOS_MUTED) || build.contains(PatchFamily.PROGRESS_BAR)
+                || build.contains(PatchFamily.VIDEO_BUFFER)) {
             PreferenceCategory playback = category(screen, L10n.t("Video and audio"));
             subheading(playback, L10n.t("Autoplay and resume"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
@@ -566,6 +568,8 @@ final class VideoPages {
                 playback.addPreference(surfaceQualityRow(context, true));
                 playback.addPreference(surfaceQualityRow(context, false));
             }
+            // Asked at each player's start and loading checks, so a change shows within a moment (#526).
+            if (build.contains(PatchFamily.VIDEO_BUFFER)) playback.addPreference(videoBufferRow(context));
             if (build.contains(PatchFamily.HDR_BRIGHTNESS)) {
                 // Asked as each screen comes to the front, so a change shows from the next one.
                 playback.addPreference(toggle(context, Settings.TURN_OFF_HDR_BRIGHTNESS,

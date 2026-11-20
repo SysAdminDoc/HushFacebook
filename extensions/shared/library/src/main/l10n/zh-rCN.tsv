@@ -3045,3 +3045,17 @@ Posts on people's profiles and on Pages.	个人主页和公共主页上的帖子
 Your words in search results	在搜索结果中使用你的字词
 Link posts in search results	搜索结果中的链接帖子
 Posts in search results. Off to begin with, so what you search for still shows.	搜索结果中的帖子。默认关闭，你搜索的内容仍会显示。
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	视频缓冲
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	低
+Medium	中
+Maximum	最大
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	视频加载半秒后就开始播放，并减少预先加载。
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	视频先加载 1.5 秒再开始播放，并预先加载更多。
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	视频先加载 3 秒再开始播放，并最多预先加载一分钟。
+Facebook decides how much of a video loads before and while it plays.	由 Facebook 决定视频在播放前和播放时加载多少。
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	将由 Facebook 决定视频加载多少。
+Video buffer will be set to %1$s.	视频缓冲将设为 %1$s。

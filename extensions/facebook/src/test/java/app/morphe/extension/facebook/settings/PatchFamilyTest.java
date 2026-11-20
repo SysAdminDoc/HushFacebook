@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import app.morphe.extension.facebook.feed.FoldLines;
+import app.morphe.extension.facebook.media.BufferSize;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -438,7 +439,7 @@ public class PatchFamilyTest {
                         + "reel watch history, Newest reels first, Turn off double tap to like, Ask before a like, Double tap to skip, Tap shows the controls, Open comments with a gesture, Keep the reel speed, Hold a reel for 2x, "
                         + "Default comment order, Hide Meta AI comment summaries, Comment sheet options, Open comments "
                         + "at full height, Tag suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback quality, "
-                        + "Picture-in-picture, Keep playing in the background, Turn off HDR brightness, Skip silent parts, Keep feed videos muted, Keep the progress bar, Use the system font, "
+                        + "Picture-in-picture, Keep playing in the background, Turn off HDR brightness, Skip silent parts, Video buffer, Keep feed videos muted, Keep the progress bar, Use the system font, "
                         + "Use the phone's emoji, Turn off haptics, Hide carrier data banners, Turn off screen transitions, Unlock app icons, Home header text, Open links in "
                         + "external browser, Sanitize sharing links, Stop update prompts, Download any story, "
                         + "Download any reel, Download any video, Download any photo, Open on a chosen tab, Following "
@@ -462,7 +463,7 @@ public class PatchFamilyTest {
                         + "prompts, Don't send reel watch history, Newest reels first, Turn off double tap to like, Ask before a like, Double tap to skip, Tap shows the controls, Open comments with a gesture, Keep the reel speed, "
                         + "Hold a reel for 2x, Default comment order, Hide Meta AI comment summaries, Comment sheet "
                         + "options, Open comments at full height, Tag suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback "
-                        + "quality, Picture-in-picture, Keep playing in the background, Turn off HDR brightness, Skip silent parts, Keep feed videos muted, Keep the progress bar, Use the "
+                        + "quality, Picture-in-picture, Keep playing in the background, Turn off HDR brightness, Skip silent parts, Video buffer, Keep feed videos muted, Keep the progress bar, Use the "
                         + "system font, Use the phone's emoji, Turn off haptics, Hide carrier data banners, Turn off screen transitions, Unlock app icons, Home header text, Open "
                         + "links in external browser, Sanitize sharing links, Stop update prompts, Download any "
                         + "story, Download any reel, Download any video, Download any photo, Open on a chosen tab, "
@@ -520,6 +521,13 @@ public class PatchFamilyTest {
                         + "hushfacebook_fold_comments=TEN)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.FOLD_LONG_TEXT), true).get(0));
         Settings.FOLD_COMMENTS.resetToDefault();
+        // Video buffer is set by its list, and a pause hands the sizes back to Facebook (#526).
+        assertEquals("Video buffer: set by its list (hushfacebook_video_buffer=FACEBOOK)",
+                PatchFamily.reportLines(EnumSet.of(PatchFamily.VIDEO_BUFFER), false).get(0));
+        Settings.VIDEO_BUFFER.save(BufferSize.MAXIMUM);
+        assertEquals("Video buffer: disabled while paused (saved hushfacebook_video_buffer=MAXIMUM)",
+                PatchFamily.reportLines(EnumSet.of(PatchFamily.VIDEO_BUFFER), true).get(0));
+        Settings.VIDEO_BUFFER.resetToDefault();
         // The theme runs with its switches off, and paused: only Black cards and the lines step back.
         assertEquals("AMOLED black theme: on (hushfacebook_amoled_flat_cards=off, hushfacebook_amoled_feed_gaps=off); "
                         + "stays in while paused: AMOLED black theme",

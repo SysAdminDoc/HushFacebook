@@ -1250,6 +1250,17 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/BufferSize.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/VideoBuffer.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/buffer/VideoBufferPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Video buffer, for issue #526, from Facebook 588. Facebook's players ask a load control two things over and over: whether enough of a video has loaded to start or to play on after a stall, and whether to load more. HeroPlayer's own load control, found by the shouldContinueLoading trace its keep-loading check opens with, and ExoPlayer's DefaultLoadControl, found by the warning its keep-loading check gives, each have a start check beside it taking the same parameters and loading C.TIME_UNSET. The start check's hook goes on the nearest jump target at or before that constant, where every way to the wait meets, under that spot's label so the jumps there run it too, and hands the extension the wait that the following Math.min caps with the parameters' first boolean, the after-a-stall flag. HeroPlayer's keep-loading check stores its final low mark in a wide field of its own once, and the low and high marks go to the extension right after that store, which is made again with the answer. ExoPlayer's raises its low mark with its one Math.max and compares against a high mark loaded as a constant right before that compare, so the low mark goes after the Math.max and the high one at its compare. Each check is found and checked before any is changed, and a check of another shape keeps Facebook's numbers with a warning. The extension's VideoBuffer caps every number at the Low size's and raises them to the Medium and Maximum sizes', never puts the high mark under the low one, and hands every number back as it came at Facebook's choice, while paused, before the settings are ready, or when anything in it fails. The byte and memory caps on what a player may hold are left alone."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/FeedSound.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/feedsound/KeepFeedVideosMutedPatch.kt"
       ],

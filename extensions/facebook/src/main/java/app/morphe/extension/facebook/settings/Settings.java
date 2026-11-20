@@ -18,6 +18,7 @@ import app.morphe.extension.facebook.download.SaveTo;
 import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.feed.SeenPosts;
+import app.morphe.extension.facebook.media.BufferSize;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.media.SurfaceQuality;
@@ -3832,6 +3833,14 @@ public class Settings extends BaseSettings {
     /** The quality video stories start at, the way {@link #REELS_PLAYBACK_QUALITY} is the reels'. */
     public static final EnumSetting<SurfaceQuality> STORIES_PLAYBACK_QUALITY =
             new EnumSetting<>("hushfacebook_stories_playback_quality", SurfaceQuality.SAME);
+
+    /**
+     * How much of a video the player loads before it plays and keeps loaded ahead (#526,
+     * {@link app.morphe.extension.facebook.media.VideoBuffer}). Facebook's own numbers until a size
+     * is picked. It isn't a switch, and a paused Facebook uses its own numbers.
+     */
+    public static final EnumSetting<BufferSize> VIDEO_BUFFER =
+            new EnumSetting<>("hushfacebook_video_buffer", BufferSize.FACEBOOK);
 
     /**
      * The hour quiet hours start while {@link #NOTIFICATION_QUIET_HOURS} is on, 10 PM until someone

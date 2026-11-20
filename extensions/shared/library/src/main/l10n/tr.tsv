@@ -3050,3 +3050,17 @@ Posts on people's profiles and on Pages.	Kişilerin profillerindeki ve Sayfalard
 Your words in search results	Arama sonuçlarında sözcükleriniz
 Link posts in search results	Arama sonuçlarında bağlantı gönderileri
 Posts in search results. Off to begin with, so what you search for still shows.	Arama sonuçlarındaki gönderiler. Başta kapalıdır, böylece aradığınız şeyler görünmeye devam eder.
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	Video arabelleği
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	Düşük
+Medium	Orta
+Maximum	En yüksek
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	Videolar yarım saniyelik kısım yüklenince başlar ve ileriye daha az yükler.
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	Videolar başlamadan önce 1,5 saniyelik kısmın yüklenmesini bekler ve ileriye daha fazla yükler.
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	Videolar başlamadan önce 3 saniyelik kısmın yüklenmesini bekler ve ileriye bir dakikaya kadar yükler.
+Facebook decides how much of a video loads before and while it plays.	Facebook, bir videonun oynatılmadan önce ve oynatılırken ne kadarının yükleneceğine karar verir.
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	Facebook, bir videonun ne kadarının yükleneceğine karar verecek.
+Video buffer will be set to %1$s.	Video arabelleği %1$s olarak ayarlanacak.

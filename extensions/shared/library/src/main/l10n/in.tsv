@@ -3050,3 +3050,17 @@ Posts on people's profiles and on Pages.	Postingan di profil orang dan di Halama
 Your words in search results	Kata-katamu di hasil pencarian
 Link posts in search results	Postingan tautan di hasil pencarian
 Posts in search results. Off to begin with, so what you search for still shows.	Postingan di hasil pencarian. Mati sejak awal, jadi yang kamu cari tetap muncul.
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	Buffer video
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	Rendah
+Medium	Sedang
+Maximum	Maksimum
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	Video mulai setelah setengah detik termuat, dan memuat lebih sedikit ke depan.
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	Video menunggu 1,5 detik termuat sebelum mulai, dan memuat lebih banyak ke depan.
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	Video menunggu 3 detik termuat sebelum mulai, dan memuat hingga satu menit ke depan.
+Facebook decides how much of a video loads before and while it plays.	Facebook menentukan seberapa banyak video dimuat sebelum dan selama diputar.
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	Facebook akan menentukan seberapa banyak video dimuat.
+Video buffer will be set to %1$s.	Buffer video akan diatur ke %1$s.

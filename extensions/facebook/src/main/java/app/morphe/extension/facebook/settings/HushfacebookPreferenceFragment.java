@@ -71,6 +71,7 @@ import app.morphe.extension.facebook.feed.ReactionCeiling;
 import app.morphe.extension.facebook.feed.TopicPacks;
 import app.morphe.extension.facebook.feed.TranslateLanguages;
 import app.morphe.extension.facebook.feed.SeenPosts;
+import app.morphe.extension.facebook.media.BufferSize;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.media.SurfaceQuality;
@@ -117,6 +118,7 @@ import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
 import app.morphe.extension.facebook.settings.ValueRows.CleanReturnRow;
 import app.morphe.extension.facebook.settings.ValueRows.FoldLinesRow;
+import app.morphe.extension.facebook.settings.ValueRows.VideoBufferRow;
 import app.morphe.extension.facebook.settings.ValueRows.HoldReactionRow;
 import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
@@ -3031,6 +3033,57 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 : L10n.t("Video stories follow the Default quality row.");
     }
 
+    /**
+     * How much of a video loads before it plays and stays loaded ahead (#526), under the Video
+     * quality heading. Its values are the setting's own names, as the quality rows' are.
+     */
+    static VideoBufferRow videoBufferRow(Context context) {
+        VideoBufferRow row = new VideoBufferRow(context);
+        row.setKey(Settings.VIDEO_BUFFER.key);
+        row.setTitle(L10n.t("Video buffer"));
+        row.setDialogTitle(L10n.t("Video buffer"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        BufferSize[] choices = BufferSize.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = videoBufferLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.VIDEO_BUFFER.savedValue().name());
+        return row;
+    }
+
+    /** What the list and the import sentence call [size]. */
+    static String videoBufferLabel(BufferSize size) {
+        switch (size) {
+            case LOW:
+                return L10n.t("Low");
+            case MEDIUM:
+                return L10n.t("Medium");
+            case MAXIMUM:
+                return L10n.t("Maximum");
+            default:
+                return L10n.t("Facebook's choice");
+        }
+    }
+
+    /** What a video does with [size], for the row's summary. */
+    static String videoBufferSummary(BufferSize size) {
+        switch (size) {
+            case LOW:
+                return L10n.t("Videos start once half a second has loaded, and load less ahead.");
+            case MEDIUM:
+                return L10n.t("Videos wait for 1.5 seconds to load before they start, and load more ahead.");
+            case MAXIMUM:
+                return L10n.t("Videos wait for 3 seconds to load before they start, and load up to a minute ahead.");
+            default:
+                return L10n.t("Facebook decides how much of a video loads before and while it plays.");
+        }
+    }
+
     /** What the list calls [quality]: Auto, as Facebook's own quality menu calls it, and a ceiling by its label. */
     static String playbackQualityLabel(PlaybackQuality quality) {
         switch (quality) {
@@ -3142,6 +3195,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((HoldReactionRow) listPreference).showSummary();
         } else if (listPreference instanceof FoldLinesRow) {
             ((FoldLinesRow) listPreference).showSummary();
+        } else if (listPreference instanceof VideoBufferRow) {
+            ((VideoBufferRow) listPreference).showSummary();
         } else if (listPreference instanceof ReelDateStyleRow) {
             ((ReelDateStyleRow) listPreference).showSummary();
         } else if (listPreference instanceof CommentsHeightRow) {

@@ -3050,3 +3050,17 @@ Posts on people's profiles and on Pages.	โพสต์บนโปรไฟล
 Your words in search results	คำของคุณในผลการค้นหา
 Link posts in search results	โพสต์ลิงก์ในผลการค้นหา
 Posts in search results. Off to begin with, so what you search for still shows.	โพสต์ในผลการค้นหา ปิดไว้ตั้งแต่แรก เพื่อให้สิ่งที่คุณค้นหายังแสดงอยู่
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	บัฟเฟอร์วิดีโอ
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	ต่ำ
+Medium	ปานกลาง
+Maximum	สูงสุด
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	วิดีโอจะเริ่มเมื่อโหลดได้ครึ่งวินาที และโหลดล่วงหน้าน้อยลง
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	วิดีโอจะรอให้โหลด 1.5 วินาทีก่อนเริ่ม และโหลดล่วงหน้ามากขึ้น
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	วิดีโอจะรอให้โหลด 3 วินาทีก่อนเริ่ม และโหลดล่วงหน้าได้ถึงหนึ่งนาที
+Facebook decides how much of a video loads before and while it plays.	Facebook จะเลือกเองว่าจะโหลดวิดีโอมากแค่ไหนก่อนและระหว่างเล่น
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	Facebook จะเลือกเองว่าจะโหลดวิดีโอมากแค่ไหน
+Video buffer will be set to %1$s.	บัฟเฟอร์วิดีโอจะถูกตั้งค่าเป็น %1$s

@@ -2936,3 +2936,17 @@ Posts on people's profiles and on Pages.	Publicações em perfis de pessoas e em
 Your words in search results	Suas palavras nos resultados da pesquisa
 Link posts in search results	Publicações com links nos resultados da pesquisa
 Posts in search results. Off to begin with, so what you search for still shows.	Publicações nos resultados da pesquisa. Desativado no início, para que o que você pesquisa continue aparecendo.
+# context: title of the list under Video quality that picks how much of a video loads before it starts and while it plays
+Video buffer	Buffer de vídeo
+# context: the three sizes in the Video buffer list, from the least loaded ahead to the most
+Low	Baixo
+Medium	Médio
+Maximum	Máximo
+# context: the line under Video buffer for each size, and for Facebook's choice
+Videos start once half a second has loaded, and load less ahead.	Os vídeos começam assim que meio segundo é carregado e carregam menos à frente.
+Videos wait for 1.5 seconds to load before they start, and load more ahead.	Os vídeos esperam carregar 1,5 segundo antes de começar e carregam mais à frente.
+Videos wait for 3 seconds to load before they start, and load up to a minute ahead.	Os vídeos esperam carregar 3 segundos antes de começar e carregam até um minuto à frente.
+Facebook decides how much of a video loads before and while it plays.	O Facebook decide quanto de um vídeo carrega antes e durante a reprodução.
+# context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
+Facebook will decide how much of a video loads.	O Facebook vai decidir quanto de um vídeo carrega.
+Video buffer will be set to %1$s.	O buffer de vídeo será %1$s.

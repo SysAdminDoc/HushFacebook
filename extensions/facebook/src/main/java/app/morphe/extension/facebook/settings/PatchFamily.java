@@ -235,6 +235,8 @@ public enum PatchFamily {
             Settings.TURN_OFF_HDR_BRIGHTNESS, Settings.PREFER_SDR_RENDITIONS, Settings.DRAW_VIDEOS_WITH_THE_SCREEN),
     SKIP_SILENCE(FamilyNames.SKIP_SILENCE, "skipSilentParts", null,
             Settings.SKIP_SILENT_PARTS),
+    /** Set by its list, which starts at Facebook's choice (#526). */
+    VIDEO_BUFFER(FamilyNames.VIDEO_BUFFER, "videoBuffer", Settings.VIDEO_BUFFER),
     KEEP_FEED_VIDEOS_MUTED(FamilyNames.KEEP_FEED_VIDEOS_MUTED, "keepFeedVideosMuted", null,
             Settings.KEEP_FEED_VIDEOS_MUTED, Settings.MUTE_STORIES, Settings.RESTORE_FEED_SOUND),
     PROGRESS_BAR(FamilyNames.PROGRESS_BAR, "keepProgressBar", null,

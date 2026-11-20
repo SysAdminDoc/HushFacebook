@@ -65,6 +65,7 @@ import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.feed.FeedTypeNames;
 import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.menu.MenuTiles;
+import app.morphe.extension.facebook.media.BufferSize;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.media.SurfaceQuality;
@@ -461,6 +462,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.holdReactionChange() != null) parts.add(holdReactionSentence(snapshot.holdReactionChange()));
             if (snapshot.foldPostsChange() != null) parts.add(foldPostsSentence(snapshot.foldPostsChange()));
             if (snapshot.foldCommentsChange() != null) parts.add(foldCommentsSentence(snapshot.foldCommentsChange()));
+            if (snapshot.videoBufferChange() != null) parts.add(videoBufferSentence(snapshot.videoBufferChange()));
             if (snapshot.grayOverChange() != null) parts.add(grayOverSentence(snapshot.grayOverChange()));
             if (snapshot.newRowMarkChange() != null) parts.add(newRowMarkSentence(snapshot.newRowMarkChange()));
             if (snapshot.refreshRateChange() != null) parts.add(refreshRateSentence(snapshot.refreshRateChange()));
@@ -702,6 +704,12 @@ public class SettingsBackupPreference extends Preference {
     static String foldCommentsSentence(FoldLines lines) {
         if (lines == FoldLines.FACEBOOK) return L10n.t("Fold long comments will fold comments where Facebook does.");
         return L10n.f("Fold long comments will show %1$s before See more.", HushfacebookPreferenceFragment.foldLinesLabel(lines));
+    }
+
+    /** The sentence that says how much Video buffer loads after an import (#526). */
+    static String videoBufferSentence(BufferSize size) {
+        if (size == BufferSize.FACEBOOK) return L10n.t("Facebook will decide how much of a video loads.");
+        return L10n.f("Video buffer will be set to %1$s.", HushfacebookPreferenceFragment.videoBufferLabel(size));
     }
 
     /** The sentence that says how Show Reels in gray takes the color out after an import. */
@@ -1188,6 +1196,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.holdReactionChange() == null ? "" : " " + holdReactionSentence(snapshot.holdReactionChange()))
                     + (snapshot.foldPostsChange() == null ? "" : " " + foldPostsSentence(snapshot.foldPostsChange()))
                     + (snapshot.foldCommentsChange() == null ? "" : " " + foldCommentsSentence(snapshot.foldCommentsChange()))
+                    + (snapshot.videoBufferChange() == null ? "" : " " + videoBufferSentence(snapshot.videoBufferChange()))
                     + (snapshot.grayOverChange() == null ? "" : " " + grayOverSentence(snapshot.grayOverChange()))
                     + (snapshot.newRowMarkChange() == null ? "" : " " + newRowMarkSentence(snapshot.newRowMarkChange()))
                     + (snapshot.refreshRateChange() == null ? "" : " " + refreshRateSentence(snapshot.refreshRateChange()))

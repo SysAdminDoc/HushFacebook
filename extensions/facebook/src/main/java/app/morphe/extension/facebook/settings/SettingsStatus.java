@@ -214,6 +214,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean videoBuffer() {
+        return false;
+    }
+
     public static boolean keepFeedVideosMuted() {
         return false;
     }

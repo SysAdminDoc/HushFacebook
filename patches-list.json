@@ -4800,6 +4800,44 @@
       "options": []
     },
     {
+      "name": "Video buffer",
+      "description": "Picks how much of a video loads before it starts and while it plays. Low starts videos sooner and uses less data. Medium and Maximum wait a little longer to start and keep more loaded ahead, which can help on a slow connection. Starts at Facebook's choice. Pick a size in Hushfacebook settings > Video and audio.",
+      "category": "Playback",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "588.0.0.42.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "588.0.0.42.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 707615136,
+                "ARMEABI_V7A": 707615135
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "View stories anonymously",
       "description": "Keeps you off the viewer list of stories you watch, because Facebook isn't told which ones you've seen. Replying or reacting still shows you. Stories you watch to the end show as watched on this phone only, until that person posts a new one. Starts off. Turn it on in Hushfacebook settings > Stories.",
       "category": "Privacy",
