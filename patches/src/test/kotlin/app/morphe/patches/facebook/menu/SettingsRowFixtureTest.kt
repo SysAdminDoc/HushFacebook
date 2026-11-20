@@ -48,19 +48,23 @@ class SettingsRowFixtureTest {
      * both into the tap handler (`LX/0p4C;->A05` logs `tap_bookmark` right after reading the id),
      * behind the hook that returns first for the patch's row. 587 keeps the tap class and both
      * loggers on both ABIs (`LX/0D1G;->A09` and `A0A` on arm64). 588 folds them into arms of a
-     * merged lambda of the row component, so its tap class has none left ([inlinedLogCalls]).
+     * merged lambda of the row component, so its tap class has none left ([inlinedLogCalls]). Its
+     * Android 9 build keeps 587's two in the tap class (`LX/0lAK;->A09` and `A0A`, read 2026-11-20).
      */
     private val loggerCount = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
         "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 0),
-        "588.0.0.42.55" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0),
+        "588.0.0.42.55" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 2),
     )
 
     /**
      * The logger methods the row component's lambdas hand a row's id to, by build. 588's merged
-     * lambda (`LX/0WD7;->invoke`, 32-bit `LX/0WD8;`) calls `LX/0Dxe;->A01` and `A02` with it.
+     * lambda (`LX/0WD7;->invoke`, 32-bit `LX/0WD8;`) calls `LX/0Dxe;->A01` and `A02` with it. Its
+     * Android 9 build reads the id in no lambda: only the tap class and the row item touch it.
      */
-    private val inlinedLogCalls = mapOf("588.0.0.42.55" to 2)
+    private val inlinedLogCalls = mapOf(
+        "588.0.0.42.55" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 0),
+    )
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()
 
@@ -231,7 +235,7 @@ class SettingsRowFixtureTest {
                     .flatMap { rowLogCalls(it, id) }
                     .distinctBy { ImmutableMethodReference.of(it) }
                 assertEquals("${bundle.name}: log calls in the row component's lambdas: $logCalls",
-                    inlinedLogCalls[version] ?: 0, logCalls.size)
+                    inlinedLogCalls[version]?.get(abi) ?: 0, logCalls.size)
                 val logClasses = FixtureDex.classes(bundle, logCalls.map { it.definingClass }.toSet())
                 for (call in logCalls) {
                     val logger = logClasses.getValue(call.definingClass).methods.single {

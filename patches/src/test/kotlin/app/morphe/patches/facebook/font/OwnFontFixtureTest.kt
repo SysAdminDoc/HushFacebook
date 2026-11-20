@@ -56,6 +56,13 @@ class OwnFontFixtureTest {
             "OPTIMISTIC_TEXT_APP_BOLD", "OPTIMISTIC_TEXT_APP_MEDIUM", "OPTIMISTIC_TEXT_APP_REGULAR",
             "OPTIMISTIC_VARIABLE_APP_LITE", "OPTIMISTIC_VF_APP_LITE",
         ),
+        // The Android 9 build keeps OPTIMISTIC_VARIABLE_APP_LITE's name in its own constructor (2026-11-20).
+        "588.0.0.42.55-arm64-v8a-minapi28-storeless" to sortedSetOf(
+            "FACEBOOK_SANS_VARIABLE", "OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA",
+            "OPTIMISTIC_DISPLAY_APP", "OPTIMISTIC_DISPLAY_APP_MEDIUM",
+            "OPTIMISTIC_TEXT_APP_BOLD", "OPTIMISTIC_TEXT_APP_MEDIUM", "OPTIMISTIC_TEXT_APP_REGULAR",
+            "OPTIMISTIC_VARIABLE_APP_LITE", "OPTIMISTIC_VF_APP_LITE",
+        ),
     )
 
     /**
@@ -65,10 +72,14 @@ class OwnFontFixtureTest {
     private val axisFamilies = mapOf(
         "588.0.0.42.55-arm64-v8a" to listOf("OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA", "OPTIMISTIC_MONO", "OPTIMISTIC_VARIABLE_APP_LITE"),
         "588.0.0.42.55-armeabi-v7a" to listOf("OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA", "OPTIMISTIC_MONO", "OPTIMISTIC_VARIABLE_APP_LITE"),
+        "588.0.0.42.55-arm64-v8a-minapi28-storeless" to
+            listOf("OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA", "OPTIMISTIC_MONO", "OPTIMISTIC_VARIABLE_APP_LITE"),
     )
 
     /** The builder makers the patch hooks, per declared build. */
-    private val builderMakerCount = mapOf("588.0.0.42.55-arm64-v8a" to 1, "588.0.0.42.55-armeabi-v7a" to 1)
+    private val builderMakerCount = mapOf(
+        "588.0.0.42.55-arm64-v8a" to 1, "588.0.0.42.55-armeabi-v7a" to 1, "588.0.0.42.55-arm64-v8a-minapi28-storeless" to 1,
+    )
 
     /** [bundle]'s declared build: its version and ABI. */
     private fun build(bundle: File) = bundle.name.removePrefix("facebook-").removeSuffix(".apkm")

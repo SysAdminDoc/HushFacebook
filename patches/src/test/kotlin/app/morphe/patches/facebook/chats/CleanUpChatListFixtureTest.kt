@@ -99,7 +99,7 @@ class CleanUpChatListFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to 3,
             "armeabi-v7a" to 3,
-            "arm64-v8a-minapi28-storeless" to 2,
+            "arm64-v8a-minapi28-storeless" to 3,
         ),
     )
 
@@ -215,7 +215,7 @@ class CleanUpChatListFixtureTest {
                 assertEquals("$name: the flag gives the search box its end margin, then builds the button", 2, tests.size)
                 assertEquals("$name: the gate is the button's test", gate.test, tests.last())
                 // Up to the button's test, the flag's register is written twice on 586 (0 at the start and
-                // Facebook's 1) and three times on 587's phone builds, whose extra write is a move in the
+                // Facebook's 1) and three times on 587's phone builds and all of 588's, whose extra write is a move in the
                 // search branch, which returns before the test. Only the 0 and Facebook's 1 reach the
                 // test, so the hook before it only ever sees a 0 or a 1. Inside the button block Facebook
                 // reuses the register for other values, which the hook never touches.

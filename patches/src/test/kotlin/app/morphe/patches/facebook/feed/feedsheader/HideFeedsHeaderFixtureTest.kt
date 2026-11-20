@@ -46,7 +46,7 @@ class HideFeedsHeaderFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Triple("LX/01yH;", "LX/0XyT;", 5 to 10),
             "armeabi-v7a" to Triple("LX/01yH;", "LX/0XyV;", 5 to 10),
-            "arm64-v8a-minapi28-storeless" to Triple("LX/03tJ;", "LX/0giD;", 7 to 12),
+            "arm64-v8a-minapi28-storeless" to Triple("LX/01z9;", "LX/0jXj;", 5 to 10),
         ),
     )
 
@@ -55,7 +55,7 @@ class HideFeedsHeaderFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/0YQC;" to "LX/0YcD;"),
             "armeabi-v7a" to ("LX/0YQE;" to "LX/0YcF;"),
-            "arm64-v8a-minapi28-storeless" to ("LX/0hLt;" to "LX/0hZb;"),
+            "arm64-v8a-minapi28-storeless" to ("LX/0k4h;" to "LX/0kGt;"),
         ),
     )
 

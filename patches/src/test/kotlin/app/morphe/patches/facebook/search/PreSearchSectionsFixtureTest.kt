@@ -229,10 +229,12 @@ class PreSearchSectionsFixtureTest {
     /**
      * Per build, the places the null-state query reads an entry's node, counted per method. 588 has
      * one static loop body on each ABI (arm64 and v7 LX/0Zdk;->A00), called from the loops of the
-     * result callbacks. 587's arm64 had inlined it into those callbacks.
+     * result callbacks. 587's arm64 had inlined it into those callbacks. 588's Android 9 build keeps
+     * the one loop body too (2026-11-20).
      */
     private val querySites = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(1), "armeabi-v7a" to listOf(1)),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to
+            mapOf("arm64-v8a" to listOf(1), "armeabi-v7a" to listOf(1), "arm64-v8a-minapi28-storeless" to listOf(1)),
     )
 
     /** Asserts [patched] is [code] with [hook]'s three instructions at [at], keeping [kept] cast back to [type]. */

@@ -8,6 +8,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -16,6 +17,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,7 +27,8 @@ import org.junit.Test
  * Issue #37's Create story tile on each declared build: the tile at the start of the stories tray
  * is #333334 under the account's picture, which Facebook writes right after its own dark check says
  * yes (582 `LX/3Nj;->invoke`, the AddToStoryTileSplitCardComponentSpec, and `LX/374;->render`).
- * Route three's dark-branch pass finds at least those two, and every site it finds gets the
+ * Route three's dark-branch pass finds at least those two (or, on 588's Android 9 build, the one
+ * static helper both tiles call), and every site it finds gets the
  * extension's call right after its `const`, on the same register. AMOLED reads them first for Black
  * cards (#191), as an all-patches build does, and Material You's call then goes in after AMOLED's.
  */
@@ -56,7 +59,14 @@ class DarkBranchLiteralFixtureTest {
                 }
                 val sites = owners.flatMap { owner -> owner.methods.flatMap { method -> method.darkBranchLiterals(darkCheck).map { method to it } } }
                 val cards = sites.filter { (method, index) -> (method.body()[index] as NarrowLiteralInstruction).narrowLiteral == cardGrey }
-                assertTrue("$name: the Create story tile's two #333334 writes, at least (${cards.map { it.first.descriptor() }})", cards.size >= 2)
+                // 588's Android 9 build writes it once, in a static helper both tiles call (`LX/057M;->A00`, 2026-11-20).
+                val sharedBy = cards.singleOrNull()?.first?.takeIf { AccessFlags.STATIC.isSet(it.accessFlags) }?.let { helper ->
+                    FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == helper.definingClass } }) { method ->
+                        method.body().any { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == helper.descriptor() }
+                    }
+                }.orEmpty()
+                assertTrue("$name: the Create story tile's two #333334 writes, at least (${cards.map { it.first.descriptor() }}, " +
+                    "shared by ${sharedBy.map { it.descriptor() }})", cards.size >= 2 || sharedBy.size >= 2)
 
                 val context = PatchContexts.of(owners)
                 assertEquals("$name: every site changed for AMOLED", sites.size, with(context) { readDarkBranchLiterals(darkCheck, AMOLED_DARK_BRANCH) })

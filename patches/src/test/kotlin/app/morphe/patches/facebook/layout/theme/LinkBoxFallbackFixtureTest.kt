@@ -58,6 +58,7 @@ class LinkBoxFallbackFixtureTest {
         "586.0.0.52.53" to listOf("intValue", "intValue"),
     )
     private val unboxingsAndroid9 = mapOf(
+        "588.0.0.42.55" to listOf("intValue", "static (Number, int)"),
         "586.0.0.52.53" to listOf("intValue", "static (Number, int)"),
     )
 

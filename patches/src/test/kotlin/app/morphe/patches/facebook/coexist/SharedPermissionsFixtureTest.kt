@@ -786,7 +786,8 @@ class SharedPermissionsFixtureTest {
          * phone builds outline them into one helper per ABI, its single load routed: arm64 has no
          * other, armv7 one more template that still spells the package out (2026-11-13). 588's two
          * both keep the helper and one more template, the image flipper a notification fills
-         * (`LX/0Usu;->A03` on both, 2026-11-18). The Android 9 value is 586's, never read since.
+         * (`LX/0Usu;->A03` on both, 2026-11-18). 588's Android 9 build keeps the helper alone
+         * (`LX/0zCl;->A0G`, 2026-11-20).
          */
         val REMOTE_VIEWS_LOADS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 1),
@@ -795,10 +796,12 @@ class SharedPermissionsFixtureTest {
         /**
          * Methods calling the RemoteViews helper those loads were outlined into, per build and phone
          * ABI, each counted once (588, read 2026-11-18). A build without a pin here fails until its
-         * helper is read.
+         * helper is read. The Android 9 build adds the Reels tab widget's four and two more
+         * (2026-11-20).
          */
         val REMOTE_VIEWS_HELPER_CALLERS = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 21, "armeabi-v7a" to 21),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to
+                mapOf("arm64-v8a" to 21, "armeabi-v7a" to 21, "arm64-v8a-minapi28-storeless" to 27),
         )
 
         val REMOTE_VIEWS = REMOTE_VIEWS_INIT.substringBefore("->")
@@ -808,19 +811,20 @@ class SharedPermissionsFixtureTest {
          * receiver and the zero-rating switch load the name. The format went out from four methods
          * (the cross-app broadcast manager, Profilo's trace control twice and the login state
          * broadcast) until 587's phone builds outlined it into one helper they call (2026-11-13).
-         * The Android 9 value is 586's, never read on 587.
+         * 588's Android 9 build outlines it too, into `LX/003P;->A00` (2026-11-20).
          */
         val LITERAL_LOADERS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
                 "arm64-v8a" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 1),
                 "armeabi-v7a" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 1),
-                "arm64-v8a-minapi28-storeless" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 4),
+                "arm64-v8a-minapi28-storeless" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 1),
             ),
         )
 
-        /** Methods calling the format's helper, per build and fixture bundle (587, read 2026-11-13). */
+        /** Methods calling the format's helper, per build and fixture bundle (587, read 2026-11-13; 588 Android 9, 2026-11-20). */
         val FORMAT_HELPER_CALLERS = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 4, "armeabi-v7a" to 4),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to
+                mapOf("arm64-v8a" to 4, "armeabi-v7a" to 4, "arm64-v8a-minapi28-storeless" to 4),
         )
 
         /**
@@ -832,10 +836,11 @@ class SharedPermissionsFixtureTest {
          * icon and sound URI), Firebase's own ApplicationInfo and its resource lookup, the manifest
          * meta-data read for the build revision, AppInfoCore's ApplicationInfo and icon, ProxyAuth's
          * three setClassName (login and consent deep links, device login) and Xiaomi's launcher
-         * badge call. 586's Android 9 build has one more (2026-11-10).
+         * badge call. 586's Android 9 build has one more (2026-11-10), and 588's has the phones' 18
+         * (2026-11-20).
          */
         val OWN_PACKAGE_CALL_LOADS = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 18, "armeabi-v7a" to 18, "arm64-v8a-minapi28-storeless" to 19),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 18, "armeabi-v7a" to 18, "arm64-v8a-minapi28-storeless" to 18),
         )
 
         /** Of those, the ones in Firebase's notification code. */
@@ -885,7 +890,8 @@ class SharedPermissionsFixtureTest {
          * still has it (2026-11-07). 586's phone builds don't have the hint (2026-11-08), and its
          * Android 9 build does, like 585's (2026-11-10). 587's phone builds have the hint back, at
          * their own index per ABI, and name the other four apart per ABI (2026-11-13). 588's phone builds
-         * keep the hint and the other four, the hint at one index on both ABIs (2026-11-18). The Android 9 list is 586's, never read on 587.
+         * keep the hint and the other four, the hint at one index on both ABIs (2026-11-18). 588's Android 9 build keeps all five under its own names
+         * and indexes (2026-11-20).
          */
         val STOCK_OWNERS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
@@ -898,8 +904,8 @@ class SharedPermissionsFixtureTest {
                     "LX/0L2t;->A00@581:", "LX/0b7q;->A00@44:", "LX/0wRF;->A00@22:", "LX/0Uui;->openForumShareLink\$${FORUM_LINK}@58:",
                 ),
                 "arm64-v8a-minapi28-storeless" to listOf(
-                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@50:",
-                    "LX/0dOt;->A00@567:", "LX/0dX7;->A00@42:", "LX/0dbD;->openForumShareLink\$${FORUM_LINK}@58:", "LX/0e8S;->A00@22:",
+                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@139:",
+                    "LX/0nU8;->A00@575:", "LX/0WRp;->A00@44:", "LX/0kDO;->A00@24:", "LX/0In5;->openForumShareLink\$${FORUM_LINK}@58:",
                 ),
             ),
         )

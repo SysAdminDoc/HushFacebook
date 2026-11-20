@@ -262,11 +262,33 @@ class MaterialYouTokenFixtureTest {
             "L?;-><init>(Landroid/content/Context;)V@114",
             "L?;->?()V@34",
         )
+        /**
+         * 588's Android 9 build has 17 too, but not the phones' (2026-11-20, from this test's output): it
+         * keeps 586's three (L?;I)V reads and 586's six (L?;)V offsets, and drops only 586's (Context,
+         * String)Integer read, with the constructor's read at 114 as on the phones.
+         */
+        private val SHAPES_588_ANDROID_9 = MAPBOX.toList() + listOf(
+            "L?;->?(Ljava/lang/Integer;)V@16",
+            "L?;->?(Landroid/content/Context;Lcom/facebook/react/bridge/ReadableMap;)Landroid/graphics/drawable/Drawable;@20",
+            "L?;->?(L?;)V@151",
+            "L?;->?(L?;)V@165",
+            "L?;->?(L?;)V@50",
+            "L?;->?(L?;)V@63",
+            "L?;->?(L?;)V@75",
+            "L?;->?(L?;)V@78",
+            "L?;->?(L?;I)V@171",
+            "L?;->?(L?;I)V@228",
+            "L?;->?(L?;I)V@33",
+            "L?;->?(L?;L?;)V@11",
+            "L?;-><init>(Landroid/content/Context;)V@114",
+            "L?;->?()V@36",
+        )
         val UNRESOLVED = mapOf(
             "585.0.0.47.54" to mapOf("arm64-v8a" to SHAPES_585, "armeabi-v7a" to SHAPES_585),
             "586.0.0.52.53" to mapOf("arm64-v8a" to SHAPES_586, "armeabi-v7a" to SHAPES_586,
                 "arm64-v8a-minapi28-storeless" to SHAPES_586_ANDROID_9),
-            "588.0.0.42.55" to mapOf("arm64-v8a" to SHAPES_588, "armeabi-v7a" to SHAPES_588),
+            "588.0.0.42.55" to mapOf("arm64-v8a" to SHAPES_588, "armeabi-v7a" to SHAPES_588,
+                "arm64-v8a-minapi28-storeless" to SHAPES_588_ANDROID_9),
         )
 
         /** A class name Redex made up for one build, or a merged lambda group's. */
