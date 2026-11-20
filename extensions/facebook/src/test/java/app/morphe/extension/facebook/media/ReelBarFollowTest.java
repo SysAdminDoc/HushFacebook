@@ -442,6 +442,23 @@ public class ReelBarFollowTest {
     }
 
     @Test
+    public void aTallerOverlayEndingWithTheLineIsNotTakenForIt() {
+        // 588's scrubber plugin on the S22 (2026-11-20) lays a full-width overlay, [0,2061][1080,2316],
+        // ahead of the SeekBar row, [0,2246][1080,2316], so both end at the same bottom.
+        FrameLayout overlay = new FrameLayout(activity);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(1080, 280, Gravity.LEFT | Gravity.TOP);
+        params.topMargin = 800;
+        plugin.addView(overlay, 0, params);
+        layOut();
+        navigationStripFrom(2000);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(-liftOver(2000), host.getTranslationY(), 0f);
+    }
+
+    @Test
     public void aStripBelowTheLineLeavesItWhereFacebookPutsIt() {
         navigationStripFrom(2300);
 

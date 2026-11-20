@@ -266,7 +266,11 @@ final class ReelBarFollow {
         return false;
     }
 
-    /** The scrubber's line, the full-width view beside the time. */
+    /**
+     * The scrubber's line, the lowest full-width view beside the time. Of two ending together the
+     * thinner one wins: 588 lays a taller overlay ahead of the SeekBar row that ends where it does,
+     * and its middle sits clear of the gesture strip while the line doesn't (#466).
+     */
     @Nullable
     private static View barBeside(View label) {
         ViewParent above = label.getParent();
@@ -276,7 +280,10 @@ final class ReelBarFollow {
         for (int index = 0; index < plugin.getChildCount(); index++) {
             View child = plugin.getChildAt(index);
             if (child == label || child.getWidth() != plugin.getWidth() || child.getHeight() >= plugin.getHeight()) continue;
-            if (lowest == null || child.getBottom() > lowest.getBottom()) lowest = child;
+            if (lowest == null || child.getBottom() > lowest.getBottom()
+                    || child.getBottom() == lowest.getBottom() && child.getHeight() < lowest.getHeight()) {
+                lowest = child;
+            }
         }
         return lowest;
     }
@@ -296,6 +303,8 @@ final class ReelBarFollow {
         private int lastLift;
         boolean handed;
         private boolean stopped;
+        /** Whether the debug log has heard this follow's first lift. */
+        private boolean told;
 
         Follow(View label, View mover, ViewGroup pager) {
             heldLabel = new WeakReference<>(label);
@@ -359,17 +368,30 @@ final class ReelBarFollow {
                 heldTabBar = tabBar == null ? null : new WeakReference<>(tabBar);
             }
             View bar = barBeside(label);
-            if (bar == null) return 0;
+            if (bar == null) {
+                if (!told) Logger.printDebug(() -> "Reel bar: no line beside the time, so nothing lifts");
+                told = true;
+                return 0;
+            }
             View root = label.getRootView();
             int[] at = new int[2];
             bar.getLocationInWindow(at);
             int line = at[1] + bar.getHeight() / 2 - applied;
-            int limit = tabTopOverReels(tabBar, root, at);
+            int tabTop = tabTopOverReels(tabBar, root, at);
+            int navigation = navigationInset(root);
+            int limit = tabTop;
             // A line past the window's end belongs to a viewer still sliding in, which brings it up.
-            if (line < root.getHeight()) limit = Math.min(limit, root.getHeight() - navigationInset(root));
-            if (limit == Integer.MAX_VALUE) return 0;
+            if (line < root.getHeight()) limit = Math.min(limit, root.getHeight() - navigation);
             int clearance = Math.round(LINE_CLEARANCE_DP * bar.getResources().getDisplayMetrics().density);
-            return Math.max(0, line + clearance - limit);
+            int lift = limit == Integer.MAX_VALUE ? 0 : Math.max(0, line + clearance - limit);
+            if (!told || lift != lastLift) {
+                told = true;
+                int below = limit;
+                Logger.printDebug(() -> "Reel bar: lift " + lift + " for the line at " + line + " with " + below
+                        + " below it (tab top " + tabTop + ", window " + root.getHeight() + ", navigation " + navigation
+                        + "), measured on " + bar.getClass().getName() + " " + bar.getHeight() + " tall");
+            }
+            return lift;
         }
 
         /** The top of a tab bar showing in front of the reels low in the window, or MAX_VALUE without one. */
