@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.logoTouchListenerIndex
 import app.morphe.patches.facebook.misc.settings.sendToStandIn
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
@@ -67,6 +68,7 @@ class TopBarButtonsFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to setOf("LX/0AVp;->A05"),
             "armeabi-v7a" to setOf("LX/0AVs;->A05"),
+            "arm64-v8a-minapi28-storeless" to setOf("LX/0AdU;->A05"),
         ),
     )
 
@@ -309,8 +311,9 @@ class TopBarButtonsFixtureTest {
         val badges: List<ClassDef>,
         val badgeReaders: Map<FieldReference, List<ClassDef>>,
         val resolve: (MethodReference) -> Method?,
+        val makers: List<ClassDef> = emptyList(),
     ) {
-        val classes get() = (listOf(bar, glyph) + faces + labellers + litho + badges + badgeReaders.values.flatten()).distinctBy { it.type }
+        val classes get() = (listOf(bar, glyph) + faces + labellers + litho + badges + badgeReaders.values.flatten() + makers).distinctBy { it.type }
     }
 
     /** Finds a static call's method in [bundle], reading each class once: how 588's label helper is read. */
@@ -331,7 +334,7 @@ class TopBarButtonsFixtureTest {
         val glyphType = specButtonSite(bar).glyphType
         val nameField = specButtonSite(bar).nameField
         val litho = FixtureDex.classesHolding(bundle, LITHO_BAR_ICON_BUTTON).filter { c ->
-            c.methods.any { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, nameField).isNotEmpty() }
+            c.methods.any { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, nameField, resolve).isNotEmpty() }
         }
         val glyph = FixtureDex.classes(bundle, setOf(glyphType)).getValue(glyphType)
         val faces = FixtureDex.classes(bundle, glyph.interfaces.toSet()).values.toList()
@@ -343,9 +346,13 @@ class TopBarButtonsFixtureTest {
                 if (classDef.methods.any { countLabelSites(it, glyphType, counts, resolve).isNotEmpty() }) labellers += ImmutableClassDef.of(classDef)
             }
         }
-        val badgeKeys = litho.flatMap { c ->
-            c.methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.flatMap { specCountSites(it, nameField) }
-        }.map { it.badge to it.keyType }.distinct()
+        val sites = litho.flatMap { c ->
+            c.methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.flatMap { specCountSites(it, nameField, resolve) }
+        }
+        val badgeKeys = sites.map { it.badge to it.keyType }.distinct()
+        // 588's Android 9+ build builds the badge in a static of the bar's package (LX/0Di9;->A0G).
+        val makerTypes = sites.mapNotNull { it.maker?.substringBefore("->") }.toSet()
+        val makers = if (makerTypes.isEmpty()) emptyList() else FixtureDex.classes(bundle, makerTypes).values.toList()
         val badges = FixtureDex.classes(bundle, badgeKeys.map { it.first }.toSet()).values.toList()
         val badgeReaders = badgeKeys.associate { (type, keyType) ->
             val badge = badges.singleOrNull { it.type == type } ?: throw AssertionError("${bundle.name}: no $type")
@@ -359,7 +366,7 @@ class TopBarButtonsFixtureTest {
             }
             keyField to readers
         }
-        return NewerBar(bar, glyph, faces, labellers, litho, badges, badgeReaders, resolve)
+        return NewerBar(bar, glyph, faces, labellers, litho, badges, badgeReaders, resolve, makers)
     }
 
     @Test
@@ -502,13 +509,19 @@ class TopBarButtonsFixtureTest {
                     ?: throw AssertionError("$name: no $NAVIGATION_BAR")
                 val nameField = specButtonSite(bar).nameField
                 val holders = FixtureDex.classesHolding(bundle, LITHO_BAR_ICON_BUTTON)
+                val resolve = staticResolver(bundle)
                 val renders = holders.flatMap { c ->
-                    c.methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, nameField).isNotEmpty() }
+                    c.methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, nameField, resolve).isNotEmpty() }
                 }
                 // 586 arm64 LX/0BQo;->A16, the one component render that reads a button's count.
                 val render = renders.singleOrNull()
                     ?: throw AssertionError("$name: want one render reading a count after the name, got ${renders.map { "${it.definingClass}->${it.name}" }}")
-                val site = specCountSites(render, nameField).single()
+                val site = specCountSites(render, nameField, resolve).single()
+                // Negative control: without the static it calls, the build that makes the badge in one refuses.
+                if (site.maker != null) {
+                    val refused = runCatching { specCountSites(render, nameField) }.exceptionOrNull()?.message.orEmpty()
+                    assertTrue("$name: a site without the badge's maker: $refused", "to one badge's constructor alone" in refused)
+                }
                 val code = render.code()
                 val read = code[site.read - 1]
                 assertEquals("$name: the count comes off an interface", Opcode.INVOKE_INTERFACE, read.opcode)
@@ -658,14 +671,49 @@ class TopBarButtonsFixtureTest {
                 assertTrue("$name: no label worded after the hooks", worded != null)
                 assertEquals("$name: the label is worded from the answer", site.count, (after[worded!!] as FiveRegisterInstruction).registerE)
                 val badgeInit = "${site.badge}-><init>(${init.parameterTypes.joinToString("")})V"
-                val made = (site.read + 4 until after.size).singleOrNull { after[it].call() == badgeInit }
-                    ?: throw AssertionError("$name: want one $badgeInit after the hooks")
-                assertEquals("$name: the badge gets the key the hook kept", site.key,
-                    handed(after[made])[1 + init.parameterTypes.indexOfFirst { it.toString() == site.keyType }])
-                assertEquals("$name: the badge gets the answer as its count", site.count,
-                    handed(after[made])[1 + init.parameterTypes.indexOfFirst { it.toString() == "I" }])
+                fun initSlot(type: String) = 1 + init.parameterTypes.indexOfFirst { it.toString() == type }
                 val patchedRender = context.mutableClassDefBy(owner.type).findMutableMethodOf(render)
-                assertEquals("$name: and only the answer", listOf(site.read + 2), patchedRender.writersReaching(made, site.count))
+                val maker = site.maker
+                if (maker == null) {
+                    val made = (site.read + 4 until after.size).singleOrNull { after[it].call() == badgeInit }
+                        ?: throw AssertionError("$name: want one $badgeInit after the hooks")
+                    assertEquals("$name: the badge gets the key the hook kept", site.key, handed(after[made])[initSlot(site.keyType)])
+                    assertEquals("$name: the badge gets the answer as its count", site.count, handed(after[made])[initSlot("I")])
+                    assertEquals("$name: and only the answer", listOf(site.read + 2), patchedRender.writersReaching(made, site.count))
+                } else {
+                    // 588's Android 9+ build: the render copies the key and the answer into a static that builds the badge.
+                    val made = (site.read + 4 until after.size).singleOrNull { after[it].call() == maker }
+                        ?: throw AssertionError("$name: want one $maker after the hooks")
+                    val makerMethod = resolve((after[made] as ReferenceInstruction).reference as MethodReference)
+                        ?: throw AssertionError("$name: no $maker")
+                    val types = makerMethod.parameterTypes.map(CharSequence::toString)
+                    fun slotOf(type: String) = types.take(types.indexOf(type)).map { if (it == "J" || it == "D") 2 else 1 }.sum()
+                    fun copyOf(register: Int, moves: Set<Opcode>): Int {
+                        val writer = patchedRender.writersReaching(made, register).single()
+                        assertTrue("$name: $maker is handed v$register from a ${after[writer].opcode}", after[writer].opcode in moves)
+                        assertEquals("$name: and the copy goes only to $maker", listOf(made), patchedRender.readsAfter(writer, register))
+                        return (after[writer] as TwoRegisterInstruction).registerB
+                    }
+                    val objectMoves = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+                    val intMoves = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+                    assertEquals("$name: $maker gets the key the hook kept", site.key, copyOf(handed(after[made])[slotOf(site.keyType)], objectMoves))
+                    val countCopy = handed(after[made])[slotOf("I")]
+                    assertEquals("$name: $maker gets the answer as its count", site.count, copyOf(countCopy, intMoves))
+                    val countMove = patchedRender.writersReaching(made, countCopy).single()
+                    assertEquals("$name: and only the answer", listOf(site.read + 2), patchedRender.writersReaching(countMove, site.count))
+                    // Positive control for the maker: it hands the badge's constructor the key and the count it takes.
+                    val body = makerMethod.code()
+                    val initAt = body.indices.singleOrNull { body[it].call() == badgeInit }
+                        ?: throw AssertionError("$name: $maker builds no one ${site.badge}")
+                    fun fromParameter(register: Int, type: String): Boolean {
+                        val parameter = makerMethod.parameterRegisterNumber(types.indexOf(type))
+                        return register == parameter || makerMethod.writersReaching(initAt, register).singleOrNull()?.let { w ->
+                            w >= 0 && (body[w] as? TwoRegisterInstruction)?.registerB == parameter
+                        } == true
+                    }
+                    assertTrue("$name: $maker hands the badge the key it takes", fromParameter(handed(body[initAt])[initSlot(site.keyType)], site.keyType))
+                    assertTrue("$name: $maker hands the badge the count it takes", fromParameter(handed(body[initAt])[initSlot("I")], "I"))
+                }
                 checked += name
             }
         }

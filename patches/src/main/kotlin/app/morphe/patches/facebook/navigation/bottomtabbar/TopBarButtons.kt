@@ -28,6 +28,7 @@ import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.literalReads
+import app.morphe.util.namedRegisters
 import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -618,9 +619,19 @@ internal fun MutableMethod.gateCountLabelBefore(site: CountLabelSite) {
 /**
  * Where the Litho bar reads a button's count off the badge store: the index of the count's
  * move-result, the registers of the spec's name, the count and the store key, the key's type, and
- * the badge class whose constructor is handed the key.
+ * the badge class whose constructor is handed the key. [maker] is the static that builds the badge
+ * from the key and the count it's handed, where the bar doesn't build it itself (588's Android 9+
+ * build, `LX/0Di9;->A0G`), and null otherwise.
  */
-internal class SpecCountSite(val read: Int, val name: Int, val count: Int, val key: Int, val keyType: String, val badge: String)
+internal class SpecCountSite(
+    val read: Int,
+    val name: Int,
+    val count: Int,
+    val key: Int,
+    val keyType: String,
+    val badge: String,
+    val maker: String? = null,
+)
 
 /**
  * The reads in [method] of an int off an interface by one key that become the quantity of a
@@ -634,8 +645,18 @@ internal class SpecCountSite(val read: Int, val name: Int, val count: Int, val k
  * way in, the keyless spec's included. A copy of the count isn't followed past the move that makes
  * it. Once a read reaches a label that way, a site that fails any of that, shares a register between
  * the name, count and key, or has one past v15, refuses here, before any hook goes in.
+ *
+ * 588's Android 9+ build (#102, read 2026-11-19) builds the badge in a static of the bar's package
+ * instead: LX/0DiA;->A08 copies the key and the count with two moves (140, 141) and hands both to
+ * LX/0Di9;->A0G (142), which hands its parameters to the badge's constructor (LX/0Dke;). Through
+ * [resolve], that static counts as the constructor, once the copies go nowhere else, the copy of the
+ * count is made from the hook's answer, and the static hands the badge nothing but its parameters.
  */
-internal fun specCountSites(method: Method, nameField: FieldReference): List<SpecCountSite> {
+internal fun specCountSites(
+    method: Method,
+    nameField: FieldReference,
+    resolve: (MethodReference) -> Method? = { null },
+): List<SpecCountSite> {
     if (nameField.type != STRING) return emptyList()
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
     val field = nameField.smali()
@@ -661,25 +682,37 @@ internal fun specCountSites(method: Method, nameField: FieldReference): List<Spe
         if (method.writersReaching(index + 1, name) != listOf(load)) {
             refuse("$where can hold something other than the spec's name where the count read at $index comes back")
         }
-        val inits = method.readsAfter(index, key)
-        val badges = inits.map { code[it] }.map { use ->
+        val handOffs = method.readsAfter(index, key).map { at ->
+            val use = code[at]
             val init = use.reference() as? MethodReference
             val taken = (use.opcode == Opcode.INVOKE_DIRECT || use.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
                 init?.name == "<init>" && init.parameterTypes.any { it.toString() == keyType }
-            init?.definingClass?.takeIf { taken }
-        }.distinct()
-        val badge = badges.singleOrNull()
+            if (taken) BadgeHandOff(at, init!!.definingClass, null) else outlinedBadgeHandOff(method, code, at, keyType, resolve)
+        }
+        val badge = handOffs.map { it?.badge }.distinct().singleOrNull()
             ?: refuse("$where doesn't hand the key it read the count by at $index to one badge's constructor alone")
+        val makers = handOffs.map { it!!.maker }.distinct()
+        if (makers.size != 1) refuse("$where hands the key it read the count by at $index to the badge more than one way")
         if (maxOf(name, count, key) > 15) {
             refuse("the name (v$name), the count (v$count) or the key (v$key) is past v15 in $where")
         }
-        val site = SpecCountSite(index, name, count, key, keyType, badge)
+        val site = SpecCountSite(index, name, count, key, keyType, badge, makers.single())
+        val inits = handOffs.map { it!!.at }
         // The hooks go in at index + 1 as three instructions, the count's move-result second.
         val trial = MutableMethod(ImmutableMethod.of(method)).apply { gateSpecCountAfter(site) }
         fun answered(at: Int) = (if (at > index) at + 3 else at).let { moved ->
             trial.getInstruction(moved).opcode == code[at].opcode && trial.writersReaching(moved, count) == listOf(index + 2)
         }
-        val handedOther = { at: Int -> code[at].intArguments().let { ints -> ints.isEmpty() || ints.any { it != count } } }
+        // A static making the badge may be handed a copy of the count, made from the answer.
+        fun copiesAnswer(at: Int, register: Int) = code[at].opcode in STATIC_CALLS &&
+            method.writersReaching(at, register).let { writers ->
+                writers.isNotEmpty() && writers.all { w ->
+                    w >= 0 && code[w].opcode in INT_MOVES && (code[w] as TwoRegisterInstruction).registerB == count && answered(w)
+                }
+            }
+        val handedOther = { at: Int ->
+            code[at].intArguments().let { ints -> ints.isEmpty() || ints.any { it != count && !copiesAnswer(at, it) } }
+        }
         // A badge built from a second copy of the key is still the badge.
         val badgeInits = code.indices.filter { at ->
             (code[at].opcode == Opcode.INVOKE_DIRECT || code[at].opcode == Opcode.INVOKE_DIRECT_RANGE) &&
@@ -694,14 +727,79 @@ internal fun specCountSites(method: Method, nameField: FieldReference): List<Spe
     }
 }
 
-/** The registers an instance call hands its int parameters in, a long or double taking two. */
+/** The registers a call hands its int parameters in, `this` first on an instance call and a long or double taking two. */
 private fun Instruction.intArguments(): List<Int> {
-    var slot = 1
+    var slot = if (opcode in STATIC_CALLS) 0 else 1
     return (reference() as MethodReference).parameterTypes.map(CharSequence::toString).mapNotNull { type ->
         val at = slot
         slot += if (type == "J" || type == "D") 2 else 1
         argumentRegister(at)?.takeIf { type == "I" }
     }
+}
+
+private val STATIC_CALLS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+private val INT_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+/**
+ * Where the key a Litho bar read the count by goes into the badge: [at], the constructor call, or
+ * the call of [maker], a static that builds [badge] with it.
+ */
+private class BadgeHandOff(val at: Int, val badge: String, val maker: String?)
+
+/**
+ * The static the key's copy made at [move] goes to, when that's its one use and the static builds
+ * the badge with it: the static's one constructor call taking [keyType], handed that parameter
+ * straight or through one move-object and every int from the static's own int parameters, none of
+ * them written. The parameter goes nowhere else. Null for anything else, a non-move included.
+ */
+private fun outlinedBadgeHandOff(
+    method: Method,
+    code: List<Instruction>,
+    move: Int,
+    keyType: String,
+    resolve: (MethodReference) -> Method?,
+): BadgeHandOff? {
+    if (code[move].opcode !in OBJECT_MOVES) return null
+    val copy = (code[move] as TwoRegisterInstruction).registerA
+    val call = method.readsAfter(move, copy).singleOrNull() ?: return null
+    if (code[call].opcode !in STATIC_CALLS || method.writersReaching(call, copy) != listOf(move)) return null
+    val reference = code[call].reference() as? MethodReference ?: return null
+    val types = reference.parameterTypes.map(CharSequence::toString)
+    var slot = 0
+    val slots = types.indices.filter { parameter ->
+        val register = code[call].argumentRegister(slot)
+        slot += if (types[parameter] == "J" || types[parameter] == "D") 2 else 1
+        register == copy
+    }
+    val parameter = slots.singleOrNull()?.takeIf { types[it] == keyType } ?: return null
+    val maker = resolve(reference)?.takeIf { AccessFlags.STATIC.isSet(it.accessFlags) } ?: return null
+    val body = maker.implementation?.instructions?.toList() ?: return null
+    val keyRegister = maker.parameterRegisterNumber(parameter)
+    val ints = intParameters(maker)
+    if (body.any { writesRegister(it, keyRegister) || ints.any { int -> writesRegister(it, int) } }) return null
+    // The key straight from its parameter, or from one move-object of it whose copy goes only to the constructor.
+    fun from(at: Int, register: Int, parameters: Set<Int>, moves: Set<Opcode>) = register in parameters ||
+        maker.writersReaching(at, register).singleOrNull()?.let { w ->
+            w >= 0 && body[w].opcode in moves && (body[w] as TwoRegisterInstruction).registerB in parameters &&
+                maker.readsAfter(w, register) == listOf(at)
+        } == true
+    val inits = body.indices.filter { at ->
+        (body[at].opcode == Opcode.INVOKE_DIRECT || body[at].opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+            (body[at].reference() as? MethodReference)?.let { it.name == "<init>" && it.parameterTypes.any { type -> type.toString() == keyType } } == true
+    }
+    val init = inits.singleOrNull() ?: return null
+    val made = body[init].reference() as MethodReference
+    val handed = made.parameterTypes.map(CharSequence::toString)
+    if (handed.count { it == keyType } != 1) return null
+    var at = 1
+    val registers = handed.map { type -> body[init].argumentRegister(at).also { at += if (type == "J" || type == "D") 2 else 1 } }
+    val key = registers[handed.indexOf(keyType)] ?: return null
+    if (!from(init, key, setOf(keyRegister), OBJECT_MOVES)) return null
+    if (handed.indices.any { handed[it] == "I" && registers[it]?.let { r -> from(init, r, ints, INT_MOVES) } != true }) return null
+    // Read nowhere but on its way into the constructor.
+    val keyReads = body.indices.filter { keyRegister in body[it].namedRegisters() }
+    if (keyReads.size != 1 || (keyReads.single() != init && maker.writersReaching(init, key) != keyReads)) return null
+    return BadgeHandOff(call, made.definingClass, "${reference.definingClass}->${reference.name}(${types.joinToString("")})${reference.returnType}")
 }
 
 /**
@@ -965,13 +1063,13 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         val lithoBars = mutableListOf<String>()
         classDefForEachReferencing(strings = listOf(LITHO_BAR_ICON_BUTTON)) { classDef ->
             if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
-            if (classDef.methods.any { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, spec.nameField).isNotEmpty() }) {
+            if (classDef.methods.any { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, spec.nameField, resolve).isNotEmpty() }) {
                 lithoBars += classDef.type
             }
         }
         if (lithoBars.isEmpty()) refuse("nothing holding \"$LITHO_BAR_ICON_BUTTON\" reads a button's count after its spec's name")
         val badgeKeys = lithoBars.flatMap { type ->
-            classDefBy(type).methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.flatMap { specCountSites(it, spec.nameField) }
+            classDefBy(type).methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.flatMap { specCountSites(it, spec.nameField, resolve) }
         }.map { it.badge to it.keyType }.distinct().map { (type, keyType) ->
             val badge = classDefByOrNull(type) ?: refuse("this Facebook has no $type, the Litho bar's numeric badge")
             badgeKeyField(badge, keyType) ?: refuse("$type keeps no one $keyType, the store key the bar hands it")
@@ -1010,7 +1108,7 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         }
         lithoBars.forEach { type ->
             mutableClassDefBy(type).methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.forEach { method ->
-                specCountSites(method, spec.nameField).sortedByDescending { it.read }.forEach { method.gateSpecCountAfter(it) }
+                specCountSites(method, spec.nameField, resolve).sortedByDescending { it.read }.forEach { method.gateSpecCountAfter(it) }
             }
         }
         badgeReaders.forEach { (keyField, readers) ->
