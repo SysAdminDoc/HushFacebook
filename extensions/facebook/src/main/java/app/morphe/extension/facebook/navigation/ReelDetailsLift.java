@@ -166,8 +166,7 @@ final class ReelDetailsLift {
 
     /** Moves [part] up by [lift] in all, on top of whatever Facebook's own move is. */
     private static void move(View part, int[] applied, int lift) {
-        if (lift == applied[0]) return;
-        part.setTranslationY(part.getTranslationY() + applied[0] - lift);
+        ViewLift.move(part, lift);
         applied[0] = lift;
     }
 }

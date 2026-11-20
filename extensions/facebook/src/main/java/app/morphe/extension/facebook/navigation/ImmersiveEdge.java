@@ -342,11 +342,17 @@ public final class ImmersiveEdge {
     }
 
     /**
-     * The small views pinned to the viewer's bottom edge, lifted above the gesture bar: down
-     * through the layers the viewer fills, past its paging list, each one under a third of the
-     * screen tall whose laid-out bottom sits under the bar's top.
+     * The views pinned to the viewer's bottom edge, lifted above the gesture bar: down through the
+     * layers the viewer fills, past its paging list, each one under a third of the screen tall
+     * whose laid-out bottom sits under the bar's top, and each taller one that hangs just past the
+     * bottom edge, as 588's video controls do by 51 px with their seek bar ending at that edge.
+     * A taller one ending at the bottom, a sheet Facebook sizes to the screen, and anything laid
+     * out below the screen stay where Facebook has them.
      */
     static final class Lifts {
+        /** A tall view is the controls only when it hangs past the bottom by under this part of the screen. */
+        static final int HANG_PART = 20;
+
         /** Each view held, by the view: how far this has moved it up. */
         final Map<View, int[]> held = new WeakHashMap<>();
         private final Map<View, Integer> wanted = new IdentityHashMap<>();
@@ -387,8 +393,14 @@ public final class ImmersiveEdge {
                     if (!TranslucentBars.isList(child)) collect(child, height, cover, bottom, inset, depth + 1);
                     continue;
                 }
-                int end = TranslucentBars.laidOutTop(child) + child.getHeight();
-                if (end <= cover || end > bottom + 2 || child.getHeight() * 3L > height) continue;
+                int top = TranslucentBars.laidOutTop(child);
+                int end = top + child.getHeight();
+                if (end <= cover || top >= bottom) continue;
+                if (child.getHeight() * 3L <= height) {
+                    if (end > bottom + 2) continue;
+                } else if (end <= bottom + 2 || end - bottom > height / HANG_PART) {
+                    continue;
+                }
                 wanted.put(child, Math.min(end - cover, inset));
             }
         }
@@ -404,8 +416,7 @@ public final class ImmersiveEdge {
 
         /** Moves [part] up by [lift] in all, on top of whatever Facebook's own move is. */
         private static void move(View part, int[] applied, int lift) {
-            if (lift == applied[0]) return;
-            part.setTranslationY(part.getTranslationY() + applied[0] - lift);
+            ViewLift.move(part, lift);
             applied[0] = lift;
         }
     }

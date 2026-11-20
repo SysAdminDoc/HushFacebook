@@ -104,6 +104,7 @@ val bottomTabBarPatch = bytecodePatch(
         if (reads.isEmpty()) refuse("nothing reads $key from FbSharedPreferences")
         hookBigScreenLayout(reads)
         hookStatusBarStrip(paddings)
+        hookLithoPositions()
         hookLightReelsTabBars()
         hookReelsTabBarHidden()
         hookTabBarLineAtLayout()

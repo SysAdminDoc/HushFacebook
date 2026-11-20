@@ -208,6 +208,86 @@ public class ImmersiveEdgeTest {
         assertEquals(0f, viewer.upNext.getTranslationY(), 0f);
     }
 
+    /**
+     * Litho's Y animation as 588 runs it with the patch: [host] set to [y] in the LithoView [root],
+     * less where its parents are by the walk (LX/03lx;->A00), which adds up each one's Y below the
+     * LithoView through {@link ViewLift#lithoY}.
+     */
+    static void lithoSetsY(View host, View root, float y) {
+        float parents = 0;
+        for (View at = (View) host.getParent(); at != root; at = (View) at.getParent()) parents += ViewLift.lithoY(at);
+        host.setY(y - parents);
+    }
+
+    @Test
+    public void theControlsHangingPastTheBottomComeUpWhileSheetsStay() {
+        switchesOn();
+        Viewer viewer = new Viewer(ImmersiveActivity.class, MATCH);
+        // 588's controls: 1080 px tall, hanging 51 px past the viewer's bottom, the seek bar ending at it.
+        FrameLayout controls = new FrameLayout(viewer.screen);
+        View seekBar = new View(viewer.screen);
+        seekBar.setClickable(true);
+        FrameLayout.LayoutParams seekAt = new FrameLayout.LayoutParams(MATCH, 67, Gravity.BOTTOM);
+        seekAt.bottomMargin = 51;
+        controls.addView(seekBar, seekAt);
+        FrameLayout.LayoutParams hang = new FrameLayout.LayoutParams(MATCH, 1080, Gravity.BOTTOM);
+        hang.bottomMargin = -51;
+        viewer.layer.addView(controls, hang);
+        // A sheet sized to end at the bottom, one dragged half out, and one laid out under the screen.
+        FrameLayout sheet = new FrameLayout(viewer.screen);
+        viewer.layer.addView(sheet, new FrameLayout.LayoutParams(MATCH, 1600, Gravity.BOTTOM));
+        FrameLayout dragged = new FrameLayout(viewer.screen);
+        FrameLayout.LayoutParams half = new FrameLayout.LayoutParams(MATCH, 1600, Gravity.BOTTOM);
+        half.bottomMargin = -800;
+        viewer.layer.addView(dragged, half);
+        FrameLayout parked = new FrameLayout(viewer.screen);
+        FrameLayout.LayoutParams under = new FrameLayout.LayoutParams(MATCH, 300, Gravity.TOP);
+        under.topMargin = HEIGHT;
+        viewer.layer.addView(parked, under);
+
+        viewer.made();
+        assertEquals(0, viewer.frame());
+        assertEquals("the controls come up with the reel", -BAR, controls.getTranslationY(), 0f);
+        int[] at = new int[2];
+        seekBar.getLocationInWindow(at);
+        int[] top = new int[2];
+        viewer.content.getLocationInWindow(top);
+        assertEquals("the seek bar ends above the gesture bar", top[1] + HEIGHT - BAR, at[1] + seekBar.getHeight());
+        assertEquals("a sheet sized to the screen stays", 0f, sheet.getTranslationY(), 0f);
+        assertEquals("so does one dragged half out", 0f, dragged.getTranslationY(), 0f);
+        assertEquals("and one under the screen", 0f, parked.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void whatLithoMovesInsideTheDetailsStaysLiftedAndFacebooksOwnMoveIsKept() {
+        switchesOn();
+        Viewer viewer = new Viewer(ImmersiveActivity.class, MATCH);
+        // The reel's name and caption: a host Litho slides up 98 px when the comment preview comes in.
+        View caption = viewer.details.getChildAt(0);
+        viewer.made();
+        viewer.frame();
+        assertEquals(-BAR, viewer.details.getTranslationY(), 0f);
+        float laidOut = caption.getTop();
+
+        lithoSetsY(caption, viewer.row, laidOut - 98);
+        assertEquals("Litho's slide lands where it meant, under the lift", -98f, caption.getTranslationY(), 0f);
+        viewer.frame();
+        assertEquals(-98f, caption.getTranslationY(), 0f);
+        assertEquals(-BAR, viewer.details.getTranslationY(), 0f);
+
+        // Facebook moves the lifted part itself: the lift goes on top of its new place, and giving it
+        // back leaves Facebook's.
+        viewer.details.setTranslationY(-98f);
+        viewer.frame();
+        assertEquals("on top of Facebook's new move", -98f - BAR, viewer.details.getTranslationY(), 0f);
+        assertEquals("which Litho's walk still sees as Facebook's", viewer.details.getTop() - 98f, ViewLift.lithoY(viewer.details), 0f);
+        Settings.HIDE_VIDEO_COMMENT_COMPOSER.save(false);
+        viewer.frame();
+        assertEquals(BAR, viewer.frame());
+        assertEquals("Facebook's move is what's left", -98f, viewer.details.getTranslationY(), 0f);
+        assertEquals(viewer.details.getTop() - 98f, ViewLift.lithoY(viewer.details), 0f);
+    }
+
     @Test
     public void pausedTheViewerKeepsFacebooksBand() {
         switchesOn();

@@ -202,6 +202,24 @@ public class ReelDetailsLiftTest {
 
     @Test
     @Config(qualifiers = "w720dp-h1800dp")
+    public void whatLithoSlidesInsideTheDetailsStaysAboveTheTabBar() {
+        // 588 slides a reel's name and caption up 98 px when its comment preview comes in.
+        Settings.TRANSLUCENT_BARS.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        Reels reels = new Reels(screen, 1600);
+        View name = reels.shown.details.getChildAt(0);
+        screen.bars.update();
+        assertEquals(-160f, reels.shown.details.getTranslationY(), 0f);
+
+        ImmersiveEdgeTest.lithoSetsY(name, reels.shown.row, name.getTop() - 98);
+        assertEquals("Litho's slide lands where it meant, under the lift", -98f, name.getTranslationY(), 0f);
+        screen.bars.update();
+        assertEquals(-98f, name.getTranslationY(), 0f);
+        assertEquals(-160f, reels.shown.details.getTranslationY(), 0f);
+    }
+
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
     public void aRowThatEndsAboveTheBarIsLeftAlone() {
         // A row left at Facebook's height, shorter than the list, already ends above the tabs.
         Settings.TRANSLUCENT_BARS.save(true);
