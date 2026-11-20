@@ -65,6 +65,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * With `Hide posts you've already seen` or another switch that hides a lot of the feed, Home fills in by itself when you open Facebook fresh. When the first pages were all posts the switch hides, Home sat on stories, the Reels shelf and its loading row until you swiped, since Facebook only asks for more posts as the feed scrolls. It now asks again on its own a few times, and a swipe still asks too. (#493)
 * With `Open feed videos on their own` on, a video you tap after it played for a while in the feed opens alone too. Facebook had already loaded it by then, so the first batch it handed the viewer held only the videos after yours, and the 0.23.0 trim let one of them through. That batch is skipped now. (#457)
 * On Android 17, Facebook getting closed for using too much memory in its first minute now counts toward safe mode the way a crash or a freeze does, so three starts in a row that end like that open Facebook with Hushfacebook paused. It only counts while you're using Facebook. A swipe away, a force stop or Android clearing it out in the background still doesn't. (#528)
+* Every patch goes in on Facebook's Android 9+ build of 588 (build 707615023) once Hush Unpacker has unpacked it. With 0.23.0 a number of them failed there and had to be unchecked before patching. The README names the bundle to take on Android 9 and 10. (#102, #422)
 
 ## 0.23.0 (2026-11-17)
 
