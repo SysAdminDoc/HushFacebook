@@ -57,11 +57,16 @@ public final class ReelsHeaderClear implements View.OnAttachStateChangeListener,
         this.header = new WeakReference<>(header);
     }
 
-    /** The hook right after VideoHomeRootFragment stores the Reels header it found. Never throws. */
+    /**
+     * The hook right after VideoHomeRootFragment stores the Reels header it found. On the
+     * full-screen player screen that fragment is the video viewer, so it's told there too
+     * ({@link ImmersiveEdge}, #466). Never throws.
+     */
     public static void headerMade(@Nullable View header) {
         try {
             if (header == null) return;
             HookStatus.invoked(FAMILY);
+            ImmersiveEdge.viewerMade(header);
             ReelsHeaderClear clear;
             synchronized (held) {
                 if (held.containsKey(header)) return;

@@ -24,8 +24,9 @@ import java.io.File
  * The strip behind a hidden status bar (#124) on every Facebook build the bundle declares: the one
  * view id the kept StatusBarUtil finds on a window, and the one static system bar padding that
  * loads it and pads the content view. Then the patch on it: the extension first, handed the content
- * view and the top inset and answering into the top inset's register, put there once however often
- * the hook runs. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * view and the top inset and answering into the top inset's register, then handed the content view
+ * and the bottom inset the same way (#466), both put there once however often the hook runs. Reads
+ * the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class StatusBarStripFixtureTest {
     private fun declaredBundles(): Map<String, List<File>> {
@@ -68,14 +69,21 @@ class StatusBarStripFixtureTest {
                 val code = patched.instructions.toList()
                 val where = "$name: ${padding.definingClass}->${padding.name}"
                 val first = patched.registerCount - 8
-                assertEquals("$where gains two instructions, once", original.size + 2, code.size)
+                assertEquals("$where gains four instructions, once", original.size + 4, code.size)
                 assertEquals("$where: the extension first", TOP_INSET, (code[0] as ReferenceInstruction).reference.toString())
                 val call = code[0] as FiveRegisterInstruction
                 assertEquals("$where: handed the content view and the top inset", listOf(first + 1, first + 5),
                     listOf(call.registerC, call.registerD))
                 assertEquals("$where: its answer", Opcode.MOVE_RESULT, code[1].opcode)
                 assertEquals("$where: replaces the top inset", first + 5, (code[1] as OneRegisterInstruction).registerA)
-                assertEquals("$where: Facebook's padding follows", original.map { it.opcode }, code.drop(2).map { it.opcode })
+                // #466: then the bottom inset, the one the content is padded up off the gesture bar by.
+                assertEquals("$where: the extension asked for the bottom", BOTTOM_INSET, (code[2] as ReferenceInstruction).reference.toString())
+                val bottom = code[2] as FiveRegisterInstruction
+                assertEquals("$where: handed the content view and the bottom inset", listOf(first + 1, first + 7),
+                    listOf(bottom.registerC, bottom.registerD))
+                assertEquals("$where: its answer", Opcode.MOVE_RESULT, code[3].opcode)
+                assertEquals("$where: replaces the bottom inset", first + 7, (code[3] as OneRegisterInstruction).registerA)
+                assertEquals("$where: Facebook's padding follows", original.map { it.opcode }, code.drop(4).map { it.opcode })
                 checked += version
             }
         }
