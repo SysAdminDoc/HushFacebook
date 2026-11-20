@@ -40,7 +40,7 @@ class TrayPagingFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to listOf("LX/02uq;", "JTD", "LX/04jS;->KF3"),
             "armeabi-v7a" to listOf("LX/02uq;", "JTD", "LX/04jS;->KF3"),
-            "arm64-v8a-minapi28-storeless" to listOf("LX/02gs;", "ICS", "LX/04gO;->IxQ"),
+            "arm64-v8a-minapi28-storeless" to listOf("LX/02vm;", "JU0", "LX/04oc;->KFe"),
         ),
     )
 

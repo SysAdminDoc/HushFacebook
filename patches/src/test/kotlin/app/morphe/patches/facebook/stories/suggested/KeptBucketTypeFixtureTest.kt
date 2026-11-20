@@ -22,7 +22,7 @@ class KeptBucketTypeFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to "LX/02Ev;",
             "armeabi-v7a" to "LX/02Ev;",
-            "arm64-v8a-minapi28-storeless" to "LX/02bk;",
+            "arm64-v8a-minapi28-storeless" to "LX/02Fo;",
         ),
     )
 

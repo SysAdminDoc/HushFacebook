@@ -59,7 +59,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("Grm" to "LX/02Ev;"),
             "armeabi-v7a" to ("Grm" to "LX/02Ev;"),
-            "arm64-v8a-minapi28-storeless" to ("Fuy" to "LX/02bk;"),
+            "arm64-v8a-minapi28-storeless" to ("GsW" to "LX/02Fo;"),
         ),
     )
 
@@ -71,7 +71,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Triple("EXJ", "Gre", "LX/03Yn;"),
             "armeabi-v7a" to Triple("EXJ", "Gre", "LX/03Yn;"),
-            "arm64-v8a-minapi28-storeless" to Triple("Dyt", "Fur", "LX/03Yu;"),
+            "arm64-v8a-minapi28-storeless" to Triple("EXf", "GsO", "LX/03ZQ;"),
         ),
     )
 
@@ -83,7 +83,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to "DY9",
             "armeabi-v7a" to "DY9",
-            "arm64-v8a-minapi28-storeless" to "D7p",
+            "arm64-v8a-minapi28-storeless" to "DYV",
         ),
     )
 
@@ -104,7 +104,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to setOf("LX/025J;->A03", "LX/025J;->A08"),
             "armeabi-v7a" to setOf("LX/025J;->A03", "LX/025J;->A08"),
-            "arm64-v8a-minapi28-storeless" to setOf("LX/01s9;->A02", "LX/01s9;->A06"),
+            "arm64-v8a-minapi28-storeless" to setOf("LX/026B;->A03", "LX/026B;->A08"),
         ),
     )
 

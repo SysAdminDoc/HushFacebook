@@ -339,7 +339,9 @@ internal const val SKIP_PROMPT_CARDS = "skip_srtt_item_list"
  * Each place [method] sets [SKIP_PROMPT_CARDS]: the index of the setter call and the register of
  * the boolean it passes. Null when a const-string of the name isn't followed straight away by an
  * invoke-virtual of a (String, boolean) void method taking that string, so a build that moved the
- * value elsewhere refuses instead of setting something else.
+ * value elsewhere refuses instead of setting something else. 588's store-less build moves the
+ * boolean into place between the two (`move/from16 v1, v23`), so plain moves of a value that leave
+ * the name's register alone may come first; the hook still goes at the setter.
  */
 internal fun promptCardSkips(method: Method): List<Pair<Int, Int>>? {
     val body = method.body()
@@ -347,14 +349,19 @@ internal fun promptCardSkips(method: Method): List<Pair<Int, Int>>? {
     for ((index, instruction) in body.withIndex()) {
         if (instruction.opcode != Opcode.CONST_STRING && instruction.opcode != Opcode.CONST_STRING_JUMBO) continue
         if (((instruction as ReferenceInstruction).reference as? StringReference)?.string != SKIP_PROMPT_CARDS) continue
-        val call = body.getOrNull(index + 1) as? FiveRegisterInstruction ?: return null
-        val target = call.methodReference() ?: return null
         val name = (instruction as OneRegisterInstruction).registerA
+        var at = index + 1
+        while (body.getOrNull(at)?.let { it.opcode in VALUE_MOVES && (it as OneRegisterInstruction).registerA != name } == true) at++
+        val call = body.getOrNull(at) as? FiveRegisterInstruction ?: return null
+        val target = call.methodReference() ?: return null
         val setter = call.opcode == Opcode.INVOKE_VIRTUAL && call.registerCount == 3 && call.registerD == name &&
             call.registerE != name && target.returnType == "V" &&
             target.parameterTypes.map { it.toString() } == listOf("Ljava/lang/String;", "Z")
         if (!setter) return null
-        sites += (index + 1) to call.registerE
+        sites += at to call.registerE
     }
     return sites
 }
+
+/** The moves of a plain value [promptCardSkips] lets stand between the name and its setter. */
+private val VALUE_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
