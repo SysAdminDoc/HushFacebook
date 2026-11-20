@@ -15,6 +15,7 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,12 +41,15 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Center the feed on big screens (#531): on a window 1000 dp wide, the feed keeps to a column 600
- * dp wide down the middle through its own side padding, with Facebook's top and bottom padding
- * kept, and so does a list whose rows all fit (Menu on a tablet). A list that pages (the Reels
- * viewer), a list that scrolls sideways, cards side by side, a list narrower than the column and a
- * list inside the feed are left as they are. Facebook's own wider padding stays,
- * Facebook setting its padding again is followed, and a list it keeps setting it on is left alone
- * for a while. Off, paused or failing, the feed gets Facebook's padding back.
+ * dp wide down the middle, with Facebook's top and bottom padding kept, and so does a list whose
+ * rows all fit (Menu on a tablet). The padding goes on the frame holding the list and nothing else,
+ * up to the screen's content frame, so a title bar beside it keeps the whole width; a spinner
+ * showing beside the list for a moment doesn't move it. A list with no such frame pads itself, and
+ * is left wide when its rows ignore the padding. A list that pages (the Reels viewer), a list that
+ * scrolls sideways, cards side by side, a list narrower than the column and a list inside the feed
+ * are left as they are. Facebook's own wider padding stays, Facebook setting its padding again is
+ * followed, and a list it keeps setting it on is left alone for a while. Off, paused or failing,
+ * the feed gets Facebook's padding back.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, qualifiers = "w1000dp-h1400dp-mdpi")
@@ -254,6 +258,184 @@ public class CenteredFeedTest {
         assertPadding("still centered once its rows are the column's width", menu, 200, 0, 200, 0);
         assertTrue(statusLine(), statusLine().contains(CenteredFeed.CENTERED + " 1"));
         assertFalse(statusLine(), statusLine().contains(CenteredFeed.GIVEN_BACK));
+    }
+
+    /** [child] in [parent], filling it unless [tall] says. */
+    private <T extends View> T put(ViewGroup parent, T child, int tall) {
+        parent.addView(child, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, tall));
+        return child;
+    }
+
+    /** A list of [count] rows [tall] pixels each, in [parent], filling it. */
+    private RecyclerView listIn(ViewGroup parent, boolean vertical, int count, int tall) {
+        RecyclerView list = put(parent, new RecyclerView(activity, vertical), ViewGroup.LayoutParams.MATCH_PARENT);
+        for (int i = 0; i < count; i++) {
+            put(list, new View(activity), tall);
+        }
+        return list;
+    }
+
+    /** A FrameLayout with the screen's content frame id, as each of Facebook's tab pages is (588). */
+    private FrameLayout contentFrame(ViewGroup parent) {
+        FrameLayout page = put(parent, new FrameLayout(activity), ViewGroup.LayoutParams.MATCH_PARENT);
+        page.setId(android.R.id.content);
+        return page;
+    }
+
+    @Test
+    public void theFrameHoldingTheListIsNarrowedAndTheBarBesideItKeepsTheWholeWidth() {
+        // Menu on the page screen (588): a title bar beside the frame Facebook shows the page in,
+        // which holds a layout that isn't a FrameLayout, which holds the list and an empty view.
+        FrameLayout page = contentFrame(window);
+        View titleBar = put(page, new View(activity), 55);
+        FrameLayout holder = put(page, new FrameLayout(activity), ViewGroup.LayoutParams.MATCH_PARENT);
+        holder.setPadding(0, 55, 0, 0);
+        LinearLayout layout = put(holder, new LinearLayout(activity),
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        View empty = new View(activity);
+        layout.addView(empty, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
+        RecyclerView menu = new RecyclerView(activity, false);
+        for (int i = 0; i < 6; i++) {
+            put(menu, new View(activity), 60);
+        }
+        layout.addView(menu, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1300));
+        layOut();
+
+        CenteredFeed.Columns columns = new CenteredFeed.Columns(window);
+        columns.check(0);
+        layOut();
+        assertPadding("the frame holding Menu", holder, 200, 55, 200, 0);
+        assertPadding("Menu itself", menu, 0, 0, 0, 0);
+        assertEquals("Menu is the column's width", 600, menu.getWidth());
+        assertEquals("so are its rows", 600, menu.getChildAt(0).getWidth());
+        assertPadding("the screen's frame, which holds the title bar too", page, 0, 0, 0, 0);
+        assertEquals("the title bar keeps the whole width", 1000, titleBar.getWidth());
+
+        columns.check(100);
+        layOut();
+        assertPadding("still centered", holder, 200, 55, 200, 0);
+        assertTrue(statusLine(), statusLine().contains(CenteredFeed.CENTERED + " 1"));
+        assertFalse(statusLine(), statusLine().contains(CenteredFeed.GIVEN_BACK));
+
+        Settings.CENTER_FEED_ON_BIG_SCREENS.save(false);
+        columns.check(200);
+        assertPadding("off, Facebook's padding back", holder, 0, 55, 0, 0);
+    }
+
+    @Test
+    public void theClimbStopsAtTheScreensContentFrameAndAReelsTabKeepsTheWholeWidth() {
+        // Two of Facebook's tab pages side by side in the pager: the feed's and the Reels tab's.
+        LinearLayout pager = put(window, new LinearLayout(activity),
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        FrameLayout outer = new FrameLayout(activity);
+        pager.addView(outer, new LinearLayout.LayoutParams(1000, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout feedPage = contentFrame(outer);
+        RecyclerView feed = listIn(feedPage, true, 4, 300);
+        FrameLayout reelsPage = new FrameLayout(activity);
+        reelsPage.setId(android.R.id.content);
+        pager.addView(reelsPage, new LinearLayout.LayoutParams(1000, ViewGroup.LayoutParams.MATCH_PARENT));
+        RecyclerView reels = listIn(reelsPage, true, 3, 1400);
+        layOut();
+
+        assertEquals("the feed's frame is its tab page", feedPage, CenteredFeed.hostOf(feed, window));
+        CenteredFeed.Columns columns = new CenteredFeed.Columns(window);
+        columns.check(0);
+        layOut();
+        assertPadding("the feed's tab page", feedPage, 200, 0, 200, 0);
+        assertPadding("the frame above the tab page", outer, 0, 0, 0, 0);
+        assertPadding("the feed itself", feed, 0, 0, 0, 0);
+        assertEquals("the feed's rows are the column's width", 600, feed.getChildAt(0).getWidth());
+        assertPadding("the Reels tab page", reelsPage, 0, 0, 0, 0);
+        assertPadding("the Reels viewer", reels, 0, 0, 0, 0);
+    }
+
+    @Test
+    public void aSpinnerShowingBesideTheListForAMomentDoesNotMoveItsPadding() {
+        FrameLayout page = contentFrame(window);
+        LinearLayout refresher = put(page, new LinearLayout(activity),
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        refresher.setOrientation(LinearLayout.VERTICAL);
+        View spinner = new View(activity);
+        spinner.setVisibility(View.GONE);
+        refresher.addView(spinner, new LinearLayout.LayoutParams(40, 40));
+        RecyclerView feed = new RecyclerView(activity, true);
+        for (int i = 0; i < 4; i++) {
+            put(feed, new View(activity), 300);
+        }
+        refresher.addView(feed, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1300));
+        layOut();
+
+        CenteredFeed.Columns columns = new CenteredFeed.Columns(window);
+        columns.check(0);
+        layOut();
+        assertPadding("centered through its page", page, 200, 0, 200, 0);
+
+        // Pulled to refresh: the spinner shows beside the feed, so the climb stops at the feed.
+        spinner.setVisibility(View.VISIBLE);
+        layOut();
+        columns.check(100);
+        layOut();
+        assertPadding("the page keeps the padding", page, 200, 0, 200, 0);
+        assertPadding("the feed isn't padded on top of it", feed, 0, 0, 0, 0);
+        spinner.setVisibility(View.GONE);
+        layOut();
+        columns.check(200);
+        assertPadding("still the page's", page, 200, 0, 200, 0);
+        assertTrue(statusLine(), statusLine().contains(CenteredFeed.CENTERED + " 1"));
+        assertFalse(statusLine(), statusLine().contains(CenteredFeed.GIVEN_BACK));
+    }
+
+    @Test
+    public void aListFirstPaddedItselfMovesItsPaddingUpOnceItsFrameHoldsOnlyIt() {
+        FrameLayout page = contentFrame(window);
+        LinearLayout refresher = put(page, new LinearLayout(activity),
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        refresher.setOrientation(LinearLayout.VERTICAL);
+        View spinner = new View(activity);
+        refresher.addView(spinner, new LinearLayout.LayoutParams(40, 40));
+        RecyclerView feed = new RecyclerView(activity, true);
+        for (int i = 0; i < 4; i++) {
+            put(feed, new View(activity), 300);
+        }
+        refresher.addView(feed, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1300));
+        layOut();
+
+        CenteredFeed.Columns columns = new CenteredFeed.Columns(window);
+        columns.check(0);
+        layOut();
+        assertPadding("the spinner showing: the feed pads itself", feed, 200, 0, 200, 0);
+
+        spinner.setVisibility(View.GONE);
+        layOut();
+        columns.check(100);
+        layOut();
+        assertPadding("the feed's padding given back", feed, 0, 0, 0, 0);
+        assertPadding("its page padded instead", page, 200, 0, 200, 0);
+        assertEquals("the feed is the column's width once", 600, feed.getWidth());
+    }
+
+    @Test
+    public void aListWhoseRowsIgnoreItsPaddingIsLeftWide() {
+        // A list with no frame of its own whose rows Facebook sized from the list's width (Litho, 588).
+        RecyclerView list = new RecyclerView(activity, true);
+        for (int i = 0; i < 4; i++) {
+            list.addView(new View(activity), new FrameLayout.LayoutParams(1000, 300));
+        }
+        window.addView(list, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        layOut();
+
+        CenteredFeed.Columns columns = new CenteredFeed.Columns(window);
+        columns.check(0);
+        assertPadding("tried once", list, 200, 0, 200, 0);
+        layOut();
+        columns.check(100);
+        assertPadding("its rows ran past the padding, so it's left wide", list, 0, 0, 0, 0);
+        assertTrue(statusLine(), statusLine().contains(CenteredFeed.ROWS_STAY_WIDE + " 1"));
+        layOut();
+        columns.check(200);
+        assertPadding("and stays wide", list, 0, 0, 0, 0);
+        assertTrue(statusLine(), statusLine().contains(CenteredFeed.CENTERED + " 1"));
     }
 
     @Test
