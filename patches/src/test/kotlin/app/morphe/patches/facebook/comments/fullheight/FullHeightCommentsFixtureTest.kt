@@ -226,15 +226,23 @@ class FullHeightCommentsFixtureTest {
     private fun commentViews(bundle: File) {
         val setup = commentViewsSetup(holders(bundle, SET_COMMENT_VIEWS))
         val where = "${bundle.name}: ${setup.descriptor()}"
-        val id = headerId(setup)
+        val owner = FixtureDex.classes(bundle, setOf(setup.definingClass)).values.single()
+        val id = headerId(setup, owner.methods)
         assertEquals("$where: the header's id is one of the app's", 0x7f, id ushr 24)
+        val inline = setup.implementation!!.instructions.any { it.reference() == FIND_VIEW }
+        if (!inline) {
+            // The lookup is outlined: only the setup's own class answers it.
+            val alone = runCatching { headerId(setup) }.exceptionOrNull()?.message.orEmpty()
+            assertTrue("$where: with no sibling methods there's no header ($alone)", "private view lookups" in alone)
+        } else {
+            assertEquals("$where: an inline lookup needs no siblings", id, headerId(setup))
+        }
 
         val params = FixtureDex.classes(bundle, setOf(FEEDBACK_PARAMS)).values.single()
         val flag = watchAndCommentField(params)
         assertEquals("$where: the watch-and-comment flag is a boolean", "Z", flag.type)
         assertTrue("$where: the flag is one of the parameters' own fields", params.fields.any { it.name == flag.name && it.type == "Z" })
 
-        val owner = FixtureDex.classes(bundle, setOf(setup.definingClass)).values.single()
         val context = PatchContexts.of(listOf(owner))
         val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == setup.descriptor() }
         val original = method.implementation!!.instructions.toList()

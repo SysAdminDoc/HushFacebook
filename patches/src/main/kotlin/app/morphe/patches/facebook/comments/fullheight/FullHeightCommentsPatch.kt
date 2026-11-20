@@ -228,8 +228,9 @@ val fullHeightCommentsPatch = bytecodePatch(
         val ufiPopover = classDefByOrNull(UFI_POPOVER) ?: refuse("$UFI_POPOVER isn't in this build")
         val fills = fillsScreenSite(popover, ufiPopover)
         val share = shareField(fills.method)
-        val views = commentViewsSetup(holders(SET_COMMENT_VIEWS))
-        val header = headerId(views)
+        val viewHolders = holders(SET_COMMENT_VIEWS)
+        val views = commentViewsSetup(viewHolders)
+        val header = headerId(views, viewHolders.filter { it.type == views.definingClass }.flatMap { it.methods })
         val feedbackParams = classDefByOrNull(FEEDBACK_PARAMS) ?: refuse("$FEEDBACK_PARAMS isn't in this build")
         val watchAndComment = watchAndCommentField(feedbackParams)
         val tapThrough = tapThroughSite(listOf(popover, ufiPopover))
@@ -531,12 +532,54 @@ private val STRINGS = setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO)
 /**
  * The id of the sheet's header: the literal [setup] loads right before its first [FIND_VIEW] call,
  * into that call's id register, the call made on [setup]'s first parameter.
+ *
+ * 588's Android 9+ build (#102, read 2026-11-19) moves each view lookup out to a private method of
+ * the setup's class taking only a view, which the setup hands its first parameter before anything
+ * writes it (`LX/0DsM;->A02(View)V` finds the header with [FIND_VIEW], `A01(View)V` the next view
+ * with requireViewById). With no [FIND_VIEW] call of its own, the header is read the same way from
+ * the one such method among [siblings] that makes one, on that method's own parameter.
  */
-internal fun headerId(setup: Method): Int {
+internal fun headerId(setup: Method, siblings: Iterable<Method> = emptyList()): Int {
     val instructions = setup.implementation!!.instructions.toList()
-    val at = instructions.indexOfFirst {
-        it.opcode == Opcode.INVOKE_VIRTUAL && (it as ReferenceInstruction).reference.toString() == FIND_VIEW
+    if (instructions.none { it.findsView() }) {
+        val lookups = instructions.indices.mapNotNull { at ->
+            outlinedLookup(setup, instructions[at], siblings)?.let { at to it }
+        }
+        val (at, lookup) = lookups.singleOrNull()
+            ?: refuse("${setup.descriptor()} makes no $FIND_VIEW call after loading an id, and hands its first parameter to ${lookups.size} private view lookups making one")
+        setup.requireParameterIntact("$PATCH: ${setup.descriptor()}'s header lookup", 0, listOf(at))
+        return findViewId(lookup)
     }
+    return findViewId(setup)
+}
+
+private fun Instruction.findsView() =
+    opcode == Opcode.INVOKE_VIRTUAL && (this as ReferenceInstruction).reference.toString() == FIND_VIEW
+
+/**
+ * The private (View)V method of [siblings] that [instruction] calls on [setup]'s `this` and first
+ * parameter alone, when it makes a [FIND_VIEW] call.
+ */
+private fun outlinedLookup(setup: Method, instruction: Instruction, siblings: Iterable<Method>): Method? {
+    if (instruction.opcode != Opcode.INVOKE_DIRECT) return null
+    val call = instruction as FiveRegisterInstruction
+    val ref = (instruction as ReferenceInstruction).reference as? MethodReference ?: return null
+    if (ref.definingClass != setup.definingClass || ref.returnType != "V") return null
+    if (ref.parameterTypes.map(CharSequence::toString) != listOf(VIEW)) return null
+    if (call.registerCount != 2 || call.registerC != setup.localRegisterCount() || call.registerD != setup.parameterRegisterNumber(0)) return null
+    val helper = siblings.singleOrNull { method ->
+        method.definingClass == ref.definingClass && method.name == ref.name && method.returnType == ref.returnType &&
+            method.parameterTypes.map(CharSequence::toString) == listOf(VIEW)
+    } ?: return null
+    if (!AccessFlags.PRIVATE.isSet(helper.accessFlags) || AccessFlags.STATIC.isSet(helper.accessFlags)) return null
+    val body = helper.implementation?.instructions?.toList() ?: return null
+    return helper.takeIf { body.any { it.findsView() } }
+}
+
+/** The literal [method] loads right before its first [FIND_VIEW] call, made on its first parameter. */
+private fun findViewId(setup: Method): Int {
+    val instructions = setup.implementation!!.instructions.toList()
+    val at = instructions.indexOfFirst { it.findsView() }
     if (at < 1) refuse("${setup.descriptor()} makes no $FIND_VIEW call after loading an id")
     val call = instructions[at] as FiveRegisterInstruction
     val views = setup.implementation!!.registerCount - setup.parameterTypes.sumOf { width(it.toString()) }
