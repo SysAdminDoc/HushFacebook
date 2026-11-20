@@ -2183,6 +2183,12 @@ internal fun controlsUpdater(holders: List<ClassDef>, classOf: (String) -> Class
  * and a bridge lambda case (`LX/0A6J;->A1A`) traces the string just after it writes the controller's
  * control state field. The updater is the controller's one static `V` method taking it last that
  * writes the same field.
+ *
+ * 588's Android 9+ build (#102, read 2026-11-19) keeps the updater a class of its own again, one
+ * the controller's constructor takes (`LX/09N0;` takes `LX/09Mz;`), and its update
+ * (`LX/09Mz;->A00(LX/01PU;LX/03BE;LX/09NP;)V`) traces nothing either. With no static update, the
+ * updater is the one virtual call the controller's methods writing the field make to that class,
+ * handing it a value of the field's type.
  */
 private fun foldedFromCase(holders: List<ClassDef>, classOf: (String) -> ClassDef?): List<ControlsUpdater> {
     fun lambda(method: Method) = AccessFlags.BRIDGE.isSet(method.accessFlags) || AccessFlags.SYNTHETIC.isSet(method.accessFlags)
@@ -2200,9 +2206,37 @@ private fun foldedFromCase(holders: List<ClassDef>, classOf: (String) -> ClassDe
                         ((instruction as ReferenceInstruction).reference as FieldReference).key() == field.key()
                 } == true
         }
+        if (updates.isEmpty()) return@mapNotNull handedUpdater(controller, field)
         val update = updates.singleOrNull() ?: return@mapNotNull null
         ControlsUpdater(controller.type, true, "${controller.type}->${update.name}(${update.parameterTypes.joinToString("")})V")
     }.distinctBy { it.type }
+}
+
+/**
+ * The updater [controller] was built with, as its instance methods writing [field] call it: one
+ * `invoke-virtual` they all share, to a class the controller's constructor takes, of a `V` method
+ * taking [field]'s type. Null unless every such method makes that one call.
+ */
+private fun handedUpdater(controller: ClassDef, field: FieldReference): ControlsUpdater? {
+    val taken = controller.methods.filter { it.name == "<init>" }.flatMap { init -> init.parameterTypes.map(CharSequence::toString) }.toSet()
+    val writers = controller.methods.filter { method ->
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.name != "<init>" &&
+            method.implementation?.instructions?.any { instruction ->
+                instruction.opcode == Opcode.IPUT_OBJECT && ((instruction as ReferenceInstruction).reference as FieldReference).let {
+                    it.definingClass == field.definingClass && it.name == field.name && it.type == field.type
+                }
+            } == true
+    }
+    if (writers.isEmpty()) return null
+    val calls = writers.map { method ->
+        method.implementation!!.instructions.mapNotNull { instruction ->
+            ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode == Opcode.INVOKE_VIRTUAL }?.reference as? MethodReference)
+                ?.takeIf { call -> call.returnType == "V" && call.definingClass in taken && field.type in call.parameterTypes.map(CharSequence::toString) }
+                ?.let { call -> "${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})V" }
+        }.toSet()
+    }
+    val shared = calls.first().takeIf { first -> calls.all { it == first } }?.singleOrNull() ?: return null
+    return ControlsUpdater(shared.substringBefore("->"), false, shared, virtual = true)
 }
 
 /**
