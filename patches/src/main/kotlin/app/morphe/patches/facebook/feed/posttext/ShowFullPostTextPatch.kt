@@ -198,10 +198,24 @@ val showFullPostTextPatch = bytecodePatch(
                     patchLog.warning("${missing.message}, so the dark box behind feed video names isn't in this build")
                     null
                 }
+                // Feed posts draw their names through a header of their own, built from the same props.
+                val feed = try {
+                    findFeedNames(tray.text, reel)
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so a feed post's name keeps Facebook's look and line limit")
+                    null
+                }
                 try {
                     addReelNameBoxes(tray.text, reel, lines, look)
                 } catch (missing: PatchException) {
                     patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
+                }
+                if (feed != null) {
+                    try {
+                        addFeedNameBoxes(tray.text, feed)
+                    } catch (missing: PatchException) {
+                        patchLog.warning("${missing.message}, so a feed post's name keeps Facebook's look and line limit")
+                    }
                 }
             }
         } catch (missing: PatchException) {

@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -56,6 +57,10 @@ class NameBoxesFixtureTest {
         val entries: Set<String>,
         val lines: Set<String>,
         val look: String,
+        val feed: String,
+        val feedNames: Set<String>,
+        val feedLines: Set<String>,
+        val feedLook: String,
     )
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
@@ -65,16 +70,31 @@ class NameBoxesFixtureTest {
         // (`LX/0BEu;`, StoryViewerTitleComponent) wraps its name in one style in `render`, and
         // `LX/08yM;->A1B` makes the header's `LX/03GS;` props as a `LX/09BT;` or a `LX/02pb;`. Read
         // 2026-11-20 (#533): `A0B` and `A0D` read the props' name line count into v11 and v8, and the
-        // header keeps its look (DEFAULT, ON_MEDIA and the rest) in `A02`.
+        // header keeps its look (DEFAULT, ON_MEDIA and the rest) in `A02`. Feed posts build their names in
+        // `LX/02uV;->A04` instead (props in p2, the header in p1, its look in `A03`): the name goes into the
+        // builder at 58 and the line count into v10 at 74, and with tracing on the same happens in case 1
+        // of `LX/03Gn;->invoke` (the setter `A1s` at 70, the line count at 85).
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Hosts(
                 "LX/03rh;", 2, setOf("LX/0BEu;", "LX/0BF0;"), 3, "LX/09BS;", "LX/03GS;", setOf("LX/09BT;", "LX/02pb;"),
                 setOf("A0B/p1", "A0D/p2"), setOf("A0B/v11", "A0D/v8"), "LX/09BS;->A02:LX/02ta;",
+                "LX/02uV;->A04/p2/p1", setOf("LX/02uV;->A04@58/v0", "LX/03Gn;->invoke@70/v3"),
+                setOf("LX/02uV;->A04@74/v10", "LX/03Gn;->invoke@85/v0"), "LX/02uV;->A03:LX/02ta;",
             ),
         ),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
+
+    private val payloads = setOf(Opcode.PACKED_SWITCH_PAYLOAD, Opcode.SPARSE_SWITCH_PAYLOAD, Opcode.ARRAY_PAYLOAD)
+
+    /**
+     * [code] without the nop dexlib2 puts right before a switch or array payload to keep it aligned: a
+     * hook that shifts the payload by an odd number of code units adds one (588 `LX/03Gn;->invoke`).
+     */
+    private fun unpadded(code: List<Instruction>) = code.filterIndexed { at, instruction ->
+        instruction.opcode != Opcode.NOP || code.getOrNull(at + 1)?.opcode !in payloads
+    }
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
 
@@ -239,7 +259,7 @@ class NameBoxesFixtureTest {
                 val name = bundle.name
                 val abi = name.substringAfter("-$version-").substringBefore(".apkm")
                 val extension = listOf(ExtensionDex.classDef(CAPTION_BACKDROP))
-                val anchors = listOf(TRAY_TITLE_KEY, STORY_TITLE_SPEC, POST_HEADER_COMPONENT, REEL_AUTHOR_COMPONENT)
+                val anchors = listOf(TRAY_TITLE_KEY, STORY_TITLE_SPEC, POST_HEADER_COMPONENT, REEL_AUTHOR_COMPONENT, FEED_TITLE_TRACE)
                     .flatMap { FixtureDex.classesHolding(bundle, it) }
                     .filter { !it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
                 val made = FixtureDex.classes(bundle, madeIn(anchors.values) - anchors.keys)
@@ -283,6 +303,7 @@ class NameBoxesFixtureTest {
                 val reel = context.findReelNames(trayNames.text)
                 val lines = findNameLines(reel)
                 val look = context.findHeaderLook(reel)
+                val feed = context.findFeedNames(trayNames.text, reel)
                 val style = context.findBoxStyle(builderType)
                 val trayHost = trayNames.places.map { it.method.definingClass }.toSet().single()
                 val openStoryHosts = openStory.map { it.method.definingClass }.toSet()
@@ -293,11 +314,30 @@ class NameBoxesFixtureTest {
                 val entries = reel.entries.map { (method, props) -> "${method.name}/p$props" }.toSet()
                 val lineReads = lines.map { "${it.method.name}/v${it.register}" }.toSet()
                 val lookField = "${look.definingClass}->${look.name}:${look.type}"
+                val feedHost = feed.build.definingClass
+                val feedLook = "${feed.look.definingClass}->${feed.look.name}:${feed.look.type}"
                 expected[version]?.get(abi)?.let { hosts ->
                     assertEquals("$name: where the names are drawn", hosts, Hosts(
                         trayHost, trayNames.places.size, openStoryHosts, openStory.size, header, reel.props, marks, entries,
-                        lineReads, lookField,
+                        lineReads, lookField, "$feedHost->${feed.build.name}/p${feed.props}/p${feed.host}",
+                        feed.names.map { it.toString() }.toSet(), feed.lines.map { it.toString() }.toSet(), feedLook,
                     ))
+                }
+                // A feed post's header is its own class (#533), drawn in the same looks as the reel's, and
+                // builds its name in two places: itself, and the lambda it traces the build in.
+                assertTrue("$name: the feed's header is the reel's", feedHost != header)
+                assertEquals("$name: the feed's header looks like the reel's", look.type, feed.look.type)
+                assertEquals("$name: the feed's header is the look's owner", feedHost, feed.look.definingClass)
+                val feedMethods = (feed.names + feed.lines).map { it.method }.distinctBy { "${it.definingClass}->${it.name}" }
+                assertEquals("$name: the feed names a post in its build and its lambda", 2, feedMethods.size)
+                feedMethods.forEach { method ->
+                    assertEquals("$name: ${method.definingClass}->${method.name} names a post once and reads its lines once",
+                        1 to 1, feed.names.count { it.method == method } to feed.lines.count { it.method == method })
+                }
+                val lambda = feedMethods.single { it.definingClass != feedHost }.definingClass
+                // Negative control: without the lambda the traced build can't be found, so the patch says so.
+                assertThrows("$name: the feed's names were found without its traced build", PatchException::class.java) {
+                    PatchContexts.of(classes.filterKeys { it != lambda }.values.toList() + extension).findFeedNames(trayNames.text, reel)
                 }
                 assertEquals("$name: each entry of the header reads its name's line count", reel.entries.map { it.first }.toSet(),
                     lines.map { it.method }.toSet())
@@ -351,12 +391,13 @@ class NameBoxesFixtureTest {
                     PatchContexts.of(classes.filterKeys { it !in marks }.values.toList() + extension).findReelNames(trayNames.text)
                 }
 
-                val originals = ((trayNames.places + openStory + reel.marks + reel.names + lines).map { it.method } +
-                    reel.entries.map { it.first })
+                val originals = ((trayNames.places + openStory + reel.marks + reel.names + lines + feed.names + feed.lines)
+                    .map { it.method } + reel.entries.map { it.first } + feed.build)
                     .distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}" }
                     .associateWith { it.code() }
                 context.addStoryNameBoxes(trayNames.text, trayNames.places, openStory)
                 context.addReelNameBoxes(trayNames.text, reel, lines, look)
+                context.addFeedNameBoxes(trayNames.text, feed)
 
                 context.checkHelper(name, trayHost, STORY_NAME_HELPER, FOR_STORY_NAME, builderType, style)
                 openStoryHosts.forEach { host ->
@@ -365,10 +406,12 @@ class NameBoxesFixtureTest {
                         context.mutableClassDefBy(host).methods.none { it.name == STORY_NAME_HELPER })
                 }
                 context.checkHelper(name, header, REEL_NAME_HELPER, FOR_REEL_NAME, builderType, style)
+                context.checkHelper(name, feedHost, REEL_NAME_HELPER, FOR_REEL_NAME, builderType, style)
 
-                for ((method, original) in originals) {
+                for ((method, raw) in originals) {
                     val where = "$name: ${method.definingClass}->${method.name}"
-                    var patched = context.method(method).code()
+                    val original = unpadded(raw)
+                    var patched = unpadded(context.method(method).code())
                     val entry = reel.entries.singleOrNull { it.first == method }
                     if (entry != null) {
                         // The header says whose props it builds from, and how it's drawn, first thing:
@@ -389,10 +432,33 @@ class NameBoxesFixtureTest {
                             (patched[3] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD).take(it.registerCount) })
                         patched = patched.drop(4)
                     }
+                    if (method == feed.build) {
+                        // The feed's build says whose props it builds from and how its header is drawn, first
+                        // thing: the props and the header in its own first two registers, the header's look
+                        // read when there's a header, then the call.
+                        val mutable = context.method(method)
+                        val ins = method.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+                        val firstParameter = mutable.implementation!!.registerCount - ins
+                        assertEquals("$where starts by moving its props to v0", Triple(Opcode.MOVE_OBJECT_FROM16, 0, firstParameter + feed.props),
+                            (patched[0] as TwoRegisterInstruction).let { Triple(it.opcode, it.registerA, it.registerB) })
+                        assertEquals("$where moves its header to v1", Triple(Opcode.MOVE_OBJECT_FROM16, 1, firstParameter + feed.host),
+                            (patched[1] as TwoRegisterInstruction).let { Triple(it.opcode, it.registerA, it.registerB) })
+                        assertEquals("$where skips the look without a header", Opcode.IF_EQZ to 1,
+                            patched[2].opcode to (patched[2] as OneRegisterInstruction).registerA)
+                        assertEquals("$where skips straight to the call", 4, (patched[2] as BuilderOffsetInstruction).target.location.index)
+                        assertEquals("$where reads its look into v1", Opcode.IGET_OBJECT, patched[3].opcode)
+                        assertEquals(feedLook, (patched[3] as ReferenceInstruction).reference.toString())
+                        assertEquals(1 to 1, (patched[3] as TwoRegisterInstruction).let { it.registerA to it.registerB })
+                        assertTrue("$where then names its props and look", patched[4].names(HEADER))
+                        assertEquals("$where hands over v0 and v1", listOf(0, 1),
+                            (patched[4] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD).take(it.registerCount) })
+                        patched = patched.drop(5)
+                    }
                     val story = trayNames.places.filter { it.method == method }
                     val titles = openStory.filter { it.method == method }
-                    val names = reel.names.filter { it.method == method }
-                    val nameLines = lines.filter { it.method == method }
+                    val names = (reel.names + feed.names).filter { it.method == method }
+                    val nameHost = if (method in feedMethods) feedHost else header
+                    val nameLines = (lines + feed.lines).filter { it.method == method }
                     val reelMarks = reel.marks.filter { it.method == method }
                     when {
                         story.isNotEmpty() -> checkAfter(where, original, patched, story,
@@ -400,7 +466,7 @@ class NameBoxesFixtureTest {
                         titles.isNotEmpty() -> checkBefore(where, original, patched, titles,
                             "${method.definingClass}->$STORY_TITLE_HELPER($styleType)$styleType")
                         names.isNotEmpty() || nameLines.isNotEmpty() -> checkNamesAndLines(where, original, patched, names,
-                            "$header->$REEL_NAME_HELPER($builderType)V", nameLines)
+                            "$nameHost->$REEL_NAME_HELPER($builderType)V", nameLines)
                         else -> checkAfter(where, original, patched, reelMarks, REEL_AUTHOR)
                     }
                 }

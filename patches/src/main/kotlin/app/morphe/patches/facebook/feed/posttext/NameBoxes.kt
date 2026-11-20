@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -68,6 +69,9 @@ internal const val NAME_LINES = "$CAPTION_BACKDROP->nameLines(I)I"
 /** One of the looks the post header can be drawn in, named in its look enum's static initializer (588 `LX/02ta;`). */
 internal const val ON_MEDIA = "ON_MEDIA"
 
+/** The trace a feed post's header builds its name under when tracing is on (588 `LX/02uV;->A04`). */
+internal const val FEED_TITLE_TRACE = "render_title_text_builder"
+
 /**
  * Instruction [index] of [method] leaves an object in v[register]; the hook goes right after it. For an
  * open story's title, [index] is the call making the title's container or wrapping the shown title's
@@ -90,6 +94,23 @@ internal class TrayNames(val text: FieldReference, val places: List<Place>)
  * numbered), and [names] where each of those hands its text builder the name.
  */
 internal class ReelNames(val props: String, val marks: List<Place>, val entries: List<Pair<Method, Int>>, val names: List<Place>)
+
+/**
+ * A feed post's name (#533). Feed posts draw their header through a header class of their own (588
+ * `LX/02uV;`, FDSPostHeader), not the one a reel's author line makes ([findReelNames]). Its static
+ * [build] (588 `A04`) takes the header's props in parameter [props] and the header in [host] (p
+ * numbered), and the header keeps how it's drawn in [look]. [names] are where a name's text builder
+ * gets its text and [lines] where the name's line count is read, in [build] and in the lambda [build]
+ * hands its trace when tracing is on (588 `LX/03Gn;->invoke`).
+ */
+internal class FeedNames(
+    val build: Method,
+    val props: Int,
+    val host: Int,
+    val look: FieldReference,
+    val names: List<Place>,
+    val lines: List<Place>,
+)
 
 private fun isVirtualCall(instruction: Instruction) =
     instruction.opcode == Opcode.INVOKE_VIRTUAL || instruction.opcode == Opcode.INVOKE_VIRTUAL_RANGE
@@ -319,28 +340,83 @@ internal fun BytecodePatchContext.findReelNames(text: FieldReference): ReelNames
  * it's more than one line and there's text to follow the name, hands over to `A0D`, which reads it
  * again for the name and that text together. Each [Place] is the read, with the register it lands in.
  */
-internal fun findNameLines(reel: ReelNames): List<Place> = reel.entries.map { (method, _) ->
+internal fun findNameLines(reel: ReelNames): List<Place> = reel.entries.map { (method, _) -> lineRead(method, reel.props) }
+
+/** Where [method] reads the line count of its [props] props, with the register it lands in. */
+private fun lineRead(method: Method, props: String): Place {
     val code = method.implementation!!.instructions.toList()
     val reads = code.indices.filter { index ->
         code[index].opcode == Opcode.IGET &&
-            ((code[index] as ReferenceInstruction).reference as FieldReference).let { it.definingClass == reel.props && it.type == "I" }
+            ((code[index] as ReferenceInstruction).reference as FieldReference).let { it.definingClass == props && it.type == "I" }
     }
     val at = reads.singleOrNull()
-        ?: refuse("expected ${method.definingClass}->${method.name} to read its ${reel.props} props' line count once, found ${reads.size}")
-    Place(method, at, (code[at] as TwoRegisterInstruction).registerA)
+        ?: refuse("expected ${method.definingClass}->${method.name} to read its $props props' line count once, found ${reads.size}")
+    return Place(method, at, (code[at] as TwoRegisterInstruction).registerA)
 }
 
 /**
  * The post header's field holding how it's drawn (#533): an enum whose constants include [ON_MEDIA],
  * the look of a header drawn over a feed post's photo or video (588 `LX/09BS;->A02:LX/02ta;`).
  */
-internal fun BytecodePatchContext.findHeaderLook(reel: ReelNames): FieldReference {
-    val header = reel.names.map { it.method.definingClass }.toSet().single()
+internal fun BytecodePatchContext.findHeaderLook(reel: ReelNames): FieldReference =
+    lookOf(reel.names.map { it.method.definingClass }.toSet().single())
+
+/** [header]'s field holding how it's drawn ([findHeaderLook]). */
+private fun BytecodePatchContext.lookOf(header: String): FieldReference {
     val enums = classDefByOrNull(header)!!.instanceFields.filter { classDefByOrNull(it.type)?.superclass == "Ljava/lang/Enum;" }
     val looks = enums.takeIf { it.size == 1 } ?: enums.filter { field ->
         classDefByOrNull(field.type)!!.methods.any { it.name == "<clinit>" && loadsAny(it, ON_MEDIA) }
     }
     return looks.singleOrNull() ?: refuse("expected $header to keep one look naming \"$ON_MEDIA\", found ${looks.size}")
+}
+
+/**
+ * Finds a feed post's name ([FeedNames]). The one method loading [FEED_TITLE_TRACE] builds it (588
+ * `LX/02uV;->A04`, a588a9 `LX/02vR;->A04`): static, handed its own class's header and the [reel]
+ * header's props. It puts the name into a text builder's [text] field itself, and when tracing is on it
+ * hands the same build to a lambda it makes (588 `LX/03Gn;`, case 1 of its `invoke`), which gives the
+ * builder its name through a one-text setter (588 `LX/02tw;->A1s`). Each reads the props' line count
+ * once (588 `LX/03GS;->A00:I`).
+ */
+internal fun BytecodePatchContext.findFeedNames(text: FieldReference, reel: ReelNames): FeedNames {
+    val builds = methodsWithString(FEED_TITLE_TRACE)
+    val build = builds.singleOrNull()
+        ?: refuse("expected one method building a feed post's name (\"$FEED_TITLE_TRACE\"), found ${builds.size}")
+    val where = "${build.definingClass}->${build.name}"
+    val header = build.definingClass
+    val types = build.parameterTypes.map { it.toString() }
+    if (!AccessFlags.STATIC.isSet(build.accessFlags) || types.count { it == reel.props } != 1 || types.count { it == header } != 1) {
+        refuse("expected $where to be static and take one $header and one ${reel.props}")
+    }
+    // A static method's first parameter is p0; a long or a double takes two registers.
+    fun parameter(type: String) = types.take(types.indexOf(type)).sumOf { if (it == "J" || it == "D") 2 else 1 }
+    val puts = textPuts(build, text)
+    if (puts.isEmpty()) refuse("$where never puts a name into a text builder")
+
+    val setters = (classDefByOrNull(text.definingClass)?.methods ?: emptyList()).filter { method ->
+        method.returnType == "V" && method.parameterTypes.map { it.toString() } == listOf(CHAR_SEQUENCE) &&
+            textPuts(method, text).isNotEmpty()
+    }.map { it.name }.toSet()
+    fun setterCalls(method: Method): List<Place> {
+        val code = method.implementation?.instructions?.toList() ?: return emptyList()
+        return code.indices.filter { index ->
+            val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+            isVirtualCall(code[index]) && call != null && call.definingClass == text.definingClass && call.name in setters &&
+                call.returnType == "V" && call.parameterTypes.map { it.toString() } == listOf(CHAR_SEQUENCE)
+        }.map { Place(method, it, argument(code[it], 0)!!) }
+    }
+    val traced = madeBy(build).distinct().mapNotNull { classDefByOrNull(it) }.flatMap { it.methods }
+        .filter { it.name == "invoke" && setterCalls(it).isNotEmpty() }
+    val lambda = traced.singleOrNull() ?: refuse("expected $where to trace one lambda naming a post, found ${traced.size}")
+
+    return FeedNames(
+        build,
+        parameter(reel.props),
+        parameter(header),
+        lookOf(header),
+        puts + setterCalls(lambda),
+        listOf(lineRead(build, reel.props), lineRead(lambda, reel.props)),
+    )
 }
 
 private fun loadsAny(method: Method, string: String) = method.implementation?.instructions?.any { loads(it, string) } == true
@@ -517,7 +593,54 @@ internal fun BytecodePatchContext.addReelNameBoxes(
             """,
         )
     }
-    mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "reelNamesInBuild" }.returnEarly(true)
-    if (look != null) mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "feedVideoNamesInBuild" }.returnEarly(true)
-    if (lines.isNotEmpty()) mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "fullNamesInBuild" }.returnEarly(true)
+    switchOn("reelNamesInBuild")
+    if (look != null) switchOn("feedVideoNamesInBuild")
+    if (lines.isNotEmpty()) switchOn("fullNamesInBuild")
+}
+
+/** Makes [CAPTION_BACKDROP]'s [name] answer true, once. */
+private fun BytecodePatchContext.switchOn(name: String) {
+    val method = mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == name }
+    val code = method.implementation!!.instructions.toList()
+    val on = code.size > 1 && (code[0] as? NarrowLiteralInstruction)?.narrowLiteral == 1 && code[1].opcode == Opcode.RETURN
+    if (!on) method.returnEarly(true)
+}
+
+/**
+ * Boxes a feed post's name and lets it take more lines (#533), the way [addReelNameBoxes] does a reel's:
+ * the feed header's [FeedNames.build] says whose props it builds from and how the header is drawn as it
+ * starts (a missing header standing in for no look), right after each name goes into its text builder a
+ * helper on the header asks [CAPTION_BACKDROP] for a box (a feed video's, drawn over the video), and
+ * right after each line count is read it goes through the extension. The traced lambda runs inside
+ * [FeedNames.build], after that start.
+ */
+internal fun BytecodePatchContext.addFeedNameBoxes(text: FieldReference, feed: FeedNames) {
+    val builderType = text.definingClass
+    val style = findBoxStyle(builderType)
+    val host = feed.build.definingClass
+    requireReachable(style, host)
+    val extension = classDefByOrNull(CAPTION_BACKDROP)?.methods?.map { it.name }?.toSet().orEmpty()
+    listOf("feedVideoNamesInBuild", "fullNamesInBuild").forEach { name ->
+        if (name !in extension) refuse("the extension has no $CAPTION_BACKDROP->$name()")
+    }
+    // As in the reel header, the build's own first two registers are free at its start.
+    if (feed.build.localRegisterCount() < 2) refuse("$host->${feed.build.name} has no two registers of its own to name its props in")
+    addBoxHelper(host, REEL_NAME_HELPER, builderType, style, FOR_REEL_NAME)
+    addAfter(
+        feed.names.map { it to call(REEL_NAME_HELPER, builderType, it.register, host) } +
+            feed.lines.map { it to "invoke-static/range { v${it.register} .. v${it.register} }, $NAME_LINES\nmove-result v${it.register}" },
+    )
+    mutableClassDefBy(host).findMutableMethodOf(feed.build).addInstructions(
+        0,
+        """
+            move-object/from16 v0, p${feed.props}
+            move-object/from16 v1, p${feed.host}
+            if-eqz v1, :named
+            iget-object v1, v1, ${feed.look.definingClass}->${feed.look.name}:${feed.look.type}
+            :named
+            invoke-static { v0, v1 }, $HEADER
+        """,
+    )
+    switchOn("feedVideoNamesInBuild")
+    switchOn("fullNamesInBuild")
 }
