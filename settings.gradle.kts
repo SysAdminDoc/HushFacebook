@@ -37,8 +37,7 @@ pluginManagement {
 // CVE-2026-53914 (GHSA-r937-wjx7-w2jp), a deserialisation flaw in the Kotlin build cache, covers
 // every release before 2.4.20, so Kotlin needs no force here any more;
 // gradle/verification-metadata.xml says which version actually resolved. kotlin-stdlib and
-// kotlin-reflect on this classpath still resolve to 2.4.10, the copies Gradle 9.8.2 ships and
-// pins; they aren't the build cache code.
+// kotlin-reflect on this classpath resolve to 2.4.21, the copies Gradle 9.9.2 ships and pins.
 //
 // The same classpath brings Bouncy Castle 1.79, the version AGP's apkzlib, builder and
 // sdk-common ask for (the plugin itself asks for 1.77), and 1.79 is inside six of the
