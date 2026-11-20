@@ -3532,6 +3532,22 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_post_dates", TRUE);
 
     /**
+     * The line under a poster's name leaves out the song the post plays (#533,
+     * {@link app.morphe.extension.facebook.feed.PostDates#hideSong}), with no gap or extra dot. A
+     * change shows on the headers drawn after it.
+     */
+    public static final BooleanSetting HIDE_POST_SONGS =
+            new BooleanSetting("hushfacebook_hide_post_songs", FALSE);
+
+    /**
+     * A post's time under the poster's name ("15h", or the date) is bold like the name (#533,
+     * {@link app.morphe.extension.facebook.feed.PostDates#boldTime}). A change shows on the headers
+     * drawn after it.
+     */
+    public static final BooleanSetting BOLD_POST_TIMES =
+            new BooleanSetting("hushfacebook_bold_post_times", FALSE);
+
+    /**
      * Posts in the feed show their whole text instead of Facebook's cut with See more
      * ({@link app.morphe.extension.facebook.feed.FullPostText}). A change shows on the posts drawn
      * after it.
@@ -3587,6 +3603,22 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting DIM_REEL_NAMES =
             new BooleanSetting("hushfacebook_dim_reel_names", FALSE);
+
+    /**
+     * A name Facebook draws over a feed video, rather than above it, sits on the same dark box (#533,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}). A change shows on the
+     * headers drawn after it.
+     */
+    public static final BooleanSetting DIM_FEED_VIDEO_NAMES =
+            new BooleanSetting("hushfacebook_dim_feed_video_names", FALSE);
+
+    /**
+     * A post's name that Facebook cuts short with "..." wraps onto the next lines instead (#533,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#nameLines}); a name that fits still
+     * takes one line. A change shows on the headers drawn after it.
+     */
+    public static final BooleanSetting SHOW_FULL_NAMES =
+            new BooleanSetting("hushfacebook_show_full_names", FALSE);
 
     /**
      * Names in the stories row and on an open story sit on the caption's dark box (#490,

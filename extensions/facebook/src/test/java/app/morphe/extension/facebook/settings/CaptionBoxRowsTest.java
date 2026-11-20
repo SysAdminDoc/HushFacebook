@@ -69,7 +69,10 @@ public class CaptionBoxRowsTest {
         }
     }
 
-    /** #490: reel names get the box from the next row, then the darkness and soft edges every box shares. */
+    /**
+     * #490: reel names get the box from the next row, then names drawn over feed videos (#533), then the
+     * darkness and soft edges every box shares.
+     */
     @Test
     public void reelNamesDarknessAndSoftEdgesFollowTheCaptionRows() {
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
@@ -77,8 +80,9 @@ public class CaptionBoxRowsTest {
             int folded = indexOfKey(rows, Settings.DIM_FOLDED_REEL_CAPTIONS.key);
             assertTrue("Dark box behind folded captions is missing", folded >= 0);
             assertEquals(folded + 1, indexOfKey(rows, Settings.DIM_REEL_NAMES.key));
-            assertEquals(folded + 2, indexOfKey(rows, Settings.TEXT_BOX_DARKNESS.key));
-            assertEquals(folded + 3, indexOfKey(rows, Settings.SOFT_TEXT_BOXES.key));
+            assertEquals(folded + 2, indexOfKey(rows, Settings.DIM_FEED_VIDEO_NAMES.key));
+            assertEquals(folded + 3, indexOfKey(rows, Settings.TEXT_BOX_DARKNESS.key));
+            assertEquals(folded + 4, indexOfKey(rows, Settings.SOFT_TEXT_BOXES.key));
 
             SwitchPreference names = (SwitchPreference) rows.get(folded + 1);
             assertEquals("Dark box behind reel names", String.valueOf(names.getTitle()));
@@ -87,7 +91,14 @@ public class CaptionBoxRowsTest {
             assertFalse(names.isChecked());
             assertFalse(Settings.DIM_REEL_NAMES.defaultValue);
 
-            ValueRows.PercentRow darkness = (ValueRows.PercentRow) rows.get(folded + 2);
+            SwitchPreference feedNames = (SwitchPreference) rows.get(folded + 2);
+            assertEquals("Dark box behind feed video names", String.valueOf(feedNames.getTitle()));
+            assertEquals("When a video in your feed has the poster's name on top of the video, that name sits on the "
+                    + "same dark box. A change shows on the posts drawn after it.", String.valueOf(feedNames.getSummary()));
+            assertFalse(feedNames.isChecked());
+            assertFalse(Settings.DIM_FEED_VIDEO_NAMES.defaultValue);
+
+            ValueRows.PercentRow darkness = (ValueRows.PercentRow) rows.get(folded + 3);
             assertEquals("Box darkness", String.valueOf(darkness.getTitle()));
             assertEquals("The dark boxes are 70 percent black. Type a number to change it.",
                     String.valueOf(darkness.getSummary()));
@@ -98,7 +109,7 @@ public class CaptionBoxRowsTest {
             darkness.setText("4");
             assertEquals("The dark boxes are 10 percent black.", String.valueOf(darkness.getSummary()));
 
-            SwitchPreference soft = (SwitchPreference) rows.get(folded + 3);
+            SwitchPreference soft = (SwitchPreference) rows.get(folded + 4);
             assertEquals("Soft box edges", String.valueOf(soft.getTitle()));
             assertEquals("The dark boxes fade out at their edges instead of ending sharp. A change shows from the next "
                     + "reel or story.", String.valueOf(soft.getSummary()));
@@ -131,6 +142,7 @@ public class CaptionBoxRowsTest {
             assertEquals(-1, indexOfKey(rows, Settings.DIM_OPEN_REEL_CAPTIONS.key));
             assertEquals(-1, indexOfKey(rows, Settings.DIM_FOLDED_REEL_CAPTIONS.key));
             assertEquals(-1, indexOfKey(rows, Settings.DIM_REEL_NAMES.key));
+            assertEquals(-1, indexOfKey(rows, Settings.DIM_FEED_VIDEO_NAMES.key));
             assertEquals(-1, indexOfKey(rows, Settings.DIM_STORY_NAMES.key));
             assertEquals(-1, indexOfKey(rows, Settings.TEXT_BOX_DARKNESS.key));
             assertEquals(-1, indexOfKey(rows, Settings.SOFT_TEXT_BOXES.key));

@@ -3087,3 +3087,11 @@ Joined-up handwriting.	連筆手寫體。
 Every letter the same width, like a typewriter.	每個字母寬度相同，像打字機。
 The font file picked under Font file, in bold. Bold until one is picked.	在「字型檔」中選的檔案，以粗體顯示。選好之前為粗體。
 Header text font will be set to %1$s.	標題文字字型將設為 %1$s。
+Hide songs under names	隱藏名稱下方的歌曲
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	發布者名稱下方的那一行不再顯示貼文播放的歌曲，原本的位置也不會留白。
+Bold post times	貼文時間加粗
+The time or date under the poster's name is bold, like the name.	發布者名稱下方的時間或日期會像名稱一樣以粗體顯示。
+Show full names	顯示完整名稱
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	貼文頂端的長名稱會換到下一行，而不是以「...」結尾。放得下的名稱仍只佔一行。
+Dark box behind feed video names	動態消息影片名稱的深色底框
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	當動態消息中的影片把發布者名稱顯示在影片上時，這個名稱也會顯示在同樣的深色底框上。變更會在之後載入的貼文上生效。

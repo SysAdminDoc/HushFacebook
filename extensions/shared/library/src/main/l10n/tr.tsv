@@ -3083,3 +3083,11 @@ Joined-up handwriting.	Bitişik el yazısı.
 Every letter the same width, like a typewriter.	Daktilodaki gibi her harf aynı genişlikte.
 The font file picked under Font file, in bold. Bold until one is picked.	Yazı tipi dosyası altında seçilen dosya, kalın. Biri seçilene kadar kalın.
 Header text font will be set to %1$s.	Başlık metninin yazı tipi %1$s olarak ayarlanacak.
+Hide songs under names	Adların altındaki şarkıları gizle
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	Gönderi sahibinin adının altındaki satır, gönderide çalan şarkıyı göstermez ve yerinde boşluk kalmaz.
+Bold post times	Gönderi saatini kalın yap
+The time or date under the poster's name is bold, like the name.	Gönderi sahibinin adının altındaki saat ya da tarih, ad gibi kalın görünür.
+Show full names	Adları tam göster
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Bir gönderinin üstündeki uzun ad, "..." ile bitmek yerine sonraki satıra geçer. Sığan bir ad yine tek satırda kalır.
+Dark box behind feed video names	Akıştaki video adlarının arkasında koyu kutu
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Akışındaki bir video, gönderi sahibinin adını videonun üstünde gösterdiğinde bu ad da aynı koyu kutunun üstünde durur. Değişiklik, sonrasında yüklenen gönderilerde görünür.

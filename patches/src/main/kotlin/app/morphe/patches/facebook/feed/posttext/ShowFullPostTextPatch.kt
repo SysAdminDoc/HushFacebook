@@ -114,7 +114,8 @@ val showFullPostTextPatch = bytecodePatch(
     description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
         "A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, " +
         "and reel captions under Reels and Watch, where an open or folded caption can also sit on a dark box like subtitles. " +
-        "The names on reels and stories can get the same box.",
+        "The names on reels and stories can get the same box, and so can a name drawn over a video in the feed. " +
+        "A long name at the top of a post can wrap onto a second line instead of getting cut off.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -184,8 +185,21 @@ val showFullPostTextPatch = bytecodePatch(
                 patchLog.warning("${missing.message}, so the dark box behind story names isn't in this build")
             }
             if (reel != null) {
+                // A long post name and a feed video's name ride on the reel name's hooks (#533).
+                val lines = try {
+                    findNameLines(reel)
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so a post's name keeps Facebook's line limit")
+                    emptyList()
+                }
+                val look = try {
+                    findHeaderLook(reel)
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so the dark box behind feed video names isn't in this build")
+                    null
+                }
                 try {
-                    addReelNameBoxes(tray.text, reel)
+                    addReelNameBoxes(tray.text, reel, lines, look)
                 } catch (missing: PatchException) {
                     patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
                 }

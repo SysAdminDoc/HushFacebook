@@ -68,11 +68,15 @@ final class SwitchLabels {
         if (setting == Settings.SEEN_POSTS_COME_BACK_ONCE) return L10n.t("Let each post come back once");
         if (setting == Settings.HIDE_META_AI_QUESTIONS) return L10n.t("Hide Meta AI questions under posts");
         if (setting == Settings.KEEP_POST_DATES) return L10n.t("Keep post dates");
+        if (setting == Settings.HIDE_POST_SONGS) return L10n.t("Hide songs under names");
+        if (setting == Settings.BOLD_POST_TIMES) return L10n.t("Bold post times");
         if (setting == Settings.SHOW_FULL_POST_TEXT) return L10n.t("Show full post text");
+        if (setting == Settings.SHOW_FULL_NAMES) return L10n.t("Show full names");
         if (setting == Settings.SHOW_FULL_REEL_CAPTIONS) return L10n.t("Show full reel captions");
         if (setting == Settings.DIM_OPEN_REEL_CAPTIONS) return L10n.t("Dark box behind open captions");
         if (setting == Settings.DIM_FOLDED_REEL_CAPTIONS) return L10n.t("Dark box behind folded captions");
         if (setting == Settings.DIM_REEL_NAMES) return L10n.t("Dark box behind reel names");
+        if (setting == Settings.DIM_FEED_VIDEO_NAMES) return L10n.t("Dark box behind feed video names");
         if (setting == Settings.DIM_STORY_NAMES) return L10n.t("Dark box behind story names");
         if (setting == Settings.SOFT_TEXT_BOXES) return L10n.t("Soft box edges");
         if (setting == Settings.TRANSLATE_POST_LINK) return L10n.t("Add a Translate link to posts");

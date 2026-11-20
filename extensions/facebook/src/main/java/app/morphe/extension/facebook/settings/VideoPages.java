@@ -76,6 +76,18 @@ final class VideoPages {
         return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.storyNamesInBuild();
     }
 
+    /** Whether this build carries the dark box behind a name drawn over a feed video (#533), counted in as the caption's is. */
+    static boolean feedVideoNamesInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.feedVideoNamesInBuild();
+    }
+
+    /** Whether this build lets a post's name take more lines (#533), counted in as the caption's box is. */
+    static boolean fullNamesInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.fullNamesInBuild();
+    }
+
     /** Reels and Watch, in every build, with the map of the four places Reels show up. */
     static void reels(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
@@ -335,8 +347,14 @@ final class VideoPages {
                         L10n.t("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a "
                                 + "bright video. A change shows from the next reel.")));
             }
+            // The same hook, for a feed post's header drawn over its video (#533).
+            if (feedVideoNamesInBuild()) {
+                reels.addPreference(toggle(context, Settings.DIM_FEED_VIDEO_NAMES,
+                        L10n.t("When a video in your feed has the poster's name on top of the video, that name sits on "
+                                + "the same dark box. A change shows on the posts drawn after it.")));
+            }
             // Every box's look, story names' included, read as each box is made (#490).
-            if (captionBackdropInBuild() || reelNamesInBuild() || storyNamesInBuild()) {
+            if (captionBackdropInBuild() || reelNamesInBuild() || storyNamesInBuild() || feedVideoNamesInBuild()) {
                 reels.addPreference(HushfacebookPreferenceFragment.boxDarknessRow(context));
                 reels.addPreference(toggle(context, Settings.SOFT_TEXT_BOXES,
                         L10n.t("The dark boxes fade out at their edges instead of ending sharp. A change shows from the "

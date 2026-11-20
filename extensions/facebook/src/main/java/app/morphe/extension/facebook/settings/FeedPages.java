@@ -42,6 +42,7 @@ import java.util.Set;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.feed.FeedTypeNames;
 import app.morphe.extension.facebook.feed.HiddenTally;
+import app.morphe.extension.facebook.feed.PostDates;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.feed.TranslateLanguages;
 import app.morphe.extension.facebook.misc.BreakTimer;
@@ -358,11 +359,26 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.KEEP_POST_DATES,
                         L10n.t("Shows the post's date under the poster's name instead of Facebook's rotating details, which can go "
                                 + "blank on some phones.")));
+                // Both read as each header's line is made, so a change shows on the posts drawn after it (#533).
+                if (songsInBuild()) {
+                    feed.addPreference(toggle(context, Settings.HIDE_POST_SONGS,
+                            L10n.t("The line under the poster's name leaves out the song a post plays, with no gap where it was.")));
+                }
+                if (timesInBuild()) {
+                    feed.addPreference(toggle(context, Settings.BOLD_POST_TIMES,
+                            L10n.t("The time or date under the poster's name is bold, like the name.")));
+                }
             }
             if (build.contains(PatchFamily.FULL_POST_TEXT)) {
                 feed.addPreference(toggle(context, Settings.SHOW_FULL_POST_TEXT,
                         L10n.t("Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold "
                                 + "it back. Reel captions have their own switch under Reels and Watch.")));
+                // Read as each header's name is laid out (#533).
+                if (VideoPages.fullNamesInBuild()) {
+                    feed.addPreference(toggle(context, Settings.SHOW_FULL_NAMES,
+                            L10n.t("A long name at the top of a post wraps onto the next line instead of ending in \"...\". "
+                                    + "A name that fits still takes one line.")));
+                }
             }
             if (build.contains(PatchFamily.FOLD_LONG_TEXT)) {
                 // Read as each post's text is cut, so a change shows on the posts drawn after it.
@@ -796,6 +812,18 @@ final class FeedPages {
         feed.addPreference(onceMore);
         feed.addPreference(keep);
         feed.addPreference(forget);
+    }
+
+    /** Whether this build can leave a post's song out of its subtitle (#533), counted in with Keep post dates by a test. */
+    static boolean songsInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.POST_DATES) : PostDates.songsInBuild();
+    }
+
+    /** Whether this build can show a post's time in bold (#533), counted in with Keep post dates by a test. */
+    static boolean timesInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.POST_DATES) : PostDates.timesInBuild();
     }
 
     /** Whether [build] boxes story names: Show full post text with its story-name hook in (#490). */

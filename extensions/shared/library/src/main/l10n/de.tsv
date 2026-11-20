@@ -3083,3 +3083,11 @@ Joined-up handwriting.	Verbundene Schreibschrift.
 Every letter the same width, like a typewriter.	Jeder Buchstabe gleich breit, wie bei einer Schreibmaschine.
 The font file picked under Font file, in bold. Bold until one is picked.	Die unter Schriftdatei gewählte Datei, in Fett. Fett, bis eine gewählt ist.
 Header text font will be set to %1$s.	Die Schriftart des Kopfzeilentexts wird auf %1$s gesetzt.
+Hide songs under names	Songs unter Namen ausblenden
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	Die Zeile unter dem Namen des Verfassers lässt den Song weg, den ein Beitrag abspielt, ohne Lücke an seiner Stelle.
+Bold post times	Beitragszeit fett
+The time or date under the poster's name is bold, like the name.	Die Uhrzeit oder das Datum unter dem Namen des Verfassers ist fett, wie der Name.
+Show full names	Vollständige Namen zeigen
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Ein langer Name oben in einem Beitrag geht in der nächsten Zeile weiter, statt mit „...“ zu enden. Ein Name, der passt, bleibt einzeilig.
+Dark box behind feed video names	Dunkler Kasten hinter Namen auf Feed-Videos
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Wenn ein Video in deinem Newsfeed den Namen des Verfassers auf dem Video zeigt, liegt dieser Name auf demselben dunklen Kasten. Die Änderung zeigt sich bei den danach geladenen Beiträgen.

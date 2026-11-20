@@ -3083,3 +3083,11 @@ Joined-up handwriting.	ลายมือเขียนแบบตัวต่
 Every letter the same width, like a typewriter.	ตัวอักษรทุกตัวกว้างเท่ากัน เหมือนเครื่องพิมพ์ดีด
 The font file picked under Font file, in bold. Bold until one is picked.	ไฟล์ที่เลือกไว้ใน ไฟล์ฟอนต์ เป็นตัวหนา เป็นตัวหนาจนกว่าจะเลือกไฟล์
 Header text font will be set to %1$s.	ฟอนต์ข้อความส่วนหัวจะถูกตั้งค่าเป็น %1$s
+Hide songs under names	ซ่อนเพลงใต้ชื่อ
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	บรรทัดใต้ชื่อของผู้โพสต์จะไม่แสดงเพลงที่โพสต์เล่นอยู่ และไม่เหลือช่องว่างตรงที่เคยมี
+Bold post times	เวลาโพสต์เป็นตัวหนา
+The time or date under the poster's name is bold, like the name.	เวลาหรือวันที่ใต้ชื่อของผู้โพสต์จะเป็นตัวหนาเหมือนชื่อ
+Show full names	แสดงชื่อเต็ม
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	ชื่อยาวที่ด้านบนของโพสต์จะขึ้นบรรทัดใหม่แทนการลงท้ายด้วย "..." ส่วนชื่อที่พอดีจะยังอยู่ในบรรทัดเดียว
+Dark box behind feed video names	กล่องสีเข้มหลังชื่อบนวิดีโอในฟีด
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	เมื่อวิดีโอในฟีดข่าวแสดงชื่อของผู้โพสต์ทับอยู่บนวิดีโอ ชื่อนั้นจะอยู่บนกล่องสีเข้มเดียวกัน การเปลี่ยนแปลงจะเห็นในโพสต์ที่โหลดหลังจากนั้น

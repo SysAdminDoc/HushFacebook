@@ -3078,3 +3078,11 @@ Joined-up handwriting.	连笔手写体。
 Every letter the same width, like a typewriter.	每个字母宽度相同，像打字机。
 The font file picked under Font file, in bold. Bold until one is picked.	在“字体文件”中选的文件，以粗体显示。选好之前为粗体。
 Header text font will be set to %1$s.	顶部文字字体将设为 %1$s。
+Hide songs under names	隐藏名字下方的歌曲
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	发布者姓名下方的那一行不再显示帖子播放的歌曲，原位置也不会留空。
+Bold post times	帖子时间加粗
+The time or date under the poster's name is bold, like the name.	发布者姓名下方的时间或日期会像姓名一样加粗显示。
+Show full names	显示完整名字
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	帖子顶部的长名字会换到下一行，而不是以“...”结尾。放得下的名字仍只占一行。
+Dark box behind feed video names	动态消息视频名字的深色底框
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	当动态消息中的视频把发布者姓名显示在视频上时，这个名字也会显示在同样的深色底框上。更改在之后加载的帖子上生效。

@@ -26,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
@@ -53,6 +54,8 @@ class NameBoxesFixtureTest {
         val props: String,
         val marks: Set<String>,
         val entries: Set<String>,
+        val lines: Set<String>,
+        val look: String,
     )
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
@@ -60,11 +63,13 @@ class NameBoxesFixtureTest {
         // 588, read 2026-11-18: `LX/03rh;->render` names two builders "profile_name", `LX/0BF0;` hands its
         // title to a container in two methods (`render` and `A0A`), the title an open story shows
         // (`LX/0BEu;`, StoryViewerTitleComponent) wraps its name in one style in `render`, and
-        // `LX/08yM;->A1B` makes the header's `LX/03GS;` props as a `LX/09BT;` or a `LX/02pb;`.
+        // `LX/08yM;->A1B` makes the header's `LX/03GS;` props as a `LX/09BT;` or a `LX/02pb;`. Read
+        // 2026-11-20 (#533): `A0B` and `A0D` read the props' name line count into v11 and v8, and the
+        // header keeps its look (DEFAULT, ON_MEDIA and the rest) in `A02`.
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Hosts(
                 "LX/03rh;", 2, setOf("LX/0BEu;", "LX/0BF0;"), 3, "LX/09BS;", "LX/03GS;", setOf("LX/09BT;", "LX/02pb;"),
-                setOf("A0B/p1", "A0D/p2"),
+                setOf("A0B/p1", "A0D/p2"), setOf("A0B/v11", "A0D/v8"), "LX/09BS;->A02:LX/02ta;",
             ),
         ),
     )
@@ -193,6 +198,36 @@ class NameBoxesFixtureTest {
             patched.filterIndexed { at, _ -> at !in hooks }.map { it.opcode })
     }
 
+    /**
+     * Checks [patched] is [original] with one call to [nameCall] right after each of [names], handed
+     * that place's register, and right after each of [lines] the line count through [NAME_LINES] and
+     * back into its register.
+     */
+    private fun checkNamesAndLines(where: String, original: List<Instruction>, patched: List<Instruction>, names: List<Place>,
+                                   nameCall: String, lines: List<Place>) {
+        assertEquals("$where: one instruction per name hook, two per line hook", original.size + names.size + 2 * lines.size, patched.size)
+        var added = 0
+        val hooks = mutableSetOf<Int>()
+        (names.map { it to false } + lines.map { it to true }).sortedBy { it.first.index }.forEach { (place, line) ->
+            val at = place.index + 1 + added
+            val hook = patched[at]
+            assertTrue("$where: the hook after $place calls ${if (line) NAME_LINES else nameCall}", hook.names(if (line) NAME_LINES else nameCall))
+            assertEquals("$where: $place's register handed over", place.register to 1,
+                (hook as RegisterRangeInstruction).let { it.startRegister to it.registerCount })
+            hooks += at
+            if (line) {
+                assertEquals("$where: the line count goes back in v${place.register}", Opcode.MOVE_RESULT to place.register,
+                    patched[at + 1].opcode to (patched[at + 1] as OneRegisterInstruction).registerA)
+                hooks += at + 1
+                added += 2
+            } else {
+                added += 1
+            }
+        }
+        assertEquals("$where: the rest is Facebook's", original.map { it.opcode },
+            patched.filterIndexed { at, _ -> at !in hooks }.map { it.opcode })
+    }
+
     private fun inBuild(context: BytecodePatchContext, name: String) =
         (context.mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == name }.code()[0] as NarrowLiteralInstruction).narrowLiteral
 
@@ -236,12 +271,18 @@ class NameBoxesFixtureTest {
                 val styles = FixtureDex.classes(bundle, shaped.map { it.returnType }.toSet())
                 val emptyStyles = styles.values.flatMap { it.staticFields }.map { it.type }.filter { it.startsWith("LX/") }.toSet()
                 val backgrounds = FixtureDex.classes(bundle, shaped.map { it.definingClass }.toSet() + emptyStyles)
-                val classes = made + headerMade + backgrounds + styles + chain + tables + anchors + headerAskers
+                // The looks a post header can take: the enums its fields hold (#533).
+                val looks = FixtureDex.classes(bundle, anchors.values.flatMap { it.instanceFields }.map { it.type }
+                    .filter { it.startsWith("LX/") }.toSet() - anchors.keys)
+                    .filterValues { it.superclass == "Ljava/lang/Enum;" }
+                val classes = made + headerMade + backgrounds + styles + chain + tables + anchors + headerAskers + looks
 
                 val context = PatchContexts.of(classes.values.toList() + extension)
                 val trayNames = context.findTrayNames()
                 val openStory = context.findOpenStoryNames(trayNames.text)
                 val reel = context.findReelNames(trayNames.text)
+                val lines = findNameLines(reel)
+                val look = context.findHeaderLook(reel)
                 val style = context.findBoxStyle(builderType)
                 val trayHost = trayNames.places.map { it.method.definingClass }.toSet().single()
                 val openStoryHosts = openStory.map { it.method.definingClass }.toSet()
@@ -250,10 +291,23 @@ class NameBoxesFixtureTest {
                     ((place.method.code()[place.index] as ReferenceInstruction).reference as MethodReference).definingClass
                 }.toSet()
                 val entries = reel.entries.map { (method, props) -> "${method.name}/p$props" }.toSet()
+                val lineReads = lines.map { "${it.method.name}/v${it.register}" }.toSet()
+                val lookField = "${look.definingClass}->${look.name}:${look.type}"
                 expected[version]?.get(abi)?.let { hosts ->
                     assertEquals("$name: where the names are drawn", hosts, Hosts(
                         trayHost, trayNames.places.size, openStoryHosts, openStory.size, header, reel.props, marks, entries,
+                        lineReads, lookField,
                     ))
+                }
+                assertEquals("$name: each entry of the header reads its name's line count", reel.entries.map { it.first }.toSet(),
+                    lines.map { it.method }.toSet())
+                assertEquals("$name: the header's look is its own", header, look.definingClass)
+                assertTrue("$name: the header's look names ON_MEDIA", (looks[look.type]?.methods ?: emptyList()).any {
+                    it.name == "<clinit>" && holdsString(it, "ON_MEDIA")
+                })
+                // Negative control: without the look's enum the header's look can't be told.
+                assertThrows("$name: a header look was found without its enum", PatchException::class.java) {
+                    PatchContexts.of(classes.filterKeys { it !in looks.keys }.values.toList() + extension).findHeaderLook(reel)
                 }
                 assertTrue("$name: a story in the row has a name", trayNames.places.isNotEmpty())
                 assertTrue("$name: an open story has a name", openStory.isNotEmpty())
@@ -297,11 +351,12 @@ class NameBoxesFixtureTest {
                     PatchContexts.of(classes.filterKeys { it !in marks }.values.toList() + extension).findReelNames(trayNames.text)
                 }
 
-                val originals = (trayNames.places + openStory + reel.marks + reel.names).map { it.method }
+                val originals = ((trayNames.places + openStory + reel.marks + reel.names + lines).map { it.method } +
+                    reel.entries.map { it.first })
                     .distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}" }
                     .associateWith { it.code() }
                 context.addStoryNameBoxes(trayNames.text, trayNames.places, openStory)
-                context.addReelNameBoxes(trayNames.text, reel)
+                context.addReelNameBoxes(trayNames.text, reel, lines, look)
 
                 context.checkHelper(name, trayHost, STORY_NAME_HELPER, FOR_STORY_NAME, builderType, style)
                 openStoryHosts.forEach { host ->
@@ -316,31 +371,43 @@ class NameBoxesFixtureTest {
                     var patched = context.method(method).code()
                     val entry = reel.entries.singleOrNull { it.first == method }
                     if (entry != null) {
-                        // The header says whose props it builds from first thing.
-                        val hook = patched[0]
-                        assertTrue("$where starts by naming its props", hook.names(HEADER))
+                        // The header says whose props it builds from, and how it's drawn, first thing:
+                        // the props and its look in its own first two registers, then the call.
                         val mutable = context.method(method)
                         val ins = (if (AccessFlags.STATIC.isSet(method.accessFlags)) 0 else 1) +
                             method.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
-                        assertEquals("$where hands over its props", mutable.implementation!!.registerCount - ins + entry.second,
-                            (hook as RegisterRangeInstruction).startRegister)
-                        patched = patched.drop(1)
+                        val firstParameter = mutable.implementation!!.registerCount - ins
+                        assertEquals("$where starts by moving its props to v0", Triple(Opcode.MOVE_OBJECT_FROM16, 0, firstParameter + entry.second),
+                            (patched[0] as TwoRegisterInstruction).let { Triple(it.opcode, it.registerA, it.registerB) })
+                        assertEquals("$where moves itself to v1", Triple(Opcode.MOVE_OBJECT_FROM16, 1, firstParameter),
+                            (patched[1] as TwoRegisterInstruction).let { Triple(it.opcode, it.registerA, it.registerB) })
+                        assertEquals("$where reads its look into v1", Opcode.IGET_OBJECT, patched[2].opcode)
+                        assertEquals(lookField, (patched[2] as ReferenceInstruction).reference.toString())
+                        assertEquals(1 to 1, (patched[2] as TwoRegisterInstruction).let { it.registerA to it.registerB })
+                        assertTrue("$where then names its props and look", patched[3].names(HEADER))
+                        assertEquals("$where hands over v0 and v1", listOf(0, 1),
+                            (patched[3] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD).take(it.registerCount) })
+                        patched = patched.drop(4)
                     }
                     val story = trayNames.places.filter { it.method == method }
                     val titles = openStory.filter { it.method == method }
                     val names = reel.names.filter { it.method == method }
+                    val nameLines = lines.filter { it.method == method }
                     val reelMarks = reel.marks.filter { it.method == method }
                     when {
                         story.isNotEmpty() -> checkAfter(where, original, patched, story,
                             "${method.definingClass}->$STORY_NAME_HELPER($builderType)V")
                         titles.isNotEmpty() -> checkBefore(where, original, patched, titles,
                             "${method.definingClass}->$STORY_TITLE_HELPER($styleType)$styleType")
-                        names.isNotEmpty() -> checkAfter(where, original, patched, names, "$header->$REEL_NAME_HELPER($builderType)V")
+                        names.isNotEmpty() || nameLines.isNotEmpty() -> checkNamesAndLines(where, original, patched, names,
+                            "$header->$REEL_NAME_HELPER($builderType)V", nameLines)
                         else -> checkAfter(where, original, patched, reelMarks, REEL_AUTHOR)
                     }
                 }
                 assertEquals("$name: CaptionBackdrop.storyNamesInBuild() isn't switched on", 1, inBuild(context, "storyNamesInBuild"))
                 assertEquals("$name: CaptionBackdrop.reelNamesInBuild() isn't switched on", 1, inBuild(context, "reelNamesInBuild"))
+                assertEquals("$name: CaptionBackdrop.feedVideoNamesInBuild() isn't switched on", 1, inBuild(context, "feedVideoNamesInBuild"))
+                assertEquals("$name: CaptionBackdrop.fullNamesInBuild() isn't switched on", 1, inBuild(context, "fullNamesInBuild"))
                 checked += version
             }
         }

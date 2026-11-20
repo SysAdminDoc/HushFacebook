@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.tableStringAt
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
 import app.morphe.util.writersReaching
@@ -61,7 +62,11 @@ private const val OBJECT = "Ljava/lang/Object;"
 internal const val FOR_STORY_NAME = "$CAPTION_BACKDROP->forStoryName()$DRAWABLE"
 internal const val FOR_REEL_NAME = "$CAPTION_BACKDROP->forReelName()$DRAWABLE"
 internal const val REEL_AUTHOR = "$CAPTION_BACKDROP->reelAuthor($OBJECT)V"
-internal const val HEADER = "$CAPTION_BACKDROP->header($OBJECT)V"
+internal const val HEADER = "$CAPTION_BACKDROP->header($OBJECT$OBJECT)V"
+internal const val NAME_LINES = "$CAPTION_BACKDROP->nameLines(I)I"
+
+/** One of the looks the post header can be drawn in, named in its look enum's static initializer (588 `LX/02ta;`). */
+internal const val ON_MEDIA = "ON_MEDIA"
 
 /**
  * Instruction [index] of [method] leaves an object in v[register]; the hook goes right after it. For an
@@ -309,6 +314,38 @@ internal fun BytecodePatchContext.findReelNames(text: FieldReference): ReelNames
 }
 
 /**
+ * Where each of the header's name methods reads how many lines the name may take (#533): the one int
+ * its props carry (588 `LX/03GS;->A00:I`). 588's `LX/09BS;->A0B` reads it for a name alone and, when
+ * it's more than one line and there's text to follow the name, hands over to `A0D`, which reads it
+ * again for the name and that text together. Each [Place] is the read, with the register it lands in.
+ */
+internal fun findNameLines(reel: ReelNames): List<Place> = reel.entries.map { (method, _) ->
+    val code = method.implementation!!.instructions.toList()
+    val reads = code.indices.filter { index ->
+        code[index].opcode == Opcode.IGET &&
+            ((code[index] as ReferenceInstruction).reference as FieldReference).let { it.definingClass == reel.props && it.type == "I" }
+    }
+    val at = reads.singleOrNull()
+        ?: refuse("expected ${method.definingClass}->${method.name} to read its ${reel.props} props' line count once, found ${reads.size}")
+    Place(method, at, (code[at] as TwoRegisterInstruction).registerA)
+}
+
+/**
+ * The post header's field holding how it's drawn (#533): an enum whose constants include [ON_MEDIA],
+ * the look of a header drawn over a feed post's photo or video (588 `LX/09BS;->A02:LX/02ta;`).
+ */
+internal fun BytecodePatchContext.findHeaderLook(reel: ReelNames): FieldReference {
+    val header = reel.names.map { it.method.definingClass }.toSet().single()
+    val enums = classDefByOrNull(header)!!.instanceFields.filter { classDefByOrNull(it.type)?.superclass == "Ljava/lang/Enum;" }
+    val looks = enums.takeIf { it.size == 1 } ?: enums.filter { field ->
+        classDefByOrNull(field.type)!!.methods.any { it.name == "<clinit>" && loadsAny(it, ON_MEDIA) }
+    }
+    return looks.singleOrNull() ?: refuse("expected $header to keep one look naming \"$ON_MEDIA\", found ${looks.size}")
+}
+
+private fun loadsAny(method: Method, string: String) = method.implementation?.instructions?.any { loads(it, string) } == true
+
+/**
  * Adds a helper to [host] that asks [ask] for a drawable and, given one, puts it on a [builderType]
  * text builder as its background.
  */
@@ -384,10 +421,17 @@ private fun BytecodePatchContext.addStyleHelper(host: String, name: String, styl
 }
 
 /** Adds [code] after each of [places], the last of a method first so the earlier indices still hold. */
-private fun BytecodePatchContext.addAfter(places: List<Place>, code: (Place) -> String) {
-    places.groupBy { it.method }.forEach { (method, at) ->
+private fun BytecodePatchContext.addAfter(places: List<Place>, code: (Place) -> String) = addAfter(places.map { it to code(it) })
+
+/**
+ * Adds each hook's code right after its place, the last of a method first so the earlier indices still
+ * hold. A way that jumps to the instruction after a place skips its hook, which only takes what the
+ * place itself left.
+ */
+private fun BytecodePatchContext.addAfter(hooks: List<Pair<Place, String>>) {
+    hooks.groupBy { it.first.method }.forEach { (method, at) ->
         val mutable = mutableClassDefBy(method.definingClass).findMutableMethodOf(method)
-        at.sortedByDescending { it.index }.forEach { mutable.addInstructions(it.index + 1, code(it)) }
+        at.sortedByDescending { it.first.index }.forEach { (place, code) -> mutable.addInstructions(place.index + 1, code) }
     }
 }
 
@@ -432,22 +476,48 @@ internal fun BytecodePatchContext.addStoryNameBoxes(text: FieldReference, tray: 
 
 /**
  * Boxes a reel's name (#490): its author component's header props are marked as they're made, the
- * header's name methods say whose props they build from as they start, and right after the name goes
- * into its text builder a helper on the header asks [CAPTION_BACKDROP] for a box.
+ * header's name methods say whose props they build from, and how the header is drawn ([look], from
+ * [findHeaderLook]), as they start, and right after the name goes into its text builder a helper on the
+ * header asks [CAPTION_BACKDROP] for a box: a reel's, or a feed video's drawn over the video (#533).
+ * Right after each of [lines] ([findNameLines]) the name's line count goes through the extension too.
  */
-internal fun BytecodePatchContext.addReelNameBoxes(text: FieldReference, reel: ReelNames) {
+internal fun BytecodePatchContext.addReelNameBoxes(
+    text: FieldReference,
+    reel: ReelNames,
+    lines: List<Place> = emptyList(),
+    look: FieldReference? = null,
+) {
     val builderType = text.definingClass
     val style = findBoxStyle(builderType)
     val host = reel.names.map { it.method.definingClass }.toSet().single()
     requireReachable(style, host)
-    val inBuild = classDefByOrNull(CAPTION_BACKDROP)?.methods?.any { it.name == "reelNamesInBuild" }
-    if (inBuild != true) refuse("the extension has no $CAPTION_BACKDROP->reelNamesInBuild()")
+    val extension = classDefByOrNull(CAPTION_BACKDROP)?.methods?.map { it.name }?.toSet().orEmpty()
+    listOf("reelNamesInBuild", "feedVideoNamesInBuild", "fullNamesInBuild").forEach { name ->
+        if (name !in extension) refuse("the extension has no $CAPTION_BACKDROP->$name()")
+    }
+    // The header's own registers at its start are free, nothing having written them yet; the props and
+    // the look go in the first two.
+    reel.entries.forEach { (method, _) ->
+        if (method.localRegisterCount() < 2) refuse("${method.definingClass}->${method.name} has no two registers of its own to name its props in")
+    }
     addBoxHelper(host, REEL_NAME_HELPER, builderType, style, FOR_REEL_NAME)
     addAfter(reel.marks) { "invoke-static/range { v${it.register} .. v${it.register} }, $REEL_AUTHOR" }
-    addAfter(reel.names) { call(REEL_NAME_HELPER, builderType, it.register, host) }
+    addAfter(
+        reel.names.map { it to call(REEL_NAME_HELPER, builderType, it.register, host) } +
+            lines.map { it to "invoke-static/range { v${it.register} .. v${it.register} }, $NAME_LINES\nmove-result v${it.register}" },
+    )
     reel.entries.forEach { (method, props) ->
-        mutableClassDefBy(method.definingClass).findMutableMethodOf(method)
-            .addInstructions(0, "invoke-static/range { p$props .. p$props }, $HEADER")
+        val readsLook = look != null && !AccessFlags.STATIC.isSet(method.accessFlags)
+        mutableClassDefBy(method.definingClass).findMutableMethodOf(method).addInstructions(
+            0,
+            """
+                move-object/from16 v0, p$props
+                ${if (readsLook) "move-object/from16 v1, p0\niget-object v1, v1, ${look!!.definingClass}->${look.name}:${look.type}" else "const/4 v1, 0x0"}
+                invoke-static { v0, v1 }, $HEADER
+            """,
+        )
     }
     mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "reelNamesInBuild" }.returnEarly(true)
+    if (look != null) mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "feedVideoNamesInBuild" }.returnEarly(true)
+    if (lines.isNotEmpty()) mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "fullNamesInBuild" }.returnEarly(true)
 }

@@ -12,6 +12,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.enableStatus
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -59,7 +60,8 @@ val keepPostDatesPatch = bytecodePatch(
     name = "Keep post dates",
     description = "Keeps the date under the poster's name, so you can always tell how old a post is. Facebook's " +
         "newer header can swap it for rotating details, and on some phones the line goes blank. On by default. " +
-        "Turn it off in Hushfacebook settings > News feed.",
+        "Turn it off in Hushfacebook settings > News feed. The same page can leave the song out of that line " +
+        "and make the time bold.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -68,11 +70,12 @@ val keepPostDatesPatch = bytecodePatch(
     execute {
         val choice = findCyclingChoice()
         mutableClassDefBy(choice.method.definingClass).findMutableMethodOf(choice.method).hookCyclingChoice(choice)
+        addSubtitlePieces { patchLog.warning(it) }
         enableStatus("postDates")
     }
 }
 
-private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
+internal fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
 /**
  * Hands the choice to the extension at the log's own label, so a path that jumps to the log goes

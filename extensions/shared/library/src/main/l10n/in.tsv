@@ -3083,3 +3083,11 @@ Joined-up handwriting.	Tulisan tangan bersambung.
 Every letter the same width, like a typewriter.	Setiap huruf sama lebarnya, seperti mesin ketik.
 The font file picked under Font file, in bold. Bold until one is picked.	File font yang dipilih di File font, dalam huruf tebal. Tebal sampai ada yang dipilih.
 Header text font will be set to %1$s.	Font teks header akan diatur ke %1$s.
+Hide songs under names	Sembunyikan lagu di bawah nama
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	Baris di bawah nama pemosting tidak menampilkan lagu yang diputar sebuah postingan, tanpa menyisakan celah di tempatnya.
+Bold post times	Waktu postingan tebal
+The time or date under the poster's name is bold, like the name.	Waktu atau tanggal di bawah nama pemosting ditampilkan tebal, seperti namanya.
+Show full names	Tampilkan nama lengkap
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Nama panjang di bagian atas postingan berlanjut ke baris berikutnya, bukan terpotong dengan "...". Nama yang muat tetap satu baris.
+Dark box behind feed video names	Kotak gelap di belakang nama pada video Kabar Beranda
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Saat video di Kabar Beranda menampilkan nama pemosting di atas video, nama itu tampil di atas kotak gelap yang sama. Perubahan terlihat pada postingan yang dimuat setelahnya.

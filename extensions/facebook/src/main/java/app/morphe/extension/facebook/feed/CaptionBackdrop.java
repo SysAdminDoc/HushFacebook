@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -47,6 +48,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * makes ({@link #reelAuthor}), and the header says whose props it's building from ({@link #header})
  * before it asks for the box.
  *
+ * <p>The same header draws a feed video's name over the video itself, in its "on media" look, and that
+ * name can get the box from its own switch (#533). A feed post's name can also take a few lines where
+ * Facebook cuts it to one ({@link #nameLines}).
+ *
  * <p>Box darkness and Soft box edges set every box's look. With the switch for its kind off, paused,
  * before the settings are ready, or when anything here fails, the text keeps Facebook's look.
  */
@@ -72,6 +77,21 @@ public final class CaptionBackdrop {
     /** Counted each time a reel's name gets the box. */
     static final String REEL_NAMED = "reel name dimmed";
 
+    /** Counted each time a name drawn over a feed video gets the box (#533). */
+    static final String MEDIA_NAMED = "feed video name dimmed";
+
+    /** The member the report names once a post header has read its name's line limit (#533). */
+    static final String NAME_LINES = "post name lines";
+
+    /** Counted each time a post's name gets room for more than Facebook's lines. */
+    static final String NAME_WIDENED = "post name given more lines";
+
+    /** The lines a post's name may take with Show full names on: room for a long name and what follows it. */
+    static final int FULL_NAME_LINES = 4;
+
+    /** What the header's look starts with when it's drawn over a photo or a video. */
+    private static final String[] MEDIA_LOOKS = {"ON_MEDIA", "ON_OVERLAY"};
+
     /** Box darkness when its row is blank, in percent: close to the box behind video subtitles. */
     public static final int DEFAULT_DARKNESS = 70;
     public static final int MIN_DARKNESS = 10;
@@ -88,17 +108,28 @@ public final class CaptionBackdrop {
 
     private static final String FAMILY = FamilyNames.FULL_POST_TEXT;
 
-    /** Header props the reel's author component made while Dark box behind reel names was on. */
+    /**
+     * Header props the reel's author component made while a switch that tells a reel's header apart
+     * was on: Dark box behind reel names, Dark box behind feed video names or Show full names.
+     */
     private static final Set<Object> REEL_AUTHORS = Collections.synchronizedSet(
             Collections.newSetFromMap(new WeakHashMap<>()));
 
     /** Whether the header building on this thread right now builds from a reel author's props. */
     private static final ThreadLocal<Boolean> REEL_HEADER = new ThreadLocal<>();
 
+    /** Whether the header building on this thread right now draws a feed post's name over its photo or video. */
+    private static final ThreadLocal<Boolean> MEDIA_HEADER = new ThreadLocal<>();
+
+    /** The header looks already written to the log, so each shows once. */
+    private static final Set<String> LOOKS_LOGGED = Collections.synchronizedSet(new HashSet<>());
+
     private static volatile boolean logged;
     private static volatile boolean loggedFolded;
     private static volatile boolean loggedStory;
     private static volatile boolean loggedReel;
+    private static volatile boolean loggedMedia;
+    private static volatile boolean loggedLines;
 
     private CaptionBackdrop() {
     }
@@ -118,6 +149,16 @@ public final class CaptionBackdrop {
 
     /** Whether this build boxes a reel's name; the patch answers true. */
     public static boolean reelNamesInBuild() {
+        return false;
+    }
+
+    /** Whether this build boxes a name drawn over a feed video (#533); the patch answers true. */
+    public static boolean feedVideoNamesInBuild() {
+        return false;
+    }
+
+    /** Whether this build lets a post's name take more lines (#533); the patch answers true. */
+    public static boolean fullNamesInBuild() {
         return false;
     }
 
@@ -201,41 +242,102 @@ public final class CaptionBackdrop {
 
     /**
      * The hook, right after the reel's author component makes its post header's props. Marks them
-     * while Dark box behind reel names is on, so the header knows it's drawing a reel's name.
+     * while a switch that treats a reel's header apart is on, so the header knows it's drawing a
+     * reel's name: Dark box behind reel names boxes it, and the other two leave it as Facebook drew it.
      */
     public static void reelAuthor(@Nullable Object props) {
         try {
-            if (props != null && Utils.settingsReady() && Settings.DIM_REEL_NAMES.get()) REEL_AUTHORS.add(props);
+            if (props != null && Utils.settingsReady() && (Settings.DIM_REEL_NAMES.get()
+                    || Settings.DIM_FEED_VIDEO_NAMES.get() || Settings.SHOW_FULL_NAMES.get())) {
+                REEL_AUTHORS.add(props);
+            }
         } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, REEL_NAME, failure);
-        }
-    }
-
-    /** The hook, as the post header starts building its name from [props]: a feed post's or a reel's. */
-    public static void header(@Nullable Object props) {
-        try {
-            REEL_HEADER.set(props != null && !REEL_AUTHORS.isEmpty() && REEL_AUTHORS.contains(props));
-        } catch (Throwable failure) {
-            REEL_HEADER.set(false);
             HookStatus.threw(FAMILY, REEL_NAME, failure);
         }
     }
 
     /**
+     * The hook, as the post header starts building its name from [props]: a feed post's or a reel's.
+     * [look] is how the header is drawn (an enum such as DEFAULT or ON_MEDIA), or null when the build
+     * doesn't hand it over.
+     */
+    public static void header(@Nullable Object props, @Nullable Object look) {
+        try {
+            boolean reel = props != null && !REEL_AUTHORS.isEmpty() && REEL_AUTHORS.contains(props);
+            REEL_HEADER.set(reel);
+            MEDIA_HEADER.set(!reel && onMedia(look));
+        } catch (Throwable failure) {
+            REEL_HEADER.set(false);
+            MEDIA_HEADER.set(false);
+            HookStatus.threw(FAMILY, REEL_NAME, failure);
+        }
+    }
+
+    /** Whether the header's [look] draws it over a photo or a video. Each look is logged the first time it's seen. */
+    static boolean onMedia(@Nullable Object look) {
+        if (!(look instanceof Enum)) return false;
+        String name = ((Enum<?>) look).name();
+        if (LOOKS_LOGGED.size() < 16 && LOOKS_LOGGED.add(name)) {
+            Logger.printDebug(() -> "Full post text: a post header drawn in its " + name + " look");
+        }
+        for (String media : MEDIA_LOOKS) {
+            if (name.startsWith(media)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The hook, right after the post header reads how many lines its name may take (#533). With Show
+     * full names on, a feed post's name cut to fewer than {@link #FULL_NAME_LINES} lines gets that many,
+     * so a long one wraps onto the next line; a name that fits still takes one. A reel's name, and
+     * every name with the switch off, paused or before the settings are ready, keeps Facebook's limit.
+     */
+    public static int nameLines(int lines) {
+        try {
+            HookStatus.bound(FAMILY, NAME_LINES);
+            if (lines < 1 || lines >= FULL_NAME_LINES) return lines;
+            if (Boolean.TRUE.equals(REEL_HEADER.get())) return lines;
+            if (!Utils.settingsReady() || !Settings.SHOW_FULL_NAMES.get()) return lines;
+            HookStatus.invoked(FAMILY);
+            HookStatus.counted(FAMILY, NAME_WIDENED);
+            if (!loggedLines) {
+                loggedLines = true;
+                Logger.printDebug(() -> "Full post text: a post's name may take " + FULL_NAME_LINES
+                        + " lines instead of " + lines);
+            }
+            return FULL_NAME_LINES;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, NAME_LINES, failure);
+            return lines;
+        }
+    }
+
+    /**
      * The hook, right after the post header hands its text builder the name. Answers the box while
-     * Dark box behind reel names is on and the header builds from a reel author's props, otherwise
+     * Dark box behind reel names is on and the header builds from a reel author's props, or while Dark
+     * box behind feed video names is on and a feed post's header is drawn over its video; otherwise
      * null.
      */
     public static Drawable forReelName() {
         try {
             HookStatus.bound(FAMILY, REEL_NAME);
-            if (!Boolean.TRUE.equals(REEL_HEADER.get())) return null;
-            if (!Utils.settingsReady() || !Settings.DIM_REEL_NAMES.get()) return null;
+            boolean reel = Boolean.TRUE.equals(REEL_HEADER.get());
+            if (!reel && !Boolean.TRUE.equals(MEDIA_HEADER.get())) return null;
+            if (!Utils.settingsReady()) return null;
+            if (reel ? !Settings.DIM_REEL_NAMES.get() : !Settings.DIM_FEED_VIDEO_NAMES.get()) return null;
             HookStatus.invoked(FAMILY);
-            HookStatus.counted(FAMILY, REEL_NAMED);
-            if (!loggedReel) {
-                loggedReel = true;
-                Logger.printDebug(() -> "Full post text: a reel's name got its dark box");
+            if (reel) {
+                HookStatus.counted(FAMILY, REEL_NAMED);
+                if (!loggedReel) {
+                    loggedReel = true;
+                    Logger.printDebug(() -> "Full post text: a reel's name got its dark box");
+                }
+            } else {
+                HookStatus.counted(FAMILY, MEDIA_NAMED);
+                if (!loggedMedia) {
+                    loggedMedia = true;
+                    Logger.printDebug(() -> "Full post text: a name over a feed video got its dark box");
+                }
             }
             return box();
         } catch (Throwable failure) {

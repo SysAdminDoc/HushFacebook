@@ -3083,3 +3083,11 @@ Joined-up handwriting.	Chữ viết tay liền nét.
 Every letter the same width, like a typewriter.	Mọi chữ cái rộng như nhau, giống máy đánh chữ.
 The font file picked under Font file, in bold. Bold until one is picked.	Tệp đã chọn ở Tệp phông chữ, in đậm. In đậm cho đến khi chọn một tệp.
 Header text font will be set to %1$s.	Phông chữ tiêu đề sẽ được đặt thành %1$s.
+Hide songs under names	Ẩn bài hát dưới tên
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	Dòng dưới tên người đăng bỏ bài hát mà bài viết đang phát, không để lại khoảng trống.
+Bold post times	In đậm thời gian bài viết
+The time or date under the poster's name is bold, like the name.	Thời gian hoặc ngày dưới tên người đăng được in đậm, giống như tên.
+Show full names	Hiện tên đầy đủ
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Tên dài ở đầu bài viết sẽ xuống dòng thay vì kết thúc bằng "...". Tên vừa một dòng vẫn chỉ chiếm một dòng.
+Dark box behind feed video names	Khung tối sau tên trên video ở Bảng tin
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Khi một video trong Bảng tin hiện tên người đăng đè lên video, tên đó nằm trên cùng khung tối. Thay đổi hiện ở các bài viết tải sau đó.

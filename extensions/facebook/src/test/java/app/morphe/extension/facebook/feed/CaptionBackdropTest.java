@@ -60,9 +60,11 @@ public class CaptionBackdropTest {
         Settings.DIM_FOLDED_REEL_CAPTIONS.resetToDefault();
         Settings.DIM_STORY_NAMES.resetToDefault();
         Settings.DIM_REEL_NAMES.resetToDefault();
+        Settings.DIM_FEED_VIDEO_NAMES.resetToDefault();
+        Settings.SHOW_FULL_NAMES.resetToDefault();
         Settings.TEXT_BOX_DARKNESS.resetToDefault();
         Settings.SOFT_TEXT_BOXES.resetToDefault();
-        CaptionBackdrop.header(null);
+        CaptionBackdrop.header(null, null);
         HookStatus.clear();
     }
 
@@ -237,25 +239,27 @@ public class CaptionBackdropTest {
         Object reelAuthor = new Object();
         Object feedPost = new Object();
         CaptionBackdrop.reelAuthor(reelAuthor);
-        CaptionBackdrop.header(reelAuthor);
+        CaptionBackdrop.header(reelAuthor, null);
         assertNull("a reel name got a box with the switch off", CaptionBackdrop.forReelName());
 
         Settings.DIM_REEL_NAMES.save(true);
         CaptionBackdrop.reelAuthor(reelAuthor);
-        CaptionBackdrop.header(feedPost);
+        CaptionBackdrop.header(feedPost, null);
         assertNull("a feed post's name got the reel box", CaptionBackdrop.forReelName());
-        CaptionBackdrop.header(reelAuthor);
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        assertNull("a feed video's name got the reel box", CaptionBackdrop.forReelName());
+        CaptionBackdrop.header(reelAuthor, null);
         Drawable box = CaptionBackdrop.forReelName();
         assertNotNull("the reel author's name got no box", box);
         assertEquals(CaptionBackdrop.COLOR, ((GradientDrawable) box).getColor().getDefaultColor());
-        CaptionBackdrop.header(feedPost);
+        CaptionBackdrop.header(feedPost, null);
         assertNull("the next header, a feed post's, kept the box", CaptionBackdrop.forReelName());
-        CaptionBackdrop.header(null);
+        CaptionBackdrop.header(null, null);
         assertNull(CaptionBackdrop.forReelName());
         assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 1, 1 found, 0 missing. Counted: "
                 + CaptionBackdrop.REEL_NAMED + " 1", statusLine());
 
-        CaptionBackdrop.header(reelAuthor);
+        CaptionBackdrop.header(reelAuthor, null);
         Settings.DIM_REEL_NAMES.save(false);
         assertNull("turned off, a reel name keeps Facebook's look", CaptionBackdrop.forReelName());
         Settings.DIM_REEL_NAMES.save(true);
@@ -268,11 +272,89 @@ public class CaptionBackdropTest {
         Object reelAuthor = new Object();
         CaptionBackdrop.reelAuthor(reelAuthor);
         Settings.DIM_REEL_NAMES.save(true);
-        CaptionBackdrop.header(reelAuthor);
+        CaptionBackdrop.header(reelAuthor, null);
         assertNull("a header made with the switch off got the box", CaptionBackdrop.forReelName());
         Object next = new Object();
         CaptionBackdrop.reelAuthor(next);
-        CaptionBackdrop.header(next);
+        CaptionBackdrop.header(next, null);
         assertNotNull("the next reel's name got no box", CaptionBackdrop.forReelName());
+    }
+
+    /** The post header's looks, by the names 588's enum gives them. */
+    private enum Look { DEFAULT, ON_SURFACE, ON_MEDIA, ON_OVERLAY_LIGHT, ON_OVERLAY_EXTRA_LIGHT }
+
+    /**
+     * Dark box behind feed video names (#533): a feed post's header drawn over its video, in the
+     * ON_MEDIA or an ON_OVERLAY look, gets the box. A header in its everyday look, and a reel's, which
+     * has its own switch, keep Facebook's look.
+     */
+    @Test
+    public void aNameDrawnOverAFeedVideoGetsTheBox() {
+        assertFalse(CaptionBackdrop.feedVideoNamesInBuild());
+        Object feedPost = new Object();
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        assertNull("a feed video's name got a box with the switch off", CaptionBackdrop.forReelName());
+
+        Settings.DIM_FEED_VIDEO_NAMES.save(true);
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        Drawable box = CaptionBackdrop.forReelName();
+        assertNotNull("a name over a feed video got no box", box);
+        assertEquals(CaptionBackdrop.COLOR, ((GradientDrawable) box).getColor().getDefaultColor());
+        CaptionBackdrop.header(feedPost, Look.ON_OVERLAY_LIGHT);
+        assertNotNull("a name over a light overlay got no box", CaptionBackdrop.forReelName());
+        CaptionBackdrop.header(feedPost, Look.ON_OVERLAY_EXTRA_LIGHT);
+        assertNotNull(CaptionBackdrop.forReelName());
+        for (Object look : new Object[] {Look.DEFAULT, Look.ON_SURFACE, "ON_MEDIA", null}) {
+            CaptionBackdrop.header(feedPost, look);
+            assertNull("a name in the " + look + " look got the box", CaptionBackdrop.forReelName());
+        }
+        assertTrue(statusLine(), statusLine().contains(CaptionBackdrop.MEDIA_NAMED + " 3"));
+
+        // A reel's header keeps to Dark box behind reel names, which is off here.
+        Object reelAuthor = new Object();
+        CaptionBackdrop.reelAuthor(reelAuthor);
+        CaptionBackdrop.header(reelAuthor, Look.ON_MEDIA);
+        assertNull("a reel's name got the feed video box", CaptionBackdrop.forReelName());
+
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        Settings.DIM_FEED_VIDEO_NAMES.save(false);
+        assertNull("turned off, a feed video's name keeps Facebook's look", CaptionBackdrop.forReelName());
+        Settings.DIM_FEED_VIDEO_NAMES.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("paused, a feed video's name keeps Facebook's look", CaptionBackdrop.forReelName());
+    }
+
+    /**
+     * Show full names (#533): a feed post's name Facebook cuts to a line or two gets room for four, so
+     * a long one wraps instead of ending in "...". A reel's name, a limit already that big, no limit,
+     * the switch off and a paused Hushfacebook keep Facebook's count.
+     */
+    @Test
+    public void aLongPostNameGetsMoreLines() {
+        assertFalse(CaptionBackdrop.fullNamesInBuild());
+        Object feedPost = new Object();
+        CaptionBackdrop.header(feedPost, Look.DEFAULT);
+        assertEquals("the switch off changed the lines", 1, CaptionBackdrop.nameLines(1));
+
+        Settings.SHOW_FULL_NAMES.save(true);
+        CaptionBackdrop.header(feedPost, Look.DEFAULT);
+        assertEquals(CaptionBackdrop.FULL_NAME_LINES, CaptionBackdrop.nameLines(1));
+        assertEquals(CaptionBackdrop.FULL_NAME_LINES, CaptionBackdrop.nameLines(2));
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        assertEquals("a name over a feed video kept one line", CaptionBackdrop.FULL_NAME_LINES, CaptionBackdrop.nameLines(1));
+        assertEquals(CaptionBackdrop.FULL_NAME_LINES, CaptionBackdrop.nameLines(CaptionBackdrop.FULL_NAME_LINES));
+        assertEquals("a bigger limit got smaller", 6, CaptionBackdrop.nameLines(6));
+        assertEquals("no limit got one", Integer.MAX_VALUE, CaptionBackdrop.nameLines(Integer.MAX_VALUE));
+        assertEquals(0, CaptionBackdrop.nameLines(0));
+        assertTrue(statusLine(), statusLine().contains(CaptionBackdrop.NAME_WIDENED + " 3"));
+
+        Object reelAuthor = new Object();
+        CaptionBackdrop.reelAuthor(reelAuthor);
+        CaptionBackdrop.header(reelAuthor, null);
+        assertEquals("a reel's name got more lines", 1, CaptionBackdrop.nameLines(1));
+
+        CaptionBackdrop.header(feedPost, null);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, a post's name got more lines", 1, CaptionBackdrop.nameLines(1));
     }
 }

@@ -2969,3 +2969,11 @@ Joined-up handwriting.	Letra cursiva, escrita à mão.
 Every letter the same width, like a typewriter.	Todas as letras com a mesma largura, como numa máquina de escrever.
 The font file picked under Font file, in bold. Bold until one is picked.	O arquivo escolhido em Arquivo de fonte, em negrito. Negrito até você escolher um.
 Header text font will be set to %1$s.	A fonte do texto do cabeçalho será %1$s.
+Hide songs under names	Ocultar músicas abaixo dos nomes
+The line under the poster's name leaves out the song a post plays, with no gap where it was.	A linha abaixo do nome de quem publicou deixa de fora a música que a publicação toca, sem deixar um espaço onde ela estava.
+Bold post times	Horário da publicação em negrito
+The time or date under the poster's name is bold, like the name.	O horário ou a data abaixo do nome de quem publicou fica em negrito, como o nome.
+Show full names	Mostrar nomes completos
+A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Um nome longo no topo de uma publicação continua na linha seguinte em vez de terminar em "...". Um nome que cabe continua ocupando uma linha só.
+Dark box behind feed video names	Caixa escura atrás dos nomes em vídeos do feed
+When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Quando um vídeo do seu feed mostra o nome de quem publicou em cima do vídeo, esse nome fica sobre a mesma caixa escura. A mudança aparece nas publicações carregadas depois.
