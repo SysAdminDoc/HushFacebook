@@ -24,6 +24,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
@@ -106,18 +107,31 @@ class StoriesTrayAdapterFixtureTest {
      * the list it built before is still there, so they're asked once per feed view. A build that
      * rebuilds the list on a refresh fails here, and the simpler hook where they're built is the
      * thing to revisit. 585's Android 9 build calls them from one static method of the configuration
-     * class, which the guarded method calls.
+     * class, which the guarded method calls. 588's Android 9 build keeps the trace name and both calls
+     * in an instance method of the configuration class, and its one caller holds the guard.
      */
     @Test
     fun `every declared build asks the tray adapters from a list it builds once per feed view`() {
         forEveryDeclaredBuild { bundle ->
             val adapters = trayAdapters(bundle)
+            val calls = listOf(adapters.classic, adapters.unified)
             val builders = FixtureDex.classesHolding(bundle, CREATE_ADAPTER).flatMap { methodsHolding(it, CREATE_ADAPTER) }
             assertEquals("${bundle.name}: ${builders.map { it.toString() }}", 1, builders.size)
-            assertTrue("${bundle.name}: ${builders.single()} doesn't keep the list it built",
-                buildsListOnce(builders.single(), listOf(adapters.classic, adapters.unified),
-                    adapters.configuration.methods.toList()))
-            builders.single().toString()
+            val holder = builders.single()
+            if (buildsListOnce(holder, calls, adapters.configuration.methods.toList())) return@forEveryDeclaredBuild holder.toString()
+            val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == holder.definingClass } }) { method ->
+                method.implementation?.instructions?.any { instruction ->
+                    ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.let {
+                        it.definingClass == holder.definingClass && it.name == holder.name && it.returnType == holder.returnType &&
+                            it.parameterTypes.map(CharSequence::toString) == holder.parameterTypes.map(CharSequence::toString)
+                    } == true
+                } == true
+            }
+            assertEquals("${bundle.name}: $holder isn't guarded itself, and its callers are ${callers.map { it.toString() }}",
+                1, callers.size)
+            assertTrue("${bundle.name}: neither $holder nor its caller ${callers.single()} keeps the list it built",
+                buildsListOnce(callers.single(), calls, listOf(holder)))
+            "${callers.single()} through $holder"
         }
     }
 

@@ -102,7 +102,10 @@ internal fun unifiedTrayAdapters(configuration: ClassDef): List<Method> = config
  * adapters are built, and why [buildsListOnce] is pinned on every declared build: a Facebook that
  * starts rebuilding the list would say so in the fixture test. 585's Android 9 build leaves the
  * adapters to one static method of the configuration class (`LX/02ie;->A04`, read 2026-11-06) that
- * the guarded method calls, so that call stands in for the two.
+ * the guarded method calls, so that call stands in for the two. 588's Android 9 build keeps the trace
+ * name and both calls in an instance method of the configuration class (`LX/02wZ;->A03`, read
+ * 2026-11-20), and the guard sits in its one caller, the feed view's `LX/02xH;->A00`, which calls it
+ * with invoke-virtual.
  */
 internal const val CREATE_ADAPTER = "NewsFeedAdapterConfiguration.createAdapter"
 
@@ -137,7 +140,8 @@ internal fun buildsListOnce(builder: Method, calls: List<Method>, assemblers: Li
 
 /**
  * Where [method] first calls each of [calls], or null when it misses one. A static adapter is
- * called with invoke-static, an instance one (585 Android 9) with invoke-direct.
+ * called with invoke-static, an instance one (585 Android 9) with invoke-direct, and an instance
+ * assembler (588 Android 9) with invoke-virtual.
  */
 private fun callIndexes(method: Method, calls: List<Method>): List<Int>? {
     val instructions = method.implementation?.instructions?.toList() ?: return null
@@ -150,7 +154,10 @@ private fun callIndexes(method: Method, calls: List<Method>): List<Int>? {
     return if (indexes.any { it < 0 }) null else indexes
 }
 
-private val ADAPTER_CALLS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE, Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+private val ADAPTER_CALLS = setOf(
+    Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE, Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE,
+    Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE,
+)
 
 /**
  * Whether this reference names [method]. The parameter lists are compared by their spelling: a

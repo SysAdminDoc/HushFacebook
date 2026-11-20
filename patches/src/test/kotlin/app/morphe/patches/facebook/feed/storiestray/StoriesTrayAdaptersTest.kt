@@ -153,13 +153,14 @@ class StoriesTrayAdaptersTest {
         guardOffset: Int = 10,
         calls: List<Method> = listOf(classic, unified),
         guard: Opcode = Opcode.IF_NEZ,
+        invoke: Opcode = Opcode.INVOKE_STATIC,
     ): Method {
         val head = if (!guarded) emptyList() else listOf(
             ImmutableInstruction22c(Opcode.IGET_OBJECT, 0, 3, ImmutableFieldReference(field, "A02", "Lcom/example/Multi;")),
             ImmutableInstruction21t(guard, 0, guardOffset),
         )
         val body = listOf(ImmutableInstruction21c(Opcode.CONST_STRING, 1, ImmutableStringReference(CREATE_ADAPTER))) +
-            calls.map { ImmutableInstruction35c(Opcode.INVOKE_STATIC, 2, 3, 1, 0, 0, 0, reference(it)) } +
+            calls.map { ImmutableInstruction35c(invoke, 2, 3, 1, 0, 0, 0, reference(it)) } +
             ImmutableInstruction10x(Opcode.RETURN_VOID)
         return ImmutableMethod(
             owner, "A00", listOf(ImmutableMethodParameter(owner, null, null)), "V", static, null, null,
@@ -212,6 +213,33 @@ class StoriesTrayAdaptersTest {
             buildsListOnce(builder(calls = listOf(both), guardOffset = 2), adapters, listOf(classic, unified, both)))
         assertFalse("the assembler is never called",
             buildsListOnce(builder(calls = emptyList()), adapters, listOf(classic, unified, both)))
+    }
+
+    /**
+     * 588's Android 9 build: the guarded method, in another class, calls an instance method of the
+     * configuration class with invoke-virtual, and that one calls both instance adapters.
+     */
+    @Test
+    fun `a list builder may call an instance assembler with invoke-virtual`() {
+        val instance = AccessFlags.PRIVATE.value or AccessFlags.FINAL.value
+        val classic = method("A00", listOf(ADD_STORIES_ADAPTER), flags = instance, parameters = listOf(IMMUTABLE_LIST_BUILDER))
+        val unified = method("A01", listOf(TRAY_ADAPTER_START, TOFU, TRAY_ADAPTER_STOP), flags = instance,
+            parameters = listOf(IMMUTABLE_LIST_BUILDER))
+        val adapters = listOf(classic, unified)
+        val assembler = ImmutableMethod(
+            configuration, "A03", emptyList(), "Ljava/lang/Object;", AccessFlags.PUBLIC.value or AccessFlags.FINAL.value,
+            null, null,
+            ImmutableMethodImplementation(4, adapters.map {
+                ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 2, 3, 1, 0, 0, 0, reference(it))
+            } + ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0), null, null),
+        )
+        assertTrue(buildsListOnce(builder(calls = listOf(assembler), guardOffset = 7, invoke = Opcode.INVOKE_VIRTUAL),
+            adapters, listOf(assembler)))
+
+        assertFalse("the guard lands before the assembler",
+            buildsListOnce(builder(calls = listOf(assembler), guardOffset = 2, invoke = Opcode.INVOKE_VIRTUAL), adapters, listOf(assembler)))
+        assertFalse("no assembler offered",
+            buildsListOnce(builder(calls = listOf(assembler), guardOffset = 7, invoke = Opcode.INVOKE_VIRTUAL), adapters))
     }
 
     /** The settings row and the README tell the same story about when the switch acts. */
