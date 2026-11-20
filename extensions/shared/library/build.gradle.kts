@@ -35,8 +35,8 @@ dependencies {
     compileOnly(libs.annotation)
 }
 
-// GHSA-xxph-c9ww-hj94 covers every Guava before 33.7.2 and GHSA-v5x9-67m3-7m56 every one before
-// 33.8.0. Nothing here asks for Guava, but the Android plugin's device test graphs do, and every
+// GHSA-xxph-c9ww-hj94 covers Guava 4.0 through 33.7.1 and GHSA-v5x9-67m3-7m56 13.0 through
+// 33.7.2. Nothing here asks for Guava, but the Android plugin's device test graphs do, and every
 // graph in the build takes the catalog's release, as the ones in :patches and
 // :extensions:facebook do.
 val safeGuavaVersion = libs.versions.guava.get()
@@ -45,7 +45,7 @@ configurations.configureEach {
     resolutionStrategy.eachDependency {
         if (requested.group == "com.google.guava" && requested.name == "guava") {
             useVersion(safeGuavaVersion)
-            because("GHSA-v5x9-67m3-7m56 covers every Guava before 33.8.0.")
+            because("GHSA-v5x9-67m3-7m56 covers Guava 13.0 through 33.7.2.")
         }
     }
 }
