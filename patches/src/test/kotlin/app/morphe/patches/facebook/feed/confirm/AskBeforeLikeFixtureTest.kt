@@ -42,8 +42,9 @@ import org.junit.Test
  * Ask before a like on every declared build and ABI (#437, #443). Each of the seven Like handlers
  * now starts by handing the extension its own descriptor, its instance and every argument, and
  * returns right away when the extension holds the tap; otherwise it jumps to Facebook's own first
- * instruction, unmoved. The plugin footer lambda has a class of its own and asks on every call, and
- * the merged inline comment lambda only on the case of its switch holding its Like.
+ * instruction, unmoved. The plugin footer lambda asks on every call where it has a class of its own,
+ * and a merged lambda (the inline comment one, and the plugin footer's on 588's Android 9 build)
+ * only on the case of its switch holding its Like.
  * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class AskBeforeLikeFixtureTest {
@@ -95,6 +96,23 @@ class AskBeforeLikeFixtureTest {
         return addresses.indexOf(addresses[at] + offset)
     }
 
+    /**
+     * The keys of the cases whose arm (up to the next case, or the end) loads [trace] in the unpatched
+     * [code] of a merged lambda of [kind], which switches on [arm]'s field right after reading it.
+     */
+    private fun armCases(name: String, kind: Int, code: List<Instruction>, arm: Arm, trace: String): Set<Int> {
+        val switchAt = code.indexOfFirst { it.opcode == Opcode.IGET && it.reference() == arm.field } + 1
+        assertTrue("$name: kind $kind's lambda doesn't read its arm number at the top", switchAt in 1..4)
+        assertEquals("$name: kind $kind's lambda doesn't switch on its arm number", Opcode.PACKED_SWITCH, code[switchAt].opcode)
+        val payload = code[branchTarget(code, switchAt)] as SwitchPayload
+        val starts = payload.switchElements.associate { it.key to branchTarget(code, switchAt, it.offset) }
+        val bounds = (starts.values + (switchAt + 1) + code.size).toSortedSet()
+        return starts.filter { (_, start) ->
+            val end = bounds.first { it > start }
+            code.subList(start, end).any { it.loads(trace) }
+        }.keys
+    }
+
     @Test
     fun `each declared build's Like handlers ask the extension first`() {
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
@@ -123,7 +141,7 @@ class AskBeforeLikeFixtureTest {
                 // Positive controls: each handler loads its own trace name, the reel's is the static
                 // taking the view and its own type, the plugin footer's sender is the static taking
                 // the session and the feedback, the click lambda takes the click event and calls the
-                // litho footer's handler, and the plugin footer's lambda has no arm number to read.
+                // litho footer's handler.
                 handlers.filter { it.kind != POST_CLICK }.forEach { handler ->
                     assertTrue("$name: kind ${handler.kind} doesn't name its trace",
                         namesString(handler.method, markers.getValue(handler.kind), resolve))
@@ -145,29 +163,21 @@ class AskBeforeLikeFixtureTest {
                     "Lcom/facebook/auth/usersession/FbUserSession;", touch.parameterTypes[0].toString())
                 assertTrue("$name: the plugin footer's sender takes no feedback",
                     touch.parameterTypes.any { it.toString() == "Lcom/facebook/graphql/model/GraphQLFeedback;" })
+                // The plugin footer's lambda has a class of its own on the phone builds, and there it
+                // gets no arm guard; 588's Android 9 build merges it with its siblings (`$t`), and
+                // there the guard picks its arm.
                 val plugin = handlers.single { it.kind == POST_PLUGIN }
-                assertEquals("$name: the plugin footer's lambda got an arm guard", null, plugin.arm)
-                assertTrue("$name: the plugin footer's lambda shares its class with other arms",
-                    byType.getValue(plugin.method.definingClass).instanceFields.none { it.type == "I" })
+                val pluginMerged = byType.getValue(plugin.method.definingClass).instanceFields.any { it.type == "I" }
+                assertEquals("$name: the plugin footer's lambda got an arm guard exactly when its class merges arms",
+                    pluginMerged, plugin.arm != null)
 
-                // The inline comment lambda switches on its arm number right after reading it, and
-                // exactly one case's arm (up to the next case, or the end) loads the inline trace name.
-                val inline = handlers.single { it.kind == COMMENT_INLINE }
-                val inlineBefore = before.getValue(COMMENT_INLINE)
-                val switchAt = inlineBefore.indexOfFirst {
-                    it.opcode == Opcode.IGET && it.reference() == inline.arm!!.field
-                } + 1
-                assertTrue("$name: the inline comment lambda doesn't read its arm number at the top", switchAt in 1..4)
-                assertEquals("$name: the inline comment lambda doesn't switch on its arm number",
-                    Opcode.PACKED_SWITCH, inlineBefore[switchAt].opcode)
-                val payload = inlineBefore[branchTarget(inlineBefore, switchAt)] as SwitchPayload
-                val starts = payload.switchElements.associate { it.key to branchTarget(inlineBefore, switchAt, it.offset) }
-                val bounds = (starts.values + (switchAt + 1) + inlineBefore.size).toSortedSet()
-                val likeCases = starts.filter { (_, start) ->
-                    val end = bounds.first { it > start }
-                    inlineBefore.subList(start, end).any { it.loads(INLINE_COMMENT_LIKE_TRACE) }
-                }.keys
-                assertEquals("$name: not one case of the inline comment lambda likes", 1, likeCases.size)
+                // A merged lambda switches on its arm number right after reading it, and exactly one
+                // case's arm loads its trace name; the inline comment lambda is merged on every build.
+                val likeCases = handlers.filter { it.arm != null }.associate { handler ->
+                    handler.kind to armCases(name, handler.kind, before.getValue(handler.kind), handler.arm!!, markers.getValue(handler.kind))
+                }
+                assertTrue("$name: the inline comment lambda got no arm guard", COMMENT_INLINE in likeCases)
+                likeCases.forEach { (kind, cases) -> assertEquals("$name: not one case of kind $kind's lambda likes", 1, cases.size) }
 
                 context.askBeforeLike()
                 context.enableStatus("askBeforeLike")
@@ -186,14 +196,14 @@ class AskBeforeLikeFixtureTest {
                     val hook = after.take(grown)
 
                     var at = 0
-                    if (handler.kind == COMMENT_INLINE) {
+                    if (handler.arm != null) {
                         assertEquals("$label: no case guard",
                             listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE), hook.take(4).map { it.opcode })
                         assertEquals("$label: the guard doesn't read this",
                             method.localRegisterCount(), (hook[0] as TwoRegisterInstruction).registerB)
-                        assertEquals("$label: the guard reads another field", inline.arm!!.field, hook[1].reference())
+                        assertEquals("$label: the guard reads another field", handler.arm!!.field, hook[1].reference())
                         assertEquals("$label: the guard waits for another case",
-                            likeCases.single(), (hook[2] as NarrowLiteralInstruction).narrowLiteral)
+                            likeCases.getValue(handler.kind).single(), (hook[2] as NarrowLiteralInstruction).narrowLiteral)
                         assertEquals("$label: the guard doesn't skip to Facebook's code", grown, hook[3].target())
                         at = 4
                     }
