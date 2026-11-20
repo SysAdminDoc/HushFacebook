@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY_ATTACHMENT
 import app.morphe.patches.facebook.downloads.video.IMMUTABLE_LIST
 import app.morphe.patches.facebook.downloads.video.MEDIA_FIELD
 import app.morphe.patches.facebook.downloads.video.graphQlGetter
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -118,7 +119,7 @@ internal fun BytecodePatchContext.hookDownload(row: ActionRow) {
         graphQlGetter(GRAPHQL_STORY_ATTACHMENT, IMMUTABLE_LIST, SUBATTACHMENTS_FIELD, "subattachments"),
     )
     // The hook is chosen on Facebook's own method, before anything goes in.
-    val end = row.rowEnd()
+    val end = row.rowEnd { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
     if (end.state > 15) refuse("${row.items.name} holds its state in v${end.state}")
     val call = "${row.owner}->$DOWNLOAD_HELPER($LIST${row.state})V"
     val hook = if (end.list <= 15) {

@@ -10,6 +10,7 @@ import app.morphe.patches.facebook.downloads.video.GRAPHQL_MEDIA
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY_ATTACHMENT
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.namedRegisters
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -40,8 +41,9 @@ import org.junit.Test
  * string, so the row is found from the item builder. 587 arm64 (2026-11-12) has no item builder: the
  * row `LX/03jE;->A04` switches over the types itself and seals one list, with the range form, from
  * v18. 588 (2026-11-18, `LX/039B;->A04` on both ABIs) collects (type, item) pairs in v16 and reuses
- * the state's register before it seals anything, so the hook moved to the end of that walk. None of
- * those names is used here.
+ * the state's register before it seals anything, so the hook moved to the end of that walk. 588's
+ * store-less build (`LX/03AA;->A01`, read 2026-11-19) collects them in v20 through an outlined helper
+ * (`LX/01CB;->A1P`) that makes the pair and adds it. None of those names is used here.
  */
 class PostActionButtonsFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -50,7 +52,9 @@ class PostActionButtonsFixtureTest {
      * Per build, the register of the list the row collects its items in, past v15 on 588.
      */
     private val collected = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 16, "armeabi-v7a" to 16),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to 16, "armeabi-v7a" to 16, "arm64-v8a-minapi28-storeless" to 20,
+        ),
     )
 
     private fun holds(method: com.android.tools.smali.dexlib2.iface.Method, string: String) =
@@ -75,7 +79,7 @@ class PostActionButtonsFixtureTest {
 
                 val row = with(context) { actionRow() }
                 val returns = row.typeReturns().size
-                val end = row.rowEnd()
+                val end = row.rowEnd { call -> context.classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
                 assertEquals("$name: the register of the list the row collects its items in",
                     collected.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
                         ?: throw AssertionError("$name has no pin"),

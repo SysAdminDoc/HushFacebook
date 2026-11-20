@@ -206,13 +206,18 @@ private fun saveTag(code: List<Instruction>, saveAt: Int): MethodReference? {
  * the list and the state: [index] is the instruction the exit lands on, [head] the walk's `hasNext`,
  * [list] the pairs' register and [pair] their constructor. The state is the register Save's case
  * reads the post's holder from, which the same writes reach at the exit.
+ *
+ * 588's store-less build (`LX/03AA;->A01`) outlines the pair and its add into a static helper
+ * (`LX/01CB;->A1P(Object, Object, AbstractCollection)V`), which [resolve] finds, so a walk may add its
+ * pair through one call to such a helper ([outlinedPair]).
  */
 internal class RowEnd(val head: Int, val index: Int, val list: Int, val state: Int, val pair: MethodReference)
 
-internal fun ActionRow.rowEnd(): RowEnd {
+internal fun ActionRow.rowEnd(resolve: (MethodReference) -> Method? = { null }): RowEnd {
     val code = items.code()
     val state = (code[stateRead] as TwoRegisterInstruction).registerB
-    val walks = code.indices.mapNotNull { collectedPair(code, it) }.filter { it.head < stateRead && stateRead < it.init }
+    val walks = code.indices.mapNotNull { collectedPair(code, it) ?: outlinedPair(code, it, resolve) }
+        .filter { it.head < stateRead && stateRead < it.init }
     val walk = walks.singleOrNull() ?: refuse("${items.name} doesn't collect its items in one walk, found ${walks.size}")
     if (items.writersReaching(walk.exit, state).toSet() != items.writersReaching(stateRead, state).toSet()) {
         refuse("${items.name} ends its walk at ${walk.exit} with something else than the row's state in v$state")
@@ -240,15 +245,79 @@ private fun collectedPair(code: List<Instruction>, init: Int): CollectedPair? {
     if (registers.size != 2 || registers[1] != code[init].namedRegisters().first()) return null
     val list = copy?.takeIf { it.registerA == registers[0] }?.registerB ?: registers[0]
 
-    val back = code.getOrNull(addAt + 1) ?: return null
+    val (head, exit) = walkBack(code, addAt + 1, init) ?: return null
+    return CollectedPair(head, init, exit, list, pair)
+}
+
+/**
+ * The walk's `hasNext` and the exit it lands on, when [at] goes back to it: a goto onto a `hasNext`
+ * before [before] whose answer an `if-eqz` tests straight after.
+ */
+private fun walkBack(code: List<Instruction>, at: Int, before: Int): Pair<Int, Int>? {
+    val back = code.getOrNull(at) ?: return null
     if (back.opcode != Opcode.GOTO && back.opcode != Opcode.GOTO_16 && back.opcode != Opcode.GOTO_32) return null
-    val head = branchTarget(code, addAt + 1) ?: return null
-    if (head >= init || code[head].methodReference()?.name != "hasNext") return null
+    val head = branchTarget(code, at) ?: return null
+    if (head >= before || code[head].methodReference()?.name != "hasNext") return null
     val answer = code.getOrNull(head + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT } as OneRegisterInstruction? ?: return null
     val test = code.getOrNull(head + 2)?.takeIf { it.opcode == Opcode.IF_EQZ } as OneRegisterInstruction? ?: return null
     if (test.registerA != answer.registerA) return null
     val exit = branchTarget(code, head + 2) ?: return null
-    return CollectedPair(head, init, exit, list, pair)
+    return head to exit
+}
+
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/**
+ * The walk that hands (type, item) to a static helper building the pair and adding it to the list,
+ * then goes round again, when [at] calls one (588 store-less `LX/01CB;->A1P`). The helper, which
+ * [resolve] finds, makes a pair of its first two parameters in order and adds it to its third. The
+ * list's register is the one copied into the call's third argument just before it, or that argument.
+ */
+private fun outlinedPair(code: List<Instruction>, at: Int, resolve: (MethodReference) -> Method?): CollectedPair? {
+    val call = code[at].methodReference() ?: return null
+    if (code[at].opcode != Opcode.INVOKE_STATIC || call.returnType != "V" || call.parameters().size != 3 ||
+        call.parameters().take(2) != listOf(OBJECT, OBJECT)
+    ) {
+        return null
+    }
+    val helper = resolve(call) ?: return null
+    val pair = helperPair(helper) ?: return null
+    var list = code[at].namedRegisters()[2]
+    var copyAt = at - 1
+    while (copyAt >= 0 && code[copyAt].opcode in OBJECT_MOVES) {
+        val copy = code[copyAt] as TwoRegisterInstruction
+        if (copy.registerA == list) {
+            list = copy.registerB
+            break
+        }
+        copyAt--
+    }
+    val (head, exit) = walkBack(code, at + 1, at) ?: return null
+    return CollectedPair(head, at, exit, list, pair)
+}
+
+/**
+ * The pair constructor [helper] builds from its first two parameters, in order, and adds to its third
+ * (a `Collection`), with nothing else: new-instance, the constructor, add, return-void.
+ */
+private fun helperPair(helper: Method): MethodReference? {
+    val code = helper.code()
+    if (!AccessFlags.STATIC.isSet(helper.accessFlags) || code.size != 4) return null
+    val locals = helper.implementation!!.registerCount - 3
+    val made = code[0].takeIf { it.opcode == Opcode.NEW_INSTANCE } as OneRegisterInstruction? ?: return null
+    val pair = code[1].methodReference() ?: return null
+    if (code[1].opcode != Opcode.INVOKE_DIRECT || pair.name != "<init>" || pair.parameters() != listOf(OBJECT, OBJECT) ||
+        code[1].namedRegisters() != listOf(made.registerA, locals, locals + 1)
+    ) {
+        return null
+    }
+    val added = code[2].methodReference() ?: return null
+    if ((code[2].opcode != Opcode.INVOKE_VIRTUAL && code[2].opcode != Opcode.INVOKE_INTERFACE) || added.name != "add" ||
+        added.returnType != "Z" || added.parameters() != listOf(OBJECT) || code[2].namedRegisters() != listOf(locals + 2, made.registerA)
+    ) {
+        return null
+    }
+    return pair.takeIf { code[3].opcode == Opcode.RETURN_VOID }
 }
 
 /** The indices of [ActionRow.types]'s returns, with the register each returns. */
