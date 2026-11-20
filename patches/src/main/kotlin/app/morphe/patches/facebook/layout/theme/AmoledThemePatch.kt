@@ -797,6 +797,10 @@ private const val COLOR_DRAWABLE_INIT = "Landroid/graphics/drawable/ColorDrawabl
  * it to a static decorator, `LX/05HY;->A01(LX/03Ej;...)LX/03Ej;`, which sets it. So the statics a
  * child builder hands a component to and gets one back from are hooked too ([decoratorsOf]). The
  * decorator's other caller is the template's photo component, also a Native Template.
+ *
+ * 588's Android 9 build (read 2026-11-20) sets backgroundColor (`LX/03Cc;->A0X`) in the builder
+ * `LX/04lx;->A00` and, for the child, in a static the decorator `LX/04wy;->A01` hands its component
+ * to and gets nothing back from ([componentSettersOf]), so those are hooked too.
  */
 internal fun BytecodePatchContext.hookNativeTemplateBackgrounds(target: String = AMOLED_BLOKS_FILL) {
     val builder = NativeTemplateBuilderFingerprint.method
@@ -822,7 +826,11 @@ internal fun BytecodePatchContext.hookNativeTemplateBackgrounds(target: String =
             }
         }
         .map { mutableMethodOf(it) }
-    val hooked = (listOf(builder) + children + decorators).sumOf { hookBackgroundColours(it, target) }
+    // 588's Android 9 build moved the decorator's background into a static it hands the component to.
+    val setters = (children + decorators).flatMap { componentSettersOf(it, builder.returnType) }.distinctBy { it.toString() }
+        .filter { classDefByOrNull(it.definingClass) != null }
+        .map { mutableMethodOf(it) }
+    val hooked = (listOf(builder) + children + decorators + setters).sumOf { hookBackgroundColours(it, target) }
     if (hooked == 0) throw PatchException("Native Templates' builders set no background colour")
 }
 
@@ -832,6 +840,17 @@ internal fun decoratorsOf(method: Method, component: String): List<MethodReferen
         .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
         .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
         .filter { it.returnType == component && it.parameterTypes.firstOrNull()?.toString() == component }
+        .distinctBy { it.toString() }
+
+/**
+ * The statics [method] hands a [component] to that give nothing back: 588's Android 9 decorator
+ * (`LX/04wy;->A01`) sets the style's background in `LX/04wy;->A0A(LX/03Cc;LX/04x3;)V`.
+ */
+internal fun componentSettersOf(method: Method, component: String): List<MethodReference> =
+    method.implementation?.instructions?.toList().orEmpty()
+        .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter { it.returnType == "V" && it.parameterTypes.firstOrNull()?.toString() == component }
         .distinctBy { it.toString() }
 
 private fun BytecodePatchContext.mutableMethodOf(call: MethodReference): MutableMethod =

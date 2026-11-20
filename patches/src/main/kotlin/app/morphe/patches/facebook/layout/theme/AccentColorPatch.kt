@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -87,7 +88,8 @@ val accentColorPatch = bytecodePatch(
  */
 internal fun BytecodePatchContext.hookBloksFills(target: String = ACCENT_BLOKS_FILL) {
     val border = BoxDecorationBorderFingerprint.method
-    val builders = mutableClassDefBy(border.definingClass).methods.filter { isBoxBuilder(it, border) }
+    val resolve = { call: MethodReference -> classDefByOrNull(call.definingClass)?.let { resolveCalled(it, call) } }
+    val builders = mutableClassDefBy(border.definingClass).methods.filter { isBoxBuilder(it, border, resolve) }
     val builder = builders.singleOrNull() ?: throw PatchException(
         "Bloks' BoxDecoration class ${border.definingClass} has ${builders.size} box builders, expected one",
     )
@@ -98,31 +100,77 @@ internal fun BytecodePatchContext.hookBloksFills(target: String = ACCENT_BLOKS_F
  * Bloks' box builder (582 `LX/4Nl;->A01`): the static method beside the [border] reader that takes
  * the reader's two parameters and the fill, asks the reader for the border, and sets a Paint's colour
  * to the fill as it came in. 587 copies the fill to a lower register first (`move/from16`) and
- * paints that copy, so a plain move of the fill carries it.
+ * paints that copy, so a plain move of the fill carries it. 588's Android 9 build (`LX/060Z;->A02`)
+ * hands the copy to the drawable's own setters (`LX/060a;->A00` and `A01`), and the first of those
+ * hands it on to the second, which paints it; [resolve] finds a method called with the fill, and the
+ * search follows the fill [FILL_HANDOFFS] calls deep.
  */
-internal fun isBoxBuilder(method: Method, border: Method): Boolean {
+internal fun isBoxBuilder(
+    method: Method,
+    border: Method,
+    resolve: (MethodReference) -> Method? = { null },
+): Boolean {
     if (!AccessFlags.STATIC.isSet(method.accessFlags) || !method.returnType.startsWith("L")) return false
     val parameters = method.parameterTypes.map(CharSequence::toString)
     if (parameters != border.parameterTypes.map(CharSequence::toString) + "I") return false
     val code = method.implementation?.instructions ?: return false
-    val fills = mutableSetOf(method.parameterRegisterNumber(parameters.lastIndex))
-    var asksBorder = false
-    var paintsFill = false
+    val asksBorder = code.any { instruction ->
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        call != null && call.definingClass == border.definingClass && call.name == border.name && call.returnType == "I"
+    }
+    return asksBorder && paintsFill(method, method.parameterRegisterNumber(parameters.lastIndex), resolve, FILL_HANDOFFS)
+}
+
+/** How many calls deep [isBoxBuilder] follows the fill: 588's Android 9 builder hands it on twice. */
+private const val FILL_HANDOFFS = 2
+
+/**
+ * Whether [method] sets a Paint's colour to the fill in [register] or a plain copy of it, in code
+ * order, or hands one to a method [resolve] finds that does, down to [depth] calls.
+ */
+private fun paintsFill(method: Method, register: Int, resolve: (MethodReference) -> Method?, depth: Int): Boolean {
+    val code = method.implementation?.instructions ?: return false
+    val fills = mutableSetOf(register)
     var previous: Instruction? = null
     for (instruction in code) {
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
         if (call != null) {
-            if (call.definingClass == border.definingClass && call.name == border.name && call.returnType == "I") asksBorder = true
             if (call.definingClass == "Landroid/graphics/Paint;" && call.name == "setColor" &&
                 (instruction as? FiveRegisterInstruction)?.registerD in fills
             ) {
-                paintsFill = true
+                return true
             }
+            if (depth > 0 && handsFillOn(instruction, call, fills, resolve, depth)) return true
         }
         if (!isFillHookAnswer(previous, instruction, fills)) trackFillCopies(instruction, fills)
         previous = instruction
     }
-    return asksBorder && paintsFill
+    return false
+}
+
+/** Whether [instruction] calls a method [resolve] finds with a register of [fills], and that method paints it. */
+private fun handsFillOn(
+    instruction: Instruction,
+    call: MethodReference,
+    fills: Set<Int>,
+    resolve: (MethodReference) -> Method?,
+    depth: Int,
+): Boolean {
+    if (call.definingClass.startsWith(EXTENSION_PACKAGE)) return false
+    val words = when (instruction) {
+        is RegisterRangeInstruction -> (instruction.startRegister until instruction.startRegister + instruction.registerCount).toList()
+        is FiveRegisterInstruction -> listOf(
+            instruction.registerC, instruction.registerD, instruction.registerE, instruction.registerF, instruction.registerG,
+        ).take(instruction.registerCount)
+        else -> return false
+    }
+    if (words.none { it in fills }) return false
+    val callee = resolve(call) ?: return false
+    val registers = callee.implementation?.registerCount ?: return false
+    // The callee's arguments are its last registers, in the order the call hands them.
+    return words.withIndex().any { (word, register) ->
+        register in fills && paintsFill(callee, registers - words.size + word, resolve, depth - 1)
+    }
 }
 
 /**

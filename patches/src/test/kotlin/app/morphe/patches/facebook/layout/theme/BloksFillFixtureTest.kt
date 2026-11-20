@@ -9,6 +9,7 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -25,6 +26,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /**
  * Route six of Accent color: the profile's Add to story button is a Bloks box and its bio link is
@@ -72,23 +74,27 @@ class BloksFillFixtureTest {
                 assertEquals("$name: the border reader answers a colour", "I", border.returnType)
 
                 // The builder, found here without the patch's own search: a static method that takes
-                // the reader's parameters and an int, and sets a Paint's colour to that int.
+                // the reader's parameters and an int, and sets a Paint's colour to that int, or hands it
+                // to the drawable it builds, which does.
+                val drawables = drawablesOf(bundle, box)
+                val handoff = handsOn(drawables, depth = 2)
                 val builders = box.methods.filter { method ->
                     AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 3 &&
                         method.parameterTypes.last().toString() == "I" &&
-                        paintsFrom(method.body(), method.parameterRegisterNumber(2))
+                        paintsFrom(method.body(), method.parameterRegisterNumber(2), handoff)
                 }
                 assertEquals("$name: one builder paints its int parameter", 1, builders.size)
                 val builder = builders.single()
-                assertTrue("$name: the patch's search finds the same builder", isBoxBuilder(builder, border))
-                assertEquals("$name: and only it", 1, box.methods.count { isBoxBuilder(it, border) })
+                val resolve = { call: MethodReference -> drawables[call.definingClass]?.let { resolveCalled(it, call) } }
+                assertTrue("$name: the patch's search finds the same builder", isBoxBuilder(builder, border, resolve))
+                assertEquals("$name: and only it", 1, box.methods.count { isBoxBuilder(it, border, resolve) })
                 val fill = builder.parameterRegisterNumber(2)
 
                 // Accent color's route six, AMOLED's light mode surfaces (#214) and Material You's
                 // light and dark mode greys (#141, #37) on the same builder.
                 for (target in listOf(ACCENT_BLOKS_FILL, AMOLED_BLOKS_FILL, MATERIAL_YOU_BLOKS_FILL)) {
                     BoxDecorationBorderFingerprint.clearMatch()
-                    val context = PatchContexts.of(listOf(box))
+                    val context = PatchContexts.of((listOf(box) + drawables.values).distinctBy { it.type })
                     with(context) { hookBloksFills(target) }
                     val after = context.mutableClassDefBy(box.type).methods.single { it.descriptor() == builder.descriptor() }.body()
 
@@ -100,7 +106,7 @@ class BloksFillFixtureTest {
                     assertEquals("$name: and the answer", Opcode.MOVE_RESULT, after[1].opcode)
                     assertEquals("$name: goes back into the fill", fill, (after[1] as OneRegisterInstruction).registerA)
                     assertEquals("$name: the rest of the builder is as it was", builder.body().size + 2, after.size)
-                    assertTrue("$name: and still paints the fill", paintsFrom(after.drop(2), fill))
+                    assertTrue("$name: and still paints the fill", paintsFrom(after.drop(2), fill, handoff))
                 }
                 checked += version
             }
@@ -121,14 +127,16 @@ class BloksFillFixtureTest {
             for (bundle in bundles(version)) {
                 val name = bundle.name
                 val box = FixtureDex.classesHolding(bundle, BOX_DECORATION_BORDER_ERROR).single()
+                val drawables = drawablesOf(bundle, box)
+                val handoff = handsOn(drawables, depth = 2)
                 val builder = box.methods.single { method ->
                     AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 3 &&
                         method.parameterTypes.last().toString() == "I" &&
-                        paintsFrom(method.body(), method.parameterRegisterNumber(2))
+                        paintsFrom(method.body(), method.parameterRegisterNumber(2), handoff)
                 }
                 val fill = builder.parameterRegisterNumber(2)
                 val targets = listOf(AMOLED_BLOKS_FILL, MATERIAL_YOU_BLOKS_FILL, ACCENT_BLOKS_FILL)
-                val context = PatchContexts.of(listOf(box))
+                val context = PatchContexts.of((listOf(box) + drawables.values).distinctBy { it.type })
                 for (target in targets) {
                     BoxDecorationBorderFingerprint.clearMatch()
                     with(context) { hookBloksFills(target) }
@@ -145,7 +153,7 @@ class BloksFillFixtureTest {
                         (after[index * 2 + 1] as OneRegisterInstruction).registerA)
                 }
                 assertEquals("$name: the rest of the builder is as it was", builder.body().size + 6, after.size)
-                assertTrue("$name: and still paints the fill", paintsFrom(after.drop(6), fill))
+                assertTrue("$name: and still paints the fill", paintsFrom(after.drop(6), fill, handoff))
                 checked += version
             }
         }
@@ -233,6 +241,10 @@ class BloksFillFixtureTest {
                     .filterNot { call -> childCalls.any { it.toString() == call.toString() } }
                 val decoratorClasses = FixtureDex.classes(bundle, decoratorCalls.map { it.definingClass }.toSet()).values.toList()
                 val decorators = decoratorCalls.map { call -> decoratorClasses.flatMap { it.methods }.single { it.descriptor() == call.toString() } }
+                // 588's Android 9 decorator hands its component to a static that sets the background and gives nothing back.
+                val setterCalls = (children + decorators).flatMap { componentSettersOf(it, builder.returnType) }.distinctBy { it.toString() }
+                val setterClasses = FixtureDex.classes(bundle, setterCalls.map { it.definingClass }.toSet()).values.toList()
+                val setters = setterCalls.map { call -> setterClasses.flatMap { it.methods }.single { it.descriptor() == call.toString() } }
 
                 // Litho's component builder and the classes above it, as far as the bundle has them.
                 val chain = mutableListOf<ClassDef>()
@@ -254,11 +266,11 @@ class BloksFillFixtureTest {
                     }
 
                 NativeTemplateBuilderFingerprint.clearMatch()
-                val context = PatchContexts.of((listOf(owner) + childClasses + decoratorClasses + chain).distinctBy { it.type })
+                val context = PatchContexts.of((listOf(owner) + childClasses + decoratorClasses + setterClasses + chain).distinctBy { it.type })
                 with(context) { hookNativeTemplateBackgrounds() }
 
                 var sites = 0
-                for (method in listOf(builder) + children + decorators) {
+                for (method in listOf(builder) + children + decorators + setters) {
                     val before = method.body()
                     val after = context.mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }.body()
                     val calls = before.count { it.setsBackground() }
@@ -288,15 +300,47 @@ class BloksFillFixtureTest {
             (this as FiveRegisterInstruction).registerD == register
     }
 
+    /** The classes [box]'s methods build and give back, as far as the bundle has them: 588's Android 9 box drawable `LX/060a;`. */
+    private fun drawablesOf(bundle: File, box: ClassDef): Map<String, ClassDef> =
+        FixtureDex.classes(bundle, box.methods.map { it.returnType }.filter { it.startsWith("L") }.toSet())
+
+    /**
+     * Whether an instruction hands a register of the holders to a method of [classes] that paints it,
+     * down to [depth] calls: 588's Android 9 builder `LX/060Z;->A02` hands its fill to `LX/060a;->A00`
+     * and `A01`, and `A00` hands it on to `A01`. The callee's arguments are its last registers.
+     */
+    private fun handsOn(classes: Map<String, ClassDef>, depth: Int): (Instruction, Set<Int>) -> Boolean = handoff@{ instruction, holders ->
+        if (depth == 0) return@handoff false
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@handoff false
+        val callee = classes[call.definingClass]?.methods?.firstOrNull { it.descriptor() == call.toString() } ?: return@handoff false
+        val words = when (instruction) {
+            is RegisterRangeInstruction -> (instruction.startRegister until instruction.startRegister + instruction.registerCount).toList()
+            is FiveRegisterInstruction -> listOf(
+                instruction.registerC, instruction.registerD, instruction.registerE, instruction.registerF, instruction.registerG,
+            ).take(instruction.registerCount)
+            else -> return@handoff false
+        }
+        val registers = callee.implementation?.registerCount ?: return@handoff false
+        words.withIndex().any { (word, register) ->
+            register in holders && paintsFrom(callee.body(), registers - words.size + word, handsOn(classes, depth - 1))
+        }
+    }
+
     /**
      * Whether [code] sets a Paint's colour to the int in [register] or a plain copy of it, in code
      * order: 587's builder copies its fill to another register first (`move/from16 v15, v16`, arm64
-     * `LX/05nv;->A02`) and paints the copy. Any other write to a register drops it.
+     * `LX/05nv;->A02`) and paints the copy. Any other write to a register drops it. A copy [handedTo]
+     * a method that paints it counts too.
      */
-    private fun paintsFrom(code: List<Instruction>, register: Int): Boolean {
+    private fun paintsFrom(
+        code: List<Instruction>,
+        register: Int,
+        handedTo: (Instruction, Set<Int>) -> Boolean = { _, _ -> false },
+    ): Boolean {
         val holders = mutableSetOf(register)
         for (instruction in code) {
             if (holders.any { instruction.setsPaintColour(it) }) return true
+            if (handedTo(instruction, holders)) return true
             if (!instruction.opcode.setsRegister()) continue
             val target = (instruction as? OneRegisterInstruction)?.registerA ?: continue
             val source = (instruction as? TwoRegisterInstruction)?.registerB
