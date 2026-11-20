@@ -10,8 +10,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.shared.MOBILE_CONFIG
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
@@ -19,6 +21,7 @@ import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -179,7 +182,10 @@ internal fun audioLineJoin(method: Method): Int {
 /**
  * The register holding the reel's story where code put at [at] in [method] runs: the one read of the
  * render's own field of [storyType], when that read is the only write of its register reaching [at].
- * Null otherwise.
+ * A method with no such field takes the story as its one parameter of [storyType] instead (588's
+ * Android 9 footer, LX/093B;->A02, copies it down once, `move-object/from16 v12, v161`): then the
+ * lowest copy of it that is the only write of its register reaching [at], else the parameter's own
+ * register while nothing has written it. Null otherwise.
  */
 internal fun audioLineStory(method: Method, at: Int, storyType: String): Int? {
     val code = method.code
@@ -187,9 +193,21 @@ internal fun audioLineStory(method: Method, at: Int, storyType: String): Int? {
         val field = (code[index] as? ReferenceInstruction)?.reference as? FieldReference ?: return@filter false
         code[index].opcode == Opcode.IGET_OBJECT && field.definingClass == method.definingClass && field.type == storyType
     }
+    if (reads.isEmpty()) return parameterStory(method, at, storyType)
     val read = reads.singleOrNull()?.takeIf { it < at } ?: return null
     val register = (code[read] as TwoRegisterInstruction).registerA
     return register.takeIf { method.writersReaching(at, register) == listOf(read) }
+}
+
+private fun parameterStory(method: Method, at: Int, storyType: String): Int? {
+    val code = method.code
+    val parameter = parameterRegister(method, storyType) ?: return null
+    val copies = code.indices.filter { index ->
+        index < at && code[index].opcode in OBJECT_MOVES && (code[index] as TwoRegisterInstruction).registerB == parameter &&
+            method.writersReaching(index, parameter) == listOf(-1)
+    }.filter { index -> method.writersReaching(at, (code[index] as TwoRegisterInstruction).registerA) == listOf(index) }
+    return copies.minOfOrNull { (code[it] as TwoRegisterInstruction).registerA }
+        ?: parameter.takeIf { method.writersReaching(at, it) == listOf(-1) }
 }
 
 /**
@@ -336,11 +354,14 @@ internal fun BytecodePatchContext.keepPostDateBesideReason() {
  * - The builder's other positioned adds use a place it counts itself, never one read from the server.
  * - The hook swaps both adds for one extension call taking the list, the place and the item, which
  *   leaves the item out while the switch is on and puts it after the date while the date is on.
+ * - 588's Android 9 build (LX/093B;->A02) moves the read and the cast to an int into a static
+ *   (Object, long) int helper, `LX/01CA;->A03`, that casts its Object to the config and asks it.
+ *   Only [classOf] sees that body, so without it that form doesn't count.
  */
 internal const val SLOT_NEW_FOR_YOU = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->slotNewForYou(Ljava/util/List;ILjava/lang/Object;)V"
 
 /** The List.add(int, Object) calls in [method] whose place is a server long clamped to the list. */
-internal fun newForYouInserts(method: Method): List<Int> {
+internal fun newForYouInserts(method: Method, classOf: ((String) -> ClassDef?)? = null): List<Int> {
     val code = method.code
     val adds = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
     val statics = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
@@ -359,7 +380,8 @@ internal fun newForYouInserts(method: Method): List<Int> {
         (maxOf(0, clamped - 17) until clamped - 1).any { read ->
             val config = (code[read] as? ReferenceInstruction)?.reference as? MethodReference
             code[read].opcode in configs && config != null && config.definingClass == MOBILE_CONFIG &&
-                config.returnType == "J" && config.params() == listOf("J")
+                config.returnType == "J" && config.params() == listOf("J") ||
+                classOf != null && code[read].opcode in statics && readsMobileConfig(code[read], "I", classOf)
         }
     }
 }
@@ -367,7 +389,7 @@ internal fun newForYouInserts(method: Method): List<Int> {
 /** Hands the reel footer's two New-for-you inserts to the extension. */
 internal fun BytecodePatchContext.slotNewForYou() {
     val method = reelFooter()
-    val sites = newForYouInserts(method)
+    val sites = newForYouInserts(method) { classDefByOrNull(it) }
     if (sites.size != 2) {
         throw PatchException("$PATCH: expected the reel footer to slot New for you in at a server place twice, found ${sites.size}")
     }
@@ -862,6 +884,9 @@ internal fun BytecodePatchContext.dropCaptionDate() {
     val renders = classDefByStrings(CAPTION_RENDER, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { classDef -> classDef.methods.filter { captionDateGates(it).isNotEmpty() }.map { classDef.type to it } }
+        // 588's Android 9 build dates the caption in a helper class (`LX/09TV;->A02`) that asks a string
+        // table (`LX/0vfR;->A00(I)String`) for the render's name instead of loading it.
+        .ifEmpty { methodsNaming(CAPTION_RENDER) { captionDateGates(it).isNotEmpty() }.map { it.definingClass to it } }
     val (owner, render) = renders.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one reel caption render that dates its caption behind a server switch, found ${renders.size}",
     )

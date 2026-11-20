@@ -10,6 +10,10 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
@@ -251,16 +255,30 @@ class ReelPostDateFixtureTest {
                     call != null && call.name == "add" && call.returnType == "V" &&
                         call.parameterTypes.map(CharSequence::toString) == listOf("I", "Ljava/lang/Object;")
                 }
+                // 588's Android 9 build reads the place through a static (Object, long) int helper that asks the config.
+                val outlined = original.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }.filter {
+                    it.returnType == "I" && it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                }.map { it.definingClass }.toSet()
+                val helpers = FixtureDex.classes(bundle, outlined).values.toList()
+                val asksConfig = helpers.flatMap { owner ->
+                    owner.methods.filter { helper ->
+                        helper.implementation?.instructions?.toList().orEmpty().any {
+                            val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+                            call?.definingClass == config && call.returnType == "J"
+                        }
+                    }
+                }.map { "${it.definingClass}->${it.name}" }.toSet()
                 val serverPlaced = positioned.filter { at ->
                     (maxOf(0, at - 20) until at).any {
                         val call = (original[it] as? ReferenceInstruction)?.reference as? MethodReference
-                        call?.definingClass == config && call.returnType == "J"
+                        call?.definingClass == config && call.returnType == "J" ||
+                            call?.returnType == "I" && "${call.definingClass}->${call.name}" in asksConfig
                     }
                 }
                 assertEquals("$name: adds at a place read from the server", 2, serverPlaced.size)
                 assertTrue("$name: the builder has positioned adds of its own too", positioned.size > serverPlaced.size)
-                assertEquals("$name: the finder", serverPlaced, newForYouInserts(builder))
-                val context = PatchContexts.of(holders)
+                assertEquals("$name: the finder", serverPlaced, newForYouInserts(builder) { type -> helpers.firstOrNull { it.type == type } })
+                val context = PatchContexts.of((holders + helpers).distinctBy { it.type })
                 context.slotNewForYou()
                 val patched = context.mutableClassDefBy(builder.definingClass).methods.single {
                     it.name == builder.name &&
@@ -672,7 +690,12 @@ class ReelPostDateFixtureTest {
                 val call = subtitleLabelCall(footer, storyType)
                 val soundHelper = (original[call] as ReferenceInstruction).reference as MethodReference
                 val soundClasses = FixtureDex.classes(bundle, setOf(soundHelper.definingClass)).values.toList()
-                val all = PatchContexts.of(holders + dateClasses + soundClasses)
+                // 588's Android 9 build reads New for you's place through a static (Object, long) int helper elsewhere.
+                val outlined = original.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }.filter {
+                    it.returnType == "I" && it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                }.map { it.definingClass }.toSet()
+                val configHelpers = FixtureDex.classes(bundle, outlined).values.toList()
+                val all = PatchContexts.of((holders + dateClasses + soundClasses + configHelpers).distinctBy { it.type })
                 all.keepPostDateBesideReason()
                 all.holdFooterOnDate()
                 all.dateSoundLabels(storyType)
@@ -725,14 +748,24 @@ class ReelPostDateFixtureTest {
                             }
                     }
                 }
-                val renders = holders.flatMap { owner -> owner.methods.filter { rowsOf(it).isNotEmpty() } }
+                // 588's Android 9 build asks a string table for the name, from a render in another class.
+                val classes = if (holders.any { owner -> owner.methods.any { rowsOf(it).isNotEmpty() } }) holders else {
+                    val tables = holders.filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, captionRender) } }
+                        .associateBy { it.type }
+                    val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                    val asking = if (tables.isEmpty()) emptySet() else FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) {
+                        !isStringTable(it) && !holdsString(it, captionRender) && namesString(it, captionRender, resolve)
+                    }.map { it.definingClass }.toSet()
+                    (holders + FixtureDex.classes(bundle, asking).values).distinctBy { it.type }
+                }
+                val renders = classes.flatMap { owner -> owner.methods.filter { rowsOf(it).isNotEmpty() } }
                 assertEquals("$name: one caption render dates its caption", 1, renders.size)
                 val render = renders.single()
                 assertEquals("$name: two caption date rows", 2, rowsOf(render).size)
                 assertThrows("$name: no caption render must refuse the patch", PatchException::class.java) {
                     PatchContexts.of(emptyList()).dropCaptionDate()
                 }
-                val context = PatchContexts.of(holders)
+                val context = PatchContexts.of(classes)
                 context.dropCaptionDate()
                 val patched = patchedOf(context, render)
                 val hooks = patched.calling(CAPTION_DATE_SHOWS)
