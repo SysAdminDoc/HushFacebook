@@ -56,10 +56,12 @@ class StoryEyeFixtureTest {
 
     /**
      * Per build, whether the helper's (StoryBucket, StoryCard) method lays the listener's block out
-     * before the count it makes at once. Up to 586 the count came first in the code.
+     * before the count it makes at once. Up to 586 the count came first in the code. 588's Android 9
+     * build lays it out first too (`LX/0BPt;->A03` makes `LX/0DF7;` at 104 and counts at 126, 2026-11-20).
      */
     private val listenerLaidOutFirst = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to true, "armeabi-v7a" to true),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to
+            mapOf("arm64-v8a" to true, "armeabi-v7a" to true, "arm64-v8a-minapi28-storeless" to true),
     )
 
     @Test

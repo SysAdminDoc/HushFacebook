@@ -256,11 +256,22 @@ class StorySeenMarkingFixtureTest {
     @Test
     fun `each declared build's viewer asks the extension where a bucket opens once its loading stand-in is replaced`() = bundles { bundle ->
         val name = bundle.name
-        val found = FixtureDex.classesHolding(bundle, DATA_CHANGED).flatMap { owner ->
-            owner.methods.filter { loads(it, DATA_CHANGED) }.mapNotNull { method -> loadingSwap(method)?.let { method to it } }
+        val holders = FixtureDex.classesHolding(bundle, DATA_CHANGED)
+        // The statics onDataChanged calls, where 588's store-less build keeps its work.
+        val called = holders.flatMap { it.methods }.filter { loads(it, DATA_CHANGED) }.flatMap { method ->
+            method.implementation!!.instructions.filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+                .mapNotNull { it.call?.definingClass }
+        }.toSet()
+        val statics = FixtureDex.classes(bundle, called)
+        val resolve = { call: MethodReference -> statics[call.definingClass]?.let { resolveStatic(it, call) } }
+        val found = holders.flatMap { owner ->
+            owner.methods.filter { loads(it, DATA_CHANGED) }.mapNotNull { method ->
+                (loadingSwap(method)?.let { method to it } ?: outlinedLoadingSwap(owner, method, resolve))?.let { owner to it }
+            }
         }
         assertEquals("$name: onDataChanged methods shaped for the loading swap", 1, found.size)
-        val (method, swap) = found.single()
+        val (delegate, shaped) = found.single()
+        val (method, swap) = shaped
         val code = method.implementation!!.instructions.toList()
         fun static(returns: String, vararg types: String) = code.indices.filter { i ->
             code[i].opcode == Opcode.INVOKE_STATIC && code[i].call!!.returnType == returns &&
@@ -275,10 +286,17 @@ class StorySeenMarkingFixtureTest {
         assertTrue("$name: the old card is looked up again after the card check", lookups.any { it > swap.check && (code[it] as FiveRegisterInstruction).registerD == swap.card })
         val move = code[swap.navigate] as FiveRegisterInstruction
         val navigate = code[swap.navigate].call!!
-        assertEquals("$name: the viewer moves on its own delegate", method.definingClass, navigate.definingClass)
-        val navigators = FixtureDex.classesHolding(bundle, NAVIGATE_TO_CARD).filter { it.type == method.definingClass }
+        if (method.definingClass == delegate.type) {
+            assertEquals("$name: the viewer moves on its own delegate", method.definingClass, navigate.definingClass)
+        } else {
+            assertTrue("$name: the helper is static", AccessFlags.STATIC.isSet(method.accessFlags))
+            assertEquals("$name: the helper moves the viewer through the delegate it's handed", Opcode.INVOKE_INTERFACE, code[swap.navigate].opcode)
+        }
+        val navigators = FixtureDex.classesHolding(bundle, NAVIGATE_TO_CARD).filter { it.type == delegate.type }
             .flatMap { owner -> owner.methods.filter { loads(it, NAVIGATE_TO_CARD) } }
-        assertEquals("$name: the call is the delegate's navigateToCard", listOf(navigate.name), navigators.map { it.name })
+        assertEquals("$name: the call is the delegate's navigateToCard",
+            listOf(navigate.name to navigate.parameterTypes.map(Any::toString)),
+            navigators.map { it.name to it.parameterTypes.map(Any::toString) })
         assertEquals("$name: the index moved to", swap.index, move.registerE)
         val after = MutableMethod(method).apply { openAfterLoading(swap) }.implementation!!.instructions.toList()
         assertEquals("$name: instructions added to onDataChanged", code.size + 6, after.size)

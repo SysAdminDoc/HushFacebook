@@ -872,6 +872,48 @@ internal fun loads(method: Method, text: String): Boolean =
  * invoke, so each is below 16.
  */
 internal fun loadingSwap(method: Method): LoadingSwap? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags)) return null
+    return loadingSwapIn(method, method.localRegisterCount(), Opcode.INVOKE_VIRTUAL) { it.definingClass == method.definingClass }
+}
+
+/*
+ * 588's store-less build (read 2026-11-19) keeps that work in a static helper of the navigation
+ * state's class (LX/0BGV;->A06(FbUserSession, LX/0DeV;, LX/0BGV;)V). onDataChanged (LX/0BGf;->A0F)
+ * calls it once and hands itself in as the delegate. The helper has the shape above, except that it
+ * moves the viewer through that parameter, with an interface call of the delegate's own navigateToCard
+ * (LX/0DQL;->J03). The hooks go in the helper.
+ */
+
+/**
+ * The helper [method], onDataChanged of [delegate], hands its work to, with the hooks' places in it,
+ * or null when [method] isn't shaped that way: [method] makes one static void call taking `this`,
+ * once, and [resolve] finds that static. The helper is shaped as [loadingSwap] describes, except that
+ * the viewer moves through the parameter `this` went into, by a (reason, I)V method [delegate]
+ * declares itself.
+ */
+internal fun outlinedLoadingSwap(delegate: ClassDef, method: Method, resolve: (MethodReference) -> Method?): Pair<Method, LoadingSwap>? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags) || method.definingClass != delegate.type) return null
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val self = method.localRegisterCount()
+    val handing = code.filter { it.call(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)?.returnType == "V" && self in callRegisters(it) }
+    val call = handing.singleOrNull() ?: return null
+    val slot = callRegisters(call).withIndex().singleOrNull { it.value == self }?.index ?: return null
+    val helper = resolve(call.call(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)!!) ?: return null
+    if (!AccessFlags.STATIC.isSet(helper.accessFlags) || helper.implementation == null) return null
+    val swap = loadingSwapIn(helper, helper.localRegisterCount() + slot, Opcode.INVOKE_INTERFACE) { navigate ->
+        delegate.methods.any {
+            it.name == navigate.name && it.returnType == navigate.returnType &&
+                it.parameterTypes.map(Any::toString) == navigate.parameterTypes.map(Any::toString)
+        }
+    } ?: return null
+    return helper to swap
+}
+
+/**
+ * The hooks' places in [method] as [loadingSwap] describes them, with the viewer moved by a
+ * [moves] call on [self] that [navigates] accepts.
+ */
+private fun loadingSwapIn(method: Method, self: Int, moves: Opcode, navigates: (MethodReference) -> Boolean): LoadingSwap? {
     val code = method.implementation?.instructions?.toList() ?: return null
     fun staticCall(i: Int, returns: String, vararg types: String) =
         code[i].call(Opcode.INVOKE_STATIC)?.let { it.returnType == returns && it.takes(*types) } == true
@@ -893,11 +935,9 @@ internal fun loadingSwap(method: Method): LoadingSwap? {
     }
     val targets = branchTargets(code)
     if (written || first + 2 in targets || cardCheck in targets) return null
-    if (AccessFlags.STATIC.isSet(method.accessFlags)) return null
-    val self = method.localRegisterCount()
     val navigate = code.indices.singleOrNull { i ->
-        i > cardCheck && code[i].call(Opcode.INVOKE_VIRTUAL)?.let {
-            it.definingClass == method.definingClass && it.returnType == "V" && it.parameterTypes.size == 2 && it.parameterTypes[1].toString() == "I"
+        i > cardCheck && code[i].call(moves)?.let {
+            navigates(it) && it.returnType == "V" && it.parameterTypes.size == 2 && it.parameterTypes[1].toString() == "I"
         } == true && (code[i] as FiveRegisterInstruction).registerC == self
     } ?: return null
     val move = code[navigate] as FiveRegisterInstruction

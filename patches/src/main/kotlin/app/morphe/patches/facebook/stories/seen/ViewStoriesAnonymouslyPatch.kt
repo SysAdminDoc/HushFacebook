@@ -123,15 +123,17 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         if (picker.localRegisterCount() < 1) {
             throw PatchException("$PATCH: ${picker.definingClass}->${picker.name} has no local register for the start card hook")
         }
+        val tables = { call: MethodReference -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
         val swaps = classDefByStrings(DATA_CHANGED, StringComparisonType.EQUALS).flatMap { owner ->
-            owner.methods.filter { loads(it, DATA_CHANGED) }.mapNotNull { method -> loadingSwap(method)?.let { method to it } }
+            owner.methods.filter { loads(it, DATA_CHANGED) }.mapNotNull { method ->
+                loadingSwap(method)?.let { method to it } ?: outlinedLoadingSwap(owner, method, tables)
+            }
         }
         val (dataChanged, swap) = swaps.singleOrNull() ?: throw PatchException(
-            "$PATCH: expected one method loading \"$DATA_CHANGED\" that checks the new copy of a bucket against the one " +
-                "it replaces, looks for the card it was on by id, checks it against the card at its place, looks " +
-                "for it again and moves the viewer by index, found ${swaps.size}",
+            "$PATCH: expected one method loading \"$DATA_CHANGED\", or one static it hands itself to, that checks the " +
+                "new copy of a bucket against the one it replaces, looks for the card it was on by id, checks it " +
+                "against the card at its place, looks for it again and moves the viewer by index, found ${swaps.size}",
         )
-        val tables = { call: MethodReference -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
         val helper = seenHelper(callers, sender, tables)
         val card = cardSeen(helper)
         val launch = launchSource(helper, tables)
