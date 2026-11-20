@@ -7,6 +7,10 @@ package app.morphe.patches.facebook.feed.posttext
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
 import app.morphe.util.writersReaching
@@ -118,13 +122,21 @@ private fun textPuts(method: Method, text: FieldReference): List<Place> {
  * [TRAY_TITLE_KEY] (587 `LX/03CI;->render`). Each name's text builder gets the test key
  * [TRAY_NAME_KEY] through a one-string setter (587 `LX/0HCx;->A1t`), after the builder's text went into
  * its one text field (587 `LX/034v;->A0A`) since the builder was made.
+ *
+ * 588's store-less build splits the row's render (`LX/03tw;->render`) into helpers of its class: one
+ * holds [TRAY_TITLE_KEY] (`A0A`) and the one making the names (`A08`) asks a string table for
+ * [TRAY_NAME_KEY] (`LX/07ho;->A00`), so that one is the row ([splitTrays]) and the key it hands over
+ * is the table's answer.
  */
 internal fun BytecodePatchContext.findTrayNames(): TrayNames {
-    val trays = methodsWithString(TRAY_NAME_KEY).filter { loadsString(it, TRAY_TITLE_KEY) }
+    val trays = methodsWithString(TRAY_NAME_KEY).filter { loadsString(it, TRAY_TITLE_KEY) }.ifEmpty { splitTrays() }
     val tray = trays.singleOrNull()
         ?: refuse("expected one method drawing the stories row (\"$TRAY_NAME_KEY\", \"$TRAY_TITLE_KEY\"), found ${trays.size}")
     val where = "${tray.definingClass}->${tray.name}"
     val code = tray.implementation!!.instructions.toList()
+    val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+    fun namesKey(index: Int) = loads(code[index], TRAY_NAME_KEY) ||
+        (code[index].opcode == Opcode.MOVE_RESULT_OBJECT && tableStringAt(code, index - 1, resolve) == TRAY_NAME_KEY)
     val keys = code.indices.filter { index ->
         val instruction = code[index]
         val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
@@ -133,7 +145,7 @@ internal fun BytecodePatchContext.findTrayNames(): TrayNames {
         ) return@filter false
         val key = argument(instruction, 1) ?: return@filter false
         val writers = tray.writersReaching(index, key)
-        writers.isNotEmpty() && writers.all { it >= 0 && loads(code[it], TRAY_NAME_KEY) }
+        writers.isNotEmpty() && writers.all { it >= 0 && namesKey(it) }
     }
     if (keys.isEmpty()) refuse("$where never hands \"$TRAY_NAME_KEY\" to a text builder")
     val places = keys.map { Place(tray, it, firstArgument(code[it])!!) }
@@ -149,6 +161,29 @@ internal fun BytecodePatchContext.findTrayNames(): TrayNames {
     }.distinctBy { it.toString() }
     val text = texts.singleOrNull() ?: refuse("expected the stories row's names in one kind of text builder, found ${texts.size}")
     return TrayNames(text, places)
+}
+
+/**
+ * The stories row when its render is split into helpers ([findTrayNames]): the methods asking a string
+ * table for [TRAY_NAME_KEY] in a class that holds [TRAY_TITLE_KEY] in another method, where one method
+ * of the class calls both.
+ */
+private fun BytecodePatchContext.splitTrays(): List<Method> {
+    val titles = methodsWithString(TRAY_TITLE_KEY)
+    val hosts = titles.map { it.definingClass }.toSet()
+    if (hosts.isEmpty()) return emptyList()
+    val names = methodsNaming(TRAY_NAME_KEY) { it.definingClass in hosts && !isStringTable(it) }
+        .filterNot { loadsString(it, TRAY_NAME_KEY) }.distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}" }
+    fun Method.calls(callee: Method) = implementation?.instructions?.any { instruction ->
+        ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.let {
+            it.definingClass == callee.definingClass && it.name == callee.name &&
+                it.parameterTypes.map(CharSequence::toString) == callee.parameterTypes.map(CharSequence::toString)
+        } == true
+    } == true
+    return names.filter { name ->
+        val title = titles.filter { it.definingClass == name.definingClass }
+        classDefBy(name.definingClass).methods.any { render -> render.calls(name) && title.any { render.calls(it) } }
+    }
 }
 
 /**
@@ -203,7 +238,8 @@ internal fun BytecodePatchContext.findOpenStoryNames(text: FieldReference): List
     val headers = methodsWithString(STORY_TITLE_COMPONENT)
     val makers = headers.filter { loadsString(it, STORY_TITLE_SPEC) }
     if (makers.isEmpty()) refuse("no method makes an open story's title (\"$STORY_TITLE_COMPONENT\", \"$STORY_TITLE_SPEC\")")
-    val made = makers.flatMap(::madeBy).toSet()
+    // 588's Android 9 build makes the text builder itself there too, whose own setter puts its text.
+    val made = makers.flatMap(::madeBy).toSet() - text.definingClass
     val titles = made.filter { type -> classDefByOrNull(type)?.methods?.any { textPuts(it, text).isNotEmpty() } == true }
     val title = titles.singleOrNull() ?: refuse("expected one open story title component naming its text, found ${titles.size}")
     val style = findBoxStyle(text.definingClass).background.substringAfterLast(')')
@@ -239,7 +275,9 @@ internal fun BytecodePatchContext.findOpenStoryNames(text: FieldReference): List
  * name.
  */
 internal fun BytecodePatchContext.findReelNames(text: FieldReference): ReelNames {
+    // 588's Android 9 build asks a string table for the header's name in its constructor (`LX/09GG;`).
     val headers = methodsWithString(POST_HEADER_COMPONENT).filter { it.name == "<init>" }.map { it.definingClass }.toSet()
+        .ifEmpty { methodsNaming(POST_HEADER_COMPONENT) { it.name == "<init>" }.map { it.definingClass }.toSet() }
     val header = headers.singleOrNull() ?: refuse("expected one post header (\"$POST_HEADER_COMPONENT\"), found ${headers.size}")
     val authors = methodsWithString(REEL_AUTHOR_COMPONENT)
     val author = authors.singleOrNull()

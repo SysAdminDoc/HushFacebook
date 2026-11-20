@@ -10,6 +10,10 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.tableIndexAt
+import app.morphe.patches.facebook.feed.tableIndices
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -204,8 +208,26 @@ class NameBoxesFixtureTest {
                     .flatMap { FixtureDex.classesHolding(bundle, it) }
                     .filter { !it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
                 val made = FixtureDex.classes(bundle, madeIn(anchors.values) - anchors.keys)
+                // 588's store-less row asks a string table for its names' key.
+                val tables = FixtureDex.classesHolding(bundle, TRAY_NAME_KEY)
+                    .filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, TRAY_NAME_KEY) } }
+                    .filterNot { it.type in anchors.keys }.associateBy { it.type }
+                // Its post header asks one for the header's name in its constructor.
+                val headerTables = anchors.values.flatMap { it.methods }
+                    .filter { isStringTable(it) && holdsString(it, POST_HEADER_COMPONENT) }
+                    .associate { "${it.definingClass}->${it.name}" to tableIndices(it, POST_HEADER_COMPONENT) }
+                val headerAskers = if (headerTables.isEmpty()) emptyMap() else FixtureDex.classes(bundle,
+                    FixtureDex.methodsWhere(bundle, { true }) { method ->
+                        val code = method.implementation?.instructions?.toList() ?: emptyList()
+                        method.name == "<init>" && code.indices.any { at ->
+                            val index = tableIndexAt(code, at) ?: return@any false
+                            val call = (code[at] as ReferenceInstruction).reference as MethodReference
+                            index in headerTables["${call.definingClass}->${call.name}"].orEmpty()
+                        }
+                    }.map { it.definingClass }.toSet() - anchors.keys)
+                val headerMade = FixtureDex.classes(bundle, madeIn(headerAskers.values) - anchors.keys - headerAskers.keys - made.keys)
 
-                val tray = PatchContexts.of(anchors.values.toList() + extension).findTrayNames()
+                val tray = PatchContexts.of(anchors.values.toList() + tables.values + extension).findTrayNames()
                 val builderType = tray.text.definingClass
                 val chain = hierarchy(bundle, builderType)
                 val shaped = FixtureDex.methodsWhere(bundle, { true }) {
@@ -214,7 +236,7 @@ class NameBoxesFixtureTest {
                 val styles = FixtureDex.classes(bundle, shaped.map { it.returnType }.toSet())
                 val emptyStyles = styles.values.flatMap { it.staticFields }.map { it.type }.filter { it.startsWith("LX/") }.toSet()
                 val backgrounds = FixtureDex.classes(bundle, shaped.map { it.definingClass }.toSet() + emptyStyles)
-                val classes = made + backgrounds + styles + chain + anchors
+                val classes = made + headerMade + backgrounds + styles + chain + tables + anchors + headerAskers
 
                 val context = PatchContexts.of(classes.values.toList() + extension)
                 val trayNames = context.findTrayNames()

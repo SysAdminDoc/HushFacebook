@@ -17,6 +17,8 @@ import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.reels.arguments
+import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
@@ -122,7 +124,7 @@ val showFullPostTextPatch = bytecodePatch(
         val builder = findPostTextBuilder(PATCH)
         val method = mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder)
         // Translate posts adds to this method too, and may have run first, so the place is read from it as it is now.
-        val cut = textCut(method)
+        val cut = textCut(method, wrappedCutOf(builder))
         val fold = findFold(cut.storyField)
         // At the null check's label: 587's second cut reaches it by a goto.
         method.addInstructionsAtControlFlowLabel(
@@ -207,10 +209,38 @@ private fun cutsText(reference: MethodReference) =
     reference.returnType == SPANNABLE_STRING && reference.parameterTypes.firstOrNull()?.toString() == CHARACTER_STYLE
 
 /** A method shaped like the cut's caller: Spannable back, the text and the See more style in. */
-internal fun cutShaped(method: Method) =
+internal fun cutShaped(method: Method) = callerShaped(method) && method.containsLiteralInstruction(LINE_LIMIT_KEY)
+
+/** [cutShaped] but for the line limit: whether [method] has the shape of the cut's caller. */
+internal fun callerShaped(method: Method) =
     method.returnType == SPANNABLE && method.parameterTypes.size >= 2 &&
         method.parameterTypes[0].toString() == SPANNABLE && method.parameterTypes[1].toString() == CHARACTER_STYLE &&
-        method.implementation != null && method.containsLiteralInstruction(LINE_LIMIT_KEY)
+        method.implementation != null
+
+private val WRAPPER_CALLS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE)
+
+/**
+ * The call [method] hands its text to the cut through, when it's shaped like the cut's caller but
+ * reads no line limit itself: 588's Android 9 build moves the cut out of the builder
+ * (`LX/0474;->A07`) into a virtual method of another class (`LX/047J;->A06`), which reads the line
+ * limit, makes the config and cuts once, and the builder keeps that one call. The call has to be
+ * the method's only virtual call cutting text, to a method [resolve] finds, not static, that reads
+ * [LINE_LIMIT_KEY]. Null for any other method.
+ */
+internal fun wrappedCut(method: Method, resolve: (MethodReference) -> Method?): MethodReference? {
+    if (!callerShaped(method) || method.containsLiteralInstruction(LINE_LIMIT_KEY)) return null
+    val calls = method.implementation!!.instructions.filter { it.opcode in WRAPPER_CALLS }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter(::cutsText).distinctBy { it.toString() }
+    val call = calls.singleOrNull() ?: return null
+    val cutter = resolve(call) ?: return null
+    if (AccessFlags.STATIC.isSet(cutter.accessFlags) || cutter.implementation == null) return null
+    return call.takeIf { cutter.containsLiteralInstruction(LINE_LIMIT_KEY) }
+}
+
+/** [wrappedCut] in this build: the virtual call [builder] cuts its text through, or null where it cuts it itself. */
+internal fun BytecodePatchContext.wrappedCutOf(builder: Method): MethodReference? =
+    wrappedCut(builder) { call -> classDefByOrNull(call.definingClass)?.let { resolveCalled(it, call) } }
 
 /** Whether [instruction] writes [register]. */
 internal fun writes(instruction: Instruction, register: Int): Boolean {
@@ -318,14 +348,17 @@ private fun requireDeadAfter(code: List<Instruction>, index: Int, register: Int,
  * The story is the one register cast to [GRAPHQL_STORY] right after it's read from the post's props,
  * and every way to the cut gets its value from that cast, so it still holds the story there (586's
  * Android 9 build reuses the register after the cut, `LX/042d;->A06` v0).
+ * With [wrapper] ([wrappedCut], 588's Android 9 build), the calls of it count as the cut too.
  */
-internal fun textCut(method: Method): TextCut {
+internal fun textCut(method: Method, wrapper: MethodReference? = null): TextCut {
     val code = method.implementation!!.instructions.toList()
     val where = "${method.definingClass}->${method.name}"
     val calls = code.indices.filter { index ->
         val instruction = code[index]
-        (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
-            ((instruction as ReferenceInstruction).reference as? MethodReference)?.let(::cutsText) == true
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ((instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
+            reference?.let(::cutsText) == true) ||
+            (wrapper != null && instruction.opcode in WRAPPER_CALLS && reference?.toString() == wrapper.toString())
     }
     if (calls.isEmpty()) refuse("expected a call cutting the text in $where, found 0")
     val flow = Flow(code, where)
@@ -365,15 +398,28 @@ internal fun textCut(method: Method): TextCut {
     return TextCut(method, branch, register, story, storyField)
 }
 
-/** The one method shaped like the cut's caller that reads the line limit: Facebook's builder of a post's text. */
+/**
+ * The one method shaped like the cut's caller that reads the line limit: Facebook's builder of a post's text.
+ * Where none reads it, the one that cuts through a method reading it ([wrappedCut], 588's Android 9 build).
+ */
 internal fun BytecodePatchContext.findPostTextBuilder(patch: String): Method {
     val methods = mutableListOf<Method>()
+    val callers = mutableListOf<Method>()
     classDefForEachReferencing(types = listOf(CHARACTER_STYLE)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(methods, ::cutShaped)
+        classDef.methods.filterTo(callers, ::callerShaped)
     }
+    if (methods.isEmpty()) methods += callers.filter { wrappedCutOf(it) != null }
     return methods.singleOrNull()
         ?: throw PatchException("$patch: expected one method building a post's text to its line limit, found ${methods.size}")
+}
+
+/** The method that cuts [builder]'s text: the builder itself, or the method it hands the text to ([wrappedCut]). */
+internal fun BytecodePatchContext.postTextCutter(builder: Method, patch: String): Method {
+    val call = wrappedCutOf(builder) ?: return builder
+    return classDefByOrNull(call.definingClass)?.let { resolveCalled(it, call) }
+        ?: throw PatchException("$patch: ${call.definingClass} isn't in this build")
 }
 
 /**
@@ -564,17 +610,25 @@ private fun toggles(method: Method, field: String): Boolean {
  * component read into it, right there or through the move after it (588 reads four of them here). The
  * hook goes right after that read, so Facebook's own memory of a caption tapped before, which may
  * replace it, still wins.
+ *
+ * 588's Android 9 build outlines both halves. The component unboxes through a static `(holder)Z`
+ * (`LX/07hp;->A1T`) that reads the holder's one object, and the boxing happens in the spec method
+ * the component hands its holders and props to (`LX/09TV;->A03`), which stores
+ * `Boolean.valueOf` of one boolean parameter into that holder. The prop is the component field the
+ * component reads into the argument it hands there, through the moves in between.
  */
 internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
     val components = sendersOf(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
     val component = components.singleOrNull()
         ?: refuse("expected one component named after \"$CAPTION_TOGGLE\", found ${components.size}")
     val owner = classDefByOrNull(component) ?: refuse("$component isn't in this build")
+    val unboxings = mutableMapOf<String, FieldReference?>()
     val unboxed = owner.methods.flatMap { method ->
         val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
         code.indices.filter { index ->
             booleanSet(code[index])?.takeIf { it.definingClass != component } != null &&
-                index >= 2 && calls(code[index - 2], BOOLEAN_VALUE) && code[index - 1].opcode == Opcode.MOVE_RESULT &&
+                index >= 2 && (calls(code[index - 2], BOOLEAN_VALUE) || outlinedUnboxing(code[index - 2], unboxings) != null) &&
+                code[index - 1].opcode == Opcode.MOVE_RESULT &&
                 (code[index - 1] as OneRegisterInstruction).registerA == (code[index] as TwoRegisterInstruction).registerA
         }.map { method to it }
     }
@@ -591,6 +645,12 @@ internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
     val code = method.implementation!!.instructions.toList()
     val where = "${method.definingClass}->${method.name}"
     val boxed = firstArgument(code[store - 2]) ?: refuse("$where unboxes no register before its caption state")
+    val holderField = outlinedUnboxing(code[store - 2], unboxings)
+    if (holderField != null) {
+        val read = outlinedCaptionProp(method, code, store - 2, boxed, holderField, component, where)
+        if (read + 1 in Flow(code, where).targets) refuse("$where jumps straight past where it reads its caption prop")
+        return CaptionStart(method, read, (code[read] as TwoRegisterInstruction).registerA)
+    }
     val boxing = (store - 3 downTo 1).firstOrNull { writes(code[it], boxed) }
     if (boxing == null || code[boxing].opcode != Opcode.MOVE_RESULT_OBJECT || !calls(code[boxing - 1], BOOLEAN_OF)) {
         refuse("$where doesn't box its caption state with Boolean.valueOf")
@@ -613,7 +673,114 @@ internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
     return CaptionStart(method, read, register)
 }
 
+/**
+ * The holder field [instruction] unboxes when it calls an outlined `booleanValue()` (588 Android 9's
+ * `LX/07hp;->A1T`): a static `(holder)Z` that reads the holder's one object, casts it to Boolean and
+ * answers its `booleanValue()`. Null for any other instruction. [seen] keeps each callee's answer.
+ */
+private fun BytecodePatchContext.outlinedUnboxing(instruction: Instruction, seen: MutableMap<String, FieldReference?>): FieldReference? {
+    if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) return null
+    val call = (instruction as ReferenceInstruction).reference as MethodReference
+    if (call.returnType != "Z" || call.parameterTypes.size != 1) return null
+    return seen.getOrPut(call.toString()) {
+        val helper = classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } ?: return@getOrPut null
+        val code = helper.implementation?.instructions?.filter { it.opcode != Opcode.NOP } ?: return@getOrPut null
+        if (code.map { it.opcode } != listOf(Opcode.IGET_OBJECT, Opcode.CHECK_CAST, Opcode.INVOKE_VIRTUAL, Opcode.MOVE_RESULT, Opcode.RETURN)) {
+            return@getOrPut null
+        }
+        val read = code[0] as TwoRegisterInstruction
+        val holder = helper.implementation!!.registerCount - 1
+        if (read.registerB != holder || ((code[1] as ReferenceInstruction).reference as TypeReference).type != BOOLEAN ||
+            (code[1] as OneRegisterInstruction).registerA != read.registerA || !calls(code[2], BOOLEAN_VALUE) ||
+            firstArgument(code[2]) != read.registerA ||
+            (code[3] as OneRegisterInstruction).registerA != (code[4] as OneRegisterInstruction).registerA
+        ) return@getOrPut null
+        (read as ReferenceInstruction).reference as FieldReference
+    }
+}
+
+/**
+ * The index in the outlined component's [method] where it reads the caption's prop: [code] unboxes
+ * holder v[holder] at [unbox], an earlier call hands that holder to the spec method that stores
+ * `Boolean.valueOf` of one of its boolean parameters into [holderField], and the argument the
+ * component hands for that parameter comes, through moves only, from one boolean field of [component].
+ */
+private fun BytecodePatchContext.outlinedCaptionProp(
+    method: Method,
+    code: List<Instruction>,
+    unbox: Int,
+    holder: Int,
+    holderField: FieldReference,
+    component: String,
+    where: String,
+): Int {
+    val handed = (0 until unbox).mapNotNull { index ->
+        val call = code[index]
+        if (call.opcode !in INVOKES) return@mapNotNull null
+        val reference = (call as ReferenceInstruction).reference as MethodReference
+        if (reference.name == "<init>") return@mapNotNull null
+        val registers = arguments(call)
+        val position = registers.indexOf(holder).takeIf { it >= 0 } ?: return@mapNotNull null
+        val spec = classDefByOrNull(reference.definingClass)?.let { resolveCalled(it, reference) } ?: return@mapNotNull null
+        boxedParameter(spec, registers.size, position, holderField)?.let { index to registers[it] }
+    }
+    val (call, value) = handed.singleOrNull()
+        ?: refuse("expected $where to hand its caption holder v$holder to one method that boxes a parameter into it, found ${handed.size}")
+    var at = call
+    var register = value
+    repeat(8) {
+        val writer = method.writersReaching(at, register).singleOrNull()?.takeIf { it >= 0 }
+            ?: refuse("$where hands its caption prop in v$register from more than one place")
+        val instruction = code[writer]
+        when {
+            instruction.opcode == Opcode.IGET_BOOLEAN &&
+                ((instruction as ReferenceInstruction).reference as FieldReference).definingClass == component -> return writer
+            instruction.opcode in MOVES -> {
+                at = writer
+                register = (instruction as TwoRegisterInstruction).registerB
+            }
+            else -> refuse("$where hands its caption state a v$register that isn't a prop of $component")
+        }
+    }
+    refuse("$where moves its caption prop around more than eight times")
+}
+
+/**
+ * The argument position of the boolean parameter [spec] boxes into [holderField] of the holder it gets
+ * at argument [position], counting `this` and each register of a wide parameter, or null. The store
+ * has to be the one into that holder, its value a `Boolean.valueOf` and the boxed boolean the
+ * parameter's own value on at least one way in.
+ */
+private fun boxedParameter(spec: Method, count: Int, position: Int, holderField: FieldReference): Int? {
+    val code = spec.implementation?.instructions?.toList() ?: return null
+    val first = spec.implementation!!.registerCount - count
+    val holder = first + position
+    val stores = code.indices.filter { at ->
+        val store = code[at]
+        store.opcode == Opcode.IPUT_OBJECT && (store as ReferenceInstruction).reference.toString() == holderField.toString() &&
+            heldFrom(spec, code, at, (store as TwoRegisterInstruction).registerB, holder)
+    }
+    val store = stores.singleOrNull() ?: return null
+    val boxing = spec.writersReaching(store, (code[store] as TwoRegisterInstruction).registerA).singleOrNull()
+        ?.takeIf { it > 0 } ?: return null
+    if (code[boxing].opcode != Opcode.MOVE_RESULT_OBJECT || !calls(code[boxing - 1], BOOLEAN_OF)) return null
+    val boxed = firstArgument(code[boxing - 1]) ?: return null
+    if (boxed < first || -1 !in spec.writersReaching(boxing - 1, boxed)) return null
+    return (boxed - first).takeIf { it in 0 until count }
+}
+
+/** Whether [register] holds the parameter in [parameter] as [method] got it at [at], itself or through one move. */
+private fun heldFrom(method: Method, code: List<Instruction>, at: Int, register: Int, parameter: Int): Boolean {
+    if (register == parameter) return method.writersReaching(at, register) == listOf(-1)
+    val move = method.writersReaching(at, register).singleOrNull()?.takeIf { it >= 0 } ?: return false
+    val instruction = code[move]
+    return instruction.opcode in OBJECT_MOVES && (instruction as TwoRegisterInstruction).registerB == parameter &&
+        method.writersReaching(move, parameter) == listOf(-1)
+}
+
 private val MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
 
 internal const val CAPTION_BACKDROP = "Lapp/morphe/extension/facebook/feed/CaptionBackdrop;"
 

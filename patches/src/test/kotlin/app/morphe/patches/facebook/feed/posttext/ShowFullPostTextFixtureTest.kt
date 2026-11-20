@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.tableIndexAt
 import app.morphe.patches.facebook.feed.tableIndices
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
+import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -82,17 +83,57 @@ internal fun tableAskers(bundle: File, found: List<Method>, literals: Set<String
     }
 }
 
+/**
+ * The post text builders among [found], as the patch picks them: those shaped like the cut's caller
+ * that read the line limit, or where none does, those cutting through a method that reads it
+ * ([wrappedCut], 588's Android 9 build), each with that call. The cutting method's class comes from [bundle].
+ */
+internal fun postTextBuilders(bundle: File, found: List<Method>): List<Pair<Method, MethodReference?>> {
+    val reading = found.filter(::cutShaped)
+    if (reading.isNotEmpty()) return reading.map { it to null }
+    val callers = found.filter(::callerShaped)
+    val called = callers.flatMap { method ->
+        method.implementation!!.instructions.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+            .filter { it.returnType == SPANNABLE_STRING }.map { it.definingClass }
+    }.toSet()
+    val classes = FixtureDex.classes(bundle, called)
+    return callers.mapNotNull { method ->
+        wrappedCut(method) { call -> classes[call.definingClass]?.let { resolveCalled(it, call) } }?.let { method to it }
+    }
+}
+
 /** The classes whose booleans [components] set: their state classes. */
 internal fun captionStates(components: Collection<ClassDef>): Set<String> = components.flatMap { it.methods }.flatMap { method ->
     method.implementation?.instructions?.toList().orEmpty().filter { it.opcode == Opcode.IPUT_BOOLEAN }
         .map { ((it as ReferenceInstruction).reference as FieldReference).definingClass }
 }.toSet() - components.map { it.type }.toSet()
 
-/** The classes the caption's finder reads out of [bundle]: the update's senders, the component and its state classes. */
+/**
+ * The classes 588's Android 9 build moves a caption component's work into: the spec class it keeps in
+ * a static field (`LX/09TV;`), and the class of each outlined static `(holder)Z` it unboxes through
+ * (`LX/07hp;`).
+ */
+internal fun captionHelpers(components: Collection<ClassDef>): Set<String> = components.flatMap { component ->
+    component.staticFields.map { it.type }.filter { it.startsWith("LX/") && it != component.type } +
+        component.methods.flatMap { method ->
+            method.implementation?.instructions?.mapNotNull { instruction ->
+                ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf { call ->
+                    (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
+                        call.returnType == "Z" && call.parameterTypes.size == 1 && call.definingClass.startsWith("LX/")
+                }?.definingClass
+            }.orEmpty()
+        }
+}.toSet()
+
+/**
+ * The classes the caption's finder reads out of [bundle]: the update's senders, the component, its
+ * state classes and its [captionHelpers].
+ */
 internal fun captionTypes(bundle: File, found: List<Method>): Set<String> {
     val components = captionComponents(found)
+    val componentClasses = FixtureDex.classes(bundle, components).values
     return found.filter(::captionMarked).map { it.definingClass }.toSet() + components +
-        captionStates(FixtureDex.classes(bundle, components).values)
+        captionStates(componentClasses) + captionHelpers(componentClasses)
 }
 
 /**
@@ -124,6 +165,8 @@ class ShowFullPostTextFixtureTest {
         "588.0.0.42.55" to mapOf(
             "arm64-v8a" to Place("LX/044q;", 4, 2, "LX/02lM;", "LX/043g;"),
             "armeabi-v7a" to Place("LX/044q;", 4, 2, "LX/02lM;", "LX/043g;"),
+            // Read 2026-11-20: `LX/0474;->A07` casts the story into v1 and keeps `LX/047J;->A06`'s cut in v4.
+            "arm64-v8a-minapi28-storeless" to Place("LX/0474;", 4, 1, "LX/02mH;", "LX/045u;"),
         ),
     )
 
@@ -133,7 +176,8 @@ class ShowFullPostTextFixtureTest {
             "arm64-v8a-minapi28-storeless" to "LX/09bQ;"),
         "586.0.0.52.53" to mapOf("arm64-v8a" to "LX/09Dk;", "armeabi-v7a" to "LX/09Dk;",
             "arm64-v8a-minapi28-storeless" to "LX/09FO;"),
-        "588.0.0.42.55" to mapOf("arm64-v8a" to "LX/09Og;", "armeabi-v7a" to "LX/09Oj;"),
+        "588.0.0.42.55" to mapOf("arm64-v8a" to "LX/09Og;", "armeabi-v7a" to "LX/09Oj;",
+            "arm64-v8a-minapi28-storeless" to "LX/09TU;"),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -163,11 +207,12 @@ class ShowFullPostTextFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it))
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (callerShaped(it) || foldMarked(it) || captionMarked(it))
                 }
-                val methods = found.filter(::cutShaped)
+                val methods = postTextBuilders(bundle, found)
                 assertEquals("$name: methods shaped like the text cut", 1, methods.size)
-                val cut = textCut(methods.single())
+                val (builder, wrapper) = methods.single()
+                val cut = textCut(builder, wrapper)
                 val abi = name.substringAfter("-$version-").substringBefore(".apkm")
                 val captionComponent = captionComponentOf[version]?.get(abi)
                 val components = captionComponents(found)
@@ -179,7 +224,7 @@ class ShowFullPostTextFixtureTest {
                     assertTrue("$name: a string table holds the toggle, but nothing asks it for it", askers.isNotEmpty())
                 }
                 val classes = FixtureDex.classes(bundle, foldTypes(found) + cut.method.definingClass + captionTypes(bundle, found) +
-                    askers.map { it.definingClass })
+                    askers.map { it.definingClass } + listOfNotNull(wrapper?.definingClass))
 
                 // Negative control: without the state class that flips it, no caption state is taken.
                 val stateless = PatchContexts.of(classes.filterKeys { it !in states }.values.toList())

@@ -51,6 +51,8 @@ class TranslatePostsFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to (2 to listOf("Ljava/lang/Integer;", "Z")),
             "armeabi-v7a" to (2 to listOf("Ljava/lang/Integer;", "Z")),
+            // Read 2026-11-20: `LX/046x;->A00` and `LX/0474;->A0A` show it, `LX/02nC;->A0A` and `LX/045m;->A01` measure it.
+            "arm64-v8a-minapi28-storeless" to (2 to listOf("Ljava/lang/Integer;", "Z")),
         ),
     )
 
@@ -84,6 +86,15 @@ class TranslatePostsFixtureTest {
         return reached
     }
 
+    /**
+     * The post text builder and, on a build whose builder hands its text to another class to cut
+     * (588's Android 9 build), that class, which the patches need to find the builder.
+     */
+    private fun postTextBuilder(bundle: File, found: List<Method>): Pair<Method, Set<String>> {
+        val (builder, wrapper) = postTextBuilders(bundle, found).single()
+        return builder to setOfNotNull(wrapper?.definingClass)
+    }
+
     /** The builder after [patches], with the feed post component and its state ([foldTypes]) there for Show full post text. */
     private fun builderAfter(bundle: File, patches: List<BytecodePatch>, builder: Method, foldTypes: Set<String>): List<Instruction> {
         val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY) + foldTypes)
@@ -104,21 +115,22 @@ class TranslatePostsFixtureTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
                 val found = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it))
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (callerShaped(it) || foldMarked(it) || captionMarked(it))
                 }
-                val builder = found.filter(::cutShaped).single()
+                val (builder, cutters) = postTextBuilder(bundle, found)
                 // Show full post text's fold and reel caption classes, for running it after or before.
-                val folds = foldTypes(found) + captionTypes(bundle, found)
+                val folds = foldTypes(found) + captionTypes(bundle, found) + cutters
                 val original = builder.code()
                 val returns = original.count { it.opcode == Opcode.RETURN_OBJECT }
                 assertTrue("$name: the builder has no return", returns > 0)
                 val textRegister = builder.implementation!!.registerCount - builder.parameterTypes.size
 
-                val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY))
+                val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY) + cutters)
                 val owner = classes.getValue(builder.definingClass)
                 val activity = classes.getValue(FRAGMENT_ACTIVITY)
                 val dispatch = touchDispatches(activity).single()
-                val context = PatchContexts.of(listOf(owner, activity, ExtensionDex.classDef(SETTINGS_STATUS)))
+                val context = PatchContexts.of(listOf(owner, activity, ExtensionDex.classDef(SETTINGS_STATUS)) +
+                    cutters.map(classes::getValue))
                 translatePostsPatch.execute(context)
                 val patched = context.mutableClassDefBy(owner.type).methods.single {
                     it.name == builder.name && it.parameterTypes == builder.parameterTypes
@@ -180,9 +192,9 @@ class TranslatePostsFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val builder = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && cutShaped(it)
-                }.single()
+                val (builder, cutters) = postTextBuilder(bundle, FixtureDex.methodsWhere(bundle, { true }) {
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && callerShaped(it)
+                })
                 val step = wholeTextStep(builder)
                 assertTrue("$name: the builder runs its text through no step of its class", step != null)
                 val callsStep = { instruction: Instruction -> instruction.names(step.toString()) }
@@ -192,7 +204,8 @@ class TranslatePostsFixtureTest {
                         !(method.definingClass == builder.definingClass && MethodUtil.methodSignaturesMatch(method, builder)) &&
                         method.implementation!!.instructions.any(callsStep)
                 }
-                val classes = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet() + builder.definingClass + FRAGMENT_ACTIVITY)
+                val classes = FixtureDex.classes(bundle,
+                    callers.map { it.definingClass }.toSet() + builder.definingClass + FRAGMENT_ACTIVITY + cutters)
                 val context = PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList())
                 translatePostsPatch.execute(context)
                 // The builder keeps its own hooks only, so a text it runs through the step goes through the extension once.

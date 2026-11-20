@@ -20,6 +20,8 @@ import app.morphe.patches.facebook.feed.posttext.LINE_LIMIT_KEY
 import app.morphe.patches.facebook.feed.posttext.SPANNABLE_STRING
 import app.morphe.patches.facebook.feed.posttext.appClass
 import app.morphe.patches.facebook.feed.posttext.findPostTextBuilder
+import app.morphe.patches.facebook.feed.posttext.postTextCutter
+import app.morphe.patches.facebook.feed.posttext.wrappedCutOf
 import app.morphe.patches.facebook.feed.posttext.sendersOf
 import app.morphe.patches.facebook.feed.posttext.toggled
 import app.morphe.patches.facebook.feed.posttext.writes
@@ -27,6 +29,7 @@ import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -37,6 +40,7 @@ import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -263,9 +267,14 @@ private fun fixedCutHook(method: Method, code: List<Instruction>, at: Int): Fold
  * making a config a cut there takes ([cutConfigs]), and the two cuts, one for each way of folding,
  * take the fixed place. The maker is the one static method of the line limit's class that answers
  * that config and calls both, once each.
+ *
+ * 588's Android 9 build moves all of that into the method the builder hands its text to
+ * ([postTextCutter], `LX/047J;->A06`), where both ways make their config and join at one cut.
  */
 internal fun BytecodePatchContext.findPostFolds(): List<FoldInsert> {
-    val builder = mutable(findPostTextBuilder(FOLD_PATCH))
+    val found = findPostTextBuilder(FOLD_PATCH)
+    val wrapped = wrappedCutOf(found) != null
+    val builder = mutable(postTextCutter(found, FOLD_PATCH))
     val code = builder.code()
     val readsLineLimit = { call: MethodReference ->
         classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) }?.containsLiteralInstruction(LINE_LIMIT_KEY) == true
@@ -281,7 +290,8 @@ internal fun BytecodePatchContext.findPostFolds(): List<FoldInsert> {
         ?: refuse("expected ${where(builder)} to make one cut config from characters and lines, found ${factories.size}")
     val factory = staticCall(code[factoryAt])!!
     val cuts = code.indices.filter { at -> staticCall(code[at])?.let(::takesFixedCut) == true }
-    if (cuts.size != 2) refuse("expected ${where(builder)} to hand a fixed place to two cuts, found ${cuts.size}")
+    val ways = if (wrapped) 1 else 2
+    if (cuts.size != ways) refuse("expected ${where(builder)} to hand a fixed place to $ways cuts, found ${cuts.size}")
 
     val owner = classDefByOrNull(limit.definingClass) ?: refuse("${limit.definingClass} isn't in this build")
     val makers = owner.methods.filter { method ->
@@ -383,25 +393,99 @@ private fun captionMeasures(code: List<Instruction>, component: String): List<In
 }
 
 /**
- * Where [code] picks a caption's limit between a server number and the measure's: a `long-to-int`
- * moved into a register, a goto, then an int field of [measure] moved into the same register and a
- * goto to the same place.
+ * Where [code] picks a caption's limit between a server number and the measure's, each index being
+ * where the server number lands in its register, with nothing else in between there and the
+ * instruction after it. Either a `long-to-int` moved into a register, a goto, then an int field of
+ * [measure] moved into the same register and a goto to the same place, or (588's Android 9 build,
+ * which outlines the server read and its `long-to-int` into `LX/01CA;->A03`) a static call's int
+ * answer kept with `move-result`, a goto, then that int field read straight into the same register
+ * and a goto to the same place.
  */
 private fun captionLimitChoices(code: List<Instruction>, flow: ControlFlow, measure: String): List<Int> =
-    (0 until code.size - 5).filter { at ->
-        val number = code[at] as? TwoRegisterInstruction
-        val moved = code[at + 1] as? TwoRegisterInstruction
-        val field = code[at + 3] as? TwoRegisterInstruction
-        val kept = code[at + 4] as? TwoRegisterInstruction
-        val read = (code[at + 3] as? ReferenceInstruction)?.reference as? FieldReference
-        number != null && moved != null && field != null && kept != null && read != null &&
-            code[at].opcode == Opcode.LONG_TO_INT &&
-            code[at + 1].opcode in INT_MOVES && moved.registerB == number.registerA &&
-            code[at + 2].opcode in GOTOS &&
-            code[at + 3].opcode == Opcode.IGET && read.type == "I" && read.definingClass == measure &&
-            code[at + 4].opcode in INT_MOVES && kept.registerB == field.registerA && kept.registerA == moved.registerA &&
-            code[at + 5].opcode in GOTOS && flow.normal[at + 2] == flow.normal[at + 5]
+    code.indices.filter { at -> convertedNumber(code, flow, measure, at) || calledNumber(code, flow, measure, at) }
+
+/** The int field of [measure] [instruction] reads, as the read, or null. */
+private fun measureRead(instruction: Instruction?, measure: String): TwoRegisterInstruction? {
+    if (instruction?.opcode != Opcode.IGET) return null
+    val read = (instruction as ReferenceInstruction).reference as FieldReference
+    return (instruction as TwoRegisterInstruction).takeIf { read.type == "I" && read.definingClass == measure }
+}
+
+private fun convertedNumber(code: List<Instruction>, flow: ControlFlow, measure: String, at: Int): Boolean {
+    if (at + 5 >= code.size) return false
+    val number = code[at] as? TwoRegisterInstruction
+    val moved = code[at + 1] as? TwoRegisterInstruction
+    val field = measureRead(code[at + 3], measure)
+    val kept = code[at + 4] as? TwoRegisterInstruction
+    return number != null && moved != null && field != null && kept != null &&
+        code[at].opcode == Opcode.LONG_TO_INT &&
+        code[at + 1].opcode in INT_MOVES && moved.registerB == number.registerA &&
+        code[at + 2].opcode in GOTOS &&
+        code[at + 4].opcode in INT_MOVES && kept.registerB == field.registerA && kept.registerA == moved.registerA &&
+        code[at + 5].opcode in GOTOS && flow.normal[at + 2] == flow.normal[at + 5]
+}
+
+private fun calledNumber(code: List<Instruction>, flow: ControlFlow, measure: String, at: Int): Boolean {
+    if (at < 1 || at + 3 >= code.size) return false
+    if (staticCall(code[at - 1])?.returnType != "I" || code[at].opcode != Opcode.MOVE_RESULT) return false
+    val field = measureRead(code[at + 2], measure) ?: return false
+    return code[at + 1].opcode in GOTOS && field.registerA == (code[at] as OneRegisterInstruction).registerA &&
+        code[at + 3].opcode in GOTOS && flow.normal[at + 1] == flow.normal[at + 3]
+}
+
+/**
+ * The methods outside [component] that its own methods call and that measure its caption, each with
+ * every call of it from [owner]'s methods (588's Android 9 build moves a component's work into a spec
+ * class it holds in a static field, handing it the props).
+ */
+private fun BytecodePatchContext.delegatedMeasures(owner: ClassDef, component: String): Map<Method, List<Pair<Method, Int>>> {
+    val calls = owner.methods.flatMap { method ->
+        val code = method.code()
+        code.indices.filter { index ->
+            code[index].opcode in ANY_CALLS &&
+                ((code[index] as ReferenceInstruction).reference as MethodReference).definingClass.let { it != component && appClass(it) }
+        }.map { method to it }
     }
+    val resolved = mutableMapOf<String, Method?>()
+    return calls.groupBy { (method, index) ->
+        val call = (method.code()[index] as ReferenceInstruction).reference as MethodReference
+        resolved.getOrPut(call.toString()) {
+            classDefByOrNull(call.definingClass)?.let { resolveCalled(it, call) }
+                ?.takeIf { captionMeasures(it.code(), component).isNotEmpty() }
+        }
+    }.filterKeys { it != null }.mapKeys { it.key!! }
+}
+
+/** Whether [code] of [method] fills v[register] at [at] from an int field of [component], through int moves only. */
+private fun fromComponentField(method: Method, code: List<Instruction>, at: Int, register: Int, component: String): Boolean {
+    var index = at
+    var source = register
+    repeat(8) {
+        val writer = method.writersReaching(index, source).singleOrNull()?.takeIf { it >= 0 } ?: return false
+        val instruction = code[writer]
+        when (instruction.opcode) {
+            Opcode.IGET -> return ((instruction as ReferenceInstruction).reference as FieldReference).let { field ->
+                field.type == "I" && field.definingClass == component
+            }
+            in INT_MOVES -> {
+                index = writer
+                source = (instruction as TwoRegisterInstruction).registerB
+            }
+            else -> return false
+        }
+    }
+    return false
+}
+
+/** The number of registers [method]'s parameters take, `this` included. */
+private fun Method.parameterRegisters(): Int = (if (AccessFlags.STATIC.isSet(accessFlags)) 0 else 1) +
+    parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+
+private val ANY_CALLS = setOf(
+    Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_SUPER, Opcode.INVOKE_DIRECT, Opcode.INVOKE_STATIC, Opcode.INVOKE_INTERFACE,
+    Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_SUPER_RANGE, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_STATIC_RANGE,
+    Opcode.INVOKE_INTERFACE_RANGE,
+)
 
 /**
  * The two hooks of a video's caption, in the method of the component [CAPTION_TOGGLE] names that
@@ -409,13 +493,21 @@ private fun captionLimitChoices(code: List<Instruction>, flow: ControlFlow, meas
  * swap it for a fixed number or one worked out from the text. All of those meet right after the
  * last of them in the code, and the first hook goes there. Past the measure, a server number can
  * take the measure's limit's place, and it goes through the second.
+ *
+ * 588's Android 9 build measures in the spec method the component hands its props to
+ * (`LX/09TV;->A02`, called from `LX/09TU;->A16`), where the limit starts as the parameter the
+ * component fills from that same field.
  */
 internal fun BytecodePatchContext.findCaptionFolds(): List<FoldInsert> {
     val components = sendersOf(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
     val component = components.singleOrNull() ?: refuse("expected one component after \"$CAPTION_TOGGLE\", found $components")
     val owner = classDefByOrNull(component) ?: refuse("$component isn't in this build")
-    val measuring = owner.methods.filter { captionMeasures(it.code(), component).isNotEmpty() }
-    val method = mutable(measuring.singleOrNull() ?: refuse("expected one method of $component measuring its caption, found ${measuring.size}"))
+    val own = owner.methods.filter { captionMeasures(it.code(), component).isNotEmpty() }
+    val delegated = if (own.isEmpty()) delegatedMeasures(owner, component) else emptyMap()
+    val measuring = own.ifEmpty { delegated.keys.toList() }
+    val found = measuring.singleOrNull() ?: refuse("expected one method of $component or its spec measuring its caption, found ${measuring.size}")
+    val callers = delegated[found].orEmpty()
+    val method = mutable(found)
     val code = method.code()
     val at = captionMeasures(code, component).singleOrNull() ?: refuse("${where(method)} measures its caption more than once")
     val measure = ((code[at] as ReferenceInstruction).reference as MethodReference).definingClass
@@ -424,11 +516,23 @@ internal fun BytecodePatchContext.findCaptionFolds(): List<FoldInsert> {
     val limit = arguments(code[at]).getOrNull(2) ?: refuse("${where(method)} hands its caption's measure no limit")
     if (limit > 255) refuse("${where(method)} keeps its caption's limit past v255")
     val writers = method.writersReaching(at, limit)
+    // In a spec, the parameter the limit starts as is the one every call from the component fills from its field.
+    val firstParameter = method.implementation!!.registerCount - method.parameterRegisters()
+    fun handedField(writer: Int): Boolean {
+        if (callers.isEmpty() || code[writer].opcode !in INT_MOVES) return false
+        val parameter = (code[writer] as TwoRegisterInstruction).registerB
+        if (parameter < firstParameter || method.writersReaching(writer, parameter) != listOf(-1)) return false
+        return callers.all { (caller, call) ->
+            val callerCode = caller.code()
+            val handed = arguments(callerCode[call]).getOrNull(parameter - firstParameter)
+            handed != null && fromComponentField(caller, callerCode, call, handed, component)
+        }
+    }
     val startsFromField = writers.any { writer ->
-        writer >= 0 && code[writer].opcode == Opcode.IGET &&
+        writer >= 0 && (code[writer].opcode == Opcode.IGET &&
             ((code[writer] as ReferenceInstruction).reference as FieldReference).let { field ->
                 field.type == "I" && field.definingClass == component
-            }
+            } || handedField(writer))
     }
     if (!startsFromField || -1 in writers) refuse("${where(method)} sets its caption's limit from $writers")
     val join = (writers.filter { it < at }.maxOrNull() ?: refuse("${where(method)} sets its caption's limit from $writers")) + 1

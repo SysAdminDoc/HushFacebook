@@ -19,13 +19,15 @@ import app.morphe.patches.facebook.feed.posttext.TRANSLATION_TEXT
 import app.morphe.patches.facebook.feed.posttext.captionComponents
 import app.morphe.patches.facebook.feed.posttext.captionMarked
 import app.morphe.patches.facebook.feed.posttext.captionTypes
-import app.morphe.patches.facebook.feed.posttext.cutShaped
+import app.morphe.patches.facebook.feed.posttext.callerShaped
 import app.morphe.patches.facebook.feed.posttext.foldMarked
 import app.morphe.patches.facebook.feed.posttext.foldTypes
+import app.morphe.patches.facebook.feed.posttext.postTextBuilders
 import app.morphe.patches.facebook.feed.posttext.showFullPostTextPatch
 import app.morphe.patches.facebook.feed.posttext.translatePostsPatch
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
+import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
@@ -131,9 +133,9 @@ class FoldFixtureTest {
     }
 
     /** Each hook on a fixed cut: through the range form into the same register, with the cut taking it next. */
-    private fun assertCutHooks(name: String, code: List<Instruction>) {
+    private fun assertCutHooks(name: String, code: List<Instruction>, cuts: Int) {
         val hooks = code.indices.filter { code[it].names(POST_CUT) }
-        assertEquals("$name: the fixed cut hooks", 2, hooks.size)
+        assertEquals("$name: the fixed cut hooks", cuts, hooks.size)
         for (at in hooks) {
             val register = (code[at] as RegisterRangeInstruction).let {
                 assertEquals("$name: the fixed cut hook's registers", 1, it.registerCount)
@@ -157,10 +159,15 @@ class FoldFixtureTest {
         assertEquals(register, (code[at + 2] as OneRegisterInstruction).registerA)
     }
 
-    /** The caption's two hooks: on the limit where its ways in meet, and on the server number. */
-    private fun assertCaptionHooks(name: String, context: BytecodePatchContext, component: String) {
-        val hooked = context.mutableClassDefBy(component).methods.filter { method ->
-            method.implementation?.instructions?.any { it.names(CAPTION_LINES) } == true
+    /**
+     * The caption's two hooks: on the limit where its ways in meet, and on the server number. They're in
+     * [component], or on 588's Android 9 build in the spec class it hands its props to, among [types].
+     */
+    private fun assertCaptionHooks(name: String, context: BytecodePatchContext, component: String, types: Collection<String>) {
+        val hooked = (listOf(component) + (types - component)).flatMap { type ->
+            context.mutableClassDefBy(type).methods.filter { method ->
+                method.implementation?.instructions?.any { it.names(CAPTION_LINES) } == true
+            }
         }
         assertEquals("$name: caption methods hooked", 1, hooked.size)
         val code = hooked.single().code()
@@ -183,8 +190,14 @@ class FoldFixtureTest {
             listOf(first + 1), hooked.single().writersReaching(measure, limit))
 
         val second = hooks.last()
-        assertEquals("$name: the server number before its hook", Opcode.LONG_TO_INT, code[second - 1].opcode)
+        // 588's Android 9 build reads the number and turns it into an int in one outlined static call.
+        val outlined = code[second - 1].opcode == Opcode.MOVE_RESULT &&
+            code[second - 2].opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) && code[second - 2].call()?.returnType == "I"
+        assertTrue("$name: the server number before its hook is ${code[second - 1].opcode}",
+            code[second - 1].opcode == Opcode.LONG_TO_INT || outlined)
         assertPassedOn("$name caption server number", code, second - 1, CAPTION_LINES)
+        if (outlined) assertTrue("$name: the server number's hook is right before the goto", code[second + 2].opcode in
+            setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32))
     }
 
     @Test
@@ -194,10 +207,18 @@ class FoldFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it) ||
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (callerShaped(it) || foldMarked(it) || captionMarked(it) ||
                         traced(it) || hoistedAnswers(it.implementation?.instructions?.toList().orEmpty()).isNotEmpty())
                 }
-                val builder = found.filter(::cutShaped).single()
+                val builders = postTextBuilders(bundle, found)
+                assertEquals("$name: post text builders", 1, builders.size)
+                // 588's Android 9 build cuts in the method its builder hands the text to, once for both ways of folding.
+                val (textBuilder, wrapper) = builders.single()
+                val builder = if (wrapper == null) textBuilder else
+                    resolveCalled(FixtureDex.classes(bundle, setOf(wrapper.definingClass)).getValue(wrapper.definingClass), wrapper)!!
+                val cuts = if (wrapper == null) 2 else 1
+                val foldHooks = 6 + 2 * cuts
+                val textCode = textBuilder.code()
                 val commentMethods = found.filter(::traced)
                 assertEquals("$name: methods naming the comment's trace", 1, commentMethods.size)
                 val comment = commentMethods.single()
@@ -211,7 +232,8 @@ class FoldFixtureTest {
                 // Show full post text's fold and reel caption classes, for running it after or before.
                 val folds = foldTypes(found) + captionTypes(bundle, found)
                 val classes = FixtureDex.classes(bundle,
-                    setOf(builder.definingClass, limit.definingClass, comment.definingClass, hoisted.definingClass, FRAGMENT_ACTIVITY) + folds)
+                    setOf(textBuilder.definingClass, builder.definingClass, limit.definingClass, comment.definingClass,
+                        hoisted.definingClass, FRAGMENT_ACTIVITY) + folds)
                 val commentCode = comment.code()
                 val stock = { PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList()) }
 
@@ -222,14 +244,20 @@ class FoldFixtureTest {
                     foldLongTextPatch.execute(limitless)
                 }
                 assertEquals("$name: the comment changed before the refusal", commentCode.size, limitless.after(comment).code().size)
-                assertEquals("$name: the builder changed before the refusal", builderCode.size, limitless.after(builder).code().size)
+                assertEquals("$name: the builder changed before the refusal", textCode.size, limitless.after(textBuilder).code().size)
+                if (builder.definingClass != limit.definingClass) {
+                    assertEquals("$name: the cut changed before the refusal", builderCode.size, limitless.after(builder).code().size)
+                }
 
                 val context = stock()
                 foldLongTextPatch.execute(context)
 
-                // The line limit's class holds one maker beside it, the one method there the patch hooked.
+                // The line limit's class holds one maker beside it, the one method there the patch hooked but for the
+                // cut itself, which 588's Android 9 build keeps in that class too.
+                fun Method.signature() = "$definingClass->$name${parameterTypes.map(CharSequence::toString)}"
                 val makers = context.mutableClassDefBy(limit.definingClass).methods.filter { method ->
-                    method.implementation?.instructions?.any { it.names(POST_LINES) } == true
+                    method.signature() != builder.signature() &&
+                        method.implementation?.instructions?.any { it.names(POST_LINES) } == true
                 }
                 assertEquals("$name: makers hooked beside the line limit", 1, makers.size)
                 val maker = classes.getValue(limit.definingClass).methods.single {
@@ -238,12 +266,12 @@ class FoldFixtureTest {
                 val makerCode = maker.code()
 
                 val post = context.after(builder).code()
-                assertEquals("$name: the builder's hooks", builderCode.size + 10, post.size)
+                assertEquals("$name: the builder's hooks", builderCode.size + foldHooks, post.size)
                 assertEquals(2, post.count { it.names(POST_LINES) })
                 assertEquals(1, post.count { it.names(POST_CHARS) })
                 assertLineHook("$name builder", post, limit, POST_LINES)
                 assertConfigHook("$name builder", builderCode, post, POST_CHARS, POST_LINES)
-                assertCutHooks("$name builder", post)
+                assertCutHooks("$name builder", post, cuts)
 
                 val whole = context.after(hoisted).code()
                 val answer = hoistedAnswers(whole).single()
@@ -252,7 +280,7 @@ class FoldFixtureTest {
 
                 val components = captionComponents(found)
                 assertEquals("$name: the caption's component", 1, components.size)
-                assertCaptionHooks(name, context, components.single())
+                assertCaptionHooks(name, context, components.single(), classes.keys)
 
                 val made = context.after(maker).code()
                 assertEquals("$name: the maker's hooks", makerCode.size + 6, made.size)
@@ -281,8 +309,8 @@ class FoldFixtureTest {
                 assertEquals("$name: SettingsStatus.foldLongText() isn't switched on", 1,
                     (status.implementation!!.instructions.first() as NarrowLiteralInstruction).narrowLiteral)
 
-                // Whatever order the three run in, each keeps its hooks in the builder.
-                val returns = builderCode.count { it.opcode == Opcode.RETURN_OBJECT }
+                // Whatever order the three run in, each keeps its hooks in the builder (and the cut's method).
+                val returns = textCode.count { it.opcode == Opcode.RETURN_OBJECT }
                 val orders: List<List<BytecodePatch>> = listOf(
                     listOf(foldLongTextPatch, showFullPostTextPatch, translatePostsPatch),
                     listOf(showFullPostTextPatch, translatePostsPatch, foldLongTextPatch),
@@ -291,7 +319,7 @@ class FoldFixtureTest {
                 for (order in orders) {
                     val together = stock()
                     order.forEach { it.execute(together) }
-                    val all = together.after(builder).code()
+                    val all = together.after(textBuilder).code()
                     val names = order.map { it.name }
                     val cut = all.indexOfFirst { it.names(CUT) }
                     assertTrue("$name: no cut hook after $names", cut > 0)
@@ -299,10 +327,16 @@ class FoldFixtureTest {
                     assertEquals(Opcode.MOVE_RESULT_OBJECT, all[cut + 1].opcode)
                     assertEquals(Opcode.IF_EQZ, all[cut + 2].opcode)
                     assertTrue("$name: the text's hook after $names", all[0].names(TRANSLATION_TEXT))
-                    assertLineHook("$name after $names", all, limit, POST_LINES)
-                    assertConfigHook("$name after $names", builderCode, all, POST_CHARS, POST_LINES)
-                    assertCutHooks("$name after $names", all)
-                    assertEquals("$name: hooks after $names", builderCode.size + 2 * (returns + 2) + 10, all.size)
+                    val foldCode = if (wrapper == null) all else together.after(builder).code()
+                    assertLineHook("$name after $names", foldCode, limit, POST_LINES)
+                    assertConfigHook("$name after $names", builderCode, foldCode, POST_CHARS, POST_LINES)
+                    assertCutHooks("$name after $names", foldCode, cuts)
+                    if (wrapper == null) {
+                        assertEquals("$name: hooks after $names", textCode.size + 2 * (returns + 2) + foldHooks, all.size)
+                    } else {
+                        assertEquals("$name: hooks after $names", textCode.size + 2 * (returns + 2), all.size)
+                        assertEquals("$name: the cut's hooks after $names", builderCode.size + foldHooks, foldCode.size)
+                    }
                     assertEquals(made.size, together.after(maker).code().size)
                 }
                 checked += version
