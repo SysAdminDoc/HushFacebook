@@ -10,6 +10,7 @@ import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -187,8 +188,11 @@ class SearchDateRangeFixtureTest {
         val mutable = PatchContexts.of(listOf(owner)).mutableClassDefBy(owner.type).methods
             .single { it.descriptor() == sender.descriptor() }
         mutable.hookRangeWrite(write)
-        val patched = mutable.implementation!!.instructions.toList()
-        assertEquals("$where gains two instructions for the months and two for the label", stock.size + 4, patched.size)
+        // The switch payloads at the end sit behind an alignment nop that the four new instructions can make
+        // unneeded (588's Android 9 build drops it), so both sides are counted without nops.
+        val patched = mutable.implementation!!.instructions.toList().filter { it.opcode != Opcode.NOP }
+        val kept = stock.filter { it.opcode != Opcode.NOP }
+        assertEquals("$where gains two instructions for the months and two for the label", kept.size + 4, patched.size)
         assertEquals("$where: the months are handed over", DAYS,
             (patched[write.monthsResult + 1] as ReferenceInstruction).reference.toString())
         assertEquals("$where: their answer goes back", write.months,
@@ -196,10 +200,12 @@ class SearchDateRangeFixtureTest {
         assertEquals("$where: the label is handed over", LABEL,
             (patched[write.labelResult + 3] as ReferenceInstruction).reference.toString())
         assertEquals("$where: with the DateFormat", write.format, (patched[write.labelResult + 3] as FiveRegisterInstruction).registerD)
-        assertEquals("$where: the rest of Facebook's code stays", stock.map { it.opcode },
+        // The inserts can push a goto past its reach, and dexlib2 widens it (588's Android 9 build).
+        fun kind(opcode: Opcode) = if (opcode == Opcode.GOTO_16 || opcode == Opcode.GOTO_32) Opcode.GOTO else opcode
+        assertEquals("$where: the rest of Facebook's code stays", kept.map { kind(it.opcode) },
             patched.filterIndexed { index, _ ->
                 index !in (write.monthsResult + 1..write.monthsResult + 2) && index !in (write.labelResult + 3..write.labelResult + 4)
-            }.map { it.opcode })
+            }.map { kind(it.opcode) })
     }
 
     /** The index each jump (or switch or array payload) in [code] lands on, keyed by its own index. */
@@ -213,20 +219,36 @@ class SearchDateRangeFixtureTest {
         val picker = FixtureDex.classes(bundle, setOf(PICKER)).values.single()
         val create = picker.methods.single(::isPickerCreate)
         val where = "${bundle.name}: ${create.descriptor()}"
-        val months = pickerMonths(create)
+        val stock = create.implementation!!.instructions.toList()
+        // 588's Android 9 build reads the month through a static helper of the Calendar, so the classes of the
+        // (Calendar)I statics it calls come along.
+        fun reader(instruction: com.android.tools.smali.dexlib2.iface.instruction.Instruction) =
+            ((instruction as? ReferenceInstruction)?.reference as? MethodReference)
+                ?.takeIf { instruction.opcode == Opcode.INVOKE_STATIC && isCalendarReader(it) }
+        val readers = FixtureDex.classes(bundle, stock.mapNotNull { reader(it)?.definingClass }.toSet())
+        val resolve = { call: MethodReference -> readers[call.definingClass]?.let { resolveStatic(it, call) } }
+        val months = pickerMonths(create, resolve)
         assertTrue("$where picks last month to this month where a hook can follow", months != null)
         months!!
-        val stock = create.implementation!!.instructions.toList()
 
-        // From Facebook's code: the year comes from Calendar.get(1) and the month from Calendar.get(2).
+        // From Facebook's code: the year comes from Calendar.get(1) and the month from Calendar.get(2), made
+        // here or in the helper.
         val gets = stock.indices.filter { at ->
             val target = (stock[at] as? ReferenceInstruction)?.reference as? MethodReference
-            target?.definingClass == "Ljava/util/Calendar;" && target.name == "get"
+            (target?.definingClass == "Ljava/util/Calendar;" && target.name == "get") ||
+                reader(stock[at])?.let(resolve)?.let(::readsCalendarGet) == true
+        }
+        fun constant(code: List<com.android.tools.smali.dexlib2.iface.instruction.Instruction>, at: Int): Int? {
+            val register = (code[at] as FiveRegisterInstruction).registerD
+            return code.subList(0, at).lastOrNull { (it as? OneRegisterInstruction)?.registerA == register }
+                ?.let { (it as? NarrowLiteralInstruction)?.narrowLiteral }
         }
         fun constant(at: Int): Int? {
-            val register = (stock[at] as FiveRegisterInstruction).registerD
-            return stock.subList(0, at).lastOrNull { (it as? OneRegisterInstruction)?.registerA == register }
-                ?.let { (it as? NarrowLiteralInstruction)?.narrowLiteral }
+            val helper = reader(stock[at])?.let(resolve) ?: return constant(stock, at)
+            val body = helper.implementation!!.instructions.toList()
+            return constant(body, body.indexOfFirst {
+                ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == "Ljava/util/Calendar;->get(I)I"
+            })
         }
         assertEquals("$where takes the year first", 1, constant(gets[0]))
         assertEquals("$where then the month", 2, constant(gets[1]))
