@@ -368,8 +368,20 @@ function Test-AdvisoryFindings {
     }
 }
 
+# Advisories Guava publishes in its own repository, which OSV and GitHub's global database don't
+# return (GHSA-v5x9-67m3-7m56 answered 404 there on 2026-11-19). FixedIn is the first release
+# outside the range, read off the vendor's advisory.
+$script:GuavaVendorAdvisories = @(
+    [pscustomobject]@{ Advisory = 'GHSA-xxph-c9ww-hj94'; Aliases = @('CVE-2026-102554'); From = [version]'4.0'; FixedIn = [version]'33.7.2'
+        Level = 'MODERATE'; Why = 'The Guava vendor rates GHSA-xxph-c9ww-hj94 Moderate (CVSS 3.1 5.9); tooling policy requires a reachability review'
+        Summary = 'Guava vendor denial-of-service advisory (4.0 through 33.7.1, both editions)' },
+    [pscustomobject]@{ Advisory = 'GHSA-v5x9-67m3-7m56'; Aliases = @('CVE-2026-118042'); From = [version]'13.0'; FixedIn = [version]'33.8.0'
+        Level = 'LOW'; Why = 'The Guava vendor rates GHSA-v5x9-67m3-7m56 Low'
+        Summary = 'Guava vendor hash-flooding advisory (13.0 through 33.7.2, both editions)' }
+)
+
 function Get-ToolingAdvisories {
-    <# The Guava vendor advisory is retained even when OSV returns no match. Findings merge
+    <# The Guava vendor advisories are retained even when OSV returns no match. Findings merge
        scopes by advisory and full coordinate, preserving different versions and editions. #>
     param([Parameter(Mandatory = $true)]$Tooling)
 
@@ -381,24 +393,26 @@ function Get-ToolingAdvisories {
         if ($library.Group -cne 'com.google.guava' -or $library.Name -cne 'guava') { continue }
         $version = $null
         $comparable = [version]::TryParse(($library.Version -replace '-(jre|android)$', ''), [ref]$version)
-        if ($comparable -and ($version -lt [version]'4.0' -or $version -ge [version]'33.7.2')) { continue }
-        $severity = if ($comparable) {
-            [pscustomobject]@{ Level = 'MODERATE'; Serious = $false
-                Why = 'The Guava vendor rates GHSA-xxph-c9ww-hj94 Moderate (CVSS 3.1 5.9); tooling policy requires a reachability review' }
-        } else {
-            [pscustomobject]@{ Level = 'UNRATED'; Serious = $true
-                Why = 'This Guava version cannot be compared with the published affected range' }
+        foreach ($vendor in $script:GuavaVendorAdvisories) {
+            if ($comparable -and ($version -lt $vendor.From -or $version -ge $vendor.FixedIn)) { continue }
+            $severity = if ($comparable) {
+                [pscustomobject]@{ Level = $vendor.Level; Serious = $false; Why = $vendor.Why }
+            } else {
+                [pscustomobject]@{ Level = 'UNRATED'; Serious = $true
+                    Why = 'This Guava version cannot be compared with the published affected range' }
+            }
+            $all.Add([pscustomobject]@{ Package = 'com.google.guava:guava'; Version = $library.Version
+                Purl = $library.Purl; Advisory = $vendor.Advisory; Aliases = $vendor.Aliases
+                Summary = $vendor.Summary; Severity = $severity })
         }
-        $all.Add([pscustomobject]@{ Package = 'com.google.guava:guava'; Version = $library.Version
-            Purl = $library.Purl; Advisory = 'GHSA-xxph-c9ww-hj94'; Aliases = @('CVE-2026-102554')
-            Summary = 'Guava vendor denial-of-service advisory (4.0 through 33.7.1, both editions)'; Severity = $severity })
     }
     $merged = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
     $rank = @{ NONE = 0; LOW = 1; MODERATE = 2; HIGH = 3; CRITICAL = 4; UNRATED = 5 }
     foreach ($finding in $all) {
         $library = $byPurl[$finding.Purl]
         $names = @($finding.Advisory) + @($finding.Aliases)
-        $id = if ('GHSA-xxph-c9ww-hj94' -in $names) { 'GHSA-xxph-c9ww-hj94' } else { $finding.Advisory }
+        $vendorIds = @($script:GuavaVendorAdvisories.Advisory | Where-Object { $_ -in $names })
+        $id = if ($vendorIds.Count -gt 0) { $vendorIds[0] } else { $finding.Advisory }
         $key = "$($library.Group):$($library.Name):$($library.Version)|$id"
         if (-not $merged.ContainsKey($key)) {
             $merged[$key] = [pscustomobject]@{ Package = $finding.Package; Version = $finding.Version

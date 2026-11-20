@@ -2280,16 +2280,24 @@ try {
     try {
         $osvAnswers = @{ $cleanPurl = "{`"vulns`":[$log4jVectorFour]}" }
         Assert-Throws { Invoke-ToolingGate @($cleanPurl) } '*UNRATED*' 'An unscored settings-only finding passed the tooling gate.'
-        $guavaVersions = @('4.0-jre', '33.7.1-jre', '33.7.1-android', '33.7.2-jre', '33.7.2-android', '3.0', 'snapshot')
+        # GHSA-xxph covers 4.0 through 33.7.1 and GHSA-v5x9 13.0 through 33.7.2, so 12.0 is inside only
+        # the first, 33.7.2 only the second, and 33.8.0 neither.
+        $guavaVersions = @('4.0-jre', '33.7.1-jre', '33.7.1-android', '33.7.2-jre', '33.7.2-android', '3.0', 'snapshot',
+            '33.8.0-jre', '33.8.0-android', '12.0')
         $guavaPurls = @($guavaVersions | ForEach-Object { "pkg:maven/com.google.guava/guava@$_" })
         $osvAnswers = @{}
         foreach ($purl in $guavaPurls) { $osvAnswers[$purl] = '{}' }
         . $osvStandIn
         $found = @(Get-ToolingAdvisories -Tooling (New-GateTooling $guavaPurls))
-        Assert-True ($found.Count -eq 4 -and @($found | Where-Object { $_.Severity.Level -ceq 'MODERATE' }).Count -eq 3 -and
-            @($found | Where-Object { $_.Severity.Level -ceq 'UNRATED' }).Count -eq 1 -and
-            @($found | Where-Object { $_.Version -eq '33.7.1-android' -and $_.Scopes -contains 'settings/buildscript/classpath' }).Count -eq 1) `
-            'The vendor fallback lost an affected version, edition, carrier or the vendor severity.'
+        $hashFlooding = (@($found | Where-Object { $_.Advisory -ceq 'GHSA-v5x9-67m3-7m56' -and $_.Severity.Level -ceq 'LOW' } |
+            ForEach-Object { $_.Version } | Sort-Object) -join ',')
+        Assert-True ($found.Count -eq 10 -and @($found | Where-Object { $_.Severity.Level -ceq 'MODERATE' }).Count -eq 4 -and
+            @($found | Where-Object { $_.Severity.Level -ceq 'UNRATED' }).Count -eq 2 -and
+            $hashFlooding -ceq '33.7.1-android,33.7.1-jre,33.7.2-android,33.7.2-jre' -and
+            @($found | Where-Object { $_.Version -like '33.8.0-*' }).Count -eq 0 -and
+            @($found | Where-Object { $_.Version -eq '33.7.1-android' -and $_.Advisory -ceq 'GHSA-xxph-c9ww-hj94' -and
+                $_.Scopes -contains 'settings/buildscript/classpath' }).Count -eq 1) `
+            "The vendor fallback lost an affected version, edition, carrier or the vendor severity (Low ones: $hashFlooding)."
         Assert-Throws { Invoke-ToolingGate @($guavaPurls[1]) } '*GHSA-xxph-c9ww-hj94 (MODERATE*reachability review*' `
             'OSV returning no match bypassed the required vendor Guava review.'
         $review = "GHSA-xxph-c9ww-hj94 com.google.guava:guava $later Only trusted local build inputs reach this test API."
@@ -2304,12 +2312,17 @@ try {
         $aliasAdvisory = '{"id":"OSV-test-alias","aliases":["GHSA-xxph-c9ww-hj94"],"summary":"Recorded vendor alias","database_specific":{"severity":"MODERATE"}}'
         $osvAnswers[$guavaPurls[1]] = "{`"vulns`":[$aliasAdvisory]}"
         $merged = @(Get-ToolingAdvisories -Tooling (New-GateTooling @($guavaPurls[1])))
-        Assert-True ($merged.Count -eq 1 -and $merged[0].Aliases -contains 'OSV-test-alias') 'Vendor fallback duplicated an OSV alias finding.'
+        $denial = @($merged | Where-Object { $_.Advisory -ceq 'GHSA-xxph-c9ww-hj94' })
+        Assert-True ($merged.Count -eq 2 -and $denial.Count -eq 1 -and $denial[0].Aliases -contains 'OSV-test-alias') `
+            'Vendor fallback duplicated an OSV alias finding.'
         Assert-Throws { Invoke-ToolingGate @($guavaPurls[1]) @($review.Replace($later, '2026-09-24'),
             "OSV-test-alias com.google.guava:guava $later Only trusted local build inputs reach this test API.") } '*reachability exception expired*' `
             'A current alias review hid an expired reachability review.'
-        $said = Invoke-ToolingGate @($guavaPurls[3], $guavaPurls[4])
-        Assert-True ($said -like '*no refused advisory*checked') 'Fixed Guava editions were refused by the vendor fallback.'
+        $said = Invoke-ToolingGate @($guavaPurls[7], $guavaPurls[8])
+        Assert-True ($said -like '*no refused advisory*checked' -and $said -notlike '*GHSA-*') 'Fixed Guava editions were refused or listed by the vendor fallback.'
+        $said = Invoke-ToolingGate @($guavaPurls[3])
+        Assert-True ($said -like '*below high: GHSA-v5x9-67m3-7m56 (LOW*no refused advisory*checked') `
+            "Guava 33.7.2 was not listed under the Low vendor advisory, or was refused for it: $said"
         $said = Invoke-ToolingGate @('pkg:maven/com.example/offline@1') -Skip
         Assert-True ($said -like '*cannot authorize publication*skipped' -and $osvAsked.Count -eq 0) 'An offline tooling audit appeared checked.'
     } finally { $osvAnswers = $osvRecorded }
