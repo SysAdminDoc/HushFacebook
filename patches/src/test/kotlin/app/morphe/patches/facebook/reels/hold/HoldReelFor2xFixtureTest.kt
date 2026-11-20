@@ -85,8 +85,13 @@ class HoldReelFor2xFixtureTest {
      */
     private val inlinedHoldSpeeds = emptyMap<String, Int>()
 
-    /** The builds whose speed-up reads no hold speed and sets a fixed 2x (588: LX/08n7;->A0b on arm64-v8a). */
-    private val fixedHoldSpeedBuilds = setOf("588.0.0.42.55-arm64-v8a", "588.0.0.42.55-armeabi-v7a")
+    /**
+     * The builds whose speed-up reads no hold speed and sets a fixed 2x (588: LX/08n7;->A0b on
+     * arm64-v8a, LX/08rx;->A0Z on the Android 9 build).
+     */
+    private val fixedHoldSpeedBuilds = setOf(
+        "588.0.0.42.55-arm64-v8a", "588.0.0.42.55-armeabi-v7a", "588.0.0.42.55-arm64-v8a-minapi28-storeless",
+    )
 
     /**
      * The phone builds that inline the feed video 2x tip's check into the player's setup, as 586's
@@ -102,19 +107,49 @@ class HoldReelFor2xFixtureTest {
 
     /**
      * The block an if-eqz on [read]'s value skips, once the value is moved to the register the render
-     * keeps it in: the types it makes and the resource ids (0x7f......) it loads.
+     * keeps it in: the types it makes and the resource ids (0x7f......) it loads. 588's Android 9 render
+     * tests neither flag itself but hands both to its spec's builder (LX/05m3;->A05), which tests the
+     * parameter; there [callee] gives the method the value goes into, and the block is read from it.
      */
-    private fun gatedBlock(code: List<Instruction>, read: Int): Pair<Set<String>, Set<Int>> {
-        val address = IntArray(code.size + 1)
-        for (index in code.indices) address[index + 1] = address[index] + code[index].codeUnits
+    private fun gatedBlock(code: List<Instruction>, read: Int, callee: (MethodReference) -> Method?): Pair<Set<String>, Set<Int>> {
         var register = (code[read] as OneRegisterInstruction).registerA
         val moved = code[read + 1]
         if (moved.opcode in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16) && (moved as TwoRegisterInstruction).registerB == register) {
             register = moved.registerA
         }
-        val test = (read + 1 until code.size).first {
+        val test = (read + 1 until code.size).firstOrNull {
             code[it].opcode == Opcode.IF_EQZ && (code[it] as OneRegisterInstruction).registerA == register
         }
+        if (test != null) return gatedBlockAt(code, test)
+        val holding = mutableSetOf(register)
+        for (at in read + 1 until code.size) {
+            val next = code[at]
+            if (next.opcode in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16) && (next as TwoRegisterInstruction).registerB in holding) {
+                holding += next.registerA
+                continue
+            }
+            val passed = when (next) {
+                is RegisterRangeInstruction -> (next.startRegister until next.startRegister + next.registerCount).toList()
+                is FiveRegisterInstruction -> listOf(next.registerC, next.registerD, next.registerE, next.registerF, next.registerG).take(next.registerCount)
+                else -> continue
+            }
+            val reference = (next as? ReferenceInstruction)?.reference as? MethodReference ?: continue
+            val slot = passed.indexOfFirst { it in holding }
+            if (slot < 0) continue
+            val target = callee(reference) ?: throw AssertionError("the render hands the flag to $reference, which isn't in the build")
+            val targetCode = target.code()
+            val parameter = target.implementation!!.registerCount - passed.size + slot
+            val targetTest = targetCode.indices.first {
+                targetCode[it].opcode == Opcode.IF_EQZ && (targetCode[it] as OneRegisterInstruction).registerA == parameter
+            }
+            return gatedBlockAt(targetCode, targetTest)
+        }
+        throw AssertionError("no if-eqz tests the flag read at $read, and it goes into no call")
+    }
+
+    private fun gatedBlockAt(code: List<Instruction>, test: Int): Pair<Set<String>, Set<Int>> {
+        val address = IntArray(code.size + 1)
+        for (index in code.indices) address[index + 1] = address[index] + code[index].codeUnits
         val end = address.indexOf(address[test] + (code[test] as OffsetInstruction).codeOffset)
         val block = code.subList(test + 1, end)
         val made = block.filter { it.opcode == Opcode.NEW_INSTANCE }.map { ((it as ReferenceInstruction).reference as TypeReference).type }
@@ -355,8 +390,14 @@ class HoldReelFor2xFixtureTest {
                 val tipReads = flagReads(chipRender, tipFlag)
                 assertEquals("$name: ${key(chipRender)}'s reads of the 2x tip's flag", 1, tipReads.size)
                 // Apart from the anchors: each flag skips a block building the same chip from its own string.
-                val chipBlock = gatedBlock(chipRender.code(), chipRead)
-                val tipBlock = gatedBlock(chipRender.code(), tipReads.single())
+                val handedTo = { ref: MethodReference ->
+                    FixtureDex.classes(bundle, setOf(ref.definingClass)).values.singleOrNull()?.methods?.singleOrNull {
+                        it.name == ref.name && it.returnType == ref.returnType &&
+                            it.parameterTypes.map(CharSequence::toString) == ref.parameterTypes.map(CharSequence::toString)
+                    }
+                }
+                val chipBlock = gatedBlock(chipRender.code(), chipRead, handedTo)
+                val tipBlock = gatedBlock(chipRender.code(), tipReads.single(), handedTo)
                 assertTrue("$name: the hold's chip flag gates nothing made", chipBlock.first.isNotEmpty())
                 assertEquals("$name: what the hold's chip and the 2x tip blocks make", tipBlock.first, chipBlock.first)
                 assertEquals("$name: resource strings in the hold's chip block", 1, chipBlock.second.size)

@@ -330,12 +330,28 @@ internal fun speedToastField(holder: ClassDef, method: Method): FieldReference? 
         ?.distinctBy { it.name }?.singleOrNull()
 }
 
-/** [owner]'s speed setters: instance (F)V methods reading HeroPlayerSetting's speed cache switch. */
-internal fun speedSetters(owner: ClassDef): List<Method> = owner.methods.filter { method ->
-    !method.isStatic() && method.returnType == "V" && method.parameters() == listOf("F") &&
-        method.implementation?.instructions?.any {
-            ((it as? ReferenceInstruction)?.reference as? FieldReference)?.toString() == SPEED_CACHE_SWITCH
+/**
+ * [owner]'s speed setters: instance (F)V methods reading HeroPlayerSetting's speed cache switch.
+ * Where none reads it, 588's Android 9+ build (#102) moved the read into a static (owner, float)
+ * helper of [owner] (05sV.A0d), which the setter (05sV.A1b) calls last, handing on itself and the
+ * speed; then the setters are the instance (F)V methods calling such a helper.
+ */
+internal fun speedSetters(owner: ClassDef): List<Method> {
+    fun readsSwitch(method: Method) = method.implementation?.instructions?.any {
+        ((it as? ReferenceInstruction)?.reference as? FieldReference)?.toString() == SPEED_CACHE_SWITCH
+    } == true
+    fun takesSpeed(method: Method) = !method.isStatic() && method.returnType == "V" && method.parameters() == listOf("F")
+    val direct = owner.methods.filter { takesSpeed(it) && readsSwitch(it) }
+    if (direct.isNotEmpty()) return direct
+    val helpers = owner.methods.filter {
+        it.isStatic() && it.returnType == "V" && it.parameters() == listOf(owner.type, "F") && readsSwitch(it)
+    }.map { "${owner.type}->${it.name}(${owner.type}F)V" }.toSet()
+    if (helpers.isEmpty()) return emptyList()
+    return owner.methods.filter { method ->
+        takesSpeed(method) && method.implementation?.instructions?.any {
+            it.opcode == Opcode.INVOKE_STATIC && (it as ReferenceInstruction).reference.toString() in helpers
         } == true
+    }
 }
 
 /**
