@@ -98,6 +98,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * `LX/0aXH;->render`, armv7 `LX/0aXI;->render`). There a goto at 1559 takes the bar in v8 to 1561, and
  * the root's no-bar path arrives from 1560 with v8 null. That root reads no band height and has no
  * pick to report, so only its bar is dropped, the way 586's was.
+ *
+ * 588's Android 9+ build (#102, read 2026-11-19) puts a method between the root and the picker:
+ * `LX/0AtF;->render` picks at 659 through `A0A`, which calls the picker `A08` at 81 and returns its
+ * bar at 83, and keeps the bar in v1 at 660. The root reads no band height of its own. It hands its
+ * config v13 (`LX/0AtF;->A0C:LX/0APT;`, loaded at 305) at 856 to the private `A07`, which reads
+ * `LX/0AsS;->A01` at 12 and 57, so those reads take the seek bar hooks there.
  */
 
 internal const val DROPS_SHORTS_COMMENT_BAR = "$COMMENT_SHEET_OPTIONS->dropsShortsCommentBar()Z"
@@ -272,6 +278,94 @@ internal fun videoBarPickerCallers(owner: ClassDef, picker: Method): List<Method
     method.implementation?.instructions?.any { callsPicker(it, picker) } == true
 }
 
+/**
+ * 588's Android 9+ form (#102): a method of [owner] stands between the root and the bar picker
+ * [builder] and hands the bar straight back (`LX/0AtF;->A0A` 81 calls `A08`, keeps the bar in v7 and
+ * returns v7 at 83), and the root picks through it. That method when it is [builder]'s one caller in
+ * [owner], every call of [builder] in it is kept by the move-result-object right after and returned
+ * right after that, and it has one caller in [owner] of its own. Null otherwise.
+ */
+internal fun videoBarPasser(owner: ClassDef, builder: Method): Method? {
+    val passer = videoBarPickerCallers(owner, builder).singleOrNull() ?: return null
+    val code = passer.implementation?.instructions?.toList() ?: return null
+    val calls = code.indices.filter { callsPicker(code[it], builder) }
+    val passes = calls.isNotEmpty() && calls.all { at ->
+        val kept = code.getOrNull(at + 1)
+        val back = code.getOrNull(at + 2)
+        kept?.opcode == Opcode.MOVE_RESULT_OBJECT && back?.opcode == Opcode.RETURN_OBJECT &&
+            (kept as OneRegisterInstruction).registerA == (back as OneRegisterInstruction).registerA
+    }
+    if (!passes || videoBarPickerCallers(owner, passer).size != 1) return null
+    return passer
+}
+
+/**
+ * The seek bar's band reads [method] makes for its root: the call at [call] in the root, the reads at
+ * [reads] in [method], and the root's register [config] the call hands as the config every read gets.
+ */
+internal class OutlinedBandReads(val method: Method, val call: Int, val reads: List<Int>, val config: Int)
+
+private val INVOKES = setOf(
+    Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE,
+    Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE,
+)
+
+/**
+ * 588's Android 9+ form (#102): the root's render reads no band height of its own and calls a private
+ * helper of [owner] once after its pick (`LX/0AtF;->render` 856, `A07(LX/0doT;LX/0APT;ZZ)I`), which
+ * reads it twice (12 and 57) from the config the root hands it (v13 there, the helper's p2). The
+ * root's [picker] (`A0A`) is private too and reads the band height for the reply bar it builds (61
+ * and 109), so it's never the helper. The helper's reads when [root] calls one other private method
+ * of [owner] reading the band height, once and at one of [after], every read is handed one of the
+ * helper's parameters, which it never writes, and the root hands that parameter in one register.
+ * Null otherwise.
+ */
+internal fun outlinedBandReads(
+    owner: ClassDef,
+    root: Method,
+    picker: Method,
+    after: Set<Int>,
+    isBand: (MethodReference) -> Boolean,
+): OutlinedBandReads? {
+    val code = root.implementation?.instructions?.toList() ?: return null
+    fun helperAt(at: Int): Method? {
+        if (code[at].opcode !in INVOKES) return null
+        val call = (code[at] as ReferenceInstruction).reference as? MethodReference ?: return null
+        if (call.definingClass != owner.type) return null
+        return owner.methods.singleOrNull {
+            it.name == call.name && it.returnType == call.returnType &&
+                it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+        }?.takeIf {
+            AccessFlags.PRIVATE.isSet(it.accessFlags) && it.descriptor() != root.descriptor() &&
+                it.descriptor() != picker.descriptor() && videoBandReads(it, isBand).isNotEmpty()
+        }
+    }
+    val calls = code.indices.mapNotNull { at -> helperAt(at)?.let { at to it } }
+    val (call, helper) = calls.singleOrNull()?.takeIf { it.first in after } ?: return null
+    if (videoBarPickerCallers(owner, helper).map { it.descriptor() } != listOf(root.descriptor())) return null
+    val reads = videoBandReads(helper, isBand)
+    val handed = reads.map { bandConfigRegister(helper, it) ?: return null }.toSet().singleOrNull() ?: return null
+    val implementation = helper.implementation!!
+    val parameterWords = helper.parameterTypes.map { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }.sum() +
+        if (AccessFlags.STATIC.isSet(helper.accessFlags)) 0 else 1
+    val slot = handed - (implementation.registerCount - parameterWords)
+    if (slot < 0) return null
+    val written = implementation.instructions.any { instruction ->
+        val register = (instruction as? OneRegisterInstruction)?.registerA ?: return@any false
+        instruction.opcode.setsRegister() &&
+            (register == handed || (instruction.opcode.setsWideRegister() && register + 1 == handed))
+    }
+    if (written) return null
+    val passed = when (val invoke = code[call]) {
+        is FiveRegisterInstruction ->
+            listOf(invoke.registerC, invoke.registerD, invoke.registerE, invoke.registerF, invoke.registerG).take(invoke.registerCount)
+        is RegisterRangeInstruction -> (invoke.startRegister until invoke.startRegister + invoke.registerCount).toList()
+        else -> return null
+    }
+    val config = passed.getOrNull(slot) ?: return null
+    return OutlinedBandReads(helper, call, reads, config)
+}
+
 /** Where [root] calls [picker]: the index of each call whose bar the move-result-object right after keeps. */
 internal fun videoBarPicks(root: Method, picker: Method): List<Int> {
     val code = root.implementation?.instructions?.toList() ?: return emptyList()
@@ -398,7 +492,10 @@ internal fun commentBarAnswer(
  * keeps its answer at [kept] - 1. On 586 ([jumps]) the builder is the root, [at] is the goto that
  * takes the bar to where the picks meet, and [kept] is just after that. On 587 the builder is a
  * method of its own again, and [kept] is just after the spot where the root's picks of it meet.
- * [chained] holds the other roots building the bar for themselves.
+ * [chained] holds the other roots building the bar for themselves. The root picks with [picker], the
+ * builder itself but on 588's Android 9+ build, where a method handing the builder's bar straight
+ * back stands between them, and [reads] are [seekBar]'s, the root itself but on that build, where a
+ * helper the root calls after its pick reads the band height.
  */
 internal class VideoCommentBand(
     val owner: ClassDef,
@@ -414,6 +511,8 @@ internal class VideoCommentBand(
     val listRead: Int,
     val jumps: Boolean,
     val chained: List<ChainedCommentBar>,
+    val picker: Method = builder,
+    val seekBar: Method = root,
 )
 
 /**
@@ -480,12 +579,17 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     val slotClass = ((list.implementation!!.instructions.elementAt(slotCall) as ReferenceInstruction).reference as MethodReference).definingClass
     val slot = classDefByOrNull(slotClass)?.let { videoSlotHeights(it.methods) }?.singleOrNull()
         ?: refuse("$slotClass has no static $VDD_SLOT_HEIGHT(IIZ Function0)I")
-    val root = if (inline) builder else videoBarPickerCallers(owner, builder).singleOrNull()
-        ?: refuse("expected one caller of ${builder.descriptor()} in ${owner.type}")
+    // 588's Android 9+ build picks through a method that hands the bar straight back.
+    val passer = if (inline) null else videoBarPasser(owner, builder)
+    val picker = passer ?: builder
+    val root = if (inline) builder else videoBarPickerCallers(owner, picker).singleOrNull()
+        ?: refuse("expected one caller of ${picker.descriptor()} in ${owner.type}")
     // Each method takes its own hooks at indices read from its untouched code, so none may be two of
     // them, but for 586's root, which builds the bar itself and takes all of its hooks at once.
-    val methods = setOf(builder.descriptor(), root.descriptor(), list.descriptor())
-    if (methods.size != if (inline) 2 else 3) refuse("${builder.descriptor()}, ${root.descriptor()} and ${list.descriptor()} overlap")
+    val methods = setOf(builder.descriptor(), picker.descriptor(), root.descriptor(), list.descriptor())
+    if (methods.size != if (inline) 2 else if (passer != null) 4 else 3) {
+        refuse("${builder.descriptor()}, ${picker.descriptor()}, ${root.descriptor()} and ${list.descriptor()} overlap")
+    }
     chained.firstOrNull { it.render.descriptor() in methods }?.let { refuse("${it.render.descriptor()} builds a second comment bar") }
     val rootCode = root.implementation!!.instructions.toList()
     // Where the bar lands: the move-result after the root's one call of the picker up to 585, on 586
@@ -502,7 +606,7 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
         bar = holders.filter { it in live }.singleOrNull()
             ?: refuse("${root.descriptor()} doesn't go on with the bar it builds at ${at - 1} in one register, held in $holders")
     } else {
-        val picks = videoBarPicks(root, builder)
+        val picks = videoBarPicks(root, picker)
         val meet = if (picks.size > 1) videoBarPickJumps(root, picks) else null
         if (meet != null) {
             picksMeet = true
@@ -513,7 +617,7 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
             }
         } else {
             val pick = picks.singleOrNull()
-                ?: refuse("${root.descriptor()} keeps the pick of ${builder.descriptor()} ${picks.size} times, not once or at one spot")
+                ?: refuse("${root.descriptor()} keeps the pick of ${picker.descriptor()} ${picks.size} times, not once or at one spot")
             bar = (rootCode[pick + 1] as OneRegisterInstruction).registerA
             merge = pick + 1
         }
@@ -531,23 +635,29 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     // The seek bar's reads come after the pick. 586's reply bar reads the band height for itself on
     // its way to the merge (arm64 `LX/087O;->render` 606), and that read stays Facebook's.
     val afterPick = reachableFrom(root, merge)
-    val reads = videoBandReads(root, isBand).filter { it in afterPick }
+    val ownReads = videoBandReads(root, isBand).filter { it in afterPick }
+    // 588's Android 9+ build reads them in a helper the root calls once after its pick.
+    val outlined = if (ownReads.isEmpty() && !inline) outlinedBandReads(owner, root, picker, afterPick, isBand) else null
+    val seekBar = outlined?.method ?: root
+    val reads = outlined?.reads ?: ownReads
     if (reads.isEmpty()) refuse("${root.descriptor()} reads no band height that adds $BAND_EXTRA_DP dp after its pick")
     fun callee(method: Method, at: Int) =
         (method.implementation!!.instructions.elementAt(at) as ReferenceInstruction).reference as MethodReference
-    val heights = reads.map { callee(root, it).toString() }.toSet()
-    if (heights.size != 1) refuse("${root.descriptor()} reads ${heights.size} band heights: $heights")
+    val heights = reads.map { callee(seekBar, it).toString() }.toSet()
+    if (heights.size != 1) refuse("${seekBar.descriptor()} reads ${heights.size} band heights: $heights")
     val configs = reads.map {
-        bandConfigRegister(root, it) ?: refuse("${root.descriptor()} hands its band height at $it more than one register")
+        bandConfigRegister(seekBar, it) ?: refuse("${seekBar.descriptor()} hands its band height at $it more than one register")
     }.toSet()
-    val config = configs.singleOrNull() ?: refuse("${root.descriptor()} hands its band height ${configs.size} configs")
-    val configType = callee(root, reads.first()).parameterTypes.single().toString()
+    if (configs.size != 1) refuse("${seekBar.descriptor()} hands its band height ${configs.size} configs")
+    val config = outlined?.config ?: configs.single()
+    val configType = callee(seekBar, reads.first()).parameterTypes.single().toString()
     val kept = if (inline || picksMeet) keptAfterMerge(root, merge, bar, config) else merge + 1
     videoConfigLoad(root, config, configType, kept)
         ?: refuse("${root.descriptor()} doesn't load its config v$config once, on every path before its pick at $kept and not overwritten there")
-    if (reads.any { it < kept }) refuse("${root.descriptor()} reads its band height before it keeps its pick at $kept")
+    val readsInRoot = outlined?.let { listOf(it.call) } ?: reads
+    if (readsInRoot.any { it < kept }) refuse("${root.descriptor()} reads its band height before it keeps its pick at $kept")
     if (bar > 15 || config > 15) refuse("${root.descriptor()} keeps its pick in v$bar with its config in v$config, past v15")
-    reads.forEach { bandHandOff(root, it) }
+    reads.forEach { bandHandOff(seekBar, it) }
     val listReads = videoBandReads(list, isBand)
     val listRead = listReads.singleOrNull()
         ?: refuse("${list.descriptor()} reads the band height ${listReads.size} times, not once")
@@ -556,7 +666,7 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     }
     bandHandOff(list, listRead)
     if (inline) commentBarAnswer(builder, at, bar) else commentBarAnswer(builder, at)
-    return VideoCommentBand(owner, builder, at, root, kept, bar, config, reads, slot, list, listRead, inline, chained)
+    return VideoCommentBand(owner, builder, at, root, kept, bar, config, reads, slot, list, listRead, inline, chained, picker, seekBar)
 }
 
 /**
@@ -569,14 +679,21 @@ internal fun BytecodePatchContext.dropVideoCommentBand(band: VideoCommentBand) {
     // Read from the untouched root, where videoCommentBand checked it.
     val free = if (band.jumps) commentBarAnswer(band.root, band.at, band.bar) else null
     if (free == null) mutableClassDefBy(band.owner.type).findMutableMethodOf(band.builder).dropVideoCommentBar(band.at)
+    val readsInRoot = band.seekBar.descriptor() == band.root.descriptor()
     mutableClassDefBy(band.owner.type).findMutableMethodOf(band.root).apply {
         // Every index comes from the untouched root, so the hooks go in from the last one back.
         val hooks = mutableListOf<Pair<Int, MutableMethod.() -> Unit>>()
-        for (read in band.reads) hooks += read + 2 to { handBandToExtension(listOf(read), SHORTS_SEEK_BAR_BAND, withConfig = false) }
+        if (readsInRoot) {
+            for (read in band.reads) hooks += read + 2 to { handBandToExtension(listOf(read), SHORTS_SEEK_BAR_BAND, withConfig = false) }
+        }
         hooks += band.kept to { addInstruction(band.kept, "invoke-static {v${band.bar}, v${band.config}}, $KEPT_SHORTS_BAR") }
         if (free != null) hooks += band.at to { dropVideoCommentBarJump(band.at, band.bar, free) }
         hooks += 0 to { addInstruction(0, "invoke-static {}, $PICKING_SHORTS_BAR") }
         hooks.sortedByDescending { it.first }.forEach { (_, hook) -> hook() }
+    }
+    if (!readsInRoot) {
+        mutableClassDefBy(band.owner.type).findMutableMethodOf(band.seekBar)
+            .handBandToExtension(band.reads, SHORTS_SEEK_BAR_BAND, withConfig = false)
     }
     mutableClassDefBy(band.list.definingClass).findMutableMethodOf(band.list)
         .handBandToExtension(listOf(band.listRead), SHORTS_VIDEO_BAND, withConfig = true)

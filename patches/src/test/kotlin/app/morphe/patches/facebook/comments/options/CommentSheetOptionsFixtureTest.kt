@@ -272,10 +272,16 @@ class CommentSheetOptionsFixtureTest {
         // The Like button beside the thumbs-down comes from LikePlugin, folded into the plugin table.
         val table = holders(bundle, LIKE_PLUGIN)
         assertEquals("$name: one class names $LIKE_PLUGIN", 1, table.size)
-        val folded = table.single().methods.filter { candidate ->
+        fun writesLike(owner: ClassDef) = owner.methods.filter { candidate ->
             candidate.implementation?.instructions?.any { it.reference() == text.descriptor() } == true
         }
-        assertEquals("$name: the plugin table writes LikePlugin's Like through ${text.descriptor()}", 1, folded.size)
+        // 588's Android 9 build keeps LikePlugin as its own class, which writes Like itself.
+        val kept = "L${LIKE_PLUGIN.replace('.', '/')};"
+        val folded = writesLike(table.single()).ifEmpty {
+            FixtureDex.classes(bundle, setOf(kept)).values.singleOrNull()?.let(::writesLike).orEmpty()
+        }
+        assertEquals("$name: the plugin table, or LikePlugin kept, writes LikePlugin's Like through ${text.descriptor()}",
+            1, folded.size)
         held(writer, method, HOLDS_COMMENT_LIKE, "$name: ${text.descriptor()}")
     }
 
@@ -882,17 +888,29 @@ class CommentSheetOptionsFixtureTest {
             found.calls.map { ((original[it] as ReferenceInstruction).reference as MethodReference).name })
         // The box is this: p0 itself, or one copy of it made before anything else writes that register.
         val self = method.localRegisterCount()
-        val superCall = original.indexOfFirst {
-            it.opcode == Opcode.INVOKE_DIRECT && ((it as ReferenceInstruction).reference as MethodReference).let { called ->
-                called.name == "<init>" && called.definingClass == owner.superclass
+        if (found.init.name == "<init>") {
+            val superCall = original.indexOfFirst {
+                it.opcode == Opcode.INVOKE_DIRECT && ((it as ReferenceInstruction).reference as MethodReference).let { called ->
+                    called.name == "<init>" && called.definingClass == owner.superclass
+                }
             }
+            val copies = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+            val writers = method.writersReaching(superCall, found.box)
+            assertTrue("$where: v${found.box} isn't this", found.box == self && writers == listOf(-1) ||
+                writers.singleOrNull()?.let { at ->
+                    original[at].opcode in copies && (original[at] as TwoRegisterInstruction).registerB == self
+                } == true)
+        } else {
+            // 588's Android 9 build: a private helper the constructor calls on the box, on its own this.
+            assertTrue("$where isn't a private instance method", AccessFlags.PRIVATE.isSet(found.init.accessFlags) &&
+                !AccessFlags.STATIC.isSet(found.init.accessFlags))
+            assertEquals("$where: the box is the helper's this", self, found.box)
+            found.calls.forEach { assertEquals("$where: this kept up to $it", listOf(-1), method.writersReaching(it, self)) }
+            val init = owner.methods.single { it.name == "<init>" && holdsString(it, COMMENT_BOX_INIT) }
+            assertTrue("$where: the constructor doesn't call the helper", init.implementation!!.instructions.any {
+                ((it as? ReferenceInstruction)?.reference as? MethodReference)?.descriptor() == found.init.descriptor()
+            })
         }
-        val copies = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
-        val writers = method.writersReaching(superCall, found.box)
-        assertTrue("$where: v${found.box} isn't this", found.box == self && writers == listOf(-1) ||
-            writers.singleOrNull()?.let { at ->
-                original[at].opcode in copies && (original[at] as TwoRegisterInstruction).registerB == self
-            } == true)
 
         method.flattenCommentBox(found)
         val patched = method.implementation!!.instructions.toList()

@@ -626,7 +626,9 @@ private fun receiver(instruction: Instruction): Int? = when (instruction) {
  * constructor naming it, and in it each [BACKGROUND_SETTERS] call made on the box itself, that is
  * on a register holding what the superclass constructor was called on (585 `LX/07tV;-><init>`:
  * setBackground with the theme's drawable, and setBackgroundResource of `sutro_top_border` when
- * the theme has none or a MobileConfig check is off). A build where that moved keeps the rest of
+ * the theme has none or a MobileConfig check is off). Where the constructor makes neither call
+ * itself, they're the ones in the one private helper it calls on the box that makes them on its
+ * own this, and `init` is that helper (588's Android 9 build). A build where that moved keeps the rest of
  * the patch, with Hide the line over the comment box left doing nothing and a warning saying why.
  */
 internal fun commentBoxBackground(holders: List<ClassDef>): CommentBoxBackground? {
@@ -650,8 +652,38 @@ internal fun commentBoxBackground(holders: List<ClassDef>): CommentBoxBackground
             called(index)?.let { it.definingClass == VIEW && it.name in BACKGROUND_SETTERS } == true &&
             receiver(code[index]) == box && init.writersReaching(index, box) == boxWriters
     }
-    if (calls.isEmpty()) return skip("${init.descriptor()} sets no background on the box")
-    return CommentBoxBackground(init, box, calls)
+    if (calls.isNotEmpty()) return CommentBoxBackground(init, box, calls)
+    // 588's Android 9 build moves both calls into a private helper the constructor calls on the box
+    // last (`LX/08jc;->A01(Landroid/util/AttributeSet;)V`), which sets them on its own this.
+    val helpers = (superCall + 1 until code.size).mapNotNull { index ->
+        val call = called(index)?.takeIf {
+            code[index].opcode.let { it == Opcode.INVOKE_DIRECT || it == Opcode.INVOKE_DIRECT_RANGE } &&
+                it.definingClass == owner.type && it.name != "<init>" &&
+                receiver(code[index]) == box && init.writersReaching(index, box) == boxWriters
+        } ?: return@mapNotNull null
+        owner.methods.singleOrNull { method ->
+            method.name == call.name && method.returnType == call.returnType &&
+                method.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString) &&
+                AccessFlags.PRIVATE.isSet(method.accessFlags) && !AccessFlags.STATIC.isSet(method.accessFlags) &&
+                method.implementation != null
+        }
+    }.distinct().mapNotNull { helper -> commentBoxHelperBackground(helper) }
+    return helpers.singleOrNull() ?: skip(
+        "${init.descriptor()} sets no background on the box, and ${helpers.size} of its private helpers called on the box do",
+    )
+}
+
+/** [helper]'s [BACKGROUND_SETTERS] calls on its own this, still the one it was called on, or null when it makes none. */
+private fun commentBoxHelperBackground(helper: Method): CommentBoxBackground? {
+    val self = helper.localRegisterCount()
+    val body = helper.implementation!!.instructions.toList()
+    val calls = body.indices.filter { index ->
+        body[index].opcode.let { it == Opcode.INVOKE_VIRTUAL || it == Opcode.INVOKE_VIRTUAL_RANGE } &&
+            ((body[index] as? ReferenceInstruction)?.reference as? MethodReference)
+                ?.let { it.definingClass == VIEW && it.name in BACKGROUND_SETTERS } == true &&
+            receiver(body[index]) == self && helper.writersReaching(index, self) == listOf(-1)
+    }
+    return if (calls.isEmpty()) null else CommentBoxBackground(helper, self, calls)
 }
 
 /**
