@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.downloads.reel.SIDEBAR
 import app.morphe.patches.facebook.downloads.reel.hookSidebarLayout
 import app.morphe.patches.facebook.downloads.reel.isSidebarBuilder
 import app.morphe.patches.facebook.downloads.reel.sidebarAssemblyIndex
+import app.morphe.patches.facebook.downloads.reel.sidebarLayoutMethod
 import app.morphe.patches.facebook.downloads.reel.sidebarRender
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.feed.resolveStatic
@@ -148,16 +149,21 @@ internal fun earlyExitAsk(render: Method, assemblyIndex: Int, parameters: Collec
  * What makes the side column leave before its assembly, wherever it's asked. On 585 the [builder] is
  * its own [render] and leaves in front of its assembly at [assemblyIndex]. On the Android 9 build the
  * builder never does, and the render (LX/0B9q;->A15) returns at 0165, before it calls the builder,
- * when LX/0DkQ;->BV1()Z says yes. A split build where both leave is refused.
+ * when LX/0DkQ;->BV1()Z says yes. 588's Android 9 build turns that back: its builder (LX/09wQ;->A01)
+ * returns at 171, before its assembly, when LX/0APT;->BhM()Z says yes, and its render (LX/09wP;->A1A)
+ * returns only what the builder answered. A split build where both leave is refused.
  */
 internal fun sideColumnExitAsk(builder: Method, render: Method, assemblyIndex: Int, parameters: Collection<String>): MethodReference? {
     val ownExit = earlyExitAsk(builder, assemblyIndex, parameters)
     if (render === builder) return ownExit
-    if (ownExit != null) throw PatchException("$PATCH: ${builder.definingClass}->${builder.name} and its render both leave early")
     val code = render.code()
     val callsBuilder = code.indexOfFirst { instruction -> instruction.calledMethod()?.let { isCalledBy(builder, it) } == true }
     if (callsBuilder < 0) throw PatchException("$PATCH: ${render.definingClass}->${render.name} doesn't call ${builder.definingClass}->${builder.name}")
-    return earlyExitAsk(render, callsBuilder, parameters)
+    val renderExit = earlyExitAsk(render, callsBuilder, parameters)
+    if (ownExit != null && renderExit != null) {
+        throw PatchException("$PATCH: ${builder.definingClass}->${builder.name} and its render both leave early")
+    }
+    return ownExit ?: renderExit
 }
 
 /** The one instruction of [code] that [picks] picks, or a refusal naming [what]. */
@@ -321,7 +327,11 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     val controlsSlot = controls?.let { reelSlot(it, item) }
 
     // The older button layout never reaches the assembly. This one can still refuse, so it goes first.
-    val layoutMethod = component.methods.single { isCalledBy(it, layoutRender) }
+    // 588's Android 9 build reads the layout's flag in the builder rather than its render.
+    val layoutMethod = sidebarLayoutMethod(
+        component.methods.single { isCalledBy(it, layoutRender) },
+        mutableClassDefBy(sidebarClass.type).methods.single { isCalledBy(it, render) },
+    )
     hookSidebarLayout(layoutMethod, REEL_SPEAKER_LAYOUT)
 
     // Called as soon as the reel's builder has the corner: marks the reel unless its side column leaves early.

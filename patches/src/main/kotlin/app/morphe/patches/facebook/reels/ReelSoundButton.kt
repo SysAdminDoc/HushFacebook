@@ -318,8 +318,12 @@ private fun BytecodePatchContext.hideControlsSpeakerBuild(): SpeakerSite? {
     ) { controlSpeakerBuilds(it, buildsSpeaker) }
 }
 
-/** An inline build of the speaker: the sound toggle newed up at [start], and the column's add at [add] of what's built from it. */
-internal data class InlineSpeaker(val start: Int, val add: Int)
+/**
+ * An inline build of the speaker: the sound toggle newed up at [start], and the column's add at [add]
+ * of what's built from it. The extension is asked at [hookAt], [start] unless only the add can be
+ * skipped, and its no jumps past the add.
+ */
+internal data class InlineSpeaker(val start: Int, val add: Int, val hookAt: Int = start)
 
 private val COLUMN_ADDS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
 
@@ -331,6 +335,11 @@ private val COLUMN_ADDS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RAN
  * transition key sits between them, nothing branches to the toggle, every way on from it reaches
  * the instruction after the add with no return or throw on the way, no other way comes in part
  * way, and nothing written on those ways is read after the add.
+ *
+ * 588's Android 9+ build (#102, read 2026-11-19, `LX/08rx;->A1A`) reads one of them after the add:
+ * the next row's constructor takes v45 from the speaker's own moves (2358, read at 2407). There the
+ * build can't be skipped whole, so the extension is asked right at the add, which nothing branches
+ * to, and a no skips the add alone: the speaker is built and dropped instead of added.
  */
 internal fun inlineSpeakers(method: Method, toggles: Set<String>): List<InlineSpeaker> {
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
@@ -379,7 +388,9 @@ internal fun inlineSpeakers(method: Method, toggles: Set<String>): List<InlineSp
                 else -> listOf(instruction.registerA)
             }
         }
-        if (liveness.liveInto(after).any { it in written }) return@mapNotNull null
+        if (liveness.liveInto(after).any { it in written }) {
+            return@mapNotNull InlineSpeaker(start, add, hookAt = add).takeIf { add !in targets }
+        }
         InlineSpeaker(start, add)
     }
 }
@@ -400,9 +411,9 @@ private fun BytecodePatchContext.hideInlineSpeaker(controls: List<Pair<String, M
     }
     val speaker = inlineSpeakers(method, toggles).singleOrNull()
         ?: throw PatchException("$PATCH: $owner->${holder.name} doesn't build the speaker button inline exactly once")
-    val answer = method.freeLocalsAt(PATCH, speaker.start, 1, targets = listOf(speaker.add + 1)).single()
+    val answer = method.freeLocalsAt(PATCH, speaker.hookAt, 1, targets = listOf(speaker.add + 1)).single()
     method.addInstructionsWithLabels(
-        speaker.start,
+        speaker.hookAt,
         """
             const/4 v$answer, 0x1
             invoke-static/range { v$answer .. v$answer }, $REEL_SOUND_BUTTON
