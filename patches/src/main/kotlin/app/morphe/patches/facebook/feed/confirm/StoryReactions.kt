@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.patchLog
@@ -82,9 +83,14 @@ internal fun isOneArgLambda(method: Method) =
     method.name == "invoke" && method.returnType == LAMBDA_OBJECT &&
         method.parameterTypes.map(Any::toString) == listOf(LAMBDA_OBJECT)
 
-/** Both story reaction handlers, found and checked before anything changes. */
+/**
+ * Both story reaction handlers, found and checked before anything changes. 588's store-less build
+ * moved "story_reaction" into a string table (`LX/0Det;->A00`, index 0x48f), which its bar handler
+ * (`LX/0BJa;->Jjk`) asks, so the bar is any bar-shaped method naming it ([methodsNaming]).
+ */
 internal fun BytecodePatchContext.storyReactionHandlers(): List<LikeHandler> {
-    val bars = methodsHolding(STORY_REACTION_NAME).filter(::isStoryReactionBar)
+    val bars = methodsNaming(STORY_REACTION_NAME, ::isStoryReactionBar)
+        .distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}" }
     val bar = bars.singleOrNull()
         ?: refuse("expected one story reaction bar handler holding \"$STORY_REACTION_NAME\", found ${bars.size}")
     val singles = methodsHolding(SINGLE_REACTION).filter(::isOneArgLambda)

@@ -10,7 +10,11 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.refresh.enumConstant
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
@@ -84,6 +88,22 @@ class AskBeforeStoryReactionFixtureTest {
     private fun holding(bundle: File, string: String): List<ClassDef> =
         FixtureDex.classesHolding(bundle, string).filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
 
+    /**
+     * The classes holding [string] and, where one of them is a string table, the classes asking it:
+     * 588's store-less build asks a table for "story_reaction".
+     */
+    private fun classesNaming(bundle: File, string: String): List<ClassDef> {
+        val held = holding(bundle, string)
+        val tables = held.filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, string) } }
+            .associateBy { it.type }
+        if (tables.isEmpty()) return held
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val asking = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) {
+            !isStringTable(it) && !holdsString(it, string) && namesString(it, string, resolve)
+        }.map { it.definingClass }.toSet()
+        return held + FixtureDex.classes(bundle, asking).values
+    }
+
     private fun BytecodePatchContext.patched(method: Method) = mutableClassDefBy(method.definingClass).methods.single {
         it.name == method.name && it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
     }.implementation!!.instructions.toList()
@@ -127,7 +147,7 @@ class AskBeforeStoryReactionFixtureTest {
 
     private fun slice(bundle: File): Slice {
         val name = bundle.name
-        val handlers = markers.values.flatMap { holding(bundle, it) }
+        val handlers = markers.values.flatMap { classesNaming(bundle, it) }.distinctBy { it.type }
         val reasons = holding(bundle, ALERT_DIALOG_OPEN)
             .filter { AccessFlags.ENUM.isSet(it.accessFlags) && enumConstant(it, PAUSE_BUTTON) != null }
         assertEquals("$name: not one pause reason enum keeps $ALERT_DIALOG_OPEN and $PAUSE_BUTTON", 1, reasons.size)
@@ -174,9 +194,11 @@ class AskBeforeStoryReactionFixtureTest {
                 // Positive controls: each handler loads its own marker, the bar handler takes the
                 // StoryBucket and StoryCard and ends with an int, and keeps the story viewer's
                 // environment in a field of its own; the lambda reads its arm number off itself.
+                val byType = all.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> byType[call.definingClass]?.let { resolveStatic(it, call) } }
                 handlers.forEach { handler ->
-                    assertTrue("$name: kind ${handler.kind} doesn't load \"${markers.getValue(handler.kind)}\"",
-                        before.getValue(handler.kind).any { it.loads(markers.getValue(handler.kind)) })
+                    assertTrue("$name: kind ${handler.kind} doesn't name \"${markers.getValue(handler.kind)}\"",
+                        namesString(handler.method, markers.getValue(handler.kind), resolve))
                 }
                 val bar = handlers.single { it.kind == STORY_REACTION }.method
                 assertEquals("$name: the bar handler's arguments",
@@ -322,7 +344,7 @@ class AskBeforeStoryReactionFixtureTest {
 
                 // No single reaction lambda: neither handler changes and the stubs stay stubs.
                 val gone = holding(bundle, SINGLE_REACTION).map { it.type }.toSet()
-                val kept = holding(bundle, STORY_REACTION_NAME).filterNot { it.type in gone }
+                val kept = classesNaming(bundle, STORY_REACTION_NAME).filterNot { it.type in gone }
                 val stock = kept.flatMap { it.methods }.filter(::isStoryReactionBar)
                 assertEquals("$name: no bar handler kept to watch", 1, stock.size)
                 val missing = contextOf(kept + slice.reason + slice.naming + slice.reached)
