@@ -68,6 +68,8 @@ class DownloadReelFixtureTest {
     private val expected = mapOf(
         "arm64-v8a" to "before=39 scratch=2 sources=[71, 1, 33, 11, 23, 21] layout=240 v8",
         "armeabi-v7a" to "before=39 scratch=2 sources=[71, 1, 33, 11, 23, 21] layout=240 v8",
+        // 588's Android 9 build reads the player from its copy (v31) and the layout flag in the builder.
+        "arm64-v8a-minapi28-storeless" to "before=43 scratch=1 sources=[68, 10, 31, 14, 23, 21] layout=193 v7",
     )
 
     /** A render of the same Litho method as [render]: its name, its one scoped parameter and its return type. */
@@ -266,15 +268,21 @@ class DownloadReelFixtureTest {
                 // The older button layout (#316, #298): the render reads the layout flag once, 1 for
                 // yes and 0 for no, and where the two writes meet the extension gets Facebook's
                 // answer back into the same register, so the branch to the older strip goes by it.
-                val renderOriginal = render.body()
-                val renderBody = context.mutableClassDefBy(component.type).methods.single {
+                val ownRender = context.mutableClassDefBy(component.type).methods.single {
                     it.name == render.name && it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
                 }
+                // 588's Android 9 build reads the flag in the builder (LX/09wQ;->A01), which its render only calls.
+                val layoutInBuilder = !renderIsBuilder && context.sidebarLayoutMethod(render, builder) === builder
+                if (layoutInBuilder) {
+                    assertEquals("${bundle.name}: the render is Facebook's own", unpadded(render.body()), unpadded(ownRender.implementation!!.instructions.toList()))
+                }
+                val renderOriginal = if (layoutInBuilder) original else render.body()
+                val renderBody = if (layoutInBuilder) patched else ownRender
                 val renderCode = renderBody.implementation!!.instructions.toList()
                 val layoutAt = renderCode.indexOfFirst { it.called()?.toString() == verticalUfi }
                 assertEquals("${bundle.name}: the layout is asked once", 1, renderCode.count { it.called()?.toString() == verticalUfi })
                 // Where the hook sits in Facebook's own code, past the button block when that's ahead of it.
-                val layoutOriginal = layoutAt - if (renderIsBuilder && injectAt < layoutAt) blockSize else 0
+                val layoutOriginal = layoutAt - if ((renderIsBuilder || layoutInBuilder) && injectAt < layoutAt) blockSize else 0
                 val asked = renderCode[layoutAt] as RegisterRangeInstruction
                 val flagRegister = asked.startRegister
                 assertEquals("${bundle.name}: with the flag alone", 1, asked.registerCount)
@@ -298,7 +306,7 @@ class DownloadReelFixtureTest {
                 val renderFlow = ControlFlow.of(renderBody)
                 assertEquals("${bundle.name}: a yes jumps to the hook", setOf(layoutAt - 1, layoutAt), renderFlow.normal[layoutAt - 2].toSet())
                 assertEquals("${bundle.name}: a no runs into it", listOf(layoutAt), renderFlow.normal[layoutAt - 1])
-                if (!renderIsBuilder) {
+                if (!renderIsBuilder && !layoutInBuilder) {
                     assertEquals(
                         "${bundle.name}: the rest of the render is Facebook's own",
                         unpadded(renderOriginal),

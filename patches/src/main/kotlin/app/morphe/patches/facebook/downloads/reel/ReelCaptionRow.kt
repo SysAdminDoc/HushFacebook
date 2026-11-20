@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireFreeAt
 import app.morphe.patches.facebook.misc.upsells.enumConstant
@@ -20,6 +21,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -77,21 +79,33 @@ internal class CaptionRender(
 )
 
 internal fun BytecodePatchContext.captionRender(patch: String): CaptionRender {
-    val (component, render, lambda) = classDefByStrings(DESCRIPTION_COMPONENT, StringComparisonType.EQUALS)
+    // Each type built once looked up: the table route below reads every method of many classes.
+    val lambdas = HashMap<String, ClassDef?>()
+    fun lambdaBuilt(method: Method): ClassDef? = method.implementation?.instructions?.asSequence()
+        ?.filter { it.opcode == Opcode.NEW_INSTANCE }
+        ?.mapNotNull { instruction ->
+            val type = ((instruction as ReferenceInstruction).reference as TypeReference).type
+            if (type !in lambdas) {
+                lambdas[type] = classDefByOrNull(type)?.takeIf { built -> built.fields.any { it.name == BASE_DESCRIPTION_FIELD } }
+            }
+            lambdas[type]
+        }?.firstOrNull()
+    val holding = classDefByStrings(DESCRIPTION_COMPONENT, StringComparisonType.EQUALS)
         .flatMap { classDef ->
             classDef.methods.mapNotNull { method ->
                 val instructions = method.implementation?.instructions ?: return@mapNotNull null
                 if (instructions.none { it.stringValue() == DESCRIPTION_COMPONENT }) return@mapNotNull null
-                val lambda = instructions.asSequence()
-                    .filter { it.opcode == Opcode.NEW_INSTANCE }
-                    .mapNotNull { ((it as ReferenceInstruction).reference as TypeReference).type.let(::classDefByOrNull) }
-                    .firstOrNull { type -> type.fields.any { it.name == BASE_DESCRIPTION_FIELD } }
-                    ?: return@mapNotNull null
-                Triple(classDef, method, lambda)
+                lambdaBuilt(method)?.let { Triple(classDef.type, method, it) }
             }
-        }.singleOrPatchException("$patch: the one reel caption render holding \"$DESCRIPTION_COMPONENT\" and building its tap lambda")
+        }
+    // 588's Android 9 build renders the caption in a helper class (`LX/09TV;->A02`) that asks a string
+    // table for the component's name (`LX/0vfR;->A00(I)String`) instead of loading it.
+    val (owner, render, lambda) = holding.ifEmpty {
+        methodsNaming(DESCRIPTION_COMPONENT) { lambdaBuilt(it) != null }
+            .map { method -> Triple(method.definingClass, method, lambdaBuilt(method)!!) }
+    }.singleOrPatchException("$patch: the one reel caption render naming \"$DESCRIPTION_COMPONENT\" and building its tap lambda")
     return CaptionRender(
-        render = mutableClassDefBy(component.type).findMutableMethodOf(render),
+        render = mutableClassDefBy(owner).findMutableMethodOf(render),
         lambda = lambda.type,
         unit = lambdaField(patch, lambda, UNIT_FIELD),
         caption = lambdaField(patch, lambda, BASE_DESCRIPTION_FIELD),

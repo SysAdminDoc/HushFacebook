@@ -9,6 +9,9 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.media.pip.sheetContext
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
@@ -78,7 +81,15 @@ class ReelCaptionRowFixtureTest {
                 classes[holder.type] = holder
 
                 // The caption component and the lambdas its render builds.
-                val components = FixtureDex.classesHolding(bundle, DESCRIPTION_COMPONENT)
+                val holders = FixtureDex.classesHolding(bundle, DESCRIPTION_COMPONENT)
+                // 588's Android 9 build asks a string table for the name, from a render in another class.
+                val tables = holders.filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, DESCRIPTION_COMPONENT) } }
+                    .associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val asking = if (tables.isEmpty()) emptySet() else FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) {
+                    !isStringTable(it) && !holdsString(it, DESCRIPTION_COMPONENT) && namesString(it, DESCRIPTION_COMPONENT, resolve)
+                }.map { it.definingClass }.toSet()
+                val components = holders + FixtureDex.classes(bundle, asking).values
                 components.forEach { classes.putIfAbsent(it.type, it) }
                 val built = components.flatMap { it.methods }.filter { it.implementation != null }.flatMap { method ->
                     method.implementation!!.instructions.filter { it.opcode == Opcode.NEW_INSTANCE }
