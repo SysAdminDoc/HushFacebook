@@ -59,7 +59,7 @@ Switches act straight away, with no restart and no new patching, but what's alre
 
 Changing one of those brings up a **Restart Facebook** row at the top of the page. A tap reopens settings with your sections and position restored. You can also restart from **Support** whenever Facebook needs a fresh start. **Report a problem** opens a GitHub bug report with your versions and switches filled in.
 
-**Pause Hushfacebook** turns every switch off from the next start without forgetting your choices. A few things stay in, Lock Facebook among them, and the screen lists them. If Facebook crashes or freezes within a minute of starting three times in a row, Hushfacebook pauses itself and the screen says so.
+**Pause Hushfacebook** turns every switch off from the next start without forgetting your choices. A few things stay in, Lock Facebook among them, and the screen lists them. If Facebook crashes, freezes or gets closed by Android for using too much memory within a minute of starting three times in a row, Hushfacebook pauses itself and the screen says so.
 
 Morphe Manager can back up your patch choices but not these switches. **Export settings** saves them to a JSON file, word lists included, and **Import settings** reads one back on this phone or a new one. It shows what the file would change before anything does. **Reset settings** puts them all back to how a new install has them, and **Undo the reset** brings yours back. **Check for new Hushfacebook releases** under Updates is off until you turn it on. Then it asks GitHub once a day and tells you when there's a newer release, and you update through Morphe Manager as usual.
 

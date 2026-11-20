@@ -80,7 +80,7 @@ Facebook can't connect while the proxy app is off, so clear the row when you wan
 
 ## Facebook keeps closing
 
-After three crashes or freezes within a minute of starting, Hushfacebook pauses itself. If you can't reach the settings at all, an empty file named `hushfacebook-safe-mode` in `Android/data/com.facebook.katana/files` pauses it too (a clone uses its own package's folder, like `com.facebook.katana.morphe`). Most file managers can't write there, but on newer Android versions a computer with adb can, with no root (seen working on Android 16):
+After three crashes, freezes or memory kills within a minute of starting, Hushfacebook pauses itself. If you can't reach the settings at all, an empty file named `hushfacebook-safe-mode` in `Android/data/com.facebook.katana/files` pauses it too (a clone uses its own package's folder, like `com.facebook.katana.morphe`). Most file managers can't write there, but on newer Android versions a computer with adb can, with no root (seen working on Android 16):
 
 ```
 adb shell touch /sdcard/Android/data/com.facebook.katana/files/hushfacebook-safe-mode

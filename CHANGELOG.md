@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Long press to save Marketplace photos` under Downloads saves a Marketplace listing's photo when you hold your finger on it, in the listing or opened full screen. It lands in the same folder as every other photo you save. It needs `Save any photo` and starts off. (#515)
 * With `See-through bars` on, the strip behind the clock and battery icons is frosted glass too on Android 12 and newer, so the glass runs from the top bar up to the edge of the screen instead of stopping under a solid band. (#507)
 * `Dim to` under Reels and Watch picks how much of a reel's buttons, caption and bars still shows once `Burn-in guard` dims them, from 0 to 100 percent. Left blank it stays at the 25 it always used. `Smooth fade` next to it eases them out and back in instead of switching at once, and it starts off. (#523)
+* A crash deep in Facebook's native code or a freeze now leaves a `crash-` file in Download/Hushfacebook too, and so does Android 17 closing Facebook for using too much memory. Facebook writes it the next time it starts, even when that start runs paused, with what closed it and Android's own note about it. A freeze keeps the main thread's part of Android's trace. One from before your last update or reinstall says when that was and marks the versions unknown, since they could be the old build's. Before, only a Java crash got a file. (#528)
 
 ### Changed
 
@@ -31,6 +32,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * The changelog starts at 0.20.0 now, so Morphe Manager has a lot less to download when it shows what changed. Versions 0.1.0 to 0.19.0 are in the [changelog archive](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/changelog-archive.md), word for word.
 * `Hide create story cards` under Stories now also takes out the full screen "continue the story" card, the one asking you to share a recent moment from your gallery with a Create story button. (#521)
 * With `Clean mode button on reels` on, Facebook's button for leaving Clean mode now sits right where the sidebar's Clean mode button was, so the same spot turns it on and off. It takes that spot from your last tap on the sidebar button in that viewer. (#391)
+* The bug form now requires the Facebook file you patched. (#528)
 
 ### Fixed
 
@@ -55,6 +57,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Show the post date on reels` now dates a video posted in a group too. Facebook's full screen viewer gives a group's video no date line under its author, so the date goes after the poster's name, like "Ana Lima · 3 weeks ago". (#520)
 * With `Hide posts you've already seen` or another switch that hides a lot of the feed, Home fills in by itself when you open Facebook fresh. When the first pages were all posts the switch hides, Home sat on stories, the Reels shelf and its loading row until you swiped, since Facebook only asks for more posts as the feed scrolls. It now asks again on its own a few times, and a swipe still asks too. (#493)
 * With `Open feed videos on their own` on, a video you tap after it played for a while in the feed opens alone too. Facebook had already loaded it by then, so the first batch it handed the viewer held only the videos after yours, and the 0.23.0 trim let one of them through. That batch is skipped now. (#457)
+* On Android 17, Facebook getting closed for using too much memory in its first minute now counts toward safe mode the way a crash or a freeze does, so three starts in a row that end like that open Facebook with Hushfacebook paused. It only counts while you're using Facebook. A swipe away, a force stop or Android clearing it out in the background still doesn't. (#528)
 
 ## 0.23.0 (2026-11-17)
 

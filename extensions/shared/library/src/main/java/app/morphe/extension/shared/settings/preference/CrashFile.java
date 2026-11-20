@@ -25,7 +25,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
@@ -34,6 +37,11 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * Facebook that crashes before its settings open can still be reported. The bug form asks for the
  * newest one. The file holds what {@link JavaCrashReport} keeps for the diagnostic report, already
  * redacted, with the Facebook and Hushfacebook versions it came from at the top.
+ *
+ * <p>A death the Java handler never sees, a native crash, a hang or a kill by Android 17's memory
+ * limiter (#528), gets its file from the next start, which finds it in Android's exit records
+ * ({@link #fileLater}). That file names the reason and holds Android's own description of it. A
+ * start that runs paused after a crash loop still files those, by the switch's saved value.
  *
  * <p>MediaStore's Downloads collection needs no storage permission on Android 10 and newer, and an
  * app sees only its own files there, so the limit counts only crash files this install wrote. Each
@@ -57,12 +65,101 @@ public final class CrashFile {
     @Nullable
     private static volatile BooleanSetting toggle;
 
+    /** Deaths the start found in Android's exit records, held until the switch is known. */
+    private static final Object WAITING_LOCK = new Object();
+    @Nullable private static TreeMap<Long, String> waiting;
+    @Nullable private static Context waitingContext;
+    @Nullable private static Filed whenFiled;
+
+    /** Told how far the deaths {@link #fileLater} was given are done with. */
+    public interface Filed {
+        /** Every death up to and including the one at [when] has its file, or needs none. */
+        void upTo(long when);
+    }
+
     private CrashFile() {
     }
 
     /** Called by the app's settings as they load: [setting] says whether crash files are written. */
     public static void useSwitch(BooleanSetting setting) {
         toggle = setting;
+        boolean deathsWaiting;
+        synchronized (WAITING_LOCK) {
+            deathsWaiting = waiting != null;
+        }
+        // Found before the settings loaded: filed now, off the thread loading them.
+        if (deathsWaiting) Utils.runOnBackgroundThread(CrashFile::fileWaiting);
+    }
+
+    /**
+     * Files the deaths in [reports], each keyed by when the process died, as crash files named for
+     * that moment, oldest first and no more than the folder keeps. They wait for the switch when
+     * the settings haven't handed it over yet. The switch's saved value decides, paused or not: a
+     * start that runs paused after three crashes still files the deaths that paused it. With it
+     * on, [done] hears of each death once its file is written, and a file that can't be written
+     * ends the run, so the next start tries it again. With it off they get none and [done] hears
+     * of the newest. Never throws.
+     */
+    public static void fileLater(Context context, TreeMap<Long, String> reports, Filed done) {
+        synchronized (WAITING_LOCK) {
+            TreeMap<Long, String> newest = new TreeMap<>(reports);
+            while (newest.size() > KEEP) newest.pollFirstEntry();
+            waiting = newest;
+            waitingContext = context;
+            whenFiled = done;
+        }
+        fileWaiting();
+    }
+
+    /** Files what {@link #fileLater} holds once the switch is known. */
+    static void fileWaiting() {
+        TreeMap<Long, String> reports;
+        Context context;
+        Filed done;
+        BooleanSetting setting = toggle;
+        synchronized (WAITING_LOCK) {
+            // A switch handed over means the settings class loaded, so its saved value can be read.
+            if (waiting == null || setting == null) return;
+            reports = waiting;
+            context = waitingContext;
+            done = whenFiled;
+            waiting = null;
+            waitingContext = null;
+            whenFiled = null;
+        }
+        try {
+            if (context == null || done == null || reports.isEmpty()) return;
+            if (!setting.savedValue()) {
+                done.upTo(reports.lastKey());
+                return;
+            }
+            for (Map.Entry<Long, String> death : reports.entrySet()) {
+                Uri file;
+                synchronized (JavaCrashReport.FILE_LOCK) {
+                    file = write(context, death.getValue(), death.getKey());
+                }
+                // Not written: the deaths from here on stay for the next start.
+                if (file == null) return;
+                done.upTo(death.getKey());
+            }
+        } catch (Throwable failure) {
+            // The mark stays at the last death filed, and the next start finds the rest again.
+            Logger.printException(() -> "Crash file: could not file the last deaths", failure);
+        }
+    }
+
+    /** Takes the switch back, as before the settings load. A test hands it over again. */
+    static void forgetSwitchForTests() {
+        toggle = null;
+    }
+
+    /** Forgets the deaths waiting, as in a new process. */
+    public static void resetForTests() {
+        synchronized (WAITING_LOCK) {
+            waiting = null;
+            waitingContext = null;
+            whenFiled = null;
+        }
     }
 
     /**

@@ -9,6 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.ApplicationExitInfo;
 import android.content.Context;
 
 import org.junit.After;
@@ -21,6 +22,9 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
+import org.robolectric.shadows.ShadowActivityManager;
+
+import java.time.Instant;
 
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.Utils;
@@ -101,6 +105,38 @@ public class JavaCrashReportTest {
         assertTrue(report, report.contains("patch_build: " + IdentityUtils.identity + "\n"));
         assertFalse(report, report.contains("post_id=12345678901234567890"));
         assertFalse(report, report.contains("example.com/private"));
+    }
+
+    /**
+     * A death Android recorded from before the last install or update gets its file without this
+     * build's versions, which could be wrong for it, and says when that install was (#528).
+     */
+    @Test
+    @Config(shadows = IdentityUtils.class)
+    public void aDeathFromBeforeTheInstallLeavesTheVersionsUnknown() {
+        IdentityUtils.identity = "sha256=" + "a".repeat(64) + "; source=clean:" + "a".repeat(40)
+                + "; tree=" + "a".repeat(40) + "; inputs=" + "a".repeat(64);
+        long installed = 1_791_727_001_500L;
+        String before = JavaCrashReport.buildForExit(context, nativeCrashAt(installed - 500), "native crash", installed);
+        assertTrue(before, before.contains("app_version: unknown\nmorphe_version: unknown\n"));
+        assertTrue(before, before.contains("app_version_code: unknown\npatch_build: unknown\n"));
+        assertTrue(before, before.contains("installed_utc: " + Instant.ofEpochMilli(installed) + "\n"));
+        String after = JavaCrashReport.buildForExit(context, nativeCrashAt(installed + 500), "native crash", installed);
+        assertTrue(after, after.contains("app_version: 584.0.0.51.56\nmorphe_version: same-release\n"));
+        assertTrue(after, after.contains("app_version_code: 475817393\npatch_build: " + IdentityUtils.identity + "\n"));
+        assertFalse(after, after.contains("installed_utc: "));
+        String noInstallTime = JavaCrashReport.buildForExit(context, nativeCrashAt(installed + 500), "native crash", -1L);
+        assertTrue(noInstallTime, noInstallTime.contains("app_version: unknown\nmorphe_version: unknown\n"));
+        assertTrue(noInstallTime, noInstallTime.contains("app_version_code: unknown\npatch_build: unknown\n"));
+        assertTrue(noInstallTime, noInstallTime.contains("installed_utc: unknown\n"));
+    }
+
+    private ApplicationExitInfo nativeCrashAt(long at) {
+        return ShadowActivityManager.ApplicationExitInfoBuilder.newBuilder()
+                .setProcessName(context.getPackageName())
+                .setReason(ApplicationExitInfo.REASON_CRASH_NATIVE)
+                .setTimestamp(at)
+                .build();
     }
 
     @Test

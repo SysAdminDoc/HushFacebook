@@ -25,8 +25,10 @@ body:
     id: variant
     attributes:
       label: Which Facebook file did you patch?
-      description: The APKMirror variant, and whether the file you gave the patcher was an .apkm bundle or a single .apk, if you know them. Most bugs on a build that should work come from a different variant.
+      description: The APKMirror variant, and whether the file you gave the patcher was an .apkm bundle or a single .apk. Not sure? The name of the file you downloaded is enough. Most bugs on a build that should work come from a different variant.
       placeholder: arm64-v8a, Android 11+, 240-640dpi (.apkm)
+    validations:
+      required: true
   - type: dropdown
     id: manager
     attributes:

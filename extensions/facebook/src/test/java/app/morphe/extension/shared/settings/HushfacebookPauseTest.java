@@ -44,14 +44,18 @@ public class HushfacebookPauseTest {
     private File record;
     private File streak;
 
-    @Before public void setUp() {
+    @Before public void setUp() throws Exception {
         context = RuntimeEnvironment.getApplication();
         Utils.setContext(context);
+        // The first start in this JVM files the last deaths in the background, as Facebook's does:
+        // done before the test records any.
+        Utils.awaitBackgroundTasksForTests();
         HushfacebookPause.resetForTests();
         record = new File(context.getFilesDir(), HushfacebookPause.START_RECORD_NAME);
         streak = new File(context.getFilesDir(), HushfacebookPause.CRASH_STREAK_NAME);
         record.delete();
         streak.delete();
+        new File(context.getFilesDir(), HushfacebookPause.DEATHS_FILED_NAME).delete();
         File marker = HushfacebookPause.markerFile(context);
         if (marker != null) marker.delete();
         File media = HushfacebookPause.mediaMarkerFile(context);
@@ -60,7 +64,7 @@ public class HushfacebookPauseTest {
         BaseSettings.PAUSED.save(false);
     }
 
-    @After public void tearDown() {
+    @After public void tearDown() throws Exception {
         setUp();
         HushfacebookPause.resetForTests();
     }
@@ -163,14 +167,68 @@ public class HushfacebookPauseTest {
 
     /** An exit Android wrote down for the pid at the wall-clock moment [at]. */
     private void exited(int pid, int reason, long at) {
+        exited(pid, reason, at, null);
+    }
+
+    /** The same, with the description Android gave it, for a process on screen. */
+    private void exited(int pid, int reason, long at, String description) {
+        exited(pid, reason, at, description, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
+    }
+
+    /** The same, for a process that was as important to Android as [importance] says. */
+    private void exited(int pid, int reason, long at, String description, int importance) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         shadowOf(manager).addApplicationExitInfo(ShadowActivityManager.ApplicationExitInfoBuilder.newBuilder()
                 .setProcessName(context.getPackageName())
                 .setPid(pid)
                 .setReason(reason)
+                .setDescription(description)
+                .setImportance(importance)
                 .setStatus(reason == ApplicationExitInfo.REASON_CRASH ? 1 : 0)
                 .setTimestamp(at)
                 .build());
+    }
+
+    /**
+     * Android 17's memory limiter ends a process with REASON_OTHER and a description that starts
+     * MemoryLimiter (#528). That counts while Facebook is in view, and nothing else under
+     * REASON_OTHER does. Trimmed in the background, it's Android making room, not a crash.
+     */
+    @Test @Config(sdk = 30)
+    public void android11CountsAMemoryLimiterKillButNothingElseRecordedAsOther() {
+        exited(5201, ApplicationExitInfo.REASON_OTHER, 11_000, "MemoryLimiter:AnonSwap");
+        exited(5202, ApplicationExitInfo.REASON_OTHER, 12_000, "MemoryLimiter:FileSwap");
+        exited(5203, ApplicationExitInfo.REASON_OTHER, 13_000, "remove task");
+        exited(5204, ApplicationExitInfo.REASON_OTHER, 14_000, null);
+        exited(5205, ApplicationExitInfo.REASON_OTHER, 15_000, "a note: MemoryLimiter:AnonSwap");
+
+        assertTrue(HushfacebookPause.diedYoungFromACrash(context, "5201 1000"));
+        assertTrue(HushfacebookPause.diedYoungFromACrash(context, "5202 1000"));
+        assertFalse(HushfacebookPause.diedYoungFromACrash(context, "5203 1000"));
+        assertFalse(HushfacebookPause.diedYoungFromACrash(context, "5204 1000"));
+        assertFalse(HushfacebookPause.diedYoungFromACrash(context, "5205 1000"));
+        exited(5207, ApplicationExitInfo.REASON_OTHER, 16_000, "MemoryLimiter:AnonSwap",
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED);
+        assertFalse("a kill in the background counted", HushfacebookPause.diedYoungFromACrash(context, "5207 1000"));
+        exited(5208, ApplicationExitInfo.REASON_OTHER, 17_000, "MemoryLimiter:AnonSwap",
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE);
+        assertTrue("a kill in view didn't count", HushfacebookPause.diedYoungFromACrash(context, "5208 1000"));
+        // A kill after the minute is no young death, whatever the reason.
+        exited(5206, ApplicationExitInfo.REASON_OTHER, 1000 + 120_000, "MemoryLimiter:AnonSwap");
+        assertFalse(HushfacebookPause.diedYoungFromACrash(context, "5206 1000"));
+    }
+
+    /** Three memory-limiter kills in a row inside their first minute turn safe mode on. */
+    @Test @Config(sdk = 30)
+    public void threeMemoryLimiterKillsInARowTurnSafeModeOn() {
+        exited(5301, ApplicationExitInfo.REASON_OTHER, 11_000, "MemoryLimiter:AnonSwap");
+        exited(5302, ApplicationExitInfo.REASON_OTHER, 22_000, "MemoryLimiter:AnonSwap");
+        exited(5303, ApplicationExitInfo.REASON_OTHER, 33_000, "MemoryLimiter:AnonSwap");
+        start("5301 10000");
+        start("5302 21000");
+        assertFalse("two kills are not yet a loop", Setting.isPaused());
+        start("5303 32000");
+        assertEquals(HushfacebookPause.Reason.CRASH_LOOP, HushfacebookPause.reason());
     }
 
     @Test @Config(sdk = 30)

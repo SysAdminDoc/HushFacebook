@@ -5,15 +5,22 @@
 package app.morphe.extension.shared.settings.preference;
 
 import android.app.Application;
+import android.app.ApplicationExitInfo;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Looper;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,6 +54,12 @@ public final class JavaCrashReport {
     /** How much of the diagnostic event log goes in after the trace. */
     static final int RECENT_EVENTS_MAX_CHARS = 12_000;
 
+    /** How much of the trace Android kept for a hang goes in its crash file. */
+    static final int ANR_TRACE_MAX_CHARS = 16_000;
+
+    /** How far into a hang's trace the main thread is looked for. */
+    static final int ANR_TRACE_SCAN_MAX_CHARS = 2_000_000;
+
     /** The exception kept last, weakly: a handler Facebook put on top of ours can hand it back. */
     private static volatile WeakReference<Throwable> lastSaved = new WeakReference<>(null);
 
@@ -61,9 +74,9 @@ public final class JavaCrashReport {
     /**
      * Takes the crash files in Download/Hushfacebook one at a time, each a prune and an insert or a
      * delete. Never held with {@link LogBufferManager#CLEAR_UNDO_LOCK}: every diagnostic event takes
-     * that one, and a slow MediaStore would hold them all up.
+     * that one, and a slow MediaStore would hold them all up. The deaths a start files take it too.
      */
-    private static final Object FILE_LOCK = new Object();
+    static final Object FILE_LOCK = new Object();
 
     /** One save, for {@link #survived}: what the report held before it, and the file it wrote. */
     public static final class Saved {
@@ -177,21 +190,66 @@ public final class JavaCrashReport {
     }
 
     static String build(Context context, @Nullable Thread thread, Throwable throwable) {
-        long versionCode = Utils.getAppVersionCode();
-        String patchBuild = Utils.getPatchesBuildIdentity();
-        StringBuilder report = new StringBuilder();
-        report.append("timestamp_utc: ").append(Instant.ofEpochMilli(System.currentTimeMillis())).append('\n')
-                .append("package: ").append(context.getPackageName()).append('\n')
-                .append("app_version: ").append(Utils.getAppVersionName()).append('\n')
-                .append("morphe_version: ").append(Utils.getPatchesReleaseVersion()).append('\n')
-                .append("android_api: ").append(Build.VERSION.SDK_INT).append('\n')
-                .append("abi: ").append(LogBufferManager.abiLine()).append('\n')
-                .append("process: ").append(Application.getProcessName()).append('\n')
-                .append("thread: ").append(thread == null ? "unknown" : thread.getName()).append('\n')
+        StringBuilder report = facts(context, System.currentTimeMillis(), Application.getProcessName(), true);
+        report.append("thread: ").append(thread == null ? "unknown" : thread.getName()).append('\n')
                 .append("exception: ").append(throwable.getClass().getName()).append('\n')
                 .append("\n[STACK TRACE]\n").append(stackTrace(throwable));
         String recent = LogBufferManager.snapshotForCrash(RECENT_EVENTS_MAX_CHARS);
         if (!recent.isEmpty()) report.append("\n[RECENT EVENTS]\n").append(recent).append('\n');
+        return redacted(report, true);
+    }
+
+    /**
+     * The crash file for a death Android recorded and the next start found: a native crash, a hang
+     * or a memory-limiter kill, which never reach the Java handler. The same header as a Java
+     * crash's, dated when the process died, then [what] it was and Android's own account of it, and
+     * for a hang the main thread's part of the trace Android kept. A death from before the last
+     * install or update, at [installedAt], says when that was and leaves the versions unknown:
+     * this build's could be wrong for the one that died. So does any death when [installedAt] is
+     * negative, Android not saying when that was.
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    public static String buildForExit(Context context, ApplicationExitInfo exit, String what, long installedAt) {
+        boolean versionsKnown = installedAt >= 0 && exit.getTimestamp() > installedAt;
+        StringBuilder report = facts(context, exit.getTimestamp(), exit.getProcessName(), versionsKnown);
+        if (!versionsKnown) {
+            report.append("installed_utc: ")
+                    .append(installedAt >= 0 ? Instant.ofEpochMilli(installedAt).toString() : "unknown").append('\n');
+        }
+        String description = exit.getDescription();
+        report.append("death: ").append(what).append('\n')
+                .append("exit_reason: ").append(exit.getReason()).append('\n')
+                .append("exit_description: ").append(description == null ? "none" : description).append('\n')
+                .append("exit_status: ").append(exit.getStatus()).append('\n')
+                .append("exit_importance: ").append(exit.getImportance()).append('\n')
+                .append("exit_pss_kb: ").append(exit.getPss()).append('\n')
+                .append("exit_rss_kb: ").append(exit.getRss()).append('\n')
+                .append("found_at_utc: ").append(Instant.ofEpochMilli(System.currentTimeMillis())).append('\n');
+        if (exit.getReason() == ApplicationExitInfo.REASON_ANR) {
+            String trace = traceFromMain(exit);
+            if (!trace.isEmpty()) report.append("\n[ANR TRACE]\n").append(trace).append('\n');
+        }
+        return redacted(report, versionsKnown);
+    }
+
+    /**
+     * The lines both kinds of crash file start with, for a process named [process] at [when], with
+     * this build's versions unless [versionsKnown] says they could be another build's.
+     */
+    private static StringBuilder facts(Context context, long when, @Nullable String process, boolean versionsKnown) {
+        return new StringBuilder()
+                .append("timestamp_utc: ").append(Instant.ofEpochMilli(when)).append('\n')
+                .append("package: ").append(context.getPackageName()).append('\n')
+                .append("app_version: ").append(versionsKnown ? Utils.getAppVersionName() : "unknown").append('\n')
+                .append("morphe_version: ").append(versionsKnown ? Utils.getPatchesReleaseVersion() : "unknown").append('\n')
+                .append("android_api: ").append(Build.VERSION.SDK_INT).append('\n')
+                .append("abi: ").append(LogBufferManager.abiLine()).append('\n')
+                .append("process: ").append(process).append('\n');
+    }
+
+    private static String redacted(StringBuilder report, boolean versionsKnown) {
+        long versionCode = versionsKnown ? Utils.getAppVersionCode() : -1L;
+        String patchBuild = versionsKnown ? Utils.getPatchesBuildIdentity() : null;
         // Messages and log lines can carry addresses and ids: a download names what it couldn't reach.
         // These two values are a numeric package fact and a literal verified and embedded by the
         // patcher. Prose redaction would mistake digit runs in valid hashes for content ids.
@@ -199,6 +257,47 @@ public final class JavaCrashReport {
                 + "app_version_code: " + (versionCode < 0 ? "unknown" : Long.toString(versionCode)) + '\n'
                 + "patch_build: " + (patchBuild == null || patchBuild.trim().isEmpty() ? "unknown" : patchBuild) + '\n'
                 + DiagnosticRedactor.redact(report.toString());
+    }
+
+    /**
+     * Up to {@link #ANR_TRACE_MAX_CHARS} of the trace Android kept for a hang, from the main
+     * thread's stack on, after the line that says why ({@code Subject:}). ART's dump opens with
+     * the class loaders and GC timings, which in Facebook can run past the limit before the first
+     * thread, so the head alone would hold no stack. A trace without a main thread found in the
+     * first {@link #ANR_TRACE_SCAN_MAX_CHARS} gives its head instead. "" when Android kept none.
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    static String traceFromMain(ApplicationExitInfo exit) {
+        try (InputStream trace = exit.getTraceInputStream()) {
+            if (trace == null) return "";
+            BufferedReader lines = new BufferedReader(new InputStreamReader(trace, StandardCharsets.UTF_8));
+            StringBuilder head = new StringBuilder();
+            StringBuilder main = null;
+            String subject = null;
+            long scanned = 0;
+            String line;
+            while ((line = lines.readLine()) != null) {
+                if (main == null) {
+                    if (line.startsWith("\"main\"")) {
+                        main = new StringBuilder();
+                        if (subject != null) main.append(subject).append("\n\n");
+                    } else {
+                        if (subject == null && line.startsWith("Subject:")) subject = line;
+                        if (head.length() < ANR_TRACE_MAX_CHARS) head.append(line).append('\n');
+                        scanned += line.length() + 1;
+                        if (scanned > ANR_TRACE_SCAN_MAX_CHARS) break;
+                        continue;
+                    }
+                }
+                main.append(line).append('\n');
+                if (main.length() >= ANR_TRACE_MAX_CHARS) break;
+            }
+            StringBuilder kept = main != null ? main : head;
+            if (kept.length() > ANR_TRACE_MAX_CHARS) kept.setLength(ANR_TRACE_MAX_CHARS);
+            return kept.toString();
+        } catch (IOException | RuntimeException unreadable) {
+            return "";
+        }
     }
 
     /** The whole trace, causes and suppressed ones included, as Java prints it. */

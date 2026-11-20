@@ -8,6 +8,7 @@ package app.morphe.extension.shared.settings;
 import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,14 +23,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
+import app.morphe.extension.shared.settings.preference.CrashFile;
 import app.morphe.extension.shared.settings.preference.JavaCrashReport;
 
 /**
@@ -45,9 +50,14 @@ import app.morphe.extension.shared.settings.preference.JavaCrashReport;
  * three starts in a row that crashed within a minute. A start is recorded when the process begins
  * and cleared once it has run for a
  * minute, so a record that is still there at the next start belonged to a process that died
- * young. Android 11 and newer say why it died, and only a crash, a native crash or a hang counts;
- * being swiped away or force-stopped does not. Older Android counts the crashes that reached the
- * Java uncaught-exception handler.
+ * young. Android 11 and newer say why it died, and only a crash, a native crash, a hang or a kill
+ * by Android 17's memory limiter while Facebook was in view counts; being swiped away,
+ * force-stopped or trimmed in the background does not. Older
+ * Android counts the crashes that reached the Java uncaught-exception handler.
+ *
+ * <p>A death that never reaches the Java handler (a native crash, a hang, a memory-limiter kill)
+ * gets its crash file from the next start instead, which finds it in Android's exit records
+ * ({@link #fileLastDeaths}).
  */
 public final class HushfacebookPause {
     /** Why this process runs paused. */
@@ -56,6 +66,15 @@ public final class HushfacebookPause {
     public static final String MARKER_FILE_NAME = "hushfacebook-safe-mode";
     static final String START_RECORD_NAME = "hushfacebook-start";
     static final String CRASH_STREAK_NAME = "hushfacebook-start-crashes";
+    /** The wall-clock time Android's exit records were filed up to, for {@link #fileLastDeaths}. */
+    static final String DEATHS_FILED_NAME = "hushfacebook-deaths-filed";
+    /**
+     * Whether a start files the last deaths by itself. Tests start many processes and file them
+     * where they choose ({@link #fileLastDeaths}), so {@link #resetForTests} turns it off.
+     */
+    static volatile boolean fileDeathsAtStart = true;
+    /** How Android 17's memory limiter starts the description of a kill it records as REASON_OTHER. */
+    static final String MEMORY_LIMITER = "MemoryLimiter";
     static final long START_WINDOW_MS = 60_000L;
     static final int CRASHES_TO_SAFE_MODE = 3;
     private static final String CRASHED = "crashed";
@@ -91,9 +110,11 @@ public final class HushfacebookPause {
         startElapsed = SystemClock.elapsedRealtime();
         Context application = context.getApplicationContext();
         appContext = application != null ? application : context;
+        boolean mainProcess = false;
         try {
             filesDir = context.getFilesDir();
-            if (Utils.isMainProcess()) countLastStart(context);
+            mainProcess = Utils.isMainProcess();
+            if (mainProcess) countLastStart(context);
         } catch (RuntimeException failure) {
             // Never let the safety net be what stops Facebook from starting.
             Logger.printException(() -> "Hushfacebook pause: could not read the last start", failure);
@@ -104,6 +125,14 @@ public final class HushfacebookPause {
         Setting.setPausedForProcess(reason != Reason.NONE);
         if (reason != Reason.NONE) {
             Logger.printInfo(() -> "Hushfacebook is paused for this start: " + reason);
+        }
+        // Off the main thread, since a binder call, a hang's trace and MediaStore writes don't
+        // belong in the start, and right away: a start that crashes as its first screen opens
+        // still files the death before it. It files into this start's folder, whenever it runs.
+        if (mainProcess && fileDeathsAtStart) {
+            File dir = filesDir;
+            Context start = appContext;
+            Utils.runOnBackgroundThread(() -> fileLastDeaths(dir, start));
         }
     }
 
@@ -225,6 +254,100 @@ public final class HushfacebookPause {
     }
 
     /**
+     * Hands the deaths of Facebook's main process that Android recorded since the last ones were
+     * filed to the crash file ({@link CrashFile#fileLater}): a native crash, a hang or a
+     * memory-limiter kill, none of which reach the Java handler. A Java crash files itself as it
+     * happens. A death from before the last install or update still gets its file, as one from a
+     * crash loop the user tried to end by reinstalling would, but without versions: this build's
+     * could be wrong for it. With no mark to read, it files from that install or update on: every
+     * death of a crash loop that started right after it, even one too quick for any start to have
+     * set a mark. Off the main thread. Never throws.
+     */
+    static void fileLastDeaths() {
+        fileLastDeaths(filesDir, appContext);
+    }
+
+    private static void fileLastDeaths(@Nullable File dir, @Nullable Context context) {
+        if (dir == null || context == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+        try {
+            File mark = new File(dir, DEATHS_FILED_NAME);
+            long updated = installedAt(context);
+            long since = parseTime(read(mark));
+            if (since < 0) since = updated;
+            if (since < 0) since = System.currentTimeMillis();
+            ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            // 0 reads every record Android kept, so no death past the mark is left out.
+            List<ApplicationExitInfo> exits =
+                    manager == null ? null : manager.getHistoricalProcessExitReasons(null, 0, 0);
+            if (exits == null) return;
+            TreeMap<Long, String> reports = new TreeMap<>();
+            for (ApplicationExitInfo exit : exits) {
+                String what = deathWorthAFile(exit);
+                if (what == null || exit.getTimestamp() <= since
+                        || !context.getPackageName().equals(exit.getProcessName())) continue;
+                reports.put(exit.getTimestamp(), JavaCrashReport.buildForExit(context, exit, what, updated));
+            }
+            if (reports.isEmpty()) return;
+            // The mark moves after each file, so a start that dies mid-way neither files a death
+            // twice nor skips one.
+            CrashFile.fileLater(context, reports, when -> writeAtomically(mark, Long.toString(when)));
+        } catch (RuntimeException failure) {
+            Logger.printException(() -> "Hushfacebook pause: could not file the last deaths", failure);
+        }
+    }
+
+    /** What a crash file calls the death in [exit], or null when it gets none from here. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    @Nullable
+    static String deathWorthAFile(ApplicationExitInfo exit) {
+        int why = exit.getReason();
+        if (why == ApplicationExitInfo.REASON_CRASH_NATIVE) return "native crash";
+        if (why == ApplicationExitInfo.REASON_ANR) return "not responding (ANR)";
+        if (limiterKillInView(exit)) return "killed by Android's memory limiter";
+        return null;
+    }
+
+    /**
+     * A memory-limiter kill while Facebook was on screen or in view. The limiter also trims apps
+     * sitting in the background, and that's Android making room, not Facebook failing.
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    static boolean limiterKillInView(ApplicationExitInfo exit) {
+        return memoryLimiterKill(exit)
+                && exit.getImportance() <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
+    }
+
+    /**
+     * Android 17's memory limiter ended the process. It records the kill as {@code REASON_OTHER}
+     * with a description such as {@code MemoryLimiter:AnonSwap}; nothing else under that reason is
+     * a crash.
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    static boolean memoryLimiterKill(ApplicationExitInfo exit) {
+        String description = exit.getDescription();
+        return exit.getReason() == ApplicationExitInfo.REASON_OTHER
+                && description != null && description.startsWith(MEMORY_LIMITER);
+    }
+
+    /** When this Facebook was installed or last updated, or -1 when Android won't say. */
+    private static long installedAt(Context context) {
+        try {
+            return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).lastUpdateTime;
+        } catch (PackageManager.NameNotFoundException | RuntimeException unknown) {
+            return -1L;
+        }
+    }
+
+    private static long parseTime(@Nullable String text) {
+        if (text == null) return -1L;
+        try {
+            return Long.parseLong(text.trim());
+        } catch (NumberFormatException unreadable) {
+            return -1L;
+        }
+    }
+
+    /**
      * A minute in, this start did not crash: the record goes and the streak ends.
      *
      * <p>A crash the handler marked can still be ending the process at this point. Android holds
@@ -288,7 +411,8 @@ public final class HushfacebookPause {
         int reason = exit.getReason();
         boolean crash = reason == ApplicationExitInfo.REASON_CRASH
                 || reason == ApplicationExitInfo.REASON_CRASH_NATIVE
-                || reason == ApplicationExitInfo.REASON_ANR;
+                || reason == ApplicationExitInfo.REASON_ANR
+                || limiterKillInView(exit);
         // Android writes a crash down when it is reported, before any "keeps stopping"
         // dialog holds the process open, so the first record since the start says when
         // the crash happened. A process that lived past the minute by the clock on the
@@ -407,17 +531,37 @@ public final class HushfacebookPause {
         }
     }
 
+    /**
+     * Like {@link #write}, but readers only ever see the old text or the new, never a torn or empty
+     * one: the new text goes to disk in full before it takes the old one's place, and a write that
+     * fails leaves the old file as it was.
+     */
+    static void writeAtomically(File file, String text) {
+        File next = new File(file.getParentFile(), file.getName() + ".new");
+        try {
+            try (FileOutputStream out = new FileOutputStream(next)) {
+                out.write(text.getBytes(StandardCharsets.US_ASCII));
+                out.getFD().sync();
+            }
+            Files.move(next.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException | RuntimeException failure) {
+            Logger.printException(() -> "Hushfacebook pause: could not replace " + file.getName(), failure);
+        }
+    }
+
     static void pauseForTests(Reason why) {
         reason = why;
         Setting.setPausedForProcess(why != Reason.NONE);
     }
 
     static void resetForTests() {
+        fileDeathsAtStart = false;
         STARTED.set(false);
         CRASH_MARKED.set(false);
         crashMarkWanted = false;
         CRASH_MARK_MOVES.set(0);
         JavaCrashReport.resetForTests();
+        CrashFile.resetForTests();
         reason = Reason.NONE;
         filesDir = null;
         appContext = null;
