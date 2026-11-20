@@ -35,7 +35,7 @@ allprojects {
                 because("The build classpath must use the reviewed Bouncy Castle release.")
             }
             when ("${requested.group}:${requested.name}") {
-                "com.google.guava:guava" -> useVersion("33.7.2-jre")
+                "com.google.guava:guava" -> useVersion("33.8.0-jre")
                 "org.apache.commons:commons-lang3" -> useVersion("3.21.0")
                 "org.bitbucket.b_c:jose4j" -> useVersion("0.9.6")
             }

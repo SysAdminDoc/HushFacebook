@@ -46,7 +46,7 @@ extensions.getByType<com.android.build.api.variant.ApplicationAndroidComponentsE
     variant.sources.java?.addGeneratedSourceDirectory(generateLicenseNotice, GenerateLicenseNotice::outputDir)
 }
 
-// Robolectric 4.17 asks for Bouncy Castle 1.85 twice: by name, through the bc-jdk18on-bom it
+// Robolectric 4.18.1 asks for Bouncy Castle 1.86.2 twice: by name, through the bc-jdk18on-bom it
 // imports, and with no version of its own for the bcprov module that BOM governs. Every request
 // in this module is rewritten to the reviewed release so related test libraries cannot resolve
 // at mixed versions. No production configuration contains this group, so none of it reaches
@@ -57,11 +57,12 @@ extensions.getByType<com.android.build.api.variant.ApplicationAndroidComponentsE
 // is worth failing on, is the request underneath it. When Robolectric moves to a version nobody
 // has looked at, this build stops instead of quietly rewriting it away.
 val safeBouncyCastleVersion = libs.versions.bouncycastle.get()
-// 1.85 was checked on 2026-09-15 against the six advisories the catalog names: CVE-2025-8916
-// ends at 1.78, CVE-2026-5588 at 1.83, CVE-2025-14813 and CVE-2026-0636 at 1.84, and
-// CVE-2026-8763 and CVE-2026-13506 at 1.85. It is rewritten
-// all the same, because one reviewed release in the graph is easier to hold than two.
-val reviewedBouncyCastleRequests = setOf("1.85", safeBouncyCastleVersion)
+// 1.86.2 was read on 2026-11-19, when Robolectric moved from 4.17 (which asked for 1.85) to
+// 4.18.1. It sits on the 1.86 line, which the catalog's 1.87 note says the thirteen November
+// CVEs cover, and Bouncy Castle's notes don't say whether its point releases are outside them.
+// Robolectric only uses it to sign and verify inside the test JVM, and it is rewritten to the
+// catalog's release like every other request here, so the graph holds one reviewed version.
+val reviewedBouncyCastleRequests = setOf("1.86.2", safeBouncyCastleVersion)
 // Modules Robolectric declares with no version of its own, because the BOM it imports carries
 // the version for them. Reviewing that BOM is what covers these, so they are named here rather
 // than by a version: the BOM's own request is reviewed above, and a module that turns up here
@@ -78,8 +79,8 @@ val requestedBouncyCastleVersions = sortedSetOf<String>()
 // Module names, kept apart from the versions above so a name can never end up in the reviewed
 // version set by someone pasting it in.
 val unversionedBouncyCastleRequests = sortedSetOf<String>()
-// GHSA-xxph-c9ww-hj94 covers every Guava before 33.7.2, and Robolectric's test graph asks for
-// 33.6.0. Rewritten to the catalog's release, as :patches does for the patcher's graph.
+// GHSA-v5x9-67m3-7m56 covers every Guava before 33.8.0, and Robolectric's test graph asks for
+// 33.7.2-jre. Rewritten to the catalog's release, as :patches does for the patcher's graph.
 val safeGuavaVersion = libs.versions.guava.get()
 
 configurations.configureEach {
@@ -115,7 +116,7 @@ configurations.configureEach {
         }
         if (requested.group == "com.google.guava" && requested.name == "guava") {
             useVersion(safeGuavaVersion)
-            because("GHSA-xxph-c9ww-hj94 covers every Guava before 33.7.2.")
+            because("GHSA-v5x9-67m3-7m56 covers every Guava before 33.8.0.")
         }
     }
 }
@@ -224,7 +225,7 @@ dependencies {
     testImplementation(project(":extensions:shared:library"))
     testImplementation(libs.kotlin.stdlib)
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.robolectric:robolectric:4.18.1")
     testImplementation(libs.jna)
 }
 
