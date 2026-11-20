@@ -13,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -30,6 +31,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowToast;
 
@@ -38,6 +40,8 @@ import java.util.Collections;
 import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.PatchFamily;
+import app.morphe.extension.facebook.settings.PatchFamilyForTests;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -516,5 +520,76 @@ public class MenuSettingsRowTest {
         assertTrue(MenuSettingsRow.onTap(null, MenuSettingsRow.FREE_STUFF_ROW_ID));
         ShadowLooper.idleMainLooper();
         assertEquals("Free stuff isn't available in this build.", ShadowToast.getTextOfLatestToast());
+    }
+
+    @Test
+    public void theRecentlyWatchedRowComesAfterWatchHistoryWhileItsSwitchIsOn() {
+        PatchFamilyForTests.carry(PatchFamily.RESUME_LONG_VIDEOS);
+        addWatchHistoryRoute(RuntimeEnvironment.getApplication());
+        addFreeStuffRoute(RuntimeEnvironment.getApplication());
+        Settings.WATCH_HISTORY_SHORTCUT.save(true);
+        Settings.FREE_STUFF_SHORTCUT.save(true);
+        try {
+            assertEquals("it starts off", 5, MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+            Settings.RECENTLY_WATCHED_MENU_ROW.save(true);
+            List<?> rows = MenuSettingsRow.withRow(Arrays.asList(settings, language));
+            assertEquals(6, rows.size());
+            assertEquals(MenuSettingsRow.WATCH_HISTORY_ROW_ID, ((Row) rows.get(2)).id);
+            Row recent = (Row) rows.get(3);
+            assertEquals("Recently watched", recent.title.toString());
+            assertEquals(MenuSettingsRow.RECENTLY_WATCHED_ROW_ID, recent.id);
+            assertEquals("the row has the first row's icon", 17, recent.icon);
+            assertNull("the row has an address Facebook would open", recent.address);
+            assertEquals(MenuSettingsRow.FREE_STUFF_ROW_ID, ((Row) rows.get(4)).id);
+            assertEquals(MenuSettingsRow.ROW_ID, ((Row) rows.get(5)).id);
+            assertSame("a list holding our rows is handed back as it is", rows, MenuSettingsRow.withRow(rows));
+
+            PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+            assertEquals("paused, only the settings row stays", 3,
+                    MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+            PauseForTests.resume();
+            PatchFamilyForTests.carry();
+            assertEquals("Resume long videos isn't in the build", 5,
+                    MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+        } finally {
+            PatchFamilyForTests.reset();
+            Settings.WATCH_HISTORY_SHORTCUT.resetToDefault();
+            Settings.FREE_STUFF_SHORTCUT.resetToDefault();
+            Settings.RECENTLY_WATCHED_MENU_ROW.resetToDefault();
+        }
+    }
+
+    @Test
+    public void theRecentlyWatchedRowIsKnownByAnIdFacebookNeverUses() {
+        long id = MenuSettingsRow.RECENTLY_WATCHED_ROW_ID;
+        assertTrue(id < 0);
+        for (long other : new long[] {MenuSettingsRow.ROW_ID, MenuSettingsRow.SAVED_ROW_ID,
+                MenuSettingsRow.WATCH_HISTORY_ROW_ID, MenuSettingsRow.FREE_STUFF_ROW_ID}) {
+            assertTrue(id != other);
+        }
+        assertTrue(MenuSettingsRow.isRow(id));
+    }
+
+    @Test
+    public void aTapOnTheRecentlyWatchedRowShowsTheListOverTheMenu() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            ShadowAlertDialog.reset();
+            assertTrue(MenuSettingsRow.onTap(new View(activity), MenuSettingsRow.RECENTLY_WATCHED_ROW_ID));
+            AlertDialog list = ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull("the list didn't show", list);
+            assertTrue(list.isShowing());
+            assertEquals("Recently watched", String.valueOf(shadowOf(list).getTitle()));
+            ShadowLooper.idleMainLooper();
+            assertNull("the settings opened instead", activity.getFragmentManager().findFragmentByTag("hushfacebook_settings"));
+            assertNull("a toast said it couldn't open", ShadowToast.getTextOfLatestToast());
+        }
+    }
+
+    @Test
+    public void aRecentlyWatchedTapWithNoScreenSaysSoAndStaysOurs() {
+        assertTrue(MenuSettingsRow.onTap(null, MenuSettingsRow.RECENTLY_WATCHED_ROW_ID));
+        ShadowLooper.idleMainLooper();
+        assertEquals("Recently watched can't open here.", ShadowToast.getTextOfLatestToast());
     }
 }

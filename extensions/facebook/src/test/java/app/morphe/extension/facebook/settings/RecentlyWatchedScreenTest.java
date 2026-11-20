@@ -303,6 +303,61 @@ public class RecentlyWatchedScreenTest {
     }
 
     @Test
+    public void overFacebooksOwnScreenTheListShowsWithNoSettingsUnderIt() {
+        watchedThree();
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity menu = controller.get();
+            ShadowAlertDialog.reset();
+            assertTrue(RecentlyWatchedScreen.openOver(menu));
+            AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull("nothing showed", dialog);
+            assertTrue(dialog.isShowing());
+            assertEquals("Recently watched", String.valueOf(Shadows.shadowOf(dialog).getTitle()));
+            ListView list = listOf(dialog);
+            assertEquals("[Reel, Video, Ana Lee]", titles(list).toString());
+            assertNull("the settings opened under it",
+                    menu.getFragmentManager().findFragmentByTag("hushfacebook_settings"));
+
+            list.performItemClick(null, 0, 0);
+            Intent opened = Shadows.shadowOf(menu).getNextStartedActivity();
+            assertNotNull("nothing was opened", opened);
+            assertEquals("https://www.facebook.com/reel/r1", String.valueOf(opened.getData()));
+            assertEquals(RecentlyWatchedScreen.URI_HANDLER, opened.getComponent().getClassName());
+            assertEquals("a new task from an activity", 0, opened.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK);
+            assertFalse("the list stayed over what it opened", dialog.isShowing());
+        }
+    }
+
+    @Test
+    public void aGoingScreenGetsNoList() {
+        assertFalse(RecentlyWatchedScreen.openOver(null));
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            controller.get().finish();
+            ShadowAlertDialog.reset();
+            assertFalse(RecentlyWatchedScreen.openOver(controller.get()));
+            assertNull(ShadowAlertDialog.getLatestAlertDialog());
+        }
+    }
+
+    @Test
+    public void theMenuRowIsWantedOnlyWithItsSwitchOnAndResumeLongVideosRunning() {
+        assertFalse("it starts off", RecentlyWatchedScreen.menuRowWanted());
+        Settings.RECENTLY_WATCHED_MENU_ROW.save(true);
+        try {
+            assertTrue(RecentlyWatchedScreen.menuRowWanted());
+            PatchFamily.inBuildForTests = EnumSet.noneOf(PatchFamily.class);
+            assertFalse("Resume long videos isn't in the build", RecentlyWatchedScreen.menuRowWanted());
+            PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.RESUME_LONG_VIDEOS);
+            app.morphe.extension.shared.settings.PauseForTests.pause(
+                    app.morphe.extension.shared.settings.HushfacebookPause.Reason.SWITCH);
+            assertFalse("paused", RecentlyWatchedScreen.menuRowWanted());
+        } finally {
+            app.morphe.extension.shared.settings.PauseForTests.resume();
+            Settings.RECENTLY_WATCHED_MENU_ROW.resetToDefault();
+        }
+    }
+
+    @Test
     public void aStoryOpensUnderItsBucket() {
         watchedThree();
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {

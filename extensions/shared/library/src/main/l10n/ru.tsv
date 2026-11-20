@@ -3122,3 +3122,6 @@ Facebook decides how much of a video loads before and while it plays.	Facebook �
 # context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
 Facebook will decide how much of a video loads.	Facebook будет сам решать, сколько видео загружается.
 Video buffer will be set to %1$s.	Буфер видео будет установлен на %1$s.
+Recently watched in the Menu	«Недавно просмотренное» в меню
+Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	Добавляет пункт «Недавно просмотренное» в конец раздела «Настройки и конфиденциальность» в меню Facebook. Он открывает список, который ведет «Запоминать просмотренное».
+Recently watched can't open here.	Здесь нельзя открыть «Недавно просмотренное».

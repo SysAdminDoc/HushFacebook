@@ -2950,3 +2950,6 @@ Facebook decides how much of a video loads before and while it plays.	O Facebook
 # context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
 Facebook will decide how much of a video loads.	O Facebook vai decidir quanto de um vídeo carrega.
 Video buffer will be set to %1$s.	O buffer de vídeo será %1$s.
+Recently watched in the Menu	Assistidos recentemente no Menu
+Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	Adiciona uma linha Assistidos recentemente no fim de “Configurações e privacidade” no Menu do Facebook. Ela abre a lista que Lembrar o que você assiste guarda.
+Recently watched can't open here.	Assistidos recentemente não pode ser aberto aqui.

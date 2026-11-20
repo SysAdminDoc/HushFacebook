@@ -2121,6 +2121,14 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * A Recently watched row at the end of Settings and privacy in Facebook's Menu, which opens the
+     * list over the Menu itself (#529). Needs Hushfacebook in the Menu in the build. Starts off. The
+     * Menu asks for its rows each time it builds them, so a change shows the next time it opens.
+     */
+    public static final BooleanSetting RECENTLY_WATCHED_MENU_ROW =
+            new BooleanSetting("hushfacebook_recently_watched_menu_row", FALSE);
+
+    /**
      * With a reel or video paused, a tap on its right third steps it one frame forward and a tap on
      * its left third one frame back ({@link app.morphe.extension.facebook.media.FrameStep}). Starts
      * off. Off or paused, every tap goes to Facebook as before.

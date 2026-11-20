@@ -321,6 +321,7 @@ final class SwitchLabels {
         if (setting == Settings.STORY_SEEK_BAR_FADE) return L10n.t("Fade the story seek bar");
         if (setting == Settings.RESUME_LONG_VIDEOS) return L10n.t("Resume long videos");
         if (setting == Settings.RECENTLY_WATCHED) return L10n.t("Remember what you watch");
+        if (setting == Settings.RECENTLY_WATCHED_MENU_ROW) return L10n.t("Recently watched in the Menu");
         if (setting == Settings.FRAME_STEP) return L10n.t("Frame step");
         if (setting == Settings.DEFAULT_PLAYBACK_QUALITY) return L10n.t("Default playback quality");
         if (setting == Settings.PICTURE_IN_PICTURE) return L10n.t("Picture-in-picture");

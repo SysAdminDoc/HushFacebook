@@ -414,6 +414,7 @@ public final class SettingsBackup {
             Settings.STORY_SEEK_BAR_FADE,
             Settings.RESUME_LONG_VIDEOS,
             Settings.RECENTLY_WATCHED,
+            Settings.RECENTLY_WATCHED_MENU_ROW,
             Settings.FRAME_STEP,
             Settings.DEFAULT_PLAYBACK_QUALITY,
             Settings.PICTURE_IN_PICTURE,

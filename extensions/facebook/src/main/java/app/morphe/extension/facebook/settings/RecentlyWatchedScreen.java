@@ -19,6 +19,7 @@ import android.preference.Preference;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.TypedValue;
+import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,10 +52,11 @@ import app.morphe.extension.shared.Utils;
  * stories {@link RecentlyWatched} kept, the one watched last first, with a chip for each kind. A tap
  * opens one in Facebook through its own link handler and closes the settings, so it shows. Each row's
  * remove button takes that one off, with Undo under the list to put it back. Clear empties the list
- * at once.
+ * at once. The Recently watched row in Facebook's Menu opens the same list straight over the Menu
+ * (#529), with no settings under it.
  */
 @SuppressWarnings("deprecation") // Framework preferences and fragments, as the rest of the screen.
-final class RecentlyWatchedScreen {
+public final class RecentlyWatchedScreen {
     /** The row's key, for the settings search. No setting is behind it. */
     static final String ROW = "action_recently_watched";
 
@@ -69,6 +71,104 @@ final class RecentlyWatchedScreen {
     private RecentlyWatchedScreen() {
     }
 
+    /** What the list shows over: the settings page, or a screen of Facebook's own. */
+    interface Host {
+        /** The colours the list is painted in. */
+        ScreenColors palette();
+
+        /** Shows [builder]'s dialog, painted, or nothing when the screen is going. */
+        @Nullable
+        AlertDialog show(AlertDialog.Builder builder);
+
+        /** The activity a tapped entry starts from, when there's one. */
+        @Nullable
+        Activity activity();
+
+        /** An entry is on its way: whatever would hide it closes. */
+        void opened();
+    }
+
+    /** The settings page: its colours, its dialogs, and the settings close once an entry opens. */
+    static Host over(HushfacebookPreferenceFragment page) {
+        return new Host() {
+            @Override
+            public ScreenColors palette() {
+                return ScreenColors.current();
+            }
+
+            @Nullable
+            @Override
+            public AlertDialog show(AlertDialog.Builder builder) {
+                return page.show(builder);
+            }
+
+            @Nullable
+            @Override
+            public Activity activity() {
+                return page.getActivity();
+            }
+
+            @Override
+            public void opened() {
+                Fragment screen = page.getParentFragment();
+                if (screen instanceof SettingsDialog) {
+                    SettingsEntry.onClosedByUser();
+                    ((SettingsDialog) screen).dismissAllowingStateLoss();
+                }
+            }
+        };
+    }
+
+    /**
+     * One of Facebook's screens, the Menu's: the phone's colours under Material You, the black
+     * page's otherwise, as the settings would have. Nothing else is open to close.
+     */
+    static Host over(Activity activity, ScreenColors colors) {
+        return new Host() {
+            @Override
+            public ScreenColors palette() {
+                return colors;
+            }
+
+            @Nullable
+            @Override
+            public AlertDialog show(AlertDialog.Builder builder) {
+                if (activity.isFinishing() || activity.isDestroyed()) return null;
+                AlertDialog dialog = builder.show();
+                colors.paint(dialog);
+                return dialog;
+            }
+
+            @Nullable
+            @Override
+            public Activity activity() {
+                return activity;
+            }
+
+            @Override
+            public void opened() {
+            }
+        };
+    }
+
+    /**
+     * Whether Facebook's Menu shows the Recently watched row: its switch on, with Resume long
+     * videos in the build and not paused. The Menu row patch asks each time it builds the rows.
+     */
+    public static boolean menuRowWanted() {
+        return Utils.settingsReady() && PatchFamily.RESUME_LONG_VIDEOS.inBuild()
+                && Settings.RECENTLY_WATCHED_MENU_ROW.get();
+    }
+
+    /** Opens the list over [activity], the Menu's screen. False when it couldn't show. */
+    public static boolean openOver(@Nullable Activity activity) {
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return false;
+        ScreenColors colors = ScreenColors.forScreen(activity);
+        if (colors == null) colors = ScreenColors.black();
+        Context themed = new ContextThemeWrapper(activity, colors.theme());
+        return show(over(activity, colors), themed) != null;
+    }
+
     static Preference row(HushfacebookPreferenceFragment page, Context context) {
         Row row = new Row(context);
         row.setKey(ROW);
@@ -76,16 +176,16 @@ final class RecentlyWatchedScreen {
         row.setSummary(L10n.t("Reels, videos and stories you watched, newest first. Tap one to open it again."));
         row.setPersistent(false);
         row.setOnPreferenceClickListener(p -> {
-            show(page, context);
+            show(over(page), context);
             return true;
         });
         return row;
     }
 
-    /** The list, through the page, so it closes with the page's view and takes the screen's colours. */
+    /** The list, through [host], so it closes with what it shows over and takes its colours. */
     @Nullable
-    static AlertDialog show(HushfacebookPreferenceFragment page, Context context) {
-        ScreenColors palette = ScreenColors.current();
+    static AlertDialog show(Host host, Context context) {
+        ScreenColors palette = host.palette();
         Listing listing = new Listing(context, palette, RecentlyWatched.entries());
 
         LinearLayout content = new LinearLayout(context);
@@ -166,13 +266,13 @@ final class RecentlyWatchedScreen {
             undoBar.setVisibility(View.VISIBLE);
         };
 
-        AlertDialog dialog = page.show(new AlertDialog.Builder(context)
+        AlertDialog dialog = host.show(new AlertDialog.Builder(context)
                 .setTitle(L10n.t("Recently watched"))
                 .setView(content)
                 .setNeutralButton(L10n.t("Clear"), null)
                 .setPositiveButton(L10n.t("OK"), null));
         if (dialog == null) return null;
-        list.setOnItemClickListener((parent, view, position, id) -> open(page, dialog, context, listing.getItem(position)));
+        list.setOnItemClickListener((parent, view, position, id) -> open(host, dialog, context, listing.getItem(position)));
         Button clear = dialog.getButton(DialogInterface.BUTTON_NEUTRAL);
         listing.clearButton = clear;
         if (clear != null) {
@@ -191,8 +291,8 @@ final class RecentlyWatchedScreen {
      * Opens [entry] in Facebook and, once it's on its way, closes the list and the settings over
      * it, so what opens isn't hidden behind them. Says so when nothing opens it.
      */
-    static void open(HushfacebookPreferenceFragment page, @Nullable AlertDialog list, Context context, Entry entry) {
-        Activity activity = page.getActivity();
+    static void open(Host host, @Nullable AlertDialog list, Context context, Entry entry) {
+        Activity activity = host.activity();
         Context from = activity != null && !activity.isFinishing() ? activity : context;
         String link = entry.link();
         if (link == null || !startView(from, link)) {
@@ -203,11 +303,7 @@ final class RecentlyWatchedScreen {
         }
         Logger.printDebug(() -> "Recently watched: opened a " + entry.kind);
         if (list != null) list.dismiss();
-        Fragment screen = page.getParentFragment();
-        if (screen instanceof SettingsDialog) {
-            SettingsEntry.onClosedByUser();
-            ((SettingsDialog) screen).dismissAllowingStateLoss();
-        }
+        host.opened();
     }
 
     /** The view intent [link] opens with: Facebook's own link handler, in this app. */

@@ -906,7 +906,9 @@ public class PausedHooksTest {
         // A long video picks up where it was left, and a reel played on and a story viewed go on the
         // Recently watched list (#183).
         probes.put(PatchFamily.RESUME_LONG_VIDEOS, Arrays.asList(ResumePlaybackForTests::resumesALongVideo,
-                RecentlyWatchedForTests::keepsAWatchedReel, StorySeenForTests::keepsAViewedStory));
+                RecentlyWatchedForTests::keepsAWatchedReel, StorySeenForTests::keepsAViewedStory,
+                // Facebook's Menu gets a Recently watched row (#529).
+                PausedHooksTest::addsTheRecentlyWatchedMenuRow));
         // A tap on the right third of a video you paused steps it a frame.
         probes.put(PatchFamily.FRAME_STEP, Collections.singletonList(FrameStepForTests::stepsAPausedVideo));
         // A new video's first choice plays the chosen quality rather than Facebook's.
@@ -1333,6 +1335,17 @@ public class PausedHooksTest {
             if (!family.switches.isEmpty()) switched.add(family);
         }
         return switched;
+    }
+
+    /** The Menu asks for the Recently watched row, from a build with Resume long videos in it. */
+    private static boolean addsTheRecentlyWatchedMenuRow() {
+        Set<PatchFamily> before = PatchFamily.inBuildForTests;
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.RESUME_LONG_VIDEOS);
+        try {
+            return RecentlyWatchedScreen.menuRowWanted();
+        } finally {
+            PatchFamily.inBuildForTests = before;
+        }
     }
 
     /** The scrubber takes the next reel with its bar where the last reel stopped. */

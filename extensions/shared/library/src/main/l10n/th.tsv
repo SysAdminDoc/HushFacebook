@@ -3064,3 +3064,6 @@ Facebook decides how much of a video loads before and while it plays.	Facebook �
 # context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
 Facebook will decide how much of a video loads.	Facebook จะเลือกเองว่าจะโหลดวิดีโอมากแค่ไหน
 Video buffer will be set to %1$s.	บัฟเฟอร์วิดีโอจะถูกตั้งค่าเป็น %1$s
+Recently watched in the Menu	รับชมล่าสุดในเมนู
+Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	เพิ่มแถว "รับชมล่าสุด" ไว้ท้ายส่วน "การตั้งค่าและความเป็นส่วนตัว" ในเมนู Facebook ซึ่งจะเปิดรายการที่ "จำสิ่งที่คุณรับชม" เก็บไว้
+Recently watched can't open here.	ไม่สามารถเปิด "รับชมล่าสุด" ได้จากที่นี่

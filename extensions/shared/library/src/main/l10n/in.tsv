@@ -3064,3 +3064,6 @@ Facebook decides how much of a video loads before and while it plays.	Facebook m
 # context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
 Facebook will decide how much of a video loads.	Facebook akan menentukan seberapa banyak video dimuat.
 Video buffer will be set to %1$s.	Buffer video akan diatur ke %1$s.
+Recently watched in the Menu	Baru ditonton di Menu
+Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	Menambahkan baris Baru ditonton di akhir “Pengaturan dan privasi” di Menu Facebook. Baris ini membuka daftar yang disimpan Ingat yang kamu tonton.
+Recently watched can't open here.	Baru ditonton tidak bisa dibuka di sini.

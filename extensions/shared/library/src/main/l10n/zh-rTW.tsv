@@ -3068,3 +3068,6 @@ Facebook decides how much of a video loads before and while it plays.	由 Facebo
 # context: what importing a settings file will do to the Video buffer list; %1$s is Low, Medium or Maximum
 Facebook will decide how much of a video loads.	將由 Facebook 決定影片載入多少。
 Video buffer will be set to %1$s.	影片緩衝將設為 %1$s。
+Recently watched in the Menu	選單中的最近觀看
+Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	在 Facebook 選單的「設定和隱私」末尾新增「最近觀看」一列，開啟「記住觀看內容」保存的清單。
+Recently watched can't open here.	無法從這裡開啟「最近觀看」。
