@@ -20,6 +20,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
@@ -58,8 +59,12 @@ class FollowingFeedHomeFixtureTest {
         val holders = FixtureDex.classesHolding(bundle, PAGED_NEWSFEED_PARAMS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val builder = newsFeedParams(holders)
         val where = "$name: ${builder.definingClass}->${builder.name}"
-        assertEquals("$where: the feed type isn't second", HOME_FEED_TYPE_CLASS, builder.parameterTypes[1].toString())
-        assertTrue("$where reads the feed type before \"$PAGED_NEWSFEED_PARAMS\"", !readsFeedTypeBeforeTrace(builder))
+        // 588's Android 9 build reads the feed type off a field of its own class instead.
+        val fieldRead = feedTypeFieldRead(builder)
+        if (fieldRead == null) {
+            assertEquals("$where: the feed type isn't second", HOME_FEED_TYPE_CLASS, builder.parameterTypes[1].toString())
+            assertTrue("$where reads the feed type before \"$PAGED_NEWSFEED_PARAMS\"", !readsFeedTypeBeforeTrace(builder))
+        }
         // The feed style it sets for the most recent feed is what makes the swap a most recent request.
         // 588 keeps the style's name in a string table.
         val tables = FixtureDex.classesHolding(bundle, MOST_RECENT_STYLE)
@@ -67,7 +72,7 @@ class FollowingFeedHomeFixtureTest {
             .associateBy { it.type }
         val resolve = { call: MethodReference -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
         assertTrue("$where sets no $MOST_RECENT_STYLE style", namesString(builder, MOST_RECENT_STYLE, resolve))
-        assertTrue("$where has no local register for the hook", builder.localRegisterCount() >= 1)
+        if (fieldRead == null) assertTrue("$where has no local register for the hook", builder.localRegisterCount() >= 1)
 
         val feedTypes = FixtureDex.classes(bundle, setOf(HOME_FEED_TYPE_CLASS)).values.single()
         assertNull("$name: FeedType can't answer the lookup", feedTypeRefusal(feedTypes))
@@ -86,6 +91,24 @@ class FollowingFeedHomeFixtureTest {
         val original = method.implementation!!.instructions.toList()
         method.askForHomeFeed()
         val patched = method.implementation!!.instructions.toList()
+        if (fieldRead != null) {
+            val feedType = (original[fieldRead] as OneRegisterInstruction).registerA
+            val field = (original[fieldRead] as ReferenceInstruction).reference.toString()
+            assertTrue("$where: the read isn't the feed type's", field.startsWith("${builder.definingClass}->") && field.endsWith(":$HOME_FEED_TYPE_CLASS"))
+            assertEquals("$where gains three instructions", original.size + 3, patched.size)
+            val hook = patched.subList(fieldRead + 1, fieldRead + 4)
+            assertEquals("$where: the extension is asked right after the read", listOf(Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST),
+                hook.map { it.opcode })
+            assertEquals("$where: with the feed type", listOf(FEED_TYPE_ASKED, 1, feedType), (hook[0] as RegisterRangeInstruction).let {
+                listOf((it as ReferenceInstruction).reference.toString(), it.registerCount, it.startRegister)
+            })
+            assertEquals("$where: its answer is kept as a feed type where the read put it", listOf(feedType, feedType, HOME_FEED_TYPE_CLASS),
+                listOf((hook[1] as OneRegisterInstruction).registerA, (hook[2] as OneRegisterInstruction).registerA,
+                    (hook[2] as ReferenceInstruction).reference.toString()))
+            assertEquals("$where: Facebook's code stays", original.map { it.opcode },
+                patched.filterIndexed { index, _ -> index !in fieldRead + 1..fieldRead + 3 }.map { it.opcode })
+            return@bundles
+        }
         // Every parameter before the feed type is an object, and an instance method's `this` comes first.
         assertTrue("$where: a wide parameter", builder.parameterTypes.none { it.toString() == "J" || it.toString() == "D" })
         val self = if (AccessFlags.STATIC.isSet(builder.accessFlags)) 0 else 1

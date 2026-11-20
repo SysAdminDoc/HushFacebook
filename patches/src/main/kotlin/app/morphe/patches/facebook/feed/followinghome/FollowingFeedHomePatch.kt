@@ -18,9 +18,11 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -38,6 +40,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 private const val PATCH = "Following feed on Home"
@@ -91,6 +94,10 @@ internal const val FEED_REQUEST_SENT = "$EXTENSION_PACKAGE/feed/FeedRequestParam
  * 585 inlined the static helper into the preparer's own instance method (arm64 `LX/01bb;->A01`,
  * still handed the feed type second), which reads the feed type first right after it opens the
  * trace section, so the swap at its start still lands before every read.
+ *
+ * 588's Android 9 build inlined it once more, into the prepare method itself (`LX/041q;->A03`,
+ * handed only the session), which reads the feed type off its own field once, well before the trace
+ * section. There the swap goes right after that read, in the register it filled.
  *
  * With debug logging on, the parameters each feed request goes out with are logged too (the
  * extension's FeedRequestParams), so Home with a Home shows filter can be compared with the Feeds
@@ -151,8 +158,38 @@ private fun Method.sameAs(other: Method) =
  * `LX/01bb;->A01`), whose first read of the feed type comes right after the trace section opens.
  */
 internal fun isNewsFeedParams(method: Method): Boolean =
-    method.parameterTypes.getOrNull(1)?.toString() == HOME_FEED_TYPE_CLASS &&
-        holdsString(method, PAGED_NEWSFEED_PARAMS) && !readsFeedTypeBeforeTrace(method)
+    holdsString(method, PAGED_NEWSFEED_PARAMS) && (takesFeedType(method) || feedTypeFieldRead(method) != null)
+
+/** Whether [method] is handed the feed type second and reads it nowhere before the trace section. */
+private fun takesFeedType(method: Method): Boolean =
+    method.parameterTypes.getOrNull(1)?.toString() == HOME_FEED_TYPE_CLASS && !readsFeedTypeBeforeTrace(method)
+
+/**
+ * Where [method] reads the feed type off its own field, when that's how it gets it, or null. 588's
+ * Android 9 build inlined the helper into the preparer's prepare method itself (`LX/041q;->A03`,
+ * handed only the session), which reads the feed type once, from a field of its own class, before
+ * the [PAGED_NEWSFEED_PARAMS] trace section opens, into a register nothing else in it writes and
+ * nothing reads before the trace. Every later read of the feed type reads that register, so a feed
+ * type put there right after the read is the one the request is built for. No branch may land right
+ * after the read, where the hook goes.
+ */
+internal fun feedTypeFieldRead(method: Method): Int? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags) || takesFeedType(method)) return null
+    val instructions = method.implementation?.instructions?.toList() ?: return null
+    val trace = instructions.indexOfFirst { loads(it, PAGED_NEWSFEED_PARAMS) }
+    if (trace < 0) return null
+    val reads = instructions.indices.filter { index ->
+        val field = (instructions[index] as? ReferenceInstruction)?.reference as? FieldReference
+        instructions[index].opcode == Opcode.IGET_OBJECT && field != null &&
+            field.definingClass == method.definingClass && field.type == HOME_FEED_TYPE_CLASS
+    }
+    val read = reads.singleOrNull()?.takeIf { it < trace } ?: return null
+    val register = (instructions[read] as OneRegisterInstruction).registerA
+    if (instructions.indices.any { it != read && writesRegister(instructions[it], register) }) return null
+    if ((read + 1 until trace).any { register in instructions[it].namedRegisters() }) return null
+    if (read + 1 in branchTargets(instructions)) return null
+    return read
+}
 
 /**
  * The register the feed type arrives in, as a `p` number: past `this` on an instance method and
@@ -208,6 +245,20 @@ internal fun feedTypeRefusal(feedTypes: ClassDef): String? {
  * sit past v15, so it's moved through v0 both ways.
  */
 internal fun MutableMethod.askForHomeFeed() {
+    feedTypeFieldRead(this)?.let { read ->
+        // 588's Android 9 build: right after the read, the feed type goes through the extension in its own
+        // register. The range form names any register, so no other one is borrowed.
+        val feedType = getInstruction<OneRegisterInstruction>(read).registerA
+        addInstructions(
+            read + 1,
+            """
+                invoke-static/range { v$feedType .. v$feedType }, $FEED_TYPE_ASKED
+                move-result-object v$feedType
+                check-cast v$feedType, $HOME_FEED_TYPE_CLASS
+            """,
+        )
+        return
+    }
     requireLocals(PATCH, 1)
     val feedType = "p${feedTypeParameter(this)}"
     addInstructions(
@@ -228,16 +279,21 @@ internal class FeedQuery(val method: Method, val paramSet: String)
 /**
  * The feed query method among [holders] (583 `LX/2Dt;->BWh`): an instance method opening
  * [FEED_QUERY_INNER] whose result class, looked up with [classOf], keeps one [PARAM_SET_CLASS]
- * field. Refuses unless there's exactly one.
+ * field. 588's Android 9 build hands back a subclass (`LX/04Kc;` of `LX/01lq;`), so the field is
+ * looked for up the result's superclasses too, and read through the class declaring it. Refuses
+ * unless there's exactly one.
  */
 internal fun feedQuery(holders: List<ClassDef>, classOf: (String) -> ClassDef?): FeedQuery {
     val queries = holders.flatMap { methodsHolding(it, FEED_QUERY_INNER) }
         .filterNot { AccessFlags.STATIC.isSet(it.accessFlags) }
         .mapNotNull { method ->
-            val result = classOf(method.returnType) ?: return@mapNotNull null
-            val field = result.fields.singleOrNull { it.type == PARAM_SET_CLASS && !AccessFlags.STATIC.isSet(it.accessFlags) }
-                ?: return@mapNotNull null
-            FeedQuery(method, "${result.type}->${field.name}:$PARAM_SET_CLASS")
+            val chain = generateSequence(classOf(method.returnType)) { it.superclass?.let(classOf) }.take(8)
+            val (owner, field) = chain.firstNotNullOfOrNull { owner ->
+                owner.fields.filter { it.type == PARAM_SET_CLASS && !AccessFlags.STATIC.isSet(it.accessFlags) }
+                    .takeIf { it.isNotEmpty() }?.let { owner to it.singleOrNull() }
+            } ?: return@mapNotNull null
+            field ?: return@mapNotNull null
+            FeedQuery(method, "${owner.type}->${field.name}:$PARAM_SET_CLASS")
         }
     return queries.singleOrNull()
         ?: refuse("expected one method opening \"$FEED_QUERY_INNER\" whose result keeps a parameter set, found ${queries.size}")
