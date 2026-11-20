@@ -305,6 +305,9 @@ final class HushfacebookPages {
         if (build.contains(PatchFamily.HEADER_TEXT)) {
             // Facebook builds the Home header once, so a change waits for a restart.
             appearance.addPreference(HushfacebookPreferenceFragment.headerTextRow(context));
+            // Your font draws in the file the system font patch's Font file row picks.
+            appearance.addPreference(HushfacebookPreferenceFragment.headerFontRow(context,
+                    build.contains(PatchFamily.SYSTEM_FONT)));
             appearance.addPreference(HushfacebookPreferenceFragment.logoEmojiRow(context));
             PictureRow picture = new PictureRow(page, context, HeaderPicturePreference.CHOOSE);
             picture.wayBack = new PictureRow(page, context, HeaderPicturePreference.REMOVE);

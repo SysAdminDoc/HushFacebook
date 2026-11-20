@@ -3069,3 +3069,17 @@ Video buffer will be set to %1$s.	Buffer video akan diatur ke %1$s.
 Recently watched in the Menu	Baru ditonton di Menu
 Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	Menambahkan baris Baru ditonton di akhir “Pengaturan dan privasi” di Menu Facebook. Baris ini membuka daftar yang disimpan Ingat yang kamu tonton.
 Recently watched can't open here.	Baru ditonton tidak bisa dibuka di sini.
+Header text font	Font teks header
+Bold	Tebal
+Regular	Biasa
+Serif	Berkait
+Script	Tulisan tangan
+Monospace	Monospace
+Your font	Fontmu
+The bold font the words have always had.	Font tebal yang selama ini dipakai teksnya.
+The phone's font at its regular weight.	Font ponsel dengan ketebalan biasa.
+A bold font with serifs, like a newspaper's.	Font tebal berkait, seperti di koran.
+Joined-up handwriting.	Tulisan tangan bersambung.
+Every letter the same width, like a typewriter.	Setiap huruf sama lebarnya, seperti mesin ketik.
+The font file picked under Font file, in bold. Bold until one is picked.	File font yang dipilih di File font, dalam huruf tebal. Tebal sampai ada yang dipilih.
+Header text font will be set to %1$s.	Font teks header akan diatur ke %1$s.

@@ -684,6 +684,13 @@ public final class SettingsBackup {
     static final StringSetting HEADER_TEXT = Settings.HEADER_TEXT;
 
     /**
+     * Header text font (#532), held in a file as its {@link HeaderFont#fileValue}. Anything else
+     * refuses the whole file, as a text size does. Your font comes in without the font file, which a
+     * file can't carry, and draws in bold until one is picked on the new phone.
+     */
+    static final EnumSetting<HeaderFont> HEADER_FONT = Settings.HEADER_TEXT_FONT;
+
+    /**
      * The emoji after the logo, held in a file as its row keeps it: blank, or text {@link LogoEmoji}
      * leaves as it is. Text written any other way refuses the whole file.
      */
@@ -884,7 +891,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, HEADER_FONT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY, VIDEO_BUFFER,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, REFRESH_RATE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -1008,6 +1015,7 @@ public final class SettingsBackup {
         private static final String LOGO_NAME = "logo_color";
         private static final String TAB_NAME = "tab_color";
         private static final String HEADER_TEXT_NAME = "header_text";
+        private static final String HEADER_FONT_NAME = "header_text_font";
         private static final String LOGO_EMOJI_NAME = "logo_emoji";
         private static final String ACCENT_CUSTOM_NAME = "accent_custom";
         private static final String REELS_ORDER_NAME = "reels_order";
@@ -1149,6 +1157,9 @@ public final class SettingsBackup {
         /** The Home header text the file holds, the same way. */
         @Nullable
         String headerText;
+        /** The Header text font the file holds, or null when it names none. Set once, as it's read. */
+        @Nullable
+        HeaderFont headerFont;
         /** The emoji after the logo the file holds, the same way. */
         @Nullable
         String logoEmoji;
@@ -1432,6 +1443,8 @@ public final class SettingsBackup {
             if (tabChange != null) changes.put(TAB, tabChange);
             String headerTextChange = headerTextChange();
             if (headerTextChange != null) changes.put(HEADER_TEXT, headerTextChange);
+            HeaderFont headerFontChange = headerFontChange();
+            if (headerFontChange != null) changes.put(HEADER_FONT, headerFontChange);
             String logoEmojiChange = logoEmojiChange();
             if (logoEmojiChange != null) changes.put(LOGO_EMOJI, logoEmojiChange);
             String accentCustomChange = accentCustomChange();
@@ -1725,6 +1738,12 @@ public final class SettingsBackup {
             return headerText.equals(HEADER_TEXT.savedValue()) ? null : headerText;
         }
 
+        /** The Header text font after this file, or null when it names none or the one already set. */
+        @Nullable
+        HeaderFont headerFontChange() {
+            return headerFont == null || headerFont == HEADER_FONT.savedValue() ? null : headerFont;
+        }
+
         /** The emoji after the logo this file sets, or null when it names none or the one already set. */
         @Nullable
         String logoEmojiChange() {
@@ -1878,6 +1897,7 @@ public final class SettingsBackup {
             if (logo != null) state.putString(LOGO_NAME, logo);
             if (tab != null) state.putString(TAB_NAME, tab);
             if (headerText != null) state.putString(HEADER_TEXT_NAME, headerText);
+            if (headerFont != null) state.putString(HEADER_FONT_NAME, headerFont.fileValue);
             if (logoEmoji != null) state.putString(LOGO_EMOJI_NAME, logoEmoji);
             if (accentCustom != null) state.putString(ACCENT_CUSTOM_NAME, accentCustom);
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
@@ -1992,6 +2012,7 @@ public final class SettingsBackup {
             Object headerText = state.get(HEADER_TEXT_NAME);
             read.headerText = HeaderText.isClean(headerText instanceof String ? (String) headerText : null)
                     ? (String) headerText : null;
+            read.headerFont = HeaderFont.fromFile(state.get(HEADER_FONT_NAME));
             Object logoEmoji = state.get(LOGO_EMOJI_NAME);
             read.logoEmoji = LogoEmoji.isClean(logoEmoji instanceof String ? (String) logoEmoji : null)
                     ? (String) logoEmoji : null;
@@ -2099,6 +2120,7 @@ public final class SettingsBackup {
             String tab = MarkColors.stored(of(TAB));
             switches.put(TAB.key, tab == null ? "" : tab);
             switches.put(HEADER_TEXT.key, HeaderText.clean(of(HEADER_TEXT)));
+            switches.put(HEADER_FONT.key, of(HEADER_FONT).fileValue);
             switches.put(LOGO_EMOJI.key, LogoEmoji.clean(of(LOGO_EMOJI)));
             String accentCustom = AccentColor.customStored(of(ACCENT_CUSTOM));
             switches.put(ACCENT_CUSTOM.key, accentCustom == null ? "" : accentCustom);
@@ -2247,6 +2269,7 @@ public final class SettingsBackup {
         String logo = null;
         String tab = null;
         String headerText = null;
+        HeaderFont headerFont = null;
         String logoEmoji = null;
         String accentCustom = null;
         ReelsOrder reelsOrder = null;
@@ -2374,6 +2397,11 @@ public final class SettingsBackup {
                     throw new Rejected(Reason.VALUE, "Not a Home header text: " + name);
                 }
                 headerText = (String) value;
+                continue;
+            }
+            if (HEADER_FONT.key.equals(name)) {
+                headerFont = HeaderFont.fromFile(values.opt(name));
+                if (headerFont == null) throw new Rejected(Reason.VALUE, "Not a header text font: " + name);
                 continue;
             }
             if (LOGO_EMOJI.key.equals(name)) {
@@ -2669,6 +2697,7 @@ public final class SettingsBackup {
         read.logo = logo;
         read.tab = tab;
         read.headerText = headerText;
+        read.headerFont = headerFont;
         read.logoEmoji = logoEmoji;
         read.accentCustom = accentCustom;
         read.reelsOrder = reelsOrder;

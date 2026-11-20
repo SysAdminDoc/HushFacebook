@@ -3069,3 +3069,17 @@ Video buffer will be set to %1$s.	El búfer de video será %1$s.
 Recently watched in the Menu	Vistos recientemente en el menú
 Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	Añade una fila Vistos recientemente al final de “Configuración y privacidad” en el menú de Facebook. Abre la lista que guarda Recordar lo que ves.
 Recently watched can't open here.	Vistos recientemente no se puede abrir aquí.
+Header text font	Fuente del texto del encabezado
+Bold	Negrita
+Regular	Normal
+Serif	Con serifa
+Script	Manuscrita
+Monospace	Monoespaciada
+Your font	Tu fuente
+The bold font the words have always had.	La fuente en negrita que el texto siempre ha tenido.
+The phone's font at its regular weight.	La fuente del teléfono con su grosor normal.
+A bold font with serifs, like a newspaper's.	Una fuente en negrita con serifas, como la de un periódico.
+Joined-up handwriting.	Letra manuscrita ligada.
+Every letter the same width, like a typewriter.	Todas las letras con el mismo ancho, como en una máquina de escribir.
+The font file picked under Font file, in bold. Bold until one is picked.	El archivo elegido en Archivo de fuente, en negrita. Negrita hasta que elijas uno.
+Header text font will be set to %1$s.	La fuente del texto del encabezado será %1$s.

@@ -3073,3 +3073,17 @@ Video buffer will be set to %1$s.	影片緩衝將設為 %1$s。
 Recently watched in the Menu	選單中的最近觀看
 Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	在 Facebook 選單的「設定和隱私」末尾新增「最近觀看」一列，開啟「記住觀看內容」保存的清單。
 Recently watched can't open here.	無法從這裡開啟「最近觀看」。
+Header text font	標題文字字型
+Bold	粗體
+Regular	一般
+Serif	襯線
+Script	手寫體
+Monospace	等寬
+Your font	你的字型
+The bold font the words have always had.	文字一直以來使用的粗體字型。
+The phone's font at its regular weight.	手機的字型，一般粗細。
+A bold font with serifs, like a newspaper's.	有襯線的粗體字型，像報紙上的字。
+Joined-up handwriting.	連筆手寫體。
+Every letter the same width, like a typewriter.	每個字母寬度相同，像打字機。
+The font file picked under Font file, in bold. Bold until one is picked.	在「字型檔」中選的檔案，以粗體顯示。選好之前為粗體。
+Header text font will be set to %1$s.	標題文字字型將設為 %1$s。

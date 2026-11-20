@@ -3367,6 +3367,14 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_header_text", "", true);
 
     /**
+     * The font {@link #HEADER_TEXT}'s words draw in (#532). Bold is the one they always had. Your
+     * font takes the file picked under Font file whether or not Use the system font is on. Facebook
+     * builds the header once, so a change brings up the restart row.
+     */
+    public static final EnumSetting<HeaderFont> HEADER_TEXT_FONT =
+            new EnumSetting<>("hushfacebook_header_text_font", HeaderFont.BOLD, true);
+
+    /**
      * The name of a picture of your own for the top of Home, which takes the place of
      * {@link #HEADER_TEXT}'s words and Facebook's wordmark ({@link
      * app.morphe.extension.facebook.misc.HeaderPicture}, #230). Empty keeps the words or the

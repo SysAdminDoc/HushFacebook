@@ -284,6 +284,7 @@ public class SettingsBackupTest {
         Settings.LOGO_COLOR.resetToDefault();
         Settings.TAB_COLOR.resetToDefault();
         Settings.HEADER_TEXT.resetToDefault();
+        Settings.HEADER_TEXT_FONT.resetToDefault();
         Settings.ACCENT_CUSTOM.resetToDefault();
         Settings.LOGO_EMOJI.resetToDefault();
         Settings.SEEN_MENU_TILES.resetToDefault();
@@ -333,7 +334,7 @@ public class SettingsBackupTest {
         for (Setting<?> setting : SettingsBackup.VALUES) {
             assertFalse(setting.key + " is carried and kept out at once", VALUES_STAY_OUT.containsKey(setting.key));
         }
-        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDDEN_FEED_TYPES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.REEL_CLEAN_RETURN, Settings.BURN_IN_GUARD, Settings.BURN_IN_WAIT, Settings.GRAY_REELS_OVER, Settings.REEL_POST_DATE_STYLE, Settings.REELS_ORDER, Settings.HOLD_REACTION, Settings.COMMENTS_HEIGHT, Settings.RECENTLY_WATCHED_KEEP, Settings.HIDDEN_SHARE_ITEMS, Settings.HIDDEN_POST_MENU_ITEMS, Settings.HIDDEN_MENU_TILES, Settings.HOME_FEED, Settings.TAB_ORDER, Settings.AMOLED_BACKGROUND, Settings.AMOLED_LIGHT_BACKGROUND, Settings.HEADER_TEXT, Settings.SEEN_POSTS_KEEP, Settings.FOLD_POST_TEXT, Settings.FOLD_COMMENTS, Settings.SAVE_TO,
+        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDDEN_FEED_TYPES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.REEL_CLEAN_RETURN, Settings.BURN_IN_GUARD, Settings.BURN_IN_WAIT, Settings.GRAY_REELS_OVER, Settings.REEL_POST_DATE_STYLE, Settings.REELS_ORDER, Settings.HOLD_REACTION, Settings.COMMENTS_HEIGHT, Settings.RECENTLY_WATCHED_KEEP, Settings.HIDDEN_SHARE_ITEMS, Settings.HIDDEN_POST_MENU_ITEMS, Settings.HIDDEN_MENU_TILES, Settings.HOME_FEED, Settings.TAB_ORDER, Settings.AMOLED_BACKGROUND, Settings.AMOLED_LIGHT_BACKGROUND, Settings.HEADER_TEXT, Settings.HEADER_TEXT_FONT, Settings.SEEN_POSTS_KEEP, Settings.FOLD_POST_TEXT, Settings.FOLD_COMMENTS, Settings.SAVE_TO,
                 Settings.SAVE_FOLDER, Settings.VIDEO_SUBFOLDER, Settings.PHOTO_SUBFOLDER, Settings.DOWNLOAD_QUALITY,
                 Settings.FILENAME_TEMPLATE, Settings.PHOTO_FILENAME_TEMPLATE, Settings.DOWNLOAD_ACTION, Settings.SEND_TO_APP,
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
@@ -375,6 +376,7 @@ public class SettingsBackupTest {
         assertEquals(Settings.TEXT_SIZE, SettingsBackup.TEXT_SIZE);
         assertEquals(Settings.REFRESH_RATE, SettingsBackup.REFRESH_RATE);
         assertEquals(Settings.NEW_ROW_MARK, SettingsBackup.NEW_ROW_MARK);
+        assertEquals(Settings.HEADER_TEXT_FONT, SettingsBackup.HEADER_FONT);
         assertEquals(Settings.ACCENT_COLOR, SettingsBackup.ACCENT);
         assertEquals(Settings.VIDEO_SUBFOLDER, SettingsBackup.VIDEO_SUBFOLDER);
         assertEquals(Settings.PHOTO_SUBFOLDER, SettingsBackup.PHOTO_SUBFOLDER);
@@ -3317,6 +3319,66 @@ public class SettingsBackupTest {
                 SettingsBackupPreference.newRowMarkSentence(NewRowMark.ONE_VISIT));
         assertEquals("Settings an update adds will get a dot for 7 days from the first time you open their page.",
                 SettingsBackupPreference.newRowMarkSentence(NewRowMark.SEVEN_DAYS));
+    }
+
+    /**
+     * Header text font (#532) goes out as its file value and comes back only as one this build
+     * offers, with a sentence in the preview: anything else, or a value that isn't text, refuses the
+     * file. A file from before it leaves the font alone.
+     */
+    @Test
+    public void theHeaderTextFontRoundTripsAndComesBackOnlyAsOneThisBuildOffers() throws Exception {
+        for (HeaderFont choice : HeaderFont.values()) {
+            HeaderFont other = choice == HeaderFont.SERIF ? HeaderFont.MONOSPACE : HeaderFont.SERIF;
+            Settings.HEADER_TEXT_FONT.save(choice);
+            String file = SettingsBackup.create();
+            assertEquals(choice.fileValue, new JSONObject(file).getJSONObject("settings").get(SettingsBackup.HEADER_FONT.key));
+            Settings.HEADER_TEXT_FONT.save(other);
+
+            SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+            assertEquals(choice, snapshot.headerFont);
+            assertEquals(choice, snapshot.headerFontChange());
+            Map<Setting<?>, Object> expected = new LinkedHashMap<>();
+            expected.put(SettingsBackup.HEADER_FONT, choice);
+            assertEquals(expected, snapshot.changes());
+            assertEquals(1, SettingsBackup.apply(snapshot));
+            assertEquals(choice, Settings.HEADER_TEXT_FONT.savedValue());
+            assertEquals("a file read back is the file", file, SettingsBackup.create());
+            assertEquals("the same font again changes nothing", 0, SettingsBackup.parse(file).changes().size());
+        }
+
+        Settings.HEADER_TEXT_FONT.save(HeaderFont.SCRIPT);
+        String file = SettingsBackup.create();
+        assertEquals("script", new JSONObject(file).getJSONObject("settings").get(SettingsBackup.HEADER_FONT.key));
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"SCRIPT", "Script", "cursive", "", 3, true, JSONObject.NULL,
+                new JSONObject(), new org.json.JSONArray()}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.HEADER_FONT.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the header text font " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        // A file from before the font was carried leaves it alone.
+        SettingsBackup.Snapshot older = SettingsBackup.parse(fileWith(Settings.HIDE_SUGGESTED_POSTS, false));
+        assertNull(older.headerFont);
+        assertNull(older.headerFontChange());
+        SettingsBackup.apply(older);
+        assertEquals(HeaderFont.SCRIPT, Settings.HEADER_TEXT_FONT.savedValue());
+
+        // A preview kept across a rebuild keeps it, and only one this build offers comes back.
+        Bundle state = SettingsBackup.parse(file).toBundle();
+        assertEquals(HeaderFont.SCRIPT, SettingsBackup.Snapshot.fromBundle(state).headerFont);
+        state.putString("header_text_font", "SCRIPT");
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).headerFont);
+
+        assertEquals("Header text font will be set to Script.", SettingsBackupPreference.headerFontSentence(HeaderFont.SCRIPT));
+        assertEquals("Header text font will be set to Your font.", SettingsBackupPreference.headerFontSentence(HeaderFont.YOUR_FONT));
     }
 
     /**

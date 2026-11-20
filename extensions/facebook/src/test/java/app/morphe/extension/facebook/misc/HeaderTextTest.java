@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.misc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -17,6 +18,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -32,10 +34,15 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.file.Files;
 
+import app.morphe.extension.facebook.font.FontFile;
+import app.morphe.extension.facebook.font.FontFileTest;
+import app.morphe.extension.facebook.font.OwnFont;
+import app.morphe.extension.facebook.settings.HeaderFont;
 import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.PatchFamilyForTests;
 import app.morphe.extension.facebook.settings.Settings;
@@ -60,6 +67,11 @@ public class HeaderTextTest {
         PauseForTests.resume();
         PatchFamilyForTests.reset();
         Settings.HEADER_TEXT.resetToDefault();
+        Settings.HEADER_TEXT_FONT.resetToDefault();
+        Settings.FONT_SOURCE.resetToDefault();
+        OwnFont.fileChanged();
+        File font = FontFile.file(RuntimeEnvironment.getApplication());
+        if (font.exists()) assertTrue(font.delete());
         Settings.HEADER_PICTURE.resetToDefault();
         HeaderPicture.forget();
         File picture = HeaderPicture.file(RuntimeEnvironment.getApplication());
@@ -94,6 +106,58 @@ public class HeaderTextTest {
         assertEquals("the text keeps the wordmark's height", 24, logo.getDrawable().getIntrinsicHeight());
         assertTrue("the text is wider than tall", logo.getDrawable().getIntrinsicWidth() > 24);
         assertEquals(ImageView.ScaleType.CENTER_INSIDE, logo.getScaleType());
+    }
+
+    /** The words dressed into a fresh header, as Facebook builds it, with [font] picked. */
+    private static HeaderText.TextMark dressedIn(HeaderFont font) {
+        Settings.HEADER_TEXT_FONT.save(font);
+        ImageView logo = header(new Drawable[1]);
+        HeaderText.dress(logo);
+        return (HeaderText.TextMark) logo.getDrawable();
+    }
+
+    @Test
+    public void theWordsDrawInTheHeaderTextFontPicked() {
+        assertEquals("bold, as the words have always been", HeaderFont.BOLD, Settings.HEADER_TEXT_FONT.defaultValue);
+        Settings.HEADER_TEXT.save("Matt's feed");
+
+        Typeface bold = dressedIn(HeaderFont.BOLD).typeface();
+        assertEquals(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD), bold);
+        assertTrue(bold.isBold());
+        Typeface regular = dressedIn(HeaderFont.REGULAR).typeface();
+        assertEquals(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL), regular);
+        assertFalse("regular isn't bold", regular.isBold());
+        assertEquals(Typeface.create(Typeface.SERIF, Typeface.BOLD), dressedIn(HeaderFont.SERIF).typeface());
+        assertEquals(Typeface.create("cursive", Typeface.BOLD), dressedIn(HeaderFont.SCRIPT).typeface());
+        assertEquals(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD), dressedIn(HeaderFont.MONOSPACE).typeface());
+        for (HeaderFont font : HeaderFont.values()) {
+            HeaderText.TextMark mark = dressedIn(font);
+            assertEquals(font + " keeps the wordmark's height", 24, mark.getIntrinsicHeight());
+            assertEquals(font + " keeps the words", "Matt's feed", mark.text);
+        }
+    }
+
+    @Test
+    public void yourFontIsThePickedFontFileInBoldAndBoldWhileNoneIsPicked() throws Exception {
+        Settings.HEADER_TEXT.save("Matt's feed");
+        Typeface bold = dressedIn(HeaderFont.BOLD).typeface();
+        HeaderText.TextMark none = dressedIn(HeaderFont.YOUR_FONT);
+        assertEquals("no font file picked draws in bold", bold, none.typeface());
+
+        // A font file picked under Font file, with Use the system font left off.
+        File copy = FontFile.file(RuntimeEnvironment.getApplication());
+        FontFile.copy(new ByteArrayInputStream(FontFileTest.font(FontFileTest.STATIC_FONT)), copy, OwnFont::loads);
+        Settings.FONT_SOURCE.save("Rubik-Regular.ttf");
+        OwnFont.fileChanged();
+        assertFalse(Settings.USE_SYSTEM_FONT.get());
+
+        HeaderText.TextMark own = dressedIn(HeaderFont.YOUR_FONT);
+        assertEquals("the picked file at bold's weight", OwnFont.pickedAt(700), own.typeface());
+        assertNotEquals("not the phone's bold", bold, own.typeface());
+        assertTrue("drawn bold", own.typeface().isBold());
+        assertNotEquals("Rubik's letters are another width", none.getIntrinsicWidth(), own.getIntrinsicWidth());
+        assertEquals("still the wordmark's height", 24, own.getIntrinsicHeight());
+        assertEquals("Bold stays the phone's bold with a file picked", bold, dressedIn(HeaderFont.BOLD).typeface());
     }
 
     @Test

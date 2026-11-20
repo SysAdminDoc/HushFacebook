@@ -3069,3 +3069,17 @@ Video buffer will be set to %1$s.	บัฟเฟอร์วิดีโอจ�
 Recently watched in the Menu	รับชมล่าสุดในเมนู
 Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	เพิ่มแถว "รับชมล่าสุด" ไว้ท้ายส่วน "การตั้งค่าและความเป็นส่วนตัว" ในเมนู Facebook ซึ่งจะเปิดรายการที่ "จำสิ่งที่คุณรับชม" เก็บไว้
 Recently watched can't open here.	ไม่สามารถเปิด "รับชมล่าสุด" ได้จากที่นี่
+Header text font	ฟอนต์ข้อความส่วนหัว
+Bold	ตัวหนา
+Regular	ปกติ
+Serif	มีเชิง
+Script	ตัวเขียน
+Monospace	ความกว้างเท่ากัน
+Your font	ฟอนต์ของคุณ
+The bold font the words have always had.	ฟอนต์ตัวหนาที่ข้อความใช้มาตลอด
+The phone's font at its regular weight.	ฟอนต์ของโทรศัพท์ในน้ำหนักปกติ
+A bold font with serifs, like a newspaper's.	ฟอนต์ตัวหนามีเชิง เหมือนในหนังสือพิมพ์
+Joined-up handwriting.	ลายมือเขียนแบบตัวต่อ
+Every letter the same width, like a typewriter.	ตัวอักษรทุกตัวกว้างเท่ากัน เหมือนเครื่องพิมพ์ดีด
+The font file picked under Font file, in bold. Bold until one is picked.	ไฟล์ที่เลือกไว้ใน ไฟล์ฟอนต์ เป็นตัวหนา เป็นตัวหนาจนกว่าจะเลือกไฟล์
+Header text font will be set to %1$s.	ฟอนต์ข้อความส่วนหัวจะถูกตั้งค่าเป็น %1$s

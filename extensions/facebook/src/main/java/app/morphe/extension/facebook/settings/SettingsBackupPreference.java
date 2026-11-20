@@ -474,6 +474,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.logoChange() != null) parts.add(markColorSentence(Mark.LOGO, snapshot.logoChange()));
             if (snapshot.tabChange() != null) parts.add(markColorSentence(Mark.TAB, snapshot.tabChange()));
             if (snapshot.headerTextChange() != null) parts.add(headerTextSentence(snapshot.headerTextChange()));
+            if (snapshot.headerFontChange() != null) parts.add(headerFontSentence(snapshot.headerFontChange()));
             if (snapshot.logoEmojiChange() != null) parts.add(logoEmojiSentence(snapshot.logoEmojiChange()));
             if (snapshot.accentCustomChange() != null) parts.add(accentCustomSentence(snapshot.accentCustomChange()));
             if (snapshot.seenKeep != null && snapshot.changes().containsKey(SettingsBackup.SEEN_KEEP)) {
@@ -838,6 +839,11 @@ public class SettingsBackupPreference extends Preference {
         if (text.isEmpty()) return L10n.t("The top of Home will show Facebook's own logo.");
         return L10n.f("If your patched Facebook includes Home header text, the top of Home will say %1$s.",
                 L10n.isolate(text));
+    }
+
+    /** The sentence that says what font the header text takes after an import (#532). */
+    static String headerFontSentence(HeaderFont font) {
+        return L10n.f("Header text font will be set to %1$s.", HushfacebookPreferenceFragment.headerFontLabel(font));
     }
 
     /** The sentence that says what follows the logo at the top of Home after an import, [emoji] blank or the text. */
@@ -1208,6 +1214,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.logoChange() == null ? "" : " " + markColorSentence(Mark.LOGO, snapshot.logoChange()))
                     + (snapshot.tabChange() == null ? "" : " " + markColorSentence(Mark.TAB, snapshot.tabChange()))
                     + (snapshot.headerTextChange() == null ? "" : " " + headerTextSentence(snapshot.headerTextChange()))
+                    + (snapshot.headerFontChange() == null ? "" : " " + headerFontSentence(snapshot.headerFontChange()))
                     + (snapshot.logoEmojiChange() == null ? "" : " " + logoEmojiSentence(snapshot.logoEmojiChange()))
                     + (snapshot.accentCustomChange() == null ? "" : " " + accentCustomSentence(snapshot.accentCustomChange()))
                     + (snapshot.pauseLength == null || !snapshot.changes().containsKey(SettingsBackup.PAUSE_LENGTH) ? ""

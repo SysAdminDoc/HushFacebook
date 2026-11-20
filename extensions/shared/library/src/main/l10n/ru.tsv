@@ -3127,3 +3127,17 @@ Video buffer will be set to %1$s.	Буфер видео будет устано�
 Recently watched in the Menu	«Недавно просмотренное» в меню
 Adds a Recently watched row at the end of Settings and privacy in Facebook's Menu. It opens the list that Remember what you watch keeps.	Добавляет пункт «Недавно просмотренное» в конец раздела «Настройки и конфиденциальность» в меню Facebook. Он открывает список, который ведет «Запоминать просмотренное».
 Recently watched can't open here.	Здесь нельзя открыть «Недавно просмотренное».
+Header text font	Шрифт текста вверху
+Bold	Жирный
+Regular	Обычный
+Serif	С засечками
+Script	Рукописный
+Monospace	Моноширинный
+Your font	Ваш шрифт
+The bold font the words have always had.	Жирный шрифт, которым текст был всегда.
+The phone's font at its regular weight.	Шрифт телефона обычной толщины.
+A bold font with serifs, like a newspaper's.	Жирный шрифт с засечками, как в газете.
+Joined-up handwriting.	Слитный рукописный почерк.
+Every letter the same width, like a typewriter.	Все буквы одной ширины, как на печатной машинке.
+The font file picked under Font file, in bold. Bold until one is picked.	Файл, выбранный в «Файл шрифта», жирным. Жирный, пока файл не выбран.
+Header text font will be set to %1$s.	Для шрифта текста вверху будет установлено: %1$s.

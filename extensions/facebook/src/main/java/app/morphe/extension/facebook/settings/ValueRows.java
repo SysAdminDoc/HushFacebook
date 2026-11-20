@@ -35,6 +35,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.textSizeSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.refreshRateSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.newRowMarkSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.headerFontSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.quietHourLabel;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.saveStorageSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.saveToSummary;
@@ -1916,6 +1917,45 @@ final class ValueRows {
                 if (candidate.name().equals(getValue())) mark = candidate;
             }
             setSummary(newRowMarkSummary(mark));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /**
+     * The Header text font row (#532). Its summary follows its value, whoever sets it: the person or
+     * an import.
+     */
+    static final class HeaderFontRow extends PlainSummaryList {
+        HeaderFontRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            HeaderFont font = HeaderFont.BOLD;
+            for (HeaderFont candidate : HeaderFont.values()) {
+                if (candidate.name().equals(getValue())) font = candidate;
+            }
+            setSummary(headerFontSummary(font));
         }
 
         @Override

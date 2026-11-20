@@ -121,6 +121,7 @@ import app.morphe.extension.facebook.settings.ValueRows.FoldLinesRow;
 import app.morphe.extension.facebook.settings.ValueRows.VideoBufferRow;
 import app.morphe.extension.facebook.settings.ValueRows.HoldReactionRow;
 import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
+import app.morphe.extension.facebook.settings.ValueRows.HeaderFontRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
 import app.morphe.extension.facebook.settings.ValueRows.CommentsHeightRow;
 import app.morphe.extension.facebook.settings.ValueRows.AccentRow;
@@ -2687,6 +2688,65 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return row;
     }
 
+    /**
+     * Header text font (#532): the font the Home header text draws in. Your font is offered when
+     * the build has the system font patch, whose Font file row picks the file it draws in.
+     */
+    static HeaderFontRow headerFontRow(Context context, boolean yourFont) {
+        HeaderFontRow row = new HeaderFontRow(context);
+        row.setKey(Settings.HEADER_TEXT_FONT.key);
+        row.setTitle(L10n.t("Header text font"));
+        row.setDialogTitle(L10n.t("Header text font"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        List<CharSequence> entries = new ArrayList<>();
+        List<CharSequence> values = new ArrayList<>();
+        for (HeaderFont font : HeaderFont.values()) {
+            if (font == HeaderFont.YOUR_FONT && !yourFont) continue;
+            entries.add(headerFontLabel(font));
+            values.add(font.name());
+        }
+        row.setEntries(entries.toArray(new CharSequence[0]));
+        row.setEntryValues(values.toArray(new CharSequence[0]));
+        row.setValue(Settings.HEADER_TEXT_FONT.savedValue().name());
+        return row;
+    }
+
+    /** What the list and the sentences about it call [font]. */
+    static String headerFontLabel(HeaderFont font) {
+        switch (font) {
+            case REGULAR:
+                return L10n.t("Regular");
+            case SERIF:
+                return L10n.t("Serif");
+            case SCRIPT:
+                return L10n.t("Script");
+            case MONOSPACE:
+                return L10n.t("Monospace");
+            case YOUR_FONT:
+                return L10n.t("Your font");
+            default:
+                return L10n.t("Bold");
+        }
+    }
+
+    /** What [font] looks like, for the row's summary. */
+    static String headerFontSummary(HeaderFont font) {
+        switch (font) {
+            case REGULAR:
+                return L10n.t("The phone's font at its regular weight.");
+            case SERIF:
+                return L10n.t("A bold font with serifs, like a newspaper's.");
+            case SCRIPT:
+                return L10n.t("Joined-up handwriting.");
+            case MONOSPACE:
+                return L10n.t("Every letter the same width, like a typewriter.");
+            case YOUR_FONT:
+                return L10n.t("The font file picked under Font file, in bold. Bold until one is picked.");
+            default:
+                return L10n.t("The bold font the words have always had.");
+        }
+    }
+
     /** The setting a Local profile counts row keeps its digits in. */
     static StringSetting countSetting(LocalProfileCounts.Count count) {
         switch (count) {
@@ -3209,6 +3269,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((RefreshRateRow) listPreference).showSummary();
         } else if (listPreference instanceof NewRowMarkRow) {
             ((NewRowMarkRow) listPreference).showSummary();
+        } else if (listPreference instanceof HeaderFontRow) {
+            ((HeaderFontRow) listPreference).showSummary();
         } else if (listPreference instanceof AccentRow) {
             ((AccentRow) listPreference).showSummary();
         } else if (listPreference instanceof ReactionCeilingRow) {

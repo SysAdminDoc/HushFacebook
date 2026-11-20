@@ -24,7 +24,9 @@ import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 
+import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.HeaderFont;
 import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -38,7 +40,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * color Facebook gives the wordmark, so it follows dark mode. A picture is drawn at that height in
  * its own colors, its see-through border left out, and takes the place of the words when both are
  * saved. Blank text with no picture,
- * Pause and every failure leave Facebook's wordmark alone.
+ * Pause and every failure leave Facebook's wordmark alone. The words draw in the font picked under
+ * Header text font (#532).
  */
 public final class HeaderText {
     /** The most characters the header takes. */
@@ -56,7 +59,34 @@ public final class HeaderText {
     /** A pixel of a picture this see-through or more counts as empty border, out of 255. */
     static final int CLEAR_ALPHA = 8;
 
+    /** The weight Your font draws at: bold, as the words have always been. */
+    static final int BOLD_WEIGHT = 700;
+
     private HeaderText() {
+    }
+
+    /**
+     * What [font] draws in (#532). Serif, script and monospace are Android's own families, in bold
+     * like the words have always been. Your font is the file picked under Font file at bold's
+     * weight, and Bold while none is picked or it won't load.
+     */
+    static Typeface typeface(HeaderFont font) {
+        switch (font) {
+            case REGULAR:
+                return Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+            case SERIF:
+                return Typeface.create(Typeface.SERIF, Typeface.BOLD);
+            case SCRIPT:
+                return Typeface.create("cursive", Typeface.BOLD);
+            case MONOSPACE:
+                return Typeface.create(Typeface.MONOSPACE, Typeface.BOLD);
+            case YOUR_FONT:
+                Typeface picked = OwnFont.pickedAt(BOLD_WEIGHT);
+                if (picked != null) return picked;
+                return Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+            default:
+                return Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        }
     }
 
     /**
@@ -71,7 +101,7 @@ public final class HeaderText {
             Bitmap picture = HeaderPicture.load(image.getContext());
             String text = picture != null ? "" : clean(Settings.HEADER_TEXT.get());
             String emoji = LogoEmoji.clean(Settings.LOGO_EMOJI.get());
-            Dressing dressing = new Dressing(picture, text, emoji);
+            Dressing dressing = new Dressing(picture, text, emoji, Settings.HEADER_TEXT_FONT.get());
             Drawable shown = dressing.apply(image, -1);
             if (shown == null) return;
             image.getViewTreeObserver().addOnPreDrawListener(new Keeper(image, shown, dressing));
@@ -154,14 +184,17 @@ public final class HeaderText {
         @Nullable final Rect drawn;
         final String text;
         final String emoji;
+        /** The font {@link #text} draws in. */
+        final HeaderFont font;
         /** The height the last mark was given, so a reload keeps it. */
         int slot = -1;
 
-        Dressing(@Nullable Bitmap picture, String text, String emoji) {
+        Dressing(@Nullable Bitmap picture, String text, String emoji, HeaderFont font) {
             this.picture = picture;
             this.drawn = picture == null ? null : shownPart(picture);
             this.text = text;
             this.emoji = emoji;
+            this.font = font;
         }
 
         /**
@@ -176,7 +209,7 @@ public final class HeaderText {
             if (picture != null) {
                 mark = new PictureMark(picture, drawn, height, maxWidth(image));
             } else if (!text.isEmpty()) {
-                mark = new TextMark(text, height, maxWidth(image));
+                mark = new TextMark(text, height, maxWidth(image), typeface(font));
             } else if (!emoji.isEmpty()) {
                 // Facebook's own wordmark stays, with the emoji after it.
                 mark = image.getDrawable();
@@ -385,10 +418,10 @@ public final class HeaderText {
         private int color = FACEBOOK_BLUE;
         private int alpha = 255;
 
-        TextMark(String text, int height, int maxWidth) {
+        TextMark(String text, int height, int maxWidth, Typeface typeface) {
             this.text = text;
             this.height = height;
-            paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+            paint.setTypeface(typeface);
             paint.setColor(FACEBOOK_BLUE);
             // The text and a capital letter together set the size, so short words without capitals
             // or with descenders still sit at the wordmark's height.
@@ -405,6 +438,11 @@ public final class HeaderText {
             inkTop = fitted.top;
             inkBottom = fitted.bottom;
             width = Math.max(1, ink.width());
+        }
+
+        /** The font the text draws in. */
+        Typeface typeface() {
+            return paint.getTypeface();
         }
 
         /** The text's ink with a capital H's, at the paint's size. */

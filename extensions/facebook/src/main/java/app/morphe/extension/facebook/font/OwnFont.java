@@ -857,6 +857,24 @@ public final class OwnFont {
         return phone;
     }
 
+    /**
+     * The picked font file at [weight] (400 when out of range), or null while none is picked or it
+     * won't load. The Home header's Your font reads it (#532), with or without Use the system font
+     * on: the font patch leaves the extension's own text alone, so the header never followed the
+     * switch. Never throws.
+     */
+    @Nullable
+    public static Typeface pickedAt(int weight) {
+        try {
+            if (!Utils.settingsReady()) return null;
+            Picked font = picked();
+            return font == null ? null : font.styled(clamped(weight), false);
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Could not build the picked font file at weight " + weight, failure);
+            return null;
+        }
+    }
+
     /** [weight] when it's one Android takes, 1 to 1000, and 400 otherwise. */
     private static int clamped(int weight) {
         return weight >= 1 && weight <= 1000 ? weight : 400;
