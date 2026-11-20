@@ -195,13 +195,36 @@ internal fun scrollAwayGate(holders: List<ClassDef>): MethodReference {
                     .firstOrNull { calledMethod(code[it])?.takesOnlyActivity() == true } ?: return@mapNotNull null
                 testedResult(code, call) ?: return@mapNotNull null
                 // The false way has to skip the entry, or the check wouldn't decide it.
-                val skips = ControlFlow.of(method).normal[call + 2].any { it > load }
+                val flow = ControlFlow.of(method)
+                val skips = flow.normal[call + 2].any { it > load } || flow.falseWayAvoids(call, load)
                 calledMethod(code[call])!!.takeIf { skips }
             }
         }
     }.distinctBy { "${it.definingClass}->${it.name}" }
     return gates.singleOrNull()
         ?: refuse("expected one check before the start builds \"$BOTTOM_TABS_CONTAINER\", found ${gates.size}")
+}
+
+/**
+ * Whether the false way out of the test after [call], the branch at `call + 2`, can't come to
+ * [load] without asking [call] again. 588's Android 9+ build (#102, read 2026-11-19) runs the
+ * start's steps in one loop (`LX/03Dz;->A05`), and a false gate jumps back to the loop's next step
+ * (from 2600 to 45), which comes back to the load only through the gate.
+ */
+private fun ControlFlow.falseWayAvoids(call: Int, load: Int): Boolean {
+    val falseWay = normal[call + 2].filter { it != call + 3 }
+    if (falseWay.isEmpty()) return false
+    val seen = BooleanArray(instructions.size)
+    val queue = ArrayDeque(falseWay)
+    while (queue.isNotEmpty()) {
+        val at = queue.removeFirst()
+        if (at == call || seen[at]) continue
+        if (at == load) return false
+        seen[at] = true
+        queue.addAll(normal[at])
+        queue.addAll(exceptional[at])
+    }
+    return true
 }
 
 /**

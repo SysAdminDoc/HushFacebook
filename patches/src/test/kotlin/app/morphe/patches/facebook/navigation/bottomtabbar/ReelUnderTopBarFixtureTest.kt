@@ -130,7 +130,8 @@ class ReelUnderTopBarFixtureTest {
      * nothing else. The tab bar padding it logs after " tabPad=" is one of its own public int fields,
      * set in its constructor, and the extension's stub comes out reading exactly that field. The one
      * helper it calls with the Activity for an Integer finds the list by a literal id and reads its
-     * height, and the extension's list id stub comes out answering that id.
+     * height, and the extension's list id stub comes out answering that id. On 588's Android 9 build
+     * a static of the logging class logs what its one caller, the maker, hands it.
      */
     @Test
     fun `each declared build hands the Reels row height to the extension right before storing it`() {
@@ -143,13 +144,22 @@ class ReelUnderTopBarFixtureTest {
                     .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.distinctBy { it.type }
                 assertEquals("$name: classes logging \"$ROW_HEIGHT_LOG\"", 1, holders.size)
                 val holder = holders.single()
-                val maker = holder.methods.single { method ->
+                val logged = holder.methods.single { method ->
                     method.implementation?.instructions?.any {
                         ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ROW_HEIGHT_LOG
                     } == true
                 }
+                // 588's Android 9 build logs in a static of its own that the maker calls with each value.
+                val logger = logged.takeIf { AccessFlags.STATIC.isSet(it.accessFlags) && reelRowStore(it) == null }
+                val maker = if (logger == null) logged else FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == holder.type } }) { method ->
+                    method.implementation?.instructions?.any { instruction ->
+                        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                        ref != null && ref.definingClass == holder.type && MethodUtil.methodSignaturesMatch(ref, logger)
+                    } == true
+                }.singleOrNull() ?: throw AssertionError("$name: ${holder.type}->${logged.name} has no single caller")
+                val owner = if (logger == null) holder else FixtureDex.classes(bundle, setOf(maker.definingClass)).getValue(maker.definingClass)
                 val before = maker.implementation!!.instructions.toList()
-                val (store, register) = reelRowStore(maker)
+                val (store, register) = (if (logger == null) reelRowStore(maker) else reelRowStore(maker, logger))
                     ?: throw AssertionError("$name: ${maker.name} has no single store of the logged row height")
                 // Positive control: the store is into an int field of a section the maker makes itself.
                 val field = (before[store] as ReferenceInstruction).reference as FieldReference
@@ -164,11 +174,12 @@ class ReelUnderTopBarFixtureTest {
                     it.opcode in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16) &&
                         (it as TwoRegisterInstruction).registerA == self && it.registerB == parameters
                 })
-                val padding = tabPadField(maker) ?: throw AssertionError("$name: ${maker.name} logs no tab bar padding field")
-                assertTrue("$name: ${padding.name} is a public int field of ${holder.type}", holder.fields.any {
+                val padding = (if (logger == null) tabPadField(maker) else tabPadField(maker, logger))
+                    ?: throw AssertionError("$name: ${maker.name} logs no tab bar padding field")
+                assertTrue("$name: ${padding.name} is a public int field of ${owner.type}", owner.fields.any {
                     it.name == padding.name && it.type == "I" && AccessFlags.PUBLIC.isSet(it.accessFlags)
-                } && AccessFlags.PUBLIC.isSet(holder.accessFlags))
-                val constructor = holder.methods.single { it.name == "<init>" }.implementation!!.instructions
+                } && AccessFlags.PUBLIC.isSet(owner.accessFlags))
+                val constructor = owner.methods.single { it.name == "<init>" }.implementation!!.instructions
                 assertTrue("$name: the constructor sets ${padding.name}", constructor.any {
                     it.opcode == Opcode.IPUT && ((it as ReferenceInstruction).reference as FieldReference).toString() == padding.toString()
                 })
@@ -187,9 +198,9 @@ class ReelUnderTopBarFixtureTest {
                 })
 
                 val extension = ExtensionDex.classDef(TAB_BAR_SCROLL_AWAY)
-                val context = PatchContexts.of(listOf(holder, helperClass, extension))
+                val context = PatchContexts.of(listOf(holder, owner, helperClass, extension).distinctBy { it.type })
                 context.hookReelRow { why -> throw AssertionError("$name: $why") }
-                val after = context.mutableClassDefBy(holder.type).methods.single { it.name == maker.name &&
+                val after = context.mutableClassDefBy(owner.type).methods.single { it.name == maker.name &&
                     it.parameterTypes.map(Any::toString) == maker.parameterTypes.map(Any::toString) }
                     .implementation!!.instructions.toList()
                 assertEquals("$name: ${maker.name} gained two instructions", before.opcodes().size + 2, after.opcodes().size)
@@ -201,7 +212,7 @@ class ReelUnderTopBarFixtureTest {
                 val stub = context.mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.single { it.name == TAB_PADDING_STUB }
                     .implementation!!.instructions.toList()
                 assertEquals("$name: the stub reads the maker's padding",
-                    listOf(Opcode.CHECK_CAST, holder.type, Opcode.IGET, padding.toString(), Opcode.RETURN),
+                    listOf(Opcode.CHECK_CAST, owner.type, Opcode.IGET, padding.toString(), Opcode.RETURN),
                     listOf(stub[0].opcode, ((stub[0] as ReferenceInstruction).reference as TypeReference).type,
                         stub[1].opcode, ((stub[1] as ReferenceInstruction).reference as FieldReference).toString(), stub[2].opcode))
                 val idStub = context.mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.single { it.name == REELS_LIST_ID_STUB }

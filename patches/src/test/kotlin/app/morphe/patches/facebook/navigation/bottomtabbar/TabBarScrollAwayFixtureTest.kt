@@ -223,8 +223,10 @@ class TabBarScrollAwayFixtureTest {
                     val switch = scrollAwaySwitch(holders, trace)
                     val where = "$name: ${switch.definingClass}->${switch.name}"
                     // 582: both sit in the class that adds the top bar, so the patch's context already holds them.
-                    assertEquals("$where isn't in the class traced as \"$SET_TOP_VIEWS\"", topScrollAwayViews(pieces.topHolders).definingClass,
-                        switch.definingClass)
+                    // 588's Android 9 build moves them to the class loading "$BOTTOM_TABS_CONTAINER" (LX/023F;), the gate's holder.
+                    assertTrue("$where isn't in the class traced as \"$SET_TOP_VIEWS\" or one loading \"$BOTTOM_TABS_CONTAINER\"",
+                        switch.definingClass == topScrollAwayViews(pieces.topHolders).definingClass ||
+                            pieces.gateHolders.any { it.type == switch.definingClass })
                     // 586 checks the session isn't null first (three instructions), still before any branch.
                     val opens = switch.code().indexOfFirst { it.loads() == trace }
                     assertTrue("$where opens its trace first", opens in 0..3 &&

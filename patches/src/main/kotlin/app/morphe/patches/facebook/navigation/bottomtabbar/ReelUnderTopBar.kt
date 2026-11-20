@@ -9,8 +9,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.layout.theme.branchTargets
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -21,6 +23,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -159,6 +162,9 @@ internal fun BytecodePatchContext.hookReelsHeader(warn: (String) -> Unit) {
  * itself: a helper it calls with the Activity, answering an Integer (LX/0AIZ;->A02), finds the
  * list by id and reads its height. The patch fills a second stub with that id, so the extension
  * reads the list the way Facebook does and remembers the list height for rows made before it.
+ * 588's Android 9 build moves the log line into a static of its own (LX/0AsJ;->A0A) that the maker
+ * (LX/0Asx;->BVs) calls with each value, so the patch follows the " computed=" and " tabPad="
+ * parameters back to what the maker hands them.
  */
 
 internal const val ROW_HEIGHT_LOG = " recyclerPadTop="
@@ -175,6 +181,22 @@ internal const val REELS_LIST_ID_STUB = "reelsListId"
 internal fun reelRowStore(maker: Method): Pair<Int, Int>? {
     val code = maker.implementation?.instructions?.toList() ?: return null
     val (_, register) = appendedAfter(code, ROW_HEIGHT_LABEL) ?: return null
+    return intStore(maker, code, register)
+}
+
+/**
+ * [reelRowStore] for a maker that hands the row height to [helper], the static that logs it (588's
+ * Android 9 build): the one int store into another class of the register the maker hands the helper
+ * at the parameter its log appends after " computed=".
+ */
+internal fun reelRowStore(maker: Method, helper: Method): Pair<Int, Int>? {
+    val code = maker.implementation?.instructions?.toList() ?: return null
+    val (_, register) = handedFrom(maker, helper, ROW_HEIGHT_LABEL) ?: return null
+    return intStore(maker, code, register)
+}
+
+/** The one int store of [register] into a class other than the maker's: its index and the register. */
+private fun intStore(maker: Method, code: List<Instruction>, register: Int): Pair<Int, Int>? {
     val stores = code.withIndex().filter { (_, instruction) ->
         val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
         instruction.opcode == Opcode.IPUT && field?.type == "I" && field.definingClass != maker.definingClass &&
@@ -199,6 +221,65 @@ private fun appendedAfter(code: List<Instruction>, label: String): Pair<Int, Int
     } ?: return null
     val append = value.value as? FiveRegisterInstruction ?: return null
     return value.index to append.registerD
+}
+
+/** Whether [instruction] calls [method]. */
+private fun calls(instruction: Instruction, method: Method): Boolean {
+    val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return ref.definingClass == method.definingClass && MethodUtil.methodSignaturesMatch(ref, method)
+}
+
+/** The index among [method]'s parameters of the one held in [register] as it starts, for a static method. */
+private fun parameterAt(method: Method, register: Int): Int? {
+    var next = method.implementation!!.registerCount - MethodUtil.getParameterRegisterCount(method)
+    method.parameterTypes.map(CharSequence::toString).forEachIndexed { index, type ->
+        if (register == next) return index
+        next += if (type == "J" || type == "D") 2 else 1
+    }
+    return null
+}
+
+/** The register [call], a call of a static taking [parameterTypes], hands it at parameter [index]. */
+private fun argumentRegister(call: Instruction, parameterTypes: List<String>, index: Int): Int? {
+    val offset = parameterTypes.take(index).sumOf { if (it == "J" || it == "D") 2L else 1L }.toInt()
+    return when (call) {
+        is RegisterRangeInstruction -> call.startRegister + offset
+        is FiveRegisterInstruction -> listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG)
+            .take(call.registerCount).getOrNull(offset)
+        else -> null
+    }
+}
+
+/**
+ * Where the value [helper]'s log appends after [label] comes from in [maker]: the parameter the
+ * append reads (through plain int moves, with nothing on the way writing it), the register the
+ * maker's one call of [helper] hands at that parameter, and that register followed back through
+ * plain int moves, each the only write reaching it. Answers the writes reaching the register it ends
+ * on, and that register. Null unless [helper] is static and called once.
+ */
+private fun handedFrom(maker: Method, helper: Method, label: String): Pair<List<Int>, Int>? {
+    if (!AccessFlags.STATIC.isSet(helper.accessFlags)) return null
+    val code = helper.implementation?.instructions?.toList() ?: return null
+    var (at, register) = appendedAfter(code, label) ?: return null
+    while (true) {
+        val writers = helper.writersReaching(at, register)
+        if (writers == listOf(-1)) break
+        val move = writers.singleOrNull()?.takeIf { it >= 0 }?.let(code::get)?.takeIf { it.opcode in INT_MOVES } ?: return null
+        at = writers.single()
+        register = (move as TwoRegisterInstruction).registerB
+    }
+    val parameter = parameterAt(helper, register) ?: return null
+    val makerCode = maker.implementation?.instructions?.toList() ?: return null
+    val call = makerCode.indices.filter { calls(makerCode[it], helper) }.singleOrNull() ?: return null
+    var handed = argumentRegister(makerCode[call], helper.parameterTypes.map(CharSequence::toString), parameter) ?: return null
+    at = call
+    while (true) {
+        val writers = maker.writersReaching(at, handed)
+        val move = writers.singleOrNull()?.takeIf { it >= 0 }?.let(makerCode::get)?.takeIf { it.opcode in INT_MOVES }
+            ?: return writers to handed
+        at = writers.single()
+        handed = (move as TwoRegisterInstruction).registerB
+    }
 }
 
 private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
@@ -255,6 +336,34 @@ internal fun tabPadField(maker: Method): FieldReference? {
         return field?.takeIf { instruction.opcode == Opcode.IGET && it.type == "I" && it.definingClass == maker.definingClass }
     }
     return null
+}
+
+/**
+ * [tabPadField] for a maker that hands the padding to [helper], the static that logs it (588's
+ * Android 9 build): the maker's own int field read into what it hands the helper at the parameter
+ * its log appends after " tabPad=", that read the only write reaching the call.
+ */
+internal fun tabPadField(maker: Method, helper: Method): FieldReference? {
+    val (writers, _) = handedFrom(maker, helper, TAB_PAD_LABEL) ?: return null
+    val at = writers.singleOrNull()?.takeIf { it >= 0 } ?: return null
+    val read = maker.implementation!!.instructions.elementAt(at)
+    val field = (read as? ReferenceInstruction)?.reference as? FieldReference
+    return field?.takeIf { read.opcode == Opcode.IGET && it.type == "I" && it.definingClass == maker.definingClass }
+}
+
+/**
+ * The method that makes the Reels list, with its class: [logged] itself when it stores the row height,
+ * or, when [logged] is a static that only logs it (588's Android 9 build: LX/0AsJ;->A0A), the one
+ * method calling it. Null when that caller isn't one.
+ */
+internal fun BytecodePatchContext.reelListMaker(holder: ClassDef, logged: Method): Pair<ClassDef, Method>? {
+    if (!AccessFlags.STATIC.isSet(logged.accessFlags) || reelRowStore(logged) != null) return holder to logged
+    val callers = mutableListOf<Pair<ClassDef, Method>>()
+    classDefForEachReferencing(types = listOf(logged.definingClass)) { classDef ->
+        classDef.methods.filter { method -> method.implementation?.instructions?.any { calls(it, logged) } == true }
+            .forEach { callers += classDef to it }
+    }
+    return callers.singleOrNull()
 }
 
 /**
@@ -322,28 +431,32 @@ internal fun BytecodePatchContext.hookReelRow(warn: (String) -> Unit) {
             ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ROW_HEIGHT_LOG
         } == true
     }
-    val found = makers.singleOrNull() ?: return warn("expected one method of ${holder.type} logging \"$ROW_HEIGHT_LOG\", found ${makers.size}")
+    val logged = makers.singleOrNull() ?: return warn("expected one method of ${holder.type} logging \"$ROW_HEIGHT_LOG\", found ${makers.size}")
+    val (owner, found) = reelListMaker(holder, logged)
+        ?: return warn("expected one method calling ${holder.type}->${logged.name}, the static logging the row height")
+    // The static that logs what the maker hands it, when the maker doesn't log itself.
+    val logger = logged.takeIf { found !== logged }
     // The mutable copy, so another patch's additions to the method can't shift the index.
-    val maker = mutableClassDefBy(holder.type).findMutableMethodOf(found)
-    val (store, register) = reelRowStore(maker)
-        ?: return warn("expected one store of the row height logged in ${holder.type}->${maker.name}")
-    val self = makerRegister(maker) ?: return warn("${holder.type}->${maker.name} keeps itself in no register up to v15")
+    val maker = mutableClassDefBy(owner.type).findMutableMethodOf(found)
+    val (store, register) = (if (logger == null) reelRowStore(maker) else reelRowStore(maker, logger))
+        ?: return warn("expected one store of the row height logged in ${owner.type}->${maker.name}")
+    val self = makerRegister(maker) ?: return warn("${owner.type}->${maker.name} keeps itself in no register up to v15")
     val code = maker.implementation!!.instructions.toList()
-    if (register > 15 || store in branchTargets(code)) return warn("${holder.type}->${maker.name} can't take the row hook")
-    val padding = tabPadField(maker)?.takeIf { field ->
-        AccessFlags.PUBLIC.isSet(holder.accessFlags) && holder.fields.any {
+    if (register > 15 || store in branchTargets(code)) return warn("${owner.type}->${maker.name} can't take the row hook")
+    val padding = (if (logger == null) tabPadField(maker) else tabPadField(maker, logger))?.takeIf { field ->
+        AccessFlags.PUBLIC.isSet(owner.accessFlags) && owner.fields.any {
             it.name == field.name && it.type == "I" && AccessFlags.PUBLIC.isSet(it.accessFlags) && !AccessFlags.STATIC.isSet(it.accessFlags)
         }
     }
     when {
-        padding == null -> warn("no public tab bar padding field logged in ${holder.type}->${maker.name}, Reels rows grow by the dropped padding alone")
-        !fillTabPadding(holder.type, padding) -> warn("$TAB_BAR_SCROLL_AWAY has no $TAB_PADDING_STUB stub, Reels rows grow by the dropped padding alone")
+        padding == null -> warn("no public tab bar padding field logged in ${owner.type}->${maker.name}, Reels rows grow by the dropped padding alone")
+        !fillTabPadding(owner.type, padding) -> warn("$TAB_BAR_SCROLL_AWAY has no $TAB_PADDING_STUB stub, Reels rows grow by the dropped padding alone")
     }
     val helper = listHeightHelper(maker)
     val listId = helper?.let { ask -> classDefByOrNull(ask.definingClass)?.methods?.singleOrNull { MethodUtil.methodSignaturesMatch(it, ask) } }
         ?.let(::firstViewId)
     when {
-        listId == null -> warn("no Reels list id read through ${helper ?: "a list height helper"} in ${holder.type}->${maker.name}, Reels rows don't take the list's height")
+        listId == null -> warn("no Reels list id read through ${helper ?: "a list height helper"} in ${owner.type}->${maker.name}, Reels rows don't take the list's height")
         !fillReelsListId(listId) -> warn("$TAB_BAR_SCROLL_AWAY has no $REELS_LIST_ID_STUB stub, Reels rows don't take the list's height")
     }
     maker.addInstructions(
