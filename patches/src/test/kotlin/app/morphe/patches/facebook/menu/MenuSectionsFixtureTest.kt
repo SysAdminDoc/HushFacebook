@@ -194,7 +194,9 @@ class MenuSectionsFixtureTest {
                         for (method in classDef.methods) {
                             if (holdsString(method, NATIVE_SECTION_KEY)) nativeKeyHolders++
                             if (isNativeSectionChildren(method)) natives += ImmutableMethod.of(method)
-                            if (isServerSectionChildren(method)) servers += ImmutableMethod.of(method)
+                            if (isServerSectionChildren(method) || isOutlinedServerSectionChildren(method, classDef)) {
+                                servers += ImmutableMethod.of(method)
+                            }
                             for (key in testKeys) {
                                 if (holdsString(method, key)) keyHolders.getOrPut(key, ::mutableListOf) += ImmutableMethod.of(method)
                             }
@@ -247,9 +249,13 @@ class MenuSectionsFixtureTest {
                 // The server section adds the bookmarks folder Facebook draws inside it, Your shortcuts
                 // in the PROFILE group's, once after checking it's there, with a local free for the
                 // folder hook both there and where the check lands (#445).
+                // 588's Android 9 build checks and adds it in the static its server section is outlined into.
                 val folderAdd = nativeFolderAdd(server, serverRead)
-                assertNotNull("${bundle.name}: the server section's one native folder add", folderAdd)
-                server.freeLocalsAt(PATCH, folderAdd!!.check, 1, targets = listOf(folderAdd.skip), highest = 255)
+                val owner = FixtureDex.classes(bundle, setOf(server.definingClass)).getValue(server.definingClass)
+                val outlined = if (folderAdd != null) null else outlinedBody(server, owner)?.let { outlinedFolderAdd(server, serverRead, it) }
+                assertTrue("${bundle.name}: the server section's one native folder add", folderAdd != null || outlined != null)
+                val (folderMethod, add) = folderAdd?.let { server to it } ?: (outlined!!.body to outlined.add)
+                folderMethod.freeLocalsAt(PATCH, add.check, 1, targets = listOf(add.skip), highest = 255)
 
                 // The native section reads whether its group is folded once, from the state it casts,
                 // before the group, and two such locals are free for the fold hook (issue #224).

@@ -144,7 +144,9 @@ val hideMenuPromotionsPatch = bytecodePatch(
             "$PATCH: ${native.definingClass}->${native.name} doesn't make one call answering the Menu's group enum " +
                 "(${SECTION_NAMES.joinToString()}) and keep its answer",
         )
-        val server = single(SERVER_POSITIONS.first(), "server Menu group section", ::isServerSectionChildren)
+        val server = singleOf(SERVER_POSITIONS.first(), "server Menu group section") { classDef, method ->
+            isServerSectionChildren(method) || isOutlinedServerSectionChildren(method, classDef)
+        }
         val serverRead = serverGroupRead(server, isGroupEnum) ?: throw PatchException(
             "$PATCH: ${server.definingClass}->${server.name} doesn't read one group field of its own class",
         )
@@ -182,14 +184,20 @@ val hideMenuPromotionsPatch = bytecodePatch(
         siteMethod.passRowListsThrough(rows)
         val serverMethod = mutableClassDefBy(server.definingClass).findMutableMethodOf(server)
         val folderAdd = nativeFolderAdd(server, serverRead)
-        if (folderAdd == null) {
+        // 588's Android 9 build checks and adds the folder in the static its server section is outlined into.
+        val outlinedAdd = if (folderAdd != null) null else classDefByOrNull(server.definingClass)
+            ?.let { outlinedBody(server, it) }?.let { outlinedFolderAdd(server, serverRead, it) }
+        if (folderAdd != null) {
+            // Before buildNothingWhenHidden, whose code goes in above the add and would move it.
+            serverMethod.skipFolderWhenHidden(serverRead, folderAdd)
+        } else if (outlinedAdd != null) {
+            mutableClassDefBy(server.definingClass).findMutableMethodOf(outlinedAdd.body)
+                .skipFolderWhenHidden(GroupRead(-1, outlinedAdd.group, serverRead.type), outlinedAdd.add)
+        } else {
             patchLog.warning(
                 "$PATCH: ${server.definingClass}->${server.name} doesn't add one bookmarks folder of its own after " +
                     "checking it's there. Hide Your shortcuts leaves a natively drawn Your shortcuts row in the Menu.",
             )
-        } else {
-            // Before buildNothingWhenHidden, whose code goes in above the add and would move it.
-            serverMethod.skipFolderWhenHidden(serverRead, folderAdd)
         }
         serverMethod.buildNothingWhenHidden(serverRead, children(server), HIDE_SERVER_SECTION)
 
@@ -234,6 +242,15 @@ private fun BytecodePatchContext.single(string: String, what: String, wanted: (M
     val found = classDefByStrings(string, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         .flatMap { classDef -> classDef.methods.filter(wanted) }
+    return found.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one $what loading \"$string\", found ${found.size}")
+}
+
+/** [single], with the class beside each method for [wanted] to read. */
+private fun BytecodePatchContext.singleOf(string: String, what: String, wanted: (ClassDef, Method) -> Boolean): Method {
+    val found = classDefByStrings(string, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { classDef -> classDef.methods.filter { wanted(classDef, it) } }
     return found.singleOrNull()
         ?: throw PatchException("$PATCH: expected one $what loading \"$string\", found ${found.size}")
 }

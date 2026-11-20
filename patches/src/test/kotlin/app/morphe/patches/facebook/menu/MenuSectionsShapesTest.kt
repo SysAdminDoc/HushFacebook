@@ -361,6 +361,91 @@ class MenuSectionsShapesTest {
         assertEquals(own + 3 + 7, server.implementation!!.instructions.count())
     }
 
+    private val outlinedCall = ImmutableMethodReference(section, "A00", listOf(context, group, folder), children)
+
+    /**
+     * 588's Android 9 server section (`LX/0Aea;->A0c`): its group into v1 and its folder into v2 from
+     * fields of its own, the context copied into v0, and all three handed to the static `A00` of its
+     * class, whose answer it hands back.
+     */
+    private fun outlinedServerSection(folderRead: Instruction = ImmutableInstruction22c(Opcode.IGET_OBJECT, 2, 3, folderField)) =
+        method(
+            listOf(
+                ImmutableInstruction22c(Opcode.IGET_OBJECT, 1, 3, groupField),
+                folderRead,
+                ImmutableInstruction12x(Opcode.MOVE_OBJECT, 0, 4),
+                ImmutableInstruction3rc(Opcode.INVOKE_STATIC_RANGE, 0, 3, outlinedCall),
+                ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+                ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
+            ),
+            locals = 3,
+        )
+
+    /**
+     * `A00`'s shape: the context, group and folder in v3 to v5, the list in v0, the three positions,
+     * and before BELOW_NATIVE an add of the folder an `if-eqz` skips when there's none.
+     */
+    private fun outlinedBodyMethod(skip: Int = 5): Method = ImmutableMethod(
+        section, "A00", listOf(context, group, folder).map { ImmutableMethodParameter(it, null, null) }, children,
+        AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value, null, null,
+        ImmutableMethodImplementation(6, listOf(
+            newBuilder(0),
+            invoke(Opcode.INVOKE_DIRECT, builderInit, 0),
+            constString(1, "ABOVE_NATIVE"),
+            constString(1, "REPLACE_NATIVE"),
+            ImmutableInstruction21t(Opcode.IF_EQZ, 5, skip),
+            invoke(Opcode.INVOKE_VIRTUAL, addChild, 0, 5),
+            constString(1, "BELOW_NATIVE"),
+            childrenOf(1, 0),
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, 1),
+        ), null, null),
+    )
+
+    private fun outlinedClass(vararg methods: Method) =
+        ImmutableClassDef(section, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, emptyList(), methods.toList())
+
+    @Test
+    fun `an outlined server section is found through its body and hides its folder there`() {
+        val server = outlinedServerSection()
+        val body = outlinedBodyMethod()
+        val owner = outlinedClass(server, body)
+        assertFalse(isServerSectionChildren(server))
+        assertTrue(isOutlinedServerSectionChildren(server, owner))
+        assertEquals(body, outlinedBody(server, owner))
+        // Negative controls: a body missing a position, and a class without the body.
+        assertFalse(isOutlinedServerSectionChildren(server, outlinedClass(server)))
+        val partial = ImmutableMethod(body.definingClass, body.name, body.parameters, body.returnType, body.accessFlags,
+            null, null, ImmutableMethodImplementation(6, body.implementation!!.instructions.filterNot {
+                (it as? ReferenceInstruction)?.reference.let { r -> r is StringReference && r.string == "BELOW_NATIVE" }
+            }, null, null))
+        assertFalse(isOutlinedServerSectionChildren(server, outlinedClass(server, partial)))
+
+        // The group is the section's own read, and the list the body builds.
+        val read = serverGroupRead(server, isGroup)!!
+        assertEquals(GroupRead(0, 1, group), read)
+        assertEquals(ChildrenList(builder, "$builder->A00:$children"), childrenList(server) { call -> body.takeIf { call == outlinedCall } })
+        assertNull(childrenList(server))
+
+        // The folder is the body's parameter in v5, and the group its v4.
+        val outlined = outlinedFolderAdd(server, read, body)
+        assertEquals(OutlinedFolderAdd(body, 4, NativeFolderAdd(4, 5, 6)), outlined)
+        assertNull(nativeFolderAdd(server, read))
+        // Negative controls: a folder read from another class, and a check that skips more than the add.
+        assertNull(outlinedFolderAdd(outlinedServerSection(
+            ImmutableInstruction22c(Opcode.IGET_OBJECT, 2, 3, ImmutableFieldReference("Lfixture/Other;", "A02", folder))), read, body))
+        assertNull(outlinedFolderAdd(server, read, outlinedBodyMethod(skip = 7)))
+
+        // The hook goes in the body, on the group's parameter, and a yes lands where a missing folder does.
+        val mutable = MutableMethod(body)
+        mutable.skipFolderWhenHidden(GroupRead(-1, outlined!!.group, group), outlined.add)
+        val call = mutable.at(4) as RegisterRangeInstruction
+        assertEquals("hideFolder", ((mutable.at(4) as ReferenceInstruction).reference as MethodReference).name)
+        assertEquals(4, call.startRegister)
+        assertEquals(Opcode.IF_NEZ, mutable.at(6).opcode)
+        assertEquals("BELOW_NATIVE", ((mutable.at(9) as ReferenceInstruction).reference as StringReference).string)
+        assertEquals(9, offsetTarget(mutable, 6))
+    }
+
     private val baseState = "Lfixture/BaseState;"
     private val foldState = "Lfixture/FoldState;"
     private val stateField = ImmutableFieldReference("Lfixture/Component;", "A03", baseState)

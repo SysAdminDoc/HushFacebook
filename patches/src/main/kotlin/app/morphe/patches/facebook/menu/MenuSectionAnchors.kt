@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -92,6 +93,39 @@ internal fun isNativeSectionChildren(method: Method): Boolean =
 /** The server group section's children builder: loads each of [SERVER_POSITIONS]. */
 internal fun isServerSectionChildren(method: Method): Boolean =
     isChildrenBuilder(method) && SERVER_POSITIONS.all { holdsString(method, it) }
+
+/**
+ * The static call [method] answers with as it comes: its last three instructions call a static
+ * answering [method]'s return type, keep the answer and return it.
+ */
+private fun returnedStatic(method: Method): MethodReference? {
+    val code = method.instructionList()
+    if (code.size < 3) return null
+    val (call, result, end) = code.takeLast(3)
+    if (call.opcode !in STATIC_INVOKES || result.opcode != Opcode.MOVE_RESULT_OBJECT || end.opcode != Opcode.RETURN_OBJECT) {
+        return null
+    }
+    if ((result as OneRegisterInstruction).registerA != (end as OneRegisterInstruction).registerA) return null
+    return ((call as ReferenceInstruction).reference as? MethodReference)?.takeIf { it.returnType == method.returnType }
+}
+
+/**
+ * The static of [classDef] that [method], one of its methods, hands its build to and answers with.
+ * 588's Android 9 build outlines the server section's children builder that way: `LX/0Aea;->A0c`
+ * reads the group, the bookmarks folder and the rest from fields of its own and hands them with the
+ * context to `A00`, which loads the positions and builds the list.
+ */
+internal fun outlinedBody(method: Method, classDef: ClassDef): Method? {
+    val call = returnedStatic(method)?.takeIf { it.definingClass == classDef.type } ?: return null
+    return classDef.methods.singleOrNull {
+        it.name == call.name && it.returnType == call.returnType && AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.implementation != null && it.parameterTypes.map(Any::toString) == call.parameterTypes.map(Any::toString)
+    }
+}
+
+/** The server group section's children builder outlined into a static of its own class ([outlinedBody]) that loads each of [SERVER_POSITIONS]. */
+internal fun isOutlinedServerSectionChildren(method: Method, classDef: ClassDef): Boolean =
+    isChildrenBuilder(method) && outlinedBody(method, classDef)?.let { body -> SERVER_POSITIONS.all { holdsString(body, it) } } == true
 
 /**
  * Where a method puts its section's group: the instruction that writes it, the register it goes to
@@ -167,6 +201,60 @@ internal fun nativeFolderAdd(method: Method, group: GroupRead): NativeFolderAdd?
     val check = checks.singleOrNull() ?: return null
     if (method.writersReaching(check, group.register) != listOf(group.index)) return null
     return NativeFolderAdd(check, (instructions[check] as OneRegisterInstruction).registerA, check + 2)
+}
+
+/**
+ * The [NativeFolderAdd] of a server section outlined into [body] ([outlinedBody]), and the register
+ * [body] gets the group in.
+ */
+internal data class OutlinedFolderAdd(val body: Method, val group: Int, val add: NativeFolderAdd)
+
+/** The registers an invoke hands its callee, one per parameter word. */
+private fun handedWords(call: Instruction): List<Int> = when (call) {
+    is RegisterRangeInstruction -> (call.startRegister until call.startRegister + call.registerCount).toList()
+    is FiveRegisterInstruction ->
+        listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG).take(call.registerCount)
+    else -> emptyList()
+}
+
+/**
+ * Where [body], the static [method] is outlined into, adds the bookmarks folder: the one `if-eqz`,
+ * no branch landing on it, on a parameter that skips just the two-register `invoke-virtual` right
+ * after it handing it on, as [nativeFolderAdd] reads it, where [method] hands that parameter a read
+ * of a field of its own other than [group]'s, and [group]'s read another parameter neither
+ * method writes on the way. On 588's Android 9 build `LX/0Aea;->A0c` reads the group (`A01`) into v4
+ * and the folder (`A02`, a `LX/0Aey;`) into v6 and hands v0 to v6 to `A00`, which gets them in v6 and
+ * v8, checks the folder at 28 and adds it at 29. Null unless there's exactly one.
+ */
+internal fun outlinedFolderAdd(method: Method, group: GroupRead, body: Method): OutlinedFolderAdd? {
+    val code = method.instructionList()
+    val at = code.indices.singleOrNull { index ->
+        val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+        code[index].opcode in STATIC_INVOKES && call != null && call.definingClass == body.definingClass &&
+            call.name == body.name && call.parameterTypes.map(Any::toString) == body.parameterTypes.map(Any::toString)
+    } ?: return null
+    val handed = handedWords(code[at])
+    val words = body.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+    val base = (body.implementation?.registerCount ?: return null) - words
+    if (handed.size != words || handed.count { it == group.register } != 1) return null
+    if (method.writersReaching(at, group.register) != listOf(group.index)) return null
+    val bodyGroup = base + handed.indexOf(group.register)
+    val bodyCode = body.instructionList()
+    val targets = branchTargets(bodyCode)
+    val checks = bodyCode.indices.filter { check ->
+        if (bodyCode[check].opcode != Opcode.IF_EQZ || check in targets) return@filter false
+        val register = (bodyCode[check] as OneRegisterInstruction).registerA
+        val add = bodyCode.getOrNull(check + 1) as? FiveRegisterInstruction ?: return@filter false
+        if (add.opcode != Opcode.INVOKE_VIRTUAL || add.registerCount != 2 || add.registerD != register) return@filter false
+        if (branchTarget(bodyCode, check) != check + 2) return@filter false
+        if (register < base || register == bodyGroup || body.writersReaching(check, register) != listOf(-1)) return@filter false
+        val read = method.writersReaching(at, handed[register - base]).singleOrNull() ?: return@filter false
+        val field = (code.getOrNull(read) as? ReferenceInstruction)?.reference as? FieldReference ?: return@filter false
+        read != group.index && code[read].opcode == Opcode.IGET_OBJECT && field.definingClass == method.definingClass
+    }
+    val check = checks.singleOrNull() ?: return null
+    if (body.writersReaching(check, bodyGroup) != listOf(-1)) return null
+    return OutlinedFolderAdd(body, bodyGroup, NativeFolderAdd(check, (bodyCode[check] as OneRegisterInstruction).registerA, check + 2))
 }
 
 /** Where the native section reads whether its group is folded: the instruction and the register it goes to. */
@@ -378,7 +466,12 @@ private val STATIC_INVOKES = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RA
  * as 582's LX/cTw;->A01 does through LX/Gwo;->A0d, by calling a static method [resolve] finds whose
  * whole body is just that ([makesPlain]).
  */
-internal fun childrenList(method: Method, resolve: (MethodReference) -> Method? = { null }): ChildrenList? {
+internal fun childrenList(method: Method, resolve: (MethodReference) -> Method? = { null }): ChildrenList? =
+    listBuiltIn(method, resolve)
+        // 588's Android 9 server section is outlined, so the list is the one its body builds ([outlinedBody]).
+        ?: returnedStatic(method)?.let(resolve)?.takeIf { it !== method }?.let { listBuiltIn(it, resolve) }
+
+private fun listBuiltIn(method: Method, resolve: (MethodReference) -> Method?): ChildrenList? {
     val instructions = method.instructionList()
     val created = instructions.filter { it.opcode == Opcode.NEW_INSTANCE }
         .map { ((it as ReferenceInstruction).reference as TypeReference).type }
