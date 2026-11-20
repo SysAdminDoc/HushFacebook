@@ -699,6 +699,8 @@ public final class LogBufferManager {
             case 14: return "FREEZER";
             case 15: return "PACKAGE_STATE_CHANGE";
             case 16: return "PACKAGE_UPDATED";
+            case 17: return "MEMORY_LIMITER";
+            case 18: return "ANOMALY";
             case 0: return "UNKNOWN";
             default: return "REASON " + reason;
         }

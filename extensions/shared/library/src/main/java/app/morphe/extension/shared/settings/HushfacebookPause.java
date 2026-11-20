@@ -75,6 +75,8 @@ public final class HushfacebookPause {
     static volatile boolean fileDeathsAtStart = true;
     /** How Android 17's memory limiter starts the description of a kill it records as REASON_OTHER. */
     static final String MEMORY_LIMITER = "MemoryLimiter";
+    /** ApplicationExitInfo.REASON_MEMORY_LIMITER from the 37.2 SDK, newer than this build compiles against. */
+    static final int REASON_MEMORY_LIMITER = 17;
     static final long START_WINDOW_MS = 60_000L;
     static final int CRASHES_TO_SAFE_MODE = 3;
     private static final String CRASHED = "crashed";
@@ -287,6 +289,9 @@ public final class HushfacebookPause {
                         || !context.getPackageName().equals(exit.getProcessName())) continue;
                 reports.put(exit.getTimestamp(), JavaCrashReport.buildForExit(context, exit, what, updated));
             }
+            long from = since;
+            Logger.printDebug(() -> "Hushfacebook pause: " + reports.size() + " of " + exits.size()
+                    + " recorded exits get a crash file, counting from " + from);
             if (reports.isEmpty()) return;
             // The mark moves after each file, so a start that dies mid-way neither files a death
             // twice nor skips one.
@@ -318,15 +323,26 @@ public final class HushfacebookPause {
     }
 
     /**
-     * Android 17's memory limiter ended the process. It records the kill as {@code REASON_OTHER}
-     * with a description such as {@code MemoryLimiter:AnonSwap}; nothing else under that reason is
-     * a crash.
+     * Android 17's memory limiter ended the process. The 37.0 image records the kill as
+     * {@code REASON_OTHER} with a description such as {@code MemoryLimiter:AnonSwap}, and its
+     * getDescription() puts the kill's subreason in front whenever there is one, so a kill of the
+     * process in view reads {@code [KILL PID] MemoryLimiter:AnonSwap}. The 37.2 SDK gives the
+     * limiter a reason of its own, {@link #REASON_MEMORY_LIMITER}. Nothing else under
+     * {@code REASON_OTHER} is a crash.
      */
     @RequiresApi(Build.VERSION_CODES.R)
     static boolean memoryLimiterKill(ApplicationExitInfo exit) {
+        int why = exit.getReason();
+        if (why == REASON_MEMORY_LIMITER) return true;
+        if (why != ApplicationExitInfo.REASON_OTHER) return false;
         String description = exit.getDescription();
-        return exit.getReason() == ApplicationExitInfo.REASON_OTHER
-                && description != null && description.startsWith(MEMORY_LIMITER);
+        if (description == null) return false;
+        if (description.startsWith("[")) {
+            int end = description.indexOf(']');
+            if (end < 0) return false;
+            description = description.substring(end + 1).trim();
+        }
+        return description.startsWith(MEMORY_LIMITER);
     }
 
     /** When this Facebook was installed or last updated, or -1 when Android won't say. */

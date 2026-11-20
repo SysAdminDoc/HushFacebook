@@ -119,7 +119,11 @@ public final class CrashFile {
         BooleanSetting setting = toggle;
         synchronized (WAITING_LOCK) {
             // A switch handed over means the settings class loaded, so its saved value can be read.
-            if (waiting == null || setting == null) return;
+            if (waiting == null) return;
+            if (setting == null) {
+                Logger.printDebug(() -> "Crash file: " + waiting.size() + " deaths wait for the settings to load");
+                return;
+            }
             reports = waiting;
             context = waitingContext;
             done = whenFiled;
@@ -130,6 +134,7 @@ public final class CrashFile {
         try {
             if (context == null || done == null || reports.isEmpty()) return;
             if (!setting.savedValue()) {
+                Logger.printDebug(() -> "Crash file: off, so " + reports.size() + " deaths get none");
                 done.upTo(reports.lastKey());
                 return;
             }
@@ -138,9 +143,14 @@ public final class CrashFile {
                 synchronized (JavaCrashReport.FILE_LOCK) {
                     file = write(context, death.getValue(), death.getKey());
                 }
+                long when = death.getKey();
                 // Not written: the deaths from here on stay for the next start.
-                if (file == null) return;
-                done.upTo(death.getKey());
+                if (file == null) {
+                    Logger.printDebug(() -> "Crash file: the death at " + when + " wasn't written, the next start tries again");
+                    return;
+                }
+                Logger.printDebug(() -> "Crash file: filed the death at " + when + " as " + file);
+                done.upTo(when);
             }
         } catch (Throwable failure) {
             // The mark stays at the last death filed, and the next start finds the rest again.
@@ -188,7 +198,10 @@ public final class CrashFile {
             values.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
             values.put(MediaStore.MediaColumns.RELATIVE_PATH, FOLDER);
             uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-            if (uri == null) return null;
+            if (uri == null) {
+                Logger.printDebug(() -> "Crash file: Downloads gave no place for " + values);
+                return null;
+            }
             try (OutputStream output = resolver.openOutputStream(uri, "w")) {
                 if (output == null) throw new IOException("No stream for the crash file");
                 output.write(report.getBytes(StandardCharsets.UTF_8));
@@ -197,6 +210,11 @@ public final class CrashFile {
         } catch (Throwable failure) {
             // Crash-time code must never get in the way of the handlers after this one.
             if (uri != null) delete(context, uri);
+            try {
+                Logger.printDebug(() -> "Crash file: not written: " + failure);
+            } catch (Throwable ignored) {
+                // Logging is a nicety here.
+            }
             return null;
         }
     }

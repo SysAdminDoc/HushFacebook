@@ -231,6 +231,46 @@ public class HushfacebookPauseTest {
         assertEquals(HushfacebookPause.Reason.CRASH_LOOP, HushfacebookPause.reason());
     }
 
+    /**
+     * What Android 17 hands back for a limiter kill (#528). Its getDescription() puts the kill's
+     * subreason in front whenever there is one, so the kill of a process in view reads
+     * "[KILL PID] MemoryLimiter:AnonSwap" (seen on the 37.0 image, reason 13, subreason 12). The
+     * 37.2 SDK gives the limiter a reason of its own, REASON_MEMORY_LIMITER = 17. Both count in
+     * view and neither does in the background, and a subreason doesn't make any other kill one.
+     */
+    @Test @Config(sdk = 30)
+    public void android17sLimiterKillCountsWithItsSubreasonInFrontAndUnderItsOwnReason() {
+        int memoryLimiter = 17;
+        exited(5401, ApplicationExitInfo.REASON_OTHER, 11_000, "[KILL PID] MemoryLimiter:AnonSwap");
+        exited(5402, memoryLimiter, 12_000, "AnonSwap");
+        exited(5403, memoryLimiter, 13_000, null);
+        exited(5404, ApplicationExitInfo.REASON_OTHER, 14_000, "[KILL PID] remove task");
+        exited(5405, ApplicationExitInfo.REASON_OTHER, 15_000, "[KILL PID] a note: MemoryLimiter:AnonSwap");
+        exited(5406, ApplicationExitInfo.REASON_OTHER, 16_000, "[KILL PID] MemoryLimiter:AnonSwap",
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED);
+        exited(5407, memoryLimiter, 17_000, "AnonSwap", ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED);
+        exited(5408, 18, 18_000, "MemoryLimiter:AnonSwap");
+
+        assertTrue("the kill read with its subreason in front didn't count",
+                HushfacebookPause.diedYoungFromACrash(context, "5401 1000"));
+        assertTrue("a kill under the limiter's own reason didn't count",
+                HushfacebookPause.diedYoungFromACrash(context, "5402 1000"));
+        assertTrue("a kill under the limiter's own reason with no description didn't count",
+                HushfacebookPause.diedYoungFromACrash(context, "5403 1000"));
+        assertFalse(HushfacebookPause.diedYoungFromACrash(context, "5404 1000"));
+        assertFalse(HushfacebookPause.diedYoungFromACrash(context, "5405 1000"));
+        assertFalse("a kill in the background counted", HushfacebookPause.diedYoungFromACrash(context, "5406 1000"));
+        assertFalse("a kill in the background counted", HushfacebookPause.diedYoungFromACrash(context, "5407 1000"));
+        assertFalse("another reason counted for its description", HushfacebookPause.diedYoungFromACrash(context, "5408 1000"));
+
+        exited(5409, ApplicationExitInfo.REASON_OTHER, 33_000, "[KILL PID] MemoryLimiter:AnonSwap");
+        start("5401 10000");
+        start("5402 11000");
+        assertFalse("two kills are not yet a loop", Setting.isPaused());
+        start("5409 32000");
+        assertEquals(HushfacebookPause.Reason.CRASH_LOOP, HushfacebookPause.reason());
+    }
+
     @Test @Config(sdk = 30)
     public void android11CountsCrashesNativeCrashesAndHangsButNotBeingSwipedAway() {
         exited(5101, ApplicationExitInfo.REASON_CRASH, 11_000);

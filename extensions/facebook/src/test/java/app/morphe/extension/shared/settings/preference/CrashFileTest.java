@@ -312,6 +312,32 @@ public class CrashFileTest {
     }
 
     /**
+     * Android 17 reads a limiter kill back with its subreason in front, "[KILL PID]
+     * MemoryLimiter:AnonSwap" on the 37.0 image, and the 37.2 SDK records one under a reason of
+     * its own, 17 (#528). Each gets its file in view, and the one in the background still doesn't.
+     */
+    @Test
+    public void android17sLimiterKillsGetAFileInEitherShape() throws Exception {
+        nextStart();
+        markFiledUpTo(MARK);
+        died(ApplicationExitInfo.REASON_OTHER, MARK + 1_000, "[KILL PID] MemoryLimiter:AnonSwap", null, null);
+        died(17, MARK + 2_000, "AnonSwap", null, null);
+        died(17, MARK + 3_000, "AnonSwap", null, null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED);
+        died(ApplicationExitInfo.REASON_OTHER, MARK + 4_000, "[KILL PID] remove task", null, null);
+
+        PauseForTests.fileLastDeaths();
+
+        assertEquals("not one file for each limiter kill in view", Arrays.asList(1L, 2L), downloads.ids());
+        String prefixed = body(1);
+        assertTrue(prefixed, prefixed.contains("death: killed by Android's memory limiter\n"));
+        assertTrue(prefixed, prefixed.contains("exit_description: [KILL PID] MemoryLimiter:AnonSwap\n"));
+        String ownReason = body(2);
+        assertTrue(ownReason, ownReason.contains("death: killed by Android's memory limiter\n"));
+        assertTrue(ownReason, ownReason.contains("exit_reason: 17\n"));
+        assertEquals("the mark isn't at the newest death filed", Long.toString(MARK + 2_000), mark());
+    }
+
+    /**
      * With the switch off a death gets no file and is done with. A start that runs paused after
      * three crashes still files the deaths that paused it, by the switch as it was saved, since
      * those files are what a report needs.

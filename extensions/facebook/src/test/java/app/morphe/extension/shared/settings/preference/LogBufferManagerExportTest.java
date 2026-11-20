@@ -106,6 +106,37 @@ public class LogBufferManagerExportTest {
                 report.contains(when));
     }
 
+    /** The report for a last exit Android recorded under [reason]. */
+    private static String reportAfterAnExitFor(int reason) {
+        app.morphe.extension.shared.Utils.setContext(RuntimeEnvironment.getApplication());
+        app.morphe.extension.shared.settings.BaseSettings.DEBUG_LOG_FILTERS.save("all");
+        app.morphe.extension.shared.diagnostics.HookStatus.clear();
+        LogBufferManager.clearLogBuffer();
+        android.app.ActivityManager manager = (android.app.ActivityManager) RuntimeEnvironment
+                .getApplication().getSystemService(Context.ACTIVITY_SERVICE);
+        org.robolectric.Shadows.shadowOf(manager).addApplicationExitInfo(
+                org.robolectric.shadows.ShadowActivityManager.ApplicationExitInfoBuilder.newBuilder()
+                        .setReason(reason)
+                        .setTimestamp(1757260800000L)
+                        .setProcessName(RuntimeEnvironment.getApplication().getPackageName())
+                        .build());
+        return LogBufferManager.buildExportText();
+    }
+
+    /** The 37.2 SDK's REASON_MEMORY_LIMITER, 17, goes by its name (#528). */
+    @Test
+    public void android17sMemoryLimiterReasonIsNamed() {
+        String report = reportAfterAnExitFor(17);
+        assertTrue("reason 17 went unnamed: " + report, report.contains("reason: MEMORY_LIMITER\n"));
+    }
+
+    /** The 37.2 SDK's REASON_ANOMALY, 18, goes by its name. */
+    @Test
+    public void android17sAnomalyReasonIsNamed() {
+        String report = reportAfterAnExitFor(18);
+        assertTrue("reason 18 went unnamed: " + report, report.contains("reason: ANOMALY\n"));
+    }
+
     /**
      * Facebook runs on Android 11 and newer, where the report goes through MediaStore into
      * Download/Hushfacebook, next to the crash files. The path handed back is the name MediaStore
