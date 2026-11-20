@@ -2062,6 +2062,8 @@ Comments will open where Facebook stops them.	ความคิดเห็น�
 Hide the status bar	ซ่อนแถบสถานะ
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	นำแถบสถานะของโทรศัพท์ที่มีเวลาและแบตเตอรี่ออกจากหน้าจอหลักของ Facebook เพื่อให้แอปใช้พื้นที่ได้เต็มหน้าจอ ปัดลงจากขอบด้านบนเพื่อดูแถบสถานะชั่วคราว
+Center the feed on big screens	จัดฟีดไว้ตรงกลางบนหน้าจอขนาดใหญ่
+On a tablet or an unfolded phone, the feed and Facebook's other lists stay in a column down the middle of the screen instead of stretching from edge to edge. Reels keep the whole screen.	บนแท็บเล็ตหรือโทรศัพท์แบบพับที่กางออก ฟีดและรายการอื่นๆ ของ Facebook จะอยู่ในคอลัมน์ตรงกลางหน้าจอ แทนที่จะยืดจากขอบหนึ่งไปอีกขอบหนึ่ง ส่วน Reels ยังคงใช้เต็มหน้าจอ
 # context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
 Open feed videos on their own	เปิดวิดีโอในฟีดแยกเดี่ยว
 # context: summary of that switch; the Reels tab itself still scrolls normally

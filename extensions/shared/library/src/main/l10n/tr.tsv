@@ -2062,6 +2062,8 @@ Comments will open where Facebook stops them.	Yorumlar, Facebook'un durdurduğu 
 Hide the status bar	Durum çubuğunu gizle
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Telefonun saat ve pil gösteren durum çubuğunu Facebook'un ana ekranından kaldırır, böylece uygulama tüm ekranı kullanır. Kısa bir süre görmek için üst kenardan aşağı kaydırın.
+Center the feed on big screens	Büyük ekranlarda akışı ortala
+On a tablet or an unfolded phone, the feed and Facebook's other lists stay in a column down the middle of the screen instead of stretching from edge to edge. Reels keep the whole screen.	Tablette ya da açılmış katlanabilir telefonda akış ve Facebook'un diğer listeleri, kenardan kenara uzanmak yerine ekranın ortasında bir sütunda kalır. Reels tüm ekranı kullanmaya devam eder.
 # context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
 Open feed videos on their own	Akıştaki videoları tek başına aç
 # context: summary of that switch; the Reels tab itself still scrolls normally

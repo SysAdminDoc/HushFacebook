@@ -1948,6 +1948,8 @@ Comments will open where Facebook stops them.	Os comentários vão abrir onde o 
 Hide the status bar	Ocultar a barra de status
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Tira a barra de status do celular, com a hora e a bateria, da tela principal do Facebook, para que o app use a tela inteira. Deslize para baixo a partir da borda de cima para vê-la por um momento.
+Center the feed on big screens	Centralizar o feed em telas grandes
+On a tablet or an unfolded phone, the feed and Facebook's other lists stay in a column down the middle of the screen instead of stretching from edge to edge. Reels keep the whole screen.	Em um tablet ou um celular dobrável aberto, o feed e as outras listas do Facebook ficam em uma coluna no meio da tela, em vez de se esticarem de uma borda à outra. Os reels continuam com a tela inteira.
 # context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
 Open feed videos on their own	Abrir vídeos do feed sozinhos
 # context: summary of that switch; the Reels tab itself still scrolls normally

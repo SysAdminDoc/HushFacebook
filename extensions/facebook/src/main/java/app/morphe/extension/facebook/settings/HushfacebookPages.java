@@ -257,6 +257,12 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.HIDE_STATUS_BAR,
                     L10n.t("Takes the phone's status bar, with the time and battery, off Facebook's main screen, so "
                             + "the app gets the whole screen. Swipe down from the top edge to see it for a moment.")));
+            // Asked as the main screen lays itself out and gets its focus back, so a change shows
+            // when these settings close (#531).
+            appearance.addPreference(toggle(context, Settings.CENTER_FEED_ON_BIG_SCREENS,
+                    L10n.t("On a tablet or an unfolded phone, the feed and Facebook's other lists stay in a column down "
+                            + "the middle of the screen instead of stretching from edge to edge. Reels keep the whole "
+                            + "screen.")));
             // Asked each time the Reels tab shows, so a change shows on the next visit to the tab.
             appearance.addPreference(toggle(context, Settings.LIGHT_REELS_TAB_BARS,
                     L10n.t("In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the "

@@ -2062,6 +2062,8 @@ Comments will open where Facebook stops them.	Bình luận sẽ mở ở độ c
 Hide the status bar	Ẩn thanh trạng thái
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Ẩn thanh trạng thái của điện thoại, có giờ và pin, khỏi màn hình chính của Facebook để ứng dụng dùng toàn bộ màn hình. Vuốt xuống từ cạnh trên để xem nó trong giây lát.
+Center the feed on big screens	Căn giữa bảng tin trên màn hình lớn
+On a tablet or an unfolded phone, the feed and Facebook's other lists stay in a column down the middle of the screen instead of stretching from edge to edge. Reels keep the whole screen.	Trên máy tính bảng hoặc điện thoại gập khi mở ra, bảng tin và các danh sách khác của Facebook nằm trong một cột ở giữa màn hình thay vì kéo dài từ cạnh này sang cạnh kia. Reels vẫn chiếm toàn bộ màn hình.
 # context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
 Open feed videos on their own	Mở video trong bảng tin riêng lẻ
 # context: summary of that switch; the Reels tab itself still scrolls normally

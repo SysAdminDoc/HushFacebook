@@ -2064,6 +2064,8 @@ Comments will open where Facebook stops them.	留言將在 Facebook 預設的位
 Hide the status bar	隱藏狀態列
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	從 Facebook 主畫面移除顯示時間與電量的手機狀態列，讓應用程式使用整個螢幕。從頂端邊緣向下滑動可暫時顯示。
+Center the feed on big screens	在大螢幕將動態消息置中
+On a tablet or an unfolded phone, the feed and Facebook's other lists stay in a column down the middle of the screen instead of stretching from edge to edge. Reels keep the whole screen.	在平板或展開的摺疊手機上，動態消息和 Facebook 的其他清單會保持在螢幕中間的一欄，而不是從一邊延伸到另一邊。Reels 仍佔滿整個螢幕。
 # context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
 Open feed videos on their own	單獨開啟動態消息影片
 # context: summary of that switch; the Reels tab itself still scrolls normally

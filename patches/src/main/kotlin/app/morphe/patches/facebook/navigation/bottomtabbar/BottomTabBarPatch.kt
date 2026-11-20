@@ -73,14 +73,15 @@ val bottomTabBarPatch = bytecodePatch(
         "where it's easier to reach. `Tab bar position` can also put it at the top, as older Facebook had it, or " +
         "leave it where Facebook puts it. `Tab bar while scrolling` lets it slide away as you scroll or keeps it on " +
         "screen, and another switch keeps the top bar on screen. One gives " +
-        "tablets and unfolded phones the phone layout so the bar can move there too, and one makes the top bar and " +
+        "tablets and unfolded phones the phone layout so the bar can move there too, and another keeps the feed in " +
+        "a column down the middle on those big screens. One makes the top bar and " +
         "the tab bar see-through. Another hides the phone's status bar on the main screen until you swipe down " +
         "from the top, and another keeps the Reels tab's bars light in light mode, like the other tabs. One hides " +
         "the tab bar on the Reels tab alone, so the reel gets the whole screen. Three more " +
         "take the Messenger button, its unread count or the Facebook logo out " +
         "of the top bar. Starts off. Pick it in " +
-        "Hushfacebook settings > Tabs and navigation, then restart Facebook. The see-through, status bar and " +
-        "Reels tab switches sit under Appearance.",
+        "Hushfacebook settings > Tabs and navigation, then restart Facebook. The see-through, status bar, " +
+        "centered feed and Reels tab switches sit under Appearance.",
 ) {
     category("Navigation")
     // The other switches: Facebook's own scroll-away for both bars, in TabBarScrollAwayPatch.kt.

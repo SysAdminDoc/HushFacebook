@@ -3252,6 +3252,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_status_bar", FALSE);
 
     /**
+     * On a tablet or an unfolded phone, the feed and the other lists on the main screen and the
+     * page screen (Menu, profiles, groups, Pages) keep to a column down the middle instead of
+     * stretching edge to edge (#531, {@link app.morphe.extension.facebook.navigation.CenteredFeed}).
+     * Off by default. Asked as each of those screens lays itself out, resumes or gets its focus back,
+     * so a change shows when the settings close.
+     */
+    public static final BooleanSetting CENTER_FEED_ON_BIG_SCREENS =
+            new BooleanSetting("hushfacebook_center_feed_big_screens", FALSE);
+
+    /**
      * In light mode the Reels tab keeps the light status bar, top bar and tab bar the other tabs
      * have, where Facebook turns them dark (#423,
      * {@link app.morphe.extension.facebook.navigation.LightReelsTabBars}). Asked each time the tab

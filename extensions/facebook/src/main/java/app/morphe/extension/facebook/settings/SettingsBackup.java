@@ -515,6 +515,7 @@ public final class SettingsBackup {
             Settings.TRANSLUCENT_BARS,
             Settings.ROUNDED_TAB_BAR,
             Settings.HIDE_STATUS_BAR,
+            Settings.CENTER_FEED_ON_BIG_SCREENS,
             Settings.LIGHT_REELS_TAB_BARS,
             Settings.HIDE_MESSENGER_BUTTON,
             Settings.HIDE_MESSENGER_COUNT,
