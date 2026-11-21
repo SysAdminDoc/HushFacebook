@@ -2350,6 +2350,10 @@ Moves a feed video's seek bar closer to the bottom edge, along with Facebook's s
 Seek bar on the bottom edge	แถบเลื่อนที่ขอบด้านล่าง
 Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	ย้ายแถบเลื่อนของวิดีโอบนฟีดไปไว้ที่ขอบด้านล่างพอดี เพื่อไม่ให้เกะกะขณะที่คุณเลื่อนดู ปุ่มลำโพงและปุ่มแท็กบุคคลของ Facebook จะเลื่อนขึ้นไปอยู่เหนือแถบเลื่อน การตั้งค่านี้มีผลเหนือกว่า "ลดระดับแถบเลื่อนและลำโพงลง" จำเป็นต้องเปิด "แถบเลื่อนในวิดีโอบนฟีด"
 Thin line seek bar	แถบเลื่อนแบบเส้นบาง
+# context: switch title on the Video and audio page, under Thin line seek bar; while the thin seek bar of a feed video is dragged it stays on the video's bottom edge
+Drag along the bottom edge	ลากไปตามขอบด้านล่าง
+# context: description of that switch; Thin line seek bar is the switch title above it, keep it as translated there
+While you drag the thin line, it stays on the video's bottom edge like Instagram's, with the time in the middle, instead of rising into the full bar with a time bubble. Needs Thin line seek bar on.	ขณะที่คุณลากเส้นบาง เส้นจะอยู่ที่ขอบด้านล่างของวิดีโอแบบเดียวกับใน Instagram โดยแสดงเวลาไว้ตรงกลาง แทนที่จะยกขึ้นเป็นแถบเต็มพร้อมป้ายเวลา จำเป็นต้องเปิด "แถบเลื่อนแบบเส้นบาง"
 Shows a feed video's seek bar as a thin line right on its bottom edge, like Instagram's, with no dot until you drag it. Live videos get it too while they can be rewound. Let go at the far right end to go back to live. Facebook's speaker and tagged people buttons move up to sit above it. Needs Seek bar on feed videos on.	แสดงแถบเลื่อนของวิดีโอบนฟีดเป็นเส้นบางที่ขอบด้านล่างพอดี แบบเดียวกับใน Instagram โดยไม่มีจุดจนกว่าคุณจะลาก วิดีโอถ่ายทอดสดก็จะมีเส้นนี้ด้วยขณะที่ยังย้อนกลับได้ ปล่อยที่ด้านขวาสุดเพื่อกลับไปที่การถ่ายทอดสด ปุ่มลำโพงและปุ่มแท็กบุคคลของ Facebook จะเลื่อนขึ้นไปอยู่เหนือแถบเลื่อน จำเป็นต้องเปิด "แถบเลื่อนในวิดีโอบนฟีด"
 Feed video position	ตำแหน่งวิดีโอบนฟีด
 # context: title of the row that holds a color code for the count badges on the tabs

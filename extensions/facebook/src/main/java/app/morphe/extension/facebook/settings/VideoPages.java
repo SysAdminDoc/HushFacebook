@@ -550,6 +550,10 @@ final class VideoPages {
                         L10n.t("Shows a feed video's seek bar as a thin line right on its bottom edge, like Instagram's, with no dot until you drag it. "
                                 + "Live videos get it too while they can be rewound. Let go at the far right end to go back to live. "
                                 + "Facebook's speaker and tagged people buttons move up to sit above it. Needs Seek bar on feed videos on.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG,
+                        L10n.t("While you drag the thin line, it stays on the video's bottom edge like Instagram's, "
+                                + "with the time in the middle, instead of rising into the full bar with a time bubble. "
+                                + "Needs Thin line seek bar on.")));
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_TIMES,
                         L10n.t("Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. "
                                 + "Needs Seek bar on feed videos on.")));

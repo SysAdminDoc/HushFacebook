@@ -1970,6 +1970,20 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * With {@link #FEED_VIDEO_SEEK_BAR_THIN} on, a drag keeps the line on the video's bottom edge, a
+     * little thicker, with its dot centered on that edge and the time in the middle above it, as
+     * Instagram's does, where the line otherwise rises into the full bar with a time bubble (#539).
+     * Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_FLAT_DRAG =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_flat_drag", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A seek bar along the bottom of a video story, where {@link #STORY_PROGRESS_BAR} draws, which
      * makes way for it. A drag holds the story and the let go moves it there (#386). Starts off.
      */

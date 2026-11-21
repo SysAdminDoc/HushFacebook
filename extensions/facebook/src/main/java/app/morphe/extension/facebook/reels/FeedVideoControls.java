@@ -87,6 +87,8 @@ public final class FeedVideoControls {
     static final int BAR_DP = 20, TIME_DP = 28;
     /** How thick Thin line seek bar draws its line, flush with the video's bottom edge, as Instagram's is (#431). */
     static final int THIN_DP = 2;
+    /** How thick Drag along the bottom edge draws the line while it's dragged, and its dot's radius, centered on it (#539). */
+    static final int FLAT_DP = 4, FLAT_DOT_DP = 6;
     /** How far from its list's top a row can start and still count as a viewer's page (#505). */
     private static final int FILLS_LIST_SLOP_DP = 2;
     /** The room the seek bar leaves under it for what Facebook puts in the video's bottom corners: the speaker, and the tagged people (#326). */
@@ -324,6 +326,11 @@ public final class FeedVideoControls {
         return seekOn() && Settings.FEED_VIDEO_SEEK_BAR_THIN.get();
     }
 
+    /** A drag keeps the thin line on the bottom edge, as Instagram's does, rather than raising the full bar (#539). */
+    private static boolean flatOn() {
+        return thinOn() && Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG.get();
+    }
+
     private static boolean openOn() {
         return inBuild() && Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.get();
     }
@@ -481,8 +488,10 @@ public final class FeedVideoControls {
             control.tick();
         }
         if (control.story && storyBar.get() != current) storyBar = new WeakReference<>(current);
-        // A drag's time needs room above the line, which stays put at the bottom.
-        int lift = current.dragging ? Math.round(TIME_DP * current.getResources().getDisplayMetrics().density) : 0;
+        // A drag's time needs room above the line, which stays put at the bottom. A flat drag puts its
+        // time inside the bar's own height, so the bar keeps its place (#539).
+        int lift = current.dragging && !current.flat
+                ? Math.round(TIME_DP * current.getResources().getDisplayMetrics().density) : 0;
         FrameLayout.LayoutParams layout = (FrameLayout.LayoutParams) current.getLayoutParams();
         if (layout.leftMargin != area.left || layout.topMargin != area.top - lift
                 || layout.width != area.width() || layout.height != area.height() + lift) {
@@ -1449,6 +1458,8 @@ public final class FeedVideoControls {
         boolean length;
         /** Thin line seek bar: only the line, flush with the bottom, until a drag (#431). */
         boolean thin;
+        /** Drag along the bottom edge: a drag on the thin line keeps it there (#539). */
+        boolean flat;
         /** A drag on a story's bar paused it, and the let go plays it again. */
         boolean held;
         int landing = -1;
@@ -1501,6 +1512,7 @@ public final class FeedVideoControls {
                 thin = line;
                 invalidate();
             }
+            flat = line && flatOn();
             // The thin line still runs the whole width, its times sitting just above its ends (#487).
             boolean shown = !control.story && timesOn();
             times(shown, shown && lengthOn());
@@ -1572,6 +1584,20 @@ public final class FeedVideoControls {
                 if (times && getMax() > 0) drawTimesAbove(canvas, top - 2 * density, density);
                 return;
             }
+            if (thin && flat) {
+                // Drag along the bottom edge: Instagram's drag, the line a little thicker where it is,
+                // the dot centered on the edge, and the time in the middle above it (#539).
+                float top = getHeight() - FLAT_DP * density;
+                paint.setColor(0x66FFFFFF);
+                canvas.drawRect(start, top, end, getHeight(), paint);
+                paint.setColor(0xFFFFFFFF);
+                canvas.drawRect(start, top, x, getHeight(), paint);
+                float dot = FLAT_DOT_DP * density;
+                canvas.drawCircle(Math.max(dot, Math.min(getWidth() - dot, x)), getHeight() - FLAT_DP * density / 2, dot, paint);
+                if (times && getMax() > 0) drawTimesAbove(canvas, getHeight() - dot - 2 * density, density);
+                else if (getMax() > 0) drawMiddleTime(canvas, getHeight() - dot - 2 * density, density);
+                return;
+            }
             paint.setColor(0x4D000000);
             canvas.drawRect(start, y - half - density, end, y + half + density, paint);
             paint.setColor(0x80FFFFFF);
@@ -1599,6 +1625,16 @@ public final class FeedVideoControls {
             paint.setTextAlign(Paint.Align.RIGHT);
             canvas.drawText(rightTime(), getWidth() - 4 * density, base, paint);
             paint.setTextAlign(Paint.Align.CENTER);
+            paint.clearShadowLayer();
+        }
+        /** A flat drag's time, where a let go would land and the whole length, in the middle above the line, ending at [bottom] (#539). */
+        private void drawMiddleTime(Canvas canvas, float bottom, float density) {
+            paint.setColor(0xFFFFFFFF);
+            paint.setTextSize(timeSize());
+            paint.setShadowLayer(2 * density, 0, 0, 0xCC000000);
+            paint.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText(ProgressBar.time(getProgress()) + " / " + ProgressBar.time(getMax()),
+                    getWidth() / 2f, bottom - paint.descent(), paint);
             paint.clearShadowLayer();
         }
         /** What the right end shows: the whole length with Full length on the seek bar, the time left otherwise. */

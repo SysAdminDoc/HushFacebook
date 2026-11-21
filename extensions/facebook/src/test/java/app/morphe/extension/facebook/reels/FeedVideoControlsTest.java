@@ -166,6 +166,7 @@ public class FeedVideoControlsTest {
         Settings.FEED_VIDEO_SEEK_BAR_LOWER.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_EDGE.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_THIN.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG.resetToDefault();
         Settings.STORY_SEEK_BAR.resetToDefault();
         Settings.STORY_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
@@ -1507,6 +1508,69 @@ public class FeedVideoControlsTest {
         tick();
         assertTrue("off, the times come back", bar().getPaddingLeft() > 0);
         assertEquals(java.util.Arrays.asList("0:30", "-0:30"), drawnTexts(bar()));
+    }
+
+    @Test public void dragAlongTheBottomEdgeKeepsTheThinLineFlatWhileItsDragged() {
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG, true);
+        tick();
+        refreshAfterLayout();
+        layout();
+        SeekBar bar = bar();
+        int bottom = on(player.view)[1] + 600;
+        assertEquals(bottom, on(bar)[1] + bar.getHeight());
+        touch(bar, MotionEvent.ACTION_DOWN, 270);
+        touch(bar, MotionEvent.ACTION_MOVE, 540);
+        refreshAfterLayout();
+        layout();
+        assertEquals("the bar doesn't rise for the drag (#539)", FeedVideoControls.BAR_DP, bar.getHeight());
+        assertEquals("and stays on the bottom edge", bottom, on(bar)[1] + bar.getHeight());
+        Drawn drawn = drawn(bar);
+        List<android.graphics.RectF> line = new ArrayList<>();
+        for (android.graphics.RectF rect : drawn.rects) {
+            if (rect.bottom == bar.getHeight()) line.add(rect);
+        }
+        assertEquals("the track and the part played, flush with the edge: " + drawn.rects, 2, line.size());
+        assertEquals("a little thicker than the idle line", FeedVideoControls.FLAT_DP, line.get(0).height(), 0f);
+        assertEquals("half way", 540f, line.get(1).right, 0f);
+        assertEquals("nothing else is drawn as a bar", 2, drawn.rects.size());
+        assertEquals("one dot", 1, drawn.circles);
+        assertEquals("the time in the middle, out of the whole", java.util.Arrays.asList("0:30 / 1:00"), drawn.texts);
+        touch(bar, MotionEvent.ACTION_UP, 540);
+        assertEquals(java.util.Arrays.asList(30000), seeks);
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_TIMES, true);
+        tick();
+        touch(bar(), MotionEvent.ACTION_DOWN, 810);
+        assertEquals("with Times on the seek bar the ends already say it",
+                java.util.Arrays.asList("0:45", "-0:15"), drawn(bar()).texts);
+        touch(bar(), MotionEvent.ACTION_UP, 810);
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG, false);
+        tick();
+        touch(bar(), MotionEvent.ACTION_DOWN, 270);
+        refreshAfterLayout();
+        layout();
+        assertEquals("off, the drag rises as before", FeedVideoControls.BAR_DP + FeedVideoControls.TIME_DP, bar().getHeight());
+        touch(bar(), MotionEvent.ACTION_UP, 270);
+    }
+
+    @Test public void dragAlongTheBottomEdgeNeedsTheThinLine() {
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_EDGE, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG, true);
+        tick();
+        refreshAfterLayout();
+        layout();
+        SeekBar bar = bar();
+        touch(bar, MotionEvent.ACTION_DOWN, 540);
+        refreshAfterLayout();
+        layout();
+        assertEquals("the full bar on the edge still rises for its time",
+                FeedVideoControls.BAR_DP + FeedVideoControls.TIME_DP, bar.getHeight());
+        assertEquals("with its time bubble", java.util.Arrays.asList("0:30"), drawn(bar).texts);
+        touch(bar, MotionEvent.ACTION_UP, 540);
     }
 
     @Test public void fullLengthReachesTheThinLineAboveItsRightEnd() {

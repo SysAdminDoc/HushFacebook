@@ -313,6 +313,7 @@ final class SwitchLabels {
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_LOWER) return L10n.t("Lower the seek bar and speaker");
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_EDGE) return L10n.t("Seek bar on the bottom edge");
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_THIN) return L10n.t("Thin line seek bar");
+        if (setting == Settings.FEED_VIDEO_SEEK_BAR_FLAT_DRAG) return L10n.t("Drag along the bottom edge");
         if (setting == Settings.FEED_VIDEO_FULL_PLAYER_BUTTON) return L10n.t("Full player button on feed videos");
         if (setting == Settings.FEED_VIDEO_FULL_PLAYER_CORNER) return L10n.t("Full player button by the speaker");
         if (setting == Settings.FEED_VIDEO_SKIP_BUTTONS) return L10n.t("Skip buttons on feed videos");

@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Added
 
+* New `Drag along the bottom edge` under Video and audio, for `Thin line seek bar`. While you drag the thin line it stays on the video's bottom edge, a bit thicker, with the time in the middle above it, instead of rising into the full bar. It starts off. (#539)
 * `Hide posts with words you choose` and `Hide link posts` each have a switch for every place they reach (Home, the Reels tab, groups, profiles and Pages, and now search results). The first four start on, so nothing changes until you turn one off, and then that place keeps its posts while the others still lose theirs. Search results start off, since you usually want to see what you searched for. Turn it on and the posts on the Posts tab and in All go by your words or links too. (#458)
 * `Ask before reacting to a story` under Stories makes a tap on a reaction at the bottom of a story ask "React to this story?" first. The story pauses while the question is up, and only Continue sends the reaction. Cancel, Back or a tap outside sends nothing and the story plays on. It's part of `Ask before a like` and starts off. (#502)
 * `Hide friends' reactions on photos and videos` under News feed takes away the little picture of a friend with their reaction on it that Facebook puts in the corner of a photo or video someone you know reacted to. It's off until you turn it on. (#483)
@@ -45,6 +46,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* `Times on the seek bar` and `Full length on the seek bar` work with `Thin line seek bar` now. The times sit just above the line's two ends, whether you're dragging or not. Before, the thin line turned them off. (#487)
 * `Hide prompts and promos under reels` also takes the "Made with Edits" pill off the corner of a video in your feed now. That pill is a different piece from the line under a reel's caption, so the switch only caught the line. (#314)
 * With `Tap the bar to seek` on, the three dots and other buttons that sit just above a reel's progress line open again. Before, a tap on the bottom of the three dots in a saved reel jumped the video instead of opening the menu. A tap on the line itself still seeks.
 * A saved reel you open from your library on the Reels tab fits the screen again. Its bottom no longer runs under the comment box, so Facebook's way out of Clear mode is easy to tap.
