@@ -55,6 +55,8 @@ public class FeedVideoDoubleTapTest {
     private final List<Integer> seeks = new ArrayList<>();
     /** Each mark of the player as behind live or not, and how many seeks had gone before it. */
     private final List<String> rewinds = new ArrayList<>();
+    /** Each play (true) or pause (false) sent to the player. */
+    private final List<Boolean> commands = new ArrayList<>();
     private int clicks;
 
     private static final class Media { boolean ordinary = true; boolean live; }
@@ -79,7 +81,12 @@ public class FeedVideoDoubleTapTest {
             public boolean eligible(Object params) { return ((Media) params).ordinary; }
             public boolean live(Object params) { return ((Media) params).live; }
             public boolean playing(Object of) { return ((Player) of).playing; }
-            public void command(Object of, boolean play) { }
+            public void command(Object of, boolean play) {
+                assertEquals(Looper.getMainLooper(), Looper.myLooper());
+                assertTrue(of == player);
+                commands.add(play);
+                ((Player) of).playing = play;
+            }
             public void cast(View from, String videoId) { }
             public void open(View from, String videoId, boolean wide) { }
             public int position(Object of) { return ((Player) of).position; }
@@ -123,6 +130,7 @@ public class FeedVideoDoubleTapTest {
         FeedVideoDoubleTap.reset();
         FeedVideoControls.reset();
         Settings.FEED_VIDEO_DOUBLE_TAP_SKIP.resetToDefault();
+        Settings.FEED_VIDEO_TAP_SHOWS_PAUSE.resetToDefault();
         Settings.INLINE_FEED_VIDEO_CONTROLS.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
         HookStatus.clear();
@@ -358,5 +366,162 @@ public class FeedVideoDoubleTapTest {
     @Test public void theAmountReadsInSecondsWithItsDirection() {
         assertEquals("+10s", SkipLabel.words(1, 10000, java.util.Locale.US));
         assertEquals("-30s", SkipLabel.words(-1, 30000, java.util.Locale.US));
+    }
+
+    // Tap shows a pause button (#538).
+
+    /** Tap shows a pause button on alone, double tap to skip off. */
+    private void tapShowsPause() {
+        Settings.FEED_VIDEO_DOUBLE_TAP_SKIP.save(false);
+        Settings.FEED_VIDEO_TAP_SHOWS_PAUSE.save(true);
+    }
+
+    /** Past the time the middle button stays on a playing video. */
+    private static void waitOutCenter() {
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(FeedVideoControls.CENTER_MS + 100));
+    }
+
+    @Test public void aTapShowsAPauseButtonInTheMiddleAndTheVideoKeepsPlaying() {
+        tapShowsPause();
+        assertEquals("the tap reached Facebook", MotionEvent.ACTION_CANCEL, tap(0.3f));
+        layout();
+        assertEquals("the tap opened the video", 0, clicks);
+        assertTrue("the tap paused or played the video", commands.isEmpty());
+        View center = FeedVideoControls.showingCenter(player);
+        assertNotNull("no button came up", center);
+        assertTrue(center.isShown());
+        assertEquals("Pause feed video", center.getContentDescription());
+        int[] button = new int[2];
+        center.getLocationOnScreen(button);
+        int[] middle = point(0.5f);
+        assertEquals("not across the middle", middle[0], button[0] + center.getWidth() / 2, 1);
+        assertEquals("not down the middle", middle[1], button[1] + center.getHeight() / 2, 1);
+        assertEquals("not the middle button's size", FeedVideoControls.CENTER_DP, center.getWidth());
+        assertTrue(report(), report().contains("tap shows pause"));
+    }
+
+    @Test public void aTapOnTheVideoWhileTheButtonShowsOpensIt() {
+        tapShowsPause();
+        tap(0.5f);
+        layout();
+        assertEquals(0, clicks);
+        assertEquals("the second tap didn't reach Facebook", MotionEvent.ACTION_UP, tap(0.2f));
+        assertEquals(1, clicks);
+        assertTrue(commands.isEmpty());
+    }
+
+    @Test public void theButtonPausesAndPlaysWithoutOpeningTheVideo() {
+        tapShowsPause();
+        tap(0.3f);
+        layout();
+        // The button sits in the middle, so a tap there is the button's.
+        tap(0.5f);
+        assertEquals(List.of(false), commands);
+        assertEquals("the button's tap opened the video", 0, clicks);
+        View center = FeedVideoControls.showingCenter(player);
+        assertNotNull(center);
+        assertEquals("Play feed video", center.getContentDescription());
+        // Paused, it stays for the tap that plays it again.
+        waitOutCenter();
+        drain();
+        assertSame("the button left a paused video", center, FeedVideoControls.showingCenter(player));
+        tap(0.5f);
+        assertEquals(List.of(false, true), commands);
+        assertEquals("Pause feed video", center.getContentDescription());
+        assertEquals(0, clicks);
+        waitOutCenter();
+        drain();
+        assertNull("the button stayed on a playing video", FeedVideoControls.showingCenter(player));
+        assertTrue(report(), report().contains("tap shows pause, paused"));
+        assertTrue(report(), report().contains("tap shows pause, played"));
+    }
+
+    @Test public void theButtonGoesAFewSecondsLaterAndTheNextTapBringsItBack() {
+        tapShowsPause();
+        tap(0.3f);
+        assertNotNull(FeedVideoControls.showingCenter(player));
+        waitOutCenter();
+        drain();
+        assertNull(FeedVideoControls.showingCenter(player));
+        assertEquals("the tap after it went opened the video", MotionEvent.ACTION_CANCEL, tap(0.3f));
+        assertEquals(0, clicks);
+        assertNotNull(FeedVideoControls.showingCenter(player));
+    }
+
+    @Test public void aVideoPausedFromTheButtonThatPlaysAnotherWayLetsItGo() {
+        tapShowsPause();
+        tap(0.3f);
+        layout();
+        tap(0.5f);
+        assertEquals(List.of(false), commands);
+        // Facebook plays it again on its own a while later.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(FeedVideoControls.CENTER_SETTLE_MS + 100));
+        player.playing = true;
+        FeedVideoControls.settingsChanged();
+        drain();
+        assertNotNull(FeedVideoControls.showingCenter(player));
+        waitOutCenter();
+        drain();
+        assertNull("the button stayed on a video playing again", FeedVideoControls.showingCenter(player));
+    }
+
+    @Test public void withDoubleTapOnALoneSideTapShowsTheButtonAndADoubleTapStillSkips() {
+        Settings.FEED_VIDEO_TAP_SHOWS_PAUSE.save(true);
+        assertEquals(MotionEvent.ACTION_CANCEL, tap(0.9f));
+        waitOut();
+        drain();
+        assertEquals("the lone side tap opened the video", 0, clicks);
+        assertNotNull("a lone side tap brought up no button", FeedVideoControls.showingCenter(player));
+        tap(0.9f);
+        tap(0.9f);
+        assertEquals(List.of(40000), seeks);
+        // A lone side tap while the button shows opens the video, once its wait is up. A tap still within
+        // the double tap time of the last jump would jump again, so this one waits that out first.
+        waitOut();
+        waitOut();
+        drain();
+        assertEquals(0, clicks);
+        tap(0.1f);
+        waitOut();
+        drain();
+        assertEquals(1, clicks);
+        assertEquals("the lone tap jumped", List.of(40000), seeks);
+        assertTrue(commands.isEmpty());
+    }
+
+    @Test public void theMiddleButtonIsOffUnlessItsSwitchIsOn() {
+        Settings.FEED_VIDEO_DOUBLE_TAP_SKIP.save(false);
+        assertEquals(MotionEvent.ACTION_UP, tap(0.5f));
+        assertEquals(1, clicks);
+        assertNull(FeedVideoControls.showingCenter(player));
+    }
+
+    @Test public void aBuildWithoutTheTapToPlayPatchOpensTheVideo() {
+        tapShowsPause();
+        FeedVideoDoubleTap.inBuildForTests = false;
+        assertEquals(MotionEvent.ACTION_UP, tap(0.5f));
+        assertEquals(1, clicks);
+        assertNull(FeedVideoControls.showingCenter(player));
+    }
+
+    @Test public void anAdOpensAsBeforeWithTheButtonSwitchOn() {
+        tapShowsPause();
+        player.params.ordinary = false;
+        assertEquals(MotionEvent.ACTION_UP, tap(0.5f));
+        assertEquals(1, clicks);
+        assertNull(FeedVideoControls.showingCenter(player));
+    }
+
+    @Test public void aPressThatStopsAMovingFeedBringsUpNoButton() throws Exception {
+        tapShowsPause();
+        tap(0.3f);
+        waitOutCenter();
+        drain();
+        Method scrolled = ViewTreeObserver.class.getDeclaredMethod("dispatchOnScrollChanged");
+        scrolled.setAccessible(true);
+        scrolled.invoke(activity.getWindow().getDecorView().getViewTreeObserver());
+        assertEquals(MotionEvent.ACTION_UP, tap(0.3f));
+        assertNull(FeedVideoControls.showingCenter(player));
+        assertTrue(report(), report().contains("tap shows pause, feed still moving"));
     }
 }

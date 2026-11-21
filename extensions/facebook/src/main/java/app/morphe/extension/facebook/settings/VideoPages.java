@@ -527,6 +527,12 @@ final class VideoPages {
                                 + "Keep tapping to go further. Live videos work too when they can be rewound. "
                                 + "One tap on a side still opens the video, a moment later than usual. "
                                 + "With Tap to play on, it needs Inline feed video controls on too.")));
+                // Asked at each press, so it applies to the next tap.
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_TAP_SHOWS_PAUSE,
+                        L10n.t("Tapping a feed video shows a pause button in its middle and the video keeps playing, "
+                                + "so a tap doesn't open it in Reels. Tap the button to pause or play. "
+                                + "Tap the video again while the button shows to open it. Ads keep their own controls. "
+                                + "With Tap to play on, it needs Inline feed video controls on too.")));
                 // Hold a reel for 2x's patch reaches the player's speed, which the button reads and sets.
                 if (build.contains(PatchFamily.REEL_HOLD)) {
                     playback.addPreference(toggle(context, Settings.FEED_VIDEO_SPEED_BUTTON,

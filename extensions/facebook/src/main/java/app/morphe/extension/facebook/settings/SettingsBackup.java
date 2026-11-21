@@ -418,6 +418,7 @@ public final class SettingsBackup {
             Settings.FEED_VIDEO_FULL_PLAYER_CORNER,
             Settings.FEED_VIDEO_SKIP_BUTTONS,
             Settings.FEED_VIDEO_DOUBLE_TAP_SKIP,
+            Settings.FEED_VIDEO_TAP_SHOWS_PAUSE,
             Settings.FEED_VIDEO_SPEED_BUTTON,
             Settings.CENTER_FULL_SCREEN_VIDEOS,
             Settings.STORY_SEEK_BAR,

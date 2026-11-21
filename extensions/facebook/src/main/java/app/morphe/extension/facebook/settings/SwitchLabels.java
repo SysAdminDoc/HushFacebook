@@ -323,6 +323,7 @@ final class SwitchLabels {
         if (setting == Settings.FEED_VIDEO_FULL_PLAYER_CORNER) return L10n.t("Full player button by the speaker");
         if (setting == Settings.FEED_VIDEO_SKIP_BUTTONS) return L10n.t("Skip buttons on feed videos");
         if (setting == Settings.FEED_VIDEO_DOUBLE_TAP_SKIP) return L10n.t("Double tap to skip on feed videos");
+        if (setting == Settings.FEED_VIDEO_TAP_SHOWS_PAUSE) return L10n.t("Tap shows a pause button on feed videos");
         if (setting == Settings.FEED_VIDEO_SPEED_BUTTON) return L10n.t("Speed button on feed videos");
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_TIMES) return L10n.t("Times on the seek bar");
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_LENGTH) return L10n.t("Full length on the seek bar");

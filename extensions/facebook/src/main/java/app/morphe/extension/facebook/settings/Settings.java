@@ -2093,6 +2093,19 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_feed_video_double_tap_skip", FALSE);
 
     /**
+     * A tap on a feed video brings up a play/pause button in its middle, as Facebook's reels viewer
+     * does, rather than opening it, and the video goes on playing. A tap on the video while the
+     * button shows opens it as before (#538). Taps are asked at each press. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_TAP_SHOWS_PAUSE =
+            new BooleanSetting("hushfacebook_feed_video_tap_shows_pause", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A button on a feed video that shows its speed and steps it on a tap: 1x, 1.25x, 1.5x, 2x,
      * then 0.5x (#239). Needs Hold a reel for 2x in the build, whose patch reaches the player's
      * speed. Live videos don't get it. Starts off.

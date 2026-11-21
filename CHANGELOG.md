@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Added
 
+* `Tap shows a pause button on feed videos` under Video and audio stops a tap from opening a feed video in Reels. The tap brings up a big play/pause button in the middle of the video and the video keeps playing. Tap the button to pause or play, or tap the video again while it shows to open it. It starts off, and with Tap to play on it needs Inline feed video controls on too. (#538)
 * `Hide the live video comment bar` under Comments and writing takes the comment box and the row of reactions off the bottom of a live video, so a stray tap won't send a reaction or open the keyboard. The live comments stay. It starts off. (#537)
 * `Ignore taps beside the buttons` under News feed keeps a tap on the empty part of the row under a post, between the buttons and the reaction icons, from opening the comments or who reacted. Handy when you're aiming for a video's seek bar just above. It starts off. (#540)
 * `Hide the Follow button` under Stories takes Follow off the top of a story from someone you don't follow. It starts off. (#543)

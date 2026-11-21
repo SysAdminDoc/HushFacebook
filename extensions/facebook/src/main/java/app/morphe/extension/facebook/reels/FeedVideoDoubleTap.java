@@ -42,6 +42,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * middle of the video, the buttons on it, its seek bar, ads, a video that hasn't started and a press
  * that stops a moving feed get their touches at once, as before. Each jump shows its running total
  * over the side tapped, +10s, +20s and on, through {@link SkipLabel}.
+ *
+ * <p>Tap shows a pause button (#538) takes its taps here too: a tap anywhere on a feed video, a lone
+ * one on a side once its wait is up, brings up a play/pause button in the video's middle rather than
+ * opening it, and the video goes on playing. A tap on the video while that button shows opens it as
+ * before, and the button itself, being a button, takes its own taps at once.
  */
 public final class FeedVideoDoubleTap {
     private static final String FAMILY = FamilyNames.TAP_TO_PLAY;
@@ -74,6 +79,8 @@ public final class FeedVideoDoubleTap {
     /** A lone tap held back, which goes on to Facebook at the same point in its window when its time is up. */
     private static boolean waiting;
     private static WeakReference<Activity> waitingIn = new WeakReference<>(null);
+    /** The video that tap was on, which Tap shows a pause button gives its button rather than opening it. */
+    private static WeakReference<Object> waitingFor = new WeakReference<>(null);
     private static float waitX, waitY;
     /** True while the held tap is handed on, so this lets it through. */
     private static boolean replaying;
@@ -111,6 +118,11 @@ public final class FeedVideoDoubleTap {
                 || event.getEventTime() - pressTime >= ViewConfiguration.getLongPressTimeout()) return;
         Object player = pressed.get();
         if (player == null) return;
+        if (pressSide == 0) {
+            // A tap in the middle, there with Tap shows a pause button on: the button takes it, or Facebook (#538).
+            if (FeedVideoControls.showCenter(player)) event.setAction(MotionEvent.ACTION_CANCEL);
+            return;
+        }
         event.setAction(MotionEvent.ACTION_CANCEL);
         last = new WeakReference<>(player);
         lastUp = event.getEventTime();
@@ -122,6 +134,7 @@ public final class FeedVideoDoubleTap {
         }
         waiting = true;
         waitingIn = new WeakReference<>(activity);
+        waitingFor = new WeakReference<>(player);
         waitX = pressX;
         waitY = pressY;
         main().postDelayed(REPLAY, ViewConfiguration.getDoubleTapTimeout());
@@ -136,24 +149,27 @@ public final class FeedVideoDoubleTap {
         if (waiting) {
             waiting = false;
             waitingIn = new WeakReference<>(null);
+            waitingFor = new WeakReference<>(null);
             main().removeCallbacks(REPLAY);
         }
-        if (root == null || !on("feed video double tap")) return;
+        if (root == null) return;
+        boolean skips = on("feed video double tap");
+        boolean shows = showsPause();
+        if (!skips && !shows) return;
         watchScrolls(root);
         int x = Math.round(event.getRawX());
         int y = Math.round(event.getRawY());
         Object player = videoAt(root, x, y);
         if (player == null) return;
-        int side = side(FeedVideoControls.access.view(player), x);
-        if (side == 0 || !FeedVideoControls.skippable(player)) return;
-        boolean again = player == before;
-        if (!again) {
-            // A video waiting for Tap to play, or not drawn yet, takes its tap at once.
-            if (!started(player)) return;
-            if (SystemClock.uptimeMillis() - lastScroll <= SCROLLED_WITHIN_MS) {
-                HookStatus.counted(FAMILY, "double tap skip, feed still moving");
-                return;
-            }
+        int side = skips && FeedVideoControls.skippable(player) ? side(FeedVideoControls.access.view(player), x) : 0;
+        boolean again = side != 0 && player == before;
+        // A video waiting for Tap to play, or not drawn yet, takes a tap on its side at once.
+        if (side != 0 && !again && !started(player)) side = 0;
+        // Without Tap shows a pause button, the middle of the video and those taps are Facebook's.
+        if (side == 0 && !shows) return;
+        if (!again && SystemClock.uptimeMillis() - lastScroll <= SCROLLED_WITHIN_MS) {
+            HookStatus.counted(FAMILY, side != 0 ? "double tap skip, feed still moving" : "tap shows pause, feed still moving");
+            return;
         }
         pressing = true;
         follows = again;
@@ -174,9 +190,13 @@ public final class FeedVideoDoubleTap {
         // The tap has gone on to open the video, so no later press follows it.
         last = new WeakReference<>(null);
         Activity activity = waitingIn.get();
+        Object player = waitingFor.get();
         waitingIn = new WeakReference<>(null);
+        waitingFor = new WeakReference<>(null);
         // A dialog or another screen that came up since gets nothing.
         if (activity == null || activity.isFinishing() || activity.isDestroyed() || !activity.hasWindowFocus()) return;
+        // With Tap shows a pause button on, a lone tap on a side brings the button up as one in the middle does (#538).
+        if (player != null && showsPause() && FeedVideoControls.showCenter(player)) return;
         long now = SystemClock.uptimeMillis();
         MotionEvent down = tap(now, MotionEvent.ACTION_DOWN);
         MotionEvent up = tap(now, MotionEvent.ACTION_UP);
@@ -282,6 +302,18 @@ public final class FeedVideoDoubleTap {
         }
     }
 
+    /** Whether Tap shows a pause button is on (#538). Never throws: a failure is reported and reads off. */
+    private static boolean showsPause() {
+        try {
+            if (!inBuild() || !Utils.settingsReady() || !FeedVideoControls.tapShowsPause()) return false;
+            HookStatus.bound(FAMILY, "tap shows pause");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "tap shows pause", failure);
+            return false;
+        }
+    }
+
     private static boolean inBuild() {
         Boolean forced = inBuildForTests;
         return forced != null ? forced : SettingsStatus.tapToPlay();
@@ -300,6 +332,7 @@ public final class FeedVideoDoubleTap {
         last = new WeakReference<>(null);
         waiting = false;
         waitingIn = new WeakReference<>(null);
+        waitingFor = new WeakReference<>(null);
         replaying = false;
         if (main != null) main.removeCallbacks(REPLAY);
     }
