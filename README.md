@@ -91,6 +91,8 @@ Turn on **Queue reel saves** there too, and Download on a reel adds it to a queu
 
 **Plain slide between people**, also under **Stories**, takes the cube turn out of a swipe from one person's stories to the next, so the pages just slide across. It starts off.
 
+**Hide the Follow button**, under **Stories**, takes Follow off a story from someone you don't follow. **Hide the reply bar** goes further and takes away the whole bar under someone else's story, so the repost button, the Send message box and the quick reactions are gone too. **Hide the Up next card** starts the next stories right away instead of counting down on a card first. They all start off.
+
 ### Blocking Reels
 
 Reels turn up in several places, and no one switch covers them all. Searching the settings for "block reels" brings up a map of them.

@@ -408,6 +408,203 @@ class StoryViewerCleanupFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /** Whether some return in [code] answers a register whose last write above it is `const/4` zero. */
+    private fun returnsFalse(code: List<Instruction>) = code.indices.any { at ->
+        val ret = code[at]
+        if (ret.opcode != Opcode.RETURN) return@any false
+        val register = (ret as OneRegisterInstruction).registerA
+        val write = (at - 1 downTo 0).firstOrNull { j ->
+            code[j].opcode.setsRegister() && (code[j] as? OneRegisterInstruction)?.registerA == register
+        } ?: return@any false
+        code[write].opcode == Opcode.CONST_4 && (code[write] as NarrowLiteralInstruction).narrowLiteral == 0
+    }
+
+    /** Whether a branch in [code] lands on the instruction at [index]. */
+    private fun landsOn(code: List<Instruction>, index: Int): Boolean {
+        val addresses = code.runningFold(0) { at, it -> at + it.codeUnits }
+        return code.indices.any { at ->
+            val branch = code[at]
+            branch is OffsetInstruction && branch.opcode != Opcode.PACKED_SWITCH && branch.opcode != Opcode.SPARSE_SWITCH &&
+                addresses[at] + branch.codeOffset == addresses[index]
+        }
+    }
+
+    /** The first register [call] hands over. */
+    private fun firstRegister(call: Instruction) = when (call) {
+        is FiveRegisterInstruction -> call.registerC
+        is RegisterRangeInstruction -> call.startRegister
+        else -> -1
+    }
+
+    private fun Method.signature() = name + parameterTypes.joinToString("") + returnType
+
+    /** #543: the Follow button on a story answers null first thing on a yes. */
+    @Test
+    fun `each declared build's story Follow button asks the extension first`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, FOLLOW_BUTTON)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val buttons = holders.filter(::isStoryFollowButton)
+                assertEquals("$name: story Follow buttons naming themselves $FOLLOW_BUTTON", 1, buttons.size)
+                val button = buttons.single()
+                val layout = layoutOf(button)
+                assertNotNull("$name: the story Follow button has no one layout", layout)
+                val original = layout!!.code()
+                // Positive control: Facebook's own layout answers null on your own stories.
+                assertTrue("$name: the story Follow button never answers null itself", returnsNull(original))
+
+                val context = PatchContexts.of(holders)
+                context.hideStoryFollow()
+                val code = context.mutableClassDefBy(button.type).methods.single { it.signature() == layout.signature() }.code()
+                assertEquals("$name: answers null on a yes",
+                    listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN_OBJECT),
+                    code.take(5).map { it.opcode })
+                assertEquals("$name: asks its own switch", HIDE_FOLLOW, code[0].reference())
+                assertTrue("$name: the early answer isn't null", answersNull(code.subList(3, 5)))
+                assertTrue("$name: a no doesn't go to Facebook's layout", branchesPast(code, 5))
+                assertEquals("$name: the rest is Facebook's", original.unpadded(), code.drop(5).unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * #544: the story page's first state sends the Up next flag through the extension, with every
+     * path to the write going through the hook, while the card's own dismiss and the state's builder
+     * stay as they were.
+     */
+    @Test
+    fun `each declared build's story page asks the extension about the Up next card as it starts`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val card = component(bundle, UP_NEXT_CARD)
+                val flag = upNextFlag(card)
+                assertNotNull("$name: the Up next card clears no one flag", flag)
+                val field = flag.toString()
+                val writers = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
+                    dex.fieldSection.any { it.toString() == field }
+                }) { flagWrites(it, flag!!).isNotEmpty() }
+                val owners = writers.map { it.definingClass }.toSet()
+                // Positive controls: the card's dismiss and the state's builder write the flag too, and
+                // the patch has to tell them from the page.
+                assertTrue("$name: the Up next card doesn't clear its flag", card.type in owners)
+                assertTrue("$name: the state's builder doesn't copy the flag", flag!!.definingClass in owners)
+                val pages = writers.filter { it.definingClass != card.type && it.definingClass != flag.definingClass }
+                assertEquals("$name: methods setting the Up next flag besides the card and the builder", 1, pages.size)
+                val page = pages.single()
+                val original = page.code()
+                val writes = flagWrites(page, flag)
+                // Positive control: a branch lands on a write, so the hook has to take over its label.
+                assertTrue("$name: no branch lands on the Up next flag's write", writes.any { landsOn(original, it) })
+
+                val classes = FixtureDex.classes(bundle, owners)
+                val stock = classes.values.filter { it.type != page.definingClass }
+                    .associate { it.type to it.methods.filter { m -> m.implementation != null }.associate { m -> m.signature() to m.code().unpadded() } }
+                val context = PatchContexts.of((listOf(card) + classes.values).distinctBy { it.type })
+                context.skipUpNextCard()
+                val code = context.mutableClassDefBy(page.definingClass).methods.single { it.signature() == page.signature() }.code()
+                val calls = code.indices.filter { code[it].opcode in listOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) &&
+                    code[it].reference() == SHOW_UP_NEXT }
+                assertEquals("$name: hooks in front of the flag's writes", writes.size, calls.size)
+                for (at in calls) {
+                    val write = code[at + 2]
+                    assertEquals("$name: the hook at $at isn't right before a write", Opcode.IPUT_BOOLEAN, write.opcode)
+                    val register = (write as TwoRegisterInstruction).registerA
+                    assertEquals("$name: the hook at $at hands over another register", register, firstRegister(code[at]))
+                    assertEquals("$name: the hook at $at keeps its answer elsewhere", Opcode.MOVE_RESULT, code[at + 1].opcode)
+                    assertEquals("$name: the hook at $at keeps its answer elsewhere", register, (code[at + 1] as OneRegisterInstruction).registerA)
+                    assertFalse("$name: a branch skips the hook at $at", landsOn(code, at + 2))
+                }
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    code.filterIndexed { at, _ -> calls.none { at == it || at == it + 1 } }.unpadded())
+                for ((type, methods) in stock) for ((signature, before) in methods) {
+                    val after = context.mutableClassDefBy(type).methods.single { it.signature() == signature }.code().unpadded()
+                    assertEquals("$name: $type->$signature changed", before, after)
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * #542: both bars under someone else's story draw nothing on a yes. The component building the
+     * reply bar section answers null first thing, and the feedback bar's check says no first thing,
+     * which its render already answers with null.
+     */
+    @Test
+    fun `each declared build's story reply bars ask the extension first`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        fun checkCalls(method: Method) = method.implementation?.instructions?.mapNotNull {
+            ((it as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf { called ->
+                called.name == FEEDBACK_BAR_CHECK && called.returnType == "Z"
+            }
+        }.orEmpty()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val sections = FixtureDex.classesHolding(bundle, REPLY_BAR_SECTION)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                    .filter { namesItselfIn(it, REPLY_BAR_SECTION) }
+                assertEquals("$name: sections naming themselves $REPLY_BAR_SECTION", 1, sections.size)
+                val section = sections.single()
+                val found = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
+                    dex.typeSection.any { it.toString() == section.type } || dex.methodSection.any { it.name == FEEDBACK_BAR_CHECK }
+                }) { (it.name == "render" && createsInstance(it, section.type)) || checkCalls(it).isNotEmpty() }
+                val renders = found.filter { it.name == "render" && createsInstance(it, section.type) }
+                assertEquals("$name: renders building the $REPLY_BAR_SECTION", 1, renders.size)
+                val callers = found.filter { checkCalls(it).isNotEmpty() }
+                assertEquals("$name: methods asking $FEEDBACK_BAR_CHECK", 1, callers.size)
+                val owners = callers.flatMap(::checkCalls).map { it.definingClass }.toSet()
+                assertEquals("$name: classes answering $FEEDBACK_BAR_CHECK", 1, owners.size)
+                val owner = owners.single()
+                val classes = FixtureDex.classes(bundle,
+                    (renders.map { it.definingClass } + callers.map { it.definingClass } + owner).toSet())
+                val check = classes.getValue(owner).methods.single { it.name == FEEDBACK_BAR_CHECK }
+                // Positive controls: the check says no itself for some stories, and the feedback bar's
+                // render answers null on its no.
+                assertTrue("$name: $FEEDBACK_BAR_CHECK never says no itself", returnsFalse(check.code()))
+                assertTrue("$name: the feedback bar never answers null itself", returnsNull(callers.single().code()))
+                val holder = classes.getValue(renders.single().definingClass)
+                val stockRender = renderOf(holder)!!.code()
+                val stockCheck = check.code()
+
+                val context = PatchContexts.of((sections + classes.values).distinctBy { it.type })
+                context.hideStoryReplyBar()
+                val render = context.mutableClassDefBy(holder.type).methods.single {
+                    it.name == "render" && it.parameterTypes.size == 1
+                }.code()
+                assertEquals("$name: the reply bar answers null on a yes",
+                    listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN_OBJECT),
+                    render.take(5).map { it.opcode })
+                assertEquals("$name: the reply bar asks its own switch", HIDE_REPLY_BAR, render[0].reference())
+                assertTrue("$name: the reply bar's early answer isn't null", answersNull(render.subList(3, 5)))
+                assertTrue("$name: a no doesn't go to the reply bar's render", branchesPast(render, 5))
+                assertEquals("$name: the rest of the reply bar is Facebook's", stockRender.unpadded(), render.drop(5).unpadded())
+
+                val patched = context.mutableClassDefBy(owner).methods.single { it.name == FEEDBACK_BAR_CHECK }.code()
+                assertEquals("$name: the feedback bar check says no on a yes",
+                    listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN),
+                    patched.take(5).map { it.opcode })
+                assertEquals("$name: the feedback bar check asks the same switch", HIDE_REPLY_BAR, patched[0].reference())
+                assertTrue("$name: the check's early answer isn't no", returnsFalse(patched.take(5)))
+                assertTrue("$name: a no doesn't go to Facebook's check", branchesPast(patched, 5))
+                assertEquals("$name: the rest of the check is Facebook's", stockCheck.unpadded(), patched.drop(5).unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     /** #439: the "Add to story" card's source hands back the list it was given on a yes. */
     @Test
     fun `each declared build's create story card source passes its list through on a yes`() {
@@ -600,7 +797,8 @@ class StoryViewerCleanupFixtureTest {
             STORY_VIEWER_CLEANUP to DROP_CREDIT, STORY_VIEWER_CLEANUP to HIDE_SUBSCRIBE,
             STORY_VIEWER_CLEANUP to HIDE_CREATE_STORY_CARD, STORY_VIEWER_CLEANUP to HIDE_SONG_PILL,
             STORY_VIEWER_CLEANUP to WITHOUT_CREATE_CARDS, STORY_VIEWER_CLEANUP to IS_CREATE_CARD,
-            STORY_VIEWER_CLEANUP to CUBE_TURN, STORY_PROGRESS_BAR to SEGMENTS_MOVED)) {
+            STORY_VIEWER_CLEANUP to CUBE_TURN, STORY_PROGRESS_BAR to SEGMENTS_MOVED,
+            STORY_VIEWER_CLEANUP to HIDE_FOLLOW, STORY_VIEWER_CLEANUP to SHOW_UP_NEXT, STORY_VIEWER_CLEANUP to HIDE_REPLY_BAR)) {
             val method = ExtensionDex.classDef(owner).methods.singleOrNull {
                 "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == hook
             }

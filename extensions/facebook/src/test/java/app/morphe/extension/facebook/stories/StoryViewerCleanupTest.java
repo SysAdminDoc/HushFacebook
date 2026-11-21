@@ -53,6 +53,9 @@ public class StoryViewerCleanupTest {
         Settings.HIDE_STORY_CREDITS.resetToDefault();
         Settings.HIDE_STORY_REPLY_SUGGESTIONS.resetToDefault();
         Settings.HIDE_STORY_SUBSCRIBE.resetToDefault();
+        Settings.HIDE_STORY_FOLLOW.resetToDefault();
+        Settings.HIDE_STORY_UP_NEXT.resetToDefault();
+        Settings.HIDE_STORY_REPLY_BAR.resetToDefault();
         Settings.HIDE_STORY_CREATE_CARDS.resetToDefault();
         Settings.STORY_FLAT_SLIDE.resetToDefault();
         HookStatus.clear();
@@ -144,6 +147,72 @@ public class StoryViewerCleanupTest {
         assertFalse("paused, the button went", StoryViewerCleanup.hideSubscribe());
         PauseForTests.resume();
         assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.SUBSCRIBE_HIDDEN + " 1"));
+    }
+
+    /** #543: the Follow button on a story goes only with its own switch. */
+    @Test
+    public void theFollowSwitchStartsOffAndHidesOnlyTheFollowButton() {
+        assertFalse(Settings.HIDE_STORY_FOLLOW.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.HIDE_STORY_FOLLOW));
+        assertFalse("off, the button went", StoryViewerCleanup.hideFollow());
+        Settings.HIDE_STORY_SUBSCRIBE.save(true);
+        Settings.HIDE_STORY_REPLY_BAR.save(true);
+        assertFalse("another switch hid the Follow button", StoryViewerCleanup.hideFollow());
+        Settings.HIDE_STORY_FOLLOW.save(true);
+        assertTrue("on, the button stayed", StoryViewerCleanup.hideFollow());
+        Settings.HIDE_STORY_SUBSCRIBE.save(false);
+        assertFalse("it hid the Subscribe button", StoryViewerCleanup.hideSubscribe());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, the button went", StoryViewerCleanup.hideFollow());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the button went before the settings were ready", StoryViewerCleanup.hideFollow()));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.FOLLOW_HIDDEN + " 1"));
+    }
+
+    /**
+     * #544: with the switch on, a page Facebook opens on the Up next card opens as if the card were
+     * dismissed, and one it opens without the card stays that way whatever the switch says.
+     */
+    @Test
+    public void theUpNextSwitchOpensThePageWithoutTheCard() {
+        assertFalse(Settings.HIDE_STORY_UP_NEXT.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.HIDE_STORY_UP_NEXT));
+        assertTrue("off, the card went", StoryViewerCleanup.showUpNext(true));
+        assertFalse("off, a page without the card got one", StoryViewerCleanup.showUpNext(false));
+        Settings.HIDE_STORY_REPLY_BAR.save(true);
+        Settings.HIDE_STORY_FOLLOW.save(true);
+        assertTrue("another switch took the card away", StoryViewerCleanup.showUpNext(true));
+        Settings.HIDE_STORY_UP_NEXT.save(true);
+        assertFalse("on, the card stayed", StoryViewerCleanup.showUpNext(true));
+        assertFalse("on, a page without the card got one", StoryViewerCleanup.showUpNext(false));
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertTrue("paused, the card went", StoryViewerCleanup.showUpNext(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertTrue("the card went before the settings were ready", StoryViewerCleanup.showUpNext(true)));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.UP_NEXT_SKIPPED + " 1"));
+    }
+
+    /** #542: the bar under a story, repost, Send message and reactions, goes only with its own switch. */
+    @Test
+    public void theReplyBarSwitchStartsOffAndHidesOnlyTheBar() {
+        assertFalse(Settings.HIDE_STORY_REPLY_BAR.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.HIDE_STORY_REPLY_BAR));
+        assertFalse("off, the bar went", StoryViewerCleanup.hideReplyBar());
+        Settings.HIDE_STORY_REPLY_SUGGESTIONS.save(true);
+        assertFalse("the reply suggestions switch took the whole bar", StoryViewerCleanup.hideReplyBar());
+        Settings.HIDE_STORY_REPLY_BAR.save(true);
+        assertTrue("on, the bar stayed", StoryViewerCleanup.hideReplyBar());
+        Settings.HIDE_STORY_REPLY_SUGGESTIONS.save(false);
+        assertFalse("it hid the reply suggestions too", StoryViewerCleanup.hideReplySuggestions());
+        assertFalse("it hid the Follow button", StoryViewerCleanup.hideFollow());
+        PauseForTests.pause(HushfacebookPause.Reason.MARKER_FILE);
+        assertFalse("paused, the bar went", StoryViewerCleanup.hideReplyBar());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the bar went before the settings were ready", StoryViewerCleanup.hideReplyBar()));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.REPLY_BAR_HIDDEN + " 1"));
     }
 
     /** #439: the "Add to story" cards between stories go only with their own switch. */

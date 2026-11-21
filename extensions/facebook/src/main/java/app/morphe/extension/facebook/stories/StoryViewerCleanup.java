@@ -28,7 +28,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * pill of its own with a "Try it" button, and the same switch draws nothing in its place.
  *
  * <p>The reply suggestions switch takes the row of suggested replies off the bottom of a story,
- * leaving the reply box, and the Subscribe switch the Subscribe pill under the name. The create
+ * leaving the reply box, and the Subscribe switch the Subscribe pill under the name. The Follow
+ * switch takes the Follow button off a story from someone you don't follow (#543), the reply bar
+ * switch the whole bar under someone else's story: the repost button, the Send message box and the
+ * quick reactions (#542). The Up next switch opens the next people's stories without the "Up next"
+ * card that holds the first one still while it counts down (#544). The create
  * cards switch keeps out the "Add to story" card Facebook puts between other people's stories, the
  * plain one and the ones built from the gallery (#439), and the full screen "continue the story"
  * card built from recent gallery photos, which the viewer's finished list loses on its way out (#521).
@@ -53,6 +57,15 @@ public final class StoryViewerCleanup {
 
     /** Counted each time a story's Subscribe pill isn't drawn. */
     static final String SUBSCRIBE_HIDDEN = "story Subscribe pill hidden";
+
+    /** Counted each time a story's Follow button isn't drawn (#543). */
+    static final String FOLLOW_HIDDEN = "story Follow button hidden";
+
+    /** Counted each time a story's page opens without the "Up next" card counting down over it (#544). */
+    static final String UP_NEXT_SKIPPED = "story Up next card skipped";
+
+    /** Counted each time the bar under a story isn't drawn (#542). */
+    static final String REPLY_BAR_HIDDEN = "story reply bar hidden";
 
     /** Counted each time the viewer's list of stories is built without the "Add to story" card. */
     static final String CREATE_CARDS_HIDDEN = "story create cards left out";
@@ -114,6 +127,57 @@ public final class StoryViewerCleanup {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story Subscribe pill", failure);
+            return false;
+        }
+    }
+
+    /** Injection point, first thing in the story Follow button's layout: whether to draw nothing (#543). Never throws. */
+    public static boolean hideFollow() {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story Follow button");
+            if (!Utils.settingsReady() || !Settings.HIDE_STORY_FOLLOW.get()) return false;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, FOLLOW_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story Follow button", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, where a story's page sets up its first state: whether it opens on the "Up next"
+     * card, which holds the story still while it counts down (#544). Facebook's own answer comes in,
+     * and with the switch on a yes turns into a no, as if the card had been dismissed already, so the
+     * story plays straight away. Never throws.
+     */
+    public static boolean showUpNext(boolean show) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story Up next card");
+            if (!show || !Utils.settingsReady() || !Settings.HIDE_STORY_UP_NEXT.get()) return show;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, UP_NEXT_SKIPPED);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story Up next card", failure);
+            return show;
+        }
+    }
+
+    /**
+     * Injection point, first thing in both of the bars under someone else's story, the one with the
+     * repost button, the Send message box and the quick reactions, and its newer feedback bar: whether
+     * to draw nothing (#542). Never throws.
+     */
+    public static boolean hideReplyBar() {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story reply bar");
+            if (!Utils.settingsReady() || !Settings.HIDE_STORY_REPLY_BAR.get()) return false;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, REPLY_BAR_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story reply bar", failure);
             return false;
         }
     }

@@ -2654,6 +2654,16 @@ Takes the song and effect credits off the line under the poster's name on a stor
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	Tira a fileira de respostas sugeridas da parte de baixo de um story. A caixa de resposta continua. Vale a partir do próximo story que você abrir.
 Hide the Subscribe button	Ocultar o botão Inscrever-se
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	Tira o botão Inscrever-se da parte de cima de um story. Vale a partir do próximo story que você abrir.
+# context: switch title on the Stories page; the Follow button sits at the top of a story from someone you don't follow
+Hide the Follow button	Ocultar o botão Seguir
+Takes the Follow button off the top of a story from someone you don't follow. Applies from the next story you open.	Tira o botão Seguir da parte de cima de um story de alguém que você não segue. Vale a partir do próximo story que você abrir.
+# context: switch title on the Stories page; the reply bar is the row under someone else's story with the repost button, the Send message box and the quick reactions
+Hide the reply bar	Ocultar a barra de resposta
+# context: description of that switch; Send message is the text box Facebook shows in that row
+Takes the bar off the bottom of other people's stories, with the repost button, the Send message box and the quick reactions. Applies from the next story you open.	Tira a barra da parte de baixo dos stories de outras pessoas, com o botão de repostar, a caixa Enviar mensagem e as reações rápidas. Vale a partir do próximo story que você abrir.
+# context: switch title on the Stories page; Up next is the card Facebook shows over the next stories while it counts down before they play
+Hide the Up next card	Ocultar o cartão A seguir
+Starts the next stories right away, without the Up next card that counts down over the first one. Applies the next time you open stories.	Começa os próximos stories na hora, sem o cartão A seguir que faz uma contagem regressiva sobre o primeiro. Vale a partir da próxima vez que você abrir os stories.
 Hide create story cards	Ocultar cartões de criar story
 Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	Tira os cartões entre os stories que pedem para você criar um, inclusive o cartão em tela cheia que pede para você continuar o story com fotos da sua galeria. Vale a partir da próxima vez que você abrir os stories.
 Progress bar at the bottom	Barra de progresso embaixo

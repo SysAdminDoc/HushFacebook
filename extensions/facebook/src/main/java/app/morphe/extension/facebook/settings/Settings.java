@@ -570,6 +570,29 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_story_subscribe", FALSE);
 
     /**
+     * The Follow button leaves the top of a story from someone you don't follow ({@link
+     * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #543). Starts off. Read as the button draws.
+     */
+    public static final BooleanSetting HIDE_STORY_FOLLOW =
+            new BooleanSetting("hushfacebook_hide_story_follow", FALSE);
+
+    /**
+     * The next people's stories open without the "Up next" card that holds the first one still while
+     * it counts down ({@link app.morphe.extension.facebook.stories.StoryViewerCleanup}, #544). Starts
+     * off. Read as each person's stories open.
+     */
+    public static final BooleanSetting HIDE_STORY_UP_NEXT =
+            new BooleanSetting("hushfacebook_hide_story_up_next", FALSE);
+
+    /**
+     * The bar under someone else's story leaves: the repost button, the Send message box and the quick
+     * reactions ({@link app.morphe.extension.facebook.stories.StoryViewerCleanup}, #542). Starts off.
+     * Read as the bar draws.
+     */
+    public static final BooleanSetting HIDE_STORY_REPLY_BAR =
+            new BooleanSetting("hushfacebook_hide_story_reply_bar", FALSE);
+
+    /**
      * The "Add to story" card Facebook puts between other people's stories, the plain one and the
      * ones built from photos in the phone's gallery, stays out of the viewer ({@link
      * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #439). Starts off. Read as the

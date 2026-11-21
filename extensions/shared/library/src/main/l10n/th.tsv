@@ -2768,6 +2768,16 @@ Takes the song and effect credits off the line under the poster's name on a stor
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	นำแถวคำแนะนำในการตอบกลับออกจากด้านล่างของสตอรี่ ช่องตอบกลับจะยังคงอยู่ จะมีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
 Hide the Subscribe button	ซ่อนปุ่มสมัครรับข้อมูล
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	นำปุ่มสมัครรับข้อมูลออกจากด้านบนของสตอรี่ จะมีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
+# context: switch title on the Stories page; the Follow button sits at the top of a story from someone you don't follow
+Hide the Follow button	ซ่อนปุ่มติดตาม
+Takes the Follow button off the top of a story from someone you don't follow. Applies from the next story you open.	นำปุ่มติดตามออกจากด้านบนของสตอรี่ของคนที่คุณไม่ได้ติดตาม จะมีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
+# context: switch title on the Stories page; the reply bar is the row under someone else's story with the repost button, the Send message box and the quick reactions
+Hide the reply bar	ซ่อนแถบตอบกลับ
+# context: description of that switch; Send message is the text box Facebook shows in that row
+Takes the bar off the bottom of other people's stories, with the repost button, the Send message box and the quick reactions. Applies from the next story you open.	นำแถบด้านล่างสตอรี่ของคนอื่นออก รวมถึงปุ่มแชร์ซ้ำ ช่องส่งข้อความ และรีแอคชั่นด่วน จะมีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
+# context: switch title on the Stories page; Up next is the card Facebook shows over the next stories while it counts down before they play
+Hide the Up next card	ซ่อนการ์ด "ถัดไป"
+Starts the next stories right away, without the Up next card that counts down over the first one. Applies the next time you open stories.	เริ่มสตอรี่ถัดไปทันทีโดยไม่มีการ์ด "ถัดไป" ที่นับถอยหลังบนสตอรี่แรก มีผลในครั้งถัดไปที่คุณเปิดสตอรี่
 Hide create story cards	ซ่อนการ์ดชวนสร้างสตอรี่
 Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	นำการ์ดระหว่างสตอรี่ที่ชวนให้คุณสร้างสตอรี่ออก รวมถึงการ์ดแบบเต็มหน้าจอที่ชวนให้คุณเล่าสตอรี่ต่อด้วยรูปภาพจากแกลเลอรีของคุณ มีผลในครั้งถัดไปที่คุณเปิดสตอรี่
 Progress bar at the bottom	แถบแสดงความคืบหน้าที่ด้านล่าง

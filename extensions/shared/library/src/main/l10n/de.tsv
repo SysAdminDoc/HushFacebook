@@ -2768,6 +2768,16 @@ Takes the song and effect credits off the line under the poster's name on a stor
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	Entfernt die Reihe mit Antwortvorschlägen unten in einer Story. Das Antwortfeld bleibt. Gilt ab der nächsten Story, die du öffnest.
 Hide the Subscribe button	Abonnieren-Button ausblenden
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	Entfernt den Abonnieren-Button oben in einer Story. Gilt ab der nächsten Story, die du öffnest.
+# context: switch title on the Stories page; the Follow button sits at the top of a story from someone you don't follow
+Hide the Follow button	Folgen-Button ausblenden
+Takes the Follow button off the top of a story from someone you don't follow. Applies from the next story you open.	Entfernt den Folgen-Button oben in einer Story von jemandem, dem du nicht folgst. Gilt ab der nächsten Story, die du öffnest.
+# context: switch title on the Stories page; the reply bar is the row under someone else's story with the repost button, the Send message box and the quick reactions
+Hide the reply bar	Antwortleiste ausblenden
+# context: description of that switch; Send message is the text box Facebook shows in that row
+Takes the bar off the bottom of other people's stories, with the repost button, the Send message box and the quick reactions. Applies from the next story you open.	Entfernt die Leiste unten in den Storys anderer Leute, mit dem Button zum erneuten Teilen, dem Feld „Nachricht senden“ und den schnellen Reaktionen. Gilt ab der nächsten Story, die du öffnest.
+# context: switch title on the Stories page; Up next is the card Facebook shows over the next stories while it counts down before they play
+Hide the Up next card	Karte „Als Nächstes“ ausblenden
+Starts the next stories right away, without the Up next card that counts down over the first one. Applies the next time you open stories.	Startet die nächsten Storys sofort, ohne die Karte „Als Nächstes“, die über der ersten herunterzählt. Gilt ab dem nächsten Öffnen der Storys.
 Hide create story cards	Story-erstellen-Karten ausblenden
 Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	Entfernt die Karten zwischen Storys, die dich auffordern, selbst eine zu erstellen, auch die bildschirmfüllende Karte, die dich bittet, die Story mit Fotos aus deiner Galerie fortzusetzen. Gilt ab dem nächsten Öffnen der Storys.
 Progress bar at the bottom	Fortschrittsbalken unten

@@ -2763,6 +2763,16 @@ Takes the song and effect credits off the line under the poster's name on a stor
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	去掉快拍底部那一排建议回复。回复框会保留。从你打开的下一个快拍开始生效。
 Hide the Subscribe button	隐藏订阅按钮
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	去掉快拍顶部的订阅按钮。从你打开的下一个快拍开始生效。
+# context: switch title on the Stories page; the Follow button sits at the top of a story from someone you don't follow
+Hide the Follow button	隐藏关注按钮
+Takes the Follow button off the top of a story from someone you don't follow. Applies from the next story you open.	去掉你没关注的人的快拍顶部的关注按钮。从你打开的下一个快拍开始生效。
+# context: switch title on the Stories page; the reply bar is the row under someone else's story with the repost button, the Send message box and the quick reactions
+Hide the reply bar	隐藏回复栏
+# context: description of that switch; Send message is the text box Facebook shows in that row
+Takes the bar off the bottom of other people's stories, with the repost button, the Send message box and the quick reactions. Applies from the next story you open.	去掉别人快拍底部的那一栏，连同转发按钮、发消息框和快速表情回应。从你打开的下一个快拍开始生效。
+# context: switch title on the Stories page; Up next is the card Facebook shows over the next stories while it counts down before they play
+Hide the Up next card	隐藏“接下来”卡片
+Starts the next stories right away, without the Up next card that counts down over the first one. Applies the next time you open stories.	立即开始播放下一组快拍，不再显示在第一个快拍上倒计时的“接下来”卡片。下次打开快拍时生效。
 Hide create story cards	隐藏创建快拍卡片
 Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	去掉快拍之间邀请你发快拍的卡片，包括邀请你用图库照片继续快拍的全屏卡片。下次打开快拍时生效。
 Progress bar at the bottom	底部进度条

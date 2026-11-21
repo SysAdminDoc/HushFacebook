@@ -2772,6 +2772,16 @@ Takes the song and effect credits off the line under the poster's name on a stor
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	移除限時動態底部那一排建議回覆。回覆框會保留。從你開啟的下一則限時動態開始生效。
 Hide the Subscribe button	隱藏訂閱按鈕
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	移除限時動態頂部的訂閱按鈕。從你開啟的下一則限時動態開始生效。
+# context: switch title on the Stories page; the Follow button sits at the top of a story from someone you don't follow
+Hide the Follow button	隱藏追蹤按鈕
+Takes the Follow button off the top of a story from someone you don't follow. Applies from the next story you open.	移除你沒追蹤的人的限時動態頂部的追蹤按鈕。從你開啟的下一則限時動態開始生效。
+# context: switch title on the Stories page; the reply bar is the row under someone else's story with the repost button, the Send message box and the quick reactions
+Hide the reply bar	隱藏回覆列
+# context: description of that switch; Send message is the text box Facebook shows in that row
+Takes the bar off the bottom of other people's stories, with the repost button, the Send message box and the quick reactions. Applies from the next story you open.	移除別人限時動態底部的那一列，連同轉發按鈕、傳送訊息框和快速心情回應。從你開啟的下一則限時動態開始生效。
+# context: switch title on the Stories page; Up next is the card Facebook shows over the next stories while it counts down before they play
+Hide the Up next card	隱藏「接下來」卡片
+Starts the next stories right away, without the Up next card that counts down over the first one. Applies the next time you open stories.	立即開始播放接下來的限時動態，不再顯示在第一則上倒數的「接下來」卡片。下次開啟限時動態時生效。
 Hide create story cards	隱藏建立限時動態卡片
 Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.	移除限時動態之間邀請你發佈限時動態的卡片，包括邀請你用相簿照片繼續限時動態的全螢幕卡片。下次開啟限時動態時生效。
 Progress bar at the bottom	底部進度列

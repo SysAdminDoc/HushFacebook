@@ -137,6 +137,9 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_STORY_CREDITS) return L10n.t("Hide song and effect credits");
         if (setting == Settings.HIDE_STORY_REPLY_SUGGESTIONS) return L10n.t("Hide reply suggestions");
         if (setting == Settings.HIDE_STORY_SUBSCRIBE) return L10n.t("Hide the Subscribe button");
+        if (setting == Settings.HIDE_STORY_FOLLOW) return L10n.t("Hide the Follow button");
+        if (setting == Settings.HIDE_STORY_UP_NEXT) return L10n.t("Hide the Up next card");
+        if (setting == Settings.HIDE_STORY_REPLY_BAR) return L10n.t("Hide the reply bar");
         if (setting == Settings.HIDE_STORY_CREATE_CARDS) return L10n.t("Hide create story cards");
         if (setting == Settings.STORY_PROGRESS_BAR) return L10n.t("Progress bar at the bottom");
         if (setting == Settings.STORY_FLAT_SLIDE) return L10n.t("Plain slide between people");

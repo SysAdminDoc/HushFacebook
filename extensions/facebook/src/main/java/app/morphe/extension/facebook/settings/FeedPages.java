@@ -959,6 +959,15 @@ final class FeedPages {
                                 + "Applies from the next story you open.")));
                 stories.addPreference(toggle(context, Settings.HIDE_STORY_SUBSCRIBE,
                         L10n.t("Takes the Subscribe button off the top of a story. Applies from the next story you open.")));
+                stories.addPreference(toggle(context, Settings.HIDE_STORY_FOLLOW,
+                        L10n.t("Takes the Follow button off the top of a story from someone you don't follow. "
+                                + "Applies from the next story you open.")));
+                stories.addPreference(toggle(context, Settings.HIDE_STORY_REPLY_BAR,
+                        L10n.t("Takes the bar off the bottom of other people's stories, with the repost button, the "
+                                + "Send message box and the quick reactions. Applies from the next story you open.")));
+                stories.addPreference(toggle(context, Settings.HIDE_STORY_UP_NEXT,
+                        L10n.t("Starts the next stories right away, without the Up next card that counts down over "
+                                + "the first one. Applies the next time you open stories.")));
                 stories.addPreference(toggle(context, Settings.HIDE_STORY_CREATE_CARDS,
                         L10n.t("Takes out the cards between stories that ask you to make one, including the full "
                                 + "screen card that asks you to continue the story with photos from your gallery. "
