@@ -1667,6 +1667,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_video_comment_composer", FALSE);
 
     /**
+     * The bar along the bottom of a live video, with its comment box and the row of reactions you
+     * tap to send, is held gone ({@link app.morphe.extension.facebook.comments.LiveCommentBar},
+     * #537). The live comments themselves stay. Off by default.
+     */
+    public static final BooleanSetting HIDE_LIVE_COMMENT_BAR =
+            new BooleanSetting("hushfacebook_hide_live_comment_bar", FALSE);
+
+    /**
      * Every comment starts with its reply thread open, as if View replies had been tapped
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}). Off by default. A
      * change shows on the next comments drawn.

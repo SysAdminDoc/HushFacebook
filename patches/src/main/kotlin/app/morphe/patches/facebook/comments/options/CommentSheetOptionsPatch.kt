@@ -245,6 +245,9 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * resource (0x7f1413dc read through `LX/02Hq;->A08`), so its constant, [VIEWER_GIF_ACTION] (`A02`
  * there), picks it out, and the children go to `LX/01U2;->A00`, which still skips a missing one.
  *
+ * Hide the live video comment bar (#537): a live video's player has its own bar, built by views
+ * rather than Litho; LiveCommentBar.kt finds it and hands it to the extension as it's built.
+ *
  * Hide the video comment box (#213): those buttons are only the box's inner row. The whole bar is
  * another component, the one class naming [VIDEO_COMMENT_BAR] that builds the row's class (583
  * `LX/98j;`, whose `A0G` builds `LX/ALy`). First thing in its render the extension is asked, and
@@ -403,7 +406,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide badges like Top fan on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, keep every reaction beside a comment's count, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide badges like Top fan on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, keep every reaction beside a comment's count, hide the emoji row over the comment box, hide the line over the comment box, hide the comment box under full-screen videos, and hide the comment box and reactions along the bottom of live videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -552,6 +555,8 @@ val commentSheetOptionsPatch = bytecodePatch(
             mutable(part.method).insertAll(part.insertions)
         }
         filter?.let { filterComments(it) }
+        // #537: the live video's bar, on its own; a build without it warns and keeps the rest.
+        hideLiveCommentBar(PATCH)
         enableStatus("commentSheetOptions")
     }
 }

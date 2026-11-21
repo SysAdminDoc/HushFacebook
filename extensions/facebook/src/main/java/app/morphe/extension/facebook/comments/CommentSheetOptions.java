@@ -34,6 +34,7 @@ import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
  * Comment sheet options: the comment box without its GIF and sticker buttons, Like without the
@@ -550,22 +551,34 @@ public final class CommentSheetOptions {
      * switch off lets go at the next frame, and the box comes back on the next comments built.
      */
     static boolean holdGone(View box) {
+        return holdGone(box, Settings.HIDE_COMMENT_BOX, BOX_LINE);
+    }
+
+    /**
+     * {@link #holdGone(View)} for any view, held while [setting] is on, with a throw counted on
+     * [where]. The live video comment bar (#537) is held the same way.
+     */
+    static boolean holdGone(View box, BooleanSetting setting, String where) {
         if (!heldBoxes.add(box)) return false;
         box.setVisibility(View.GONE);
-        BoxHold hold = new BoxHold(box);
+        BoxHold hold = new BoxHold(box, setting, where);
         box.addOnAttachStateChangeListener(hold);
         if (box.isAttachedToWindow()) hold.onViewAttachedToWindow(box);
         return true;
     }
 
-    /** Puts a held comment box back to gone before each frame of the window it's in, while the switch is on. */
+    /** Puts a held view back to gone before each frame of the window it's in, while its switch is on. */
     private static final class BoxHold implements View.OnAttachStateChangeListener, ViewTreeObserver.OnPreDrawListener {
         private final WeakReference<View> held;
+        private final BooleanSetting setting;
+        private final String where;
         @Nullable
         private ViewTreeObserver tree;
 
-        BoxHold(View box) {
+        BoxHold(View box, BooleanSetting setting, String where) {
             held = new WeakReference<>(box);
+            this.setting = setting;
+            this.where = where;
         }
 
         @Override
@@ -594,12 +607,12 @@ public final class CommentSheetOptions {
                     stop();
                     return true;
                 }
-                if (box.getVisibility() == View.GONE || !Utils.settingsReady() || !Settings.HIDE_COMMENT_BOX.get()) return true;
+                if (box.getVisibility() == View.GONE || !Utils.settingsReady() || !setting.get()) return true;
                 box.setVisibility(View.GONE);
                 return false;
             } catch (Throwable failure) {
                 stop();
-                HookStatus.threw(FAMILY, BOX_LINE, failure);
+                HookStatus.threw(FAMILY, where, failure);
                 return true;
             }
         }

@@ -519,6 +519,10 @@ The comment box loses its GIF and sticker buttons. Typing, photos and posting wo
 # context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
 Hide the video comment box	隱藏影片留言框
 The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	移除全螢幕影片下方的「新增留言」框。貼文上的留言框仍會保留。
+# context: switch title under Comments; the bar along the bottom of a live video holds its comment box and the reactions you tap to send
+Hide the live video comment bar	隱藏直播視訊的留言列
+# context: description of that switch; the reactions are the Like, Love, Haha and other faces a tap sends to the live video
+The comment box and the row of reactions along the bottom of a live video go away, so a stray tap can't send one. The live comments stay.	直播視訊底部的留言框和那排心情會消失，這樣誤觸就不會送出心情。直播留言仍然保留。
 # context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
 Open every reply thread	展開所有留言回覆
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies

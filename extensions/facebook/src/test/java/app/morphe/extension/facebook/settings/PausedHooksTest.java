@@ -115,6 +115,7 @@ import app.morphe.extension.facebook.comments.DefaultCommentOrderForTests;
 import app.morphe.extension.facebook.comments.CommentBlock;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.comments.FullHeightComments;
+import app.morphe.extension.facebook.comments.LiveCommentBar;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
 import app.morphe.extension.facebook.comments.ReactorBlock;
 import app.morphe.extension.facebook.composer.TagSuggestionsForTests;
@@ -1094,6 +1095,12 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.incomingTypers(3) == 0,
                 () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty(),
                 CommentSheetOptions::holdsEmojiRow,
+                () -> {
+                    // The bar along the bottom of a live video is held gone (#537).
+                    View bar = new View(RuntimeEnvironment.getApplication());
+                    LiveCommentBar.barBuilt(bar);
+                    return bar.getVisibility() == View.GONE;
+                },
                 () -> {
                     // The line along the top of the comment box is taken off its background (#344).
                     View box = new View(RuntimeEnvironment.getApplication());

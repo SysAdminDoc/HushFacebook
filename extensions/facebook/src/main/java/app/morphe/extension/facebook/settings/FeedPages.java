@@ -1097,6 +1097,8 @@ final class FeedPages {
                     L10n.t("The Write a comment box under a post's comments goes away. You can still read every comment.")));
             comments.addPreference(toggle(context, Settings.HIDE_VIDEO_COMMENT_COMPOSER,
                     L10n.t("The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.")));
+            comments.addPreference(toggle(context, Settings.HIDE_LIVE_COMMENT_BAR,
+                    L10n.t("The comment box and the row of reactions along the bottom of a live video go away, so a stray tap can't send one. The live comments stay.")));
             comments.addPreference(toggle(context, Settings.OPEN_REPLY_THREADS,
                     L10n.t("Comments show their replies right away, so there's no View replies to tap.")));
             comments.addPreference(toggle(context, Settings.LOAD_WHOLE_REPLY_THREADS,

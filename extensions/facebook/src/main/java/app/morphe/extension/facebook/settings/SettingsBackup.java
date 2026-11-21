@@ -394,6 +394,7 @@ public final class SettingsBackup {
             Settings.HIDE_NEW_COMMENTS_PILL,
             Settings.SHOW_EVERY_COMMENT_REACTION,
             Settings.HIDE_VIDEO_COMMENT_COMPOSER,
+            Settings.HIDE_LIVE_COMMENT_BAR,
             Settings.PAUSE_REELS_UNDER_COMMENTS,
             Settings.TAP_REELS_ABOVE_COMMENTS,
             Settings.SEARCH_COMMENTS,

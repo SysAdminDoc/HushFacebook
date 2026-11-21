@@ -162,6 +162,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_COMMENT_BOX_LINE) return L10n.t("Hide the line over the comment box");
         if (setting == Settings.HIDE_COMMENT_BOX) return L10n.t("Hide the comment box");
         if (setting == Settings.HIDE_VIDEO_COMMENT_COMPOSER) return L10n.t("Hide the video comment box");
+        if (setting == Settings.HIDE_LIVE_COMMENT_BAR) return L10n.t("Hide the live video comment bar");
         if (setting == Settings.OPEN_REPLY_THREADS) return L10n.t("Open every reply thread");
         if (setting == Settings.LOAD_WHOLE_REPLY_THREADS) return L10n.t("Load whole reply threads");
         if (setting == Settings.HIDE_REPLIES_BUTTON) return L10n.t("Hide replies button");

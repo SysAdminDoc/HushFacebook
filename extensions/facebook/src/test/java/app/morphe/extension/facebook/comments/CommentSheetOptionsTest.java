@@ -83,6 +83,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_COMMENT_BOX_LINE.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         Settings.HIDE_COMMENT_BOX.resetToDefault();
+        Settings.HIDE_LIVE_COMMENT_BAR.resetToDefault();
         Settings.OPEN_REPLY_THREADS.resetToDefault();
         Settings.LOAD_WHOLE_REPLY_THREADS.resetToDefault();
         Settings.HIDE_REPLIES_BUTTON.resetToDefault();
@@ -281,6 +282,59 @@ public class CommentSheetOptionsTest {
         SettingsContextRule.withoutContext(() -> CommentSheetOptions.flattenCommentBox(early));
         assertEquals("paused, the box went", View.VISIBLE, paused.getVisibility());
         assertEquals("before the settings, the box went", View.VISIBLE, early.getVisibility());
+    }
+
+    /**
+     * Hide the live video comment bar (#537): on, the bar a live video builds is gone, and a frame
+     * where Facebook showed it again is skipped with the bar gone. Off, paused, detached, before the
+     * settings or under the comment box's switch, the bar is Facebook's.
+     */
+    @Test
+    public void theLiveCommentBarGoesAndStaysGoneUnderItsOwnSwitch() {
+        android.app.Activity activity = Robolectric.buildActivity(android.app.Activity.class).setup().get();
+        FrameLayout player = new FrameLayout(activity);
+        activity.setContentView(player);
+
+        Settings.HIDE_COMMENT_BOX.save(true);
+        View kept = new View(activity);
+        LiveCommentBar.barBuilt(kept);
+        assertEquals("the comment box's switch hid the live bar", View.VISIBLE, kept.getVisibility());
+        Settings.HIDE_COMMENT_BOX.save(false);
+
+        Settings.HIDE_LIVE_COMMENT_BAR.save(true);
+        View bar = new View(activity);
+        LiveCommentBar.barBuilt(bar);
+        LiveCommentBar.barBuilt(null);
+        assertEquals(View.GONE, bar.getVisibility());
+        player.addView(bar);
+        player.addView(kept);
+        bar.setVisibility(View.VISIBLE);
+        assertTrue("a frame drawing the bar went ahead", player.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals(View.GONE, bar.getVisibility());
+        assertFalse("a frame without the bar was held back", player.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals("another view lost its place", View.VISIBLE, kept.getVisibility());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 1 found, 0 missing. Counted: "
+                + LiveCommentBar.BAR_HIDDEN + " 1", statusLine());
+
+        Settings.HIDE_LIVE_COMMENT_BAR.save(false);
+        bar.setVisibility(View.VISIBLE);
+        assertFalse("off, the bar was held", player.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals(View.VISIBLE, bar.getVisibility());
+
+        Settings.HIDE_LIVE_COMMENT_BAR.save(true);
+        player.removeView(bar);
+        bar.setVisibility(View.VISIBLE);
+        assertFalse("a bar taken off the screen was still held", player.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals(View.VISIBLE, bar.getVisibility());
+
+        View paused = new View(activity);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        LiveCommentBar.barBuilt(paused);
+        PauseForTests.resume();
+        View early = new View(activity);
+        SettingsContextRule.withoutContext(() -> LiveCommentBar.barBuilt(early));
+        assertEquals("paused, the bar went", View.VISIBLE, paused.getVisibility());
+        assertEquals("before the settings, the bar went", View.VISIBLE, early.getVisibility());
     }
 
     @Test
@@ -790,7 +844,7 @@ public class CommentSheetOptionsTest {
                 Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES, Settings.HIDE_POST_COMMENT_PREVIEWS,
                 Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_REPLY_BUTTON,
                 Settings.HIDE_COMMENTER_BADGES, Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE, Settings.HIDE_COMMENT_BOX,
-                Settings.SHOW_EVERY_COMMENT_REACTION}) {
+                Settings.SHOW_EVERY_COMMENT_REACTION, Settings.HIDE_LIVE_COMMENT_BAR}) {
             assertFalse(setting.key + " asks for a restart, but each hook reads it again", setting.rebootApp);
             assertNull(setting.key + " asks before it changes", setting.userDialogMessage);
             assertTrue("Pause and the report don't know " + setting.key,
