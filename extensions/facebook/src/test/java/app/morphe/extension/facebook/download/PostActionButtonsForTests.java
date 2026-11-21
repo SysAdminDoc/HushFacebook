@@ -8,6 +8,7 @@ import org.robolectric.RuntimeEnvironment;
 
 import java.util.Arrays;
 
+import app.morphe.extension.facebook.feed.PostRowTaps;
 import app.morphe.extension.facebook.feed.PostSaveButton;
 
 /**
@@ -29,6 +30,11 @@ public final class PostActionButtonsForTests {
     /** True when a row of Like (Facebook's REACT), Comment and Share loses Like. */
     public static boolean hidesLike() {
         return !PostSaveButton.types(Arrays.asList("REACT", "COMMENT", "SHARE"), SAVE).contains("REACT");
+    }
+
+    /** True when the row under a post is drawn without its own tap (#540). */
+    public static boolean leavesTheTapOff() {
+        return PostRowTaps.ignoreRowTaps();
     }
 
     /** True when a video post's row gets a Download button, with Download any video in the build. */

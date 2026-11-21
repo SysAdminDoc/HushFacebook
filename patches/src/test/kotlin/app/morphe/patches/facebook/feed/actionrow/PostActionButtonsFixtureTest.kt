@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.feed.actionrow
 
+import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_MEDIA
@@ -154,6 +155,65 @@ class PostActionButtonsFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /** #540: the wrapper around a post's row asks first, at its check of the row, and on a yes skips its tap. */
+    @Test
+    fun `each declared build's post row wrapper asks before it takes a tap`() {
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val launchers = FixtureDex.classesHolding(bundle, FLYOUT_LAUNCHER)
+                    .filterNot { it.type.startsWith("Lapp/morphe/") }.distinctBy { it.type }.filter(::isFlyoutLauncher)
+                assertEquals("$name: components naming themselves $FLYOUT_LAUNCHER", 1, launchers.size)
+                val launcher = launchers.single()
+                val layouts = launcher.methods.filter { rowTapStretch(it) != null }
+                assertEquals("$name: layouts checking the row before keying it", 1, layouts.size)
+                val layout = layouts.single()
+                val stretch = rowTapStretch(layout)!!
+                val stock = layout.implementation!!.instructions.toList()
+                // Positive control: the tap is made in the stretch the hook skips. The click event names the
+                // component, and the layout loads that name nowhere else.
+                val names = stock.withIndex().filter {
+                    ((it.value as? ReferenceInstruction)?.reference as? StringReference)?.string == FLYOUT_LAUNCHER
+                }.map { it.index }
+                assertTrue("$name: the layout's tap isn't between its check and its key ($names)",
+                    names.isNotEmpty() && names.all { it in stretch.check until stretch.key })
+
+                val context = PatchContexts.of(listOf(launcher))
+                context.ignoreRowTaps()
+                val patched = context.mutableClassDefBy(launcher.type).methods
+                    .single { it.name == layout.name && it.parameterTypes == layout.parameterTypes }
+                    .implementation!!.instructions.toList()
+                val at = stretch.check
+                assertEquals("$name: the hook sits at the check", listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_NEZ),
+                    patched.subList(at, at + 3).map { it.opcode })
+                assertEquals("$name: the hook asks the switch", IGNORE_ROW_TAPS,
+                    ((patched[at] as ReferenceInstruction).reference as MethodReference).let {
+                        "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}"
+                    })
+                assertEquals("$name: the answer lands in the check's register", stretch.register,
+                    (patched[at + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: a yes goes to the key", stretch.key + 3,
+                    (patched[at + 2] as BuilderOffsetInstruction).target.location.index)
+                assertEquals("$name: the key is still Facebook's", FEEDBACK_WRAPPER_KEY,
+                    ((patched[stretch.key + 3] as ReferenceInstruction).reference as StringReference).string)
+                val skipping = patched.withIndex().filter { (index, instruction) ->
+                    index != at + 2 && (instruction as? BuilderOffsetInstruction)?.target?.location?.index == at + 3
+                }
+                assertTrue("$name: a branch goes past the hook to the check: ${skipping.map { it.index }}", skipping.isEmpty())
+                assertEquals("$name: the rest of the layout is Facebook's", stock.map { it.opcode },
+                    (patched.take(at) + patched.drop(at + 3)).map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        val hook = ExtensionDex.classDef(POST_ROW_TAPS).methods.singleOrNull {
+            "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == IGNORE_ROW_TAPS
+        }
+        assertTrue("the extension has no static $IGNORE_ROW_TAPS",
+            hook != null && AccessFlags.STATIC.isSet(hook.accessFlags))
     }
 
     /** Every class [classDef]'s code names, so the context holds what the row's code builds and reads. */

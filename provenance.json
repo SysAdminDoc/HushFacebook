@@ -856,12 +856,13 @@
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PostDownloadButton.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/PostSaveButton.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/actionrow/ActionRowAnchors.kt",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/actionrow/PostActionButtonsPatch.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/actionrow/PostActionButtonsPatch.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/actionrow/RowTaps.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: Save and Download buttons in the row under a post. In Facebook 584 the row's button types come from the one static method answering a List that loads XFBUFIButtonWithFallbackOptions, and its class builds one button from a type enum, the row's state and a Map in the static method whose cases load \"Save\". Every list the type method returns goes through the extension, which adds the enum's SAVE constant while its switch is on. The row method seals its lists of buttons with a static call taking a List and answering an ImmutableList, the last argument of a constructor taking only ImmutableLists; before each seal a generated helper reads the post from the state the way Save's case reads it, asks the extension for a Download button, and builds it with the constructors Save's case uses: the icon from the icon enum's DOWNLOAD and the style enum's OUTLINE, the two texts, the label taking a String and a Function1, the tag, and the button."
+      "changes": "Written for Hushfacebook: Save and Download buttons in the row under a post. In Facebook 584 the row's button types come from the one static method answering a List that loads XFBUFIButtonWithFallbackOptions, and its class builds one button from a type enum, the row's state and a Map in the static method whose cases load \"Save\". Every list the type method returns goes through the extension, which adds the enum's SAVE constant while its switch is on. The row method seals its lists of buttons with a static call taking a List and answering an ImmutableList, the last argument of a constructor taking only ImmutableLists; before each seal a generated helper reads the post from the state the way Save's case reads it, asks the extension for a Download button, and builds it with the constructors Save's case uses: the icon from the icon enum's DOWNLOAD and the style enum's OUTLINE, the two texts, the label taking a String and a Function1, the tag, and the button. In Facebook 588 the row's wrapper component, whose layout loads the feedback flyout launcher component by type check before it loads the ufi_feedback_wrapper key, asks the extension first and jumps straight to that key while the row tap switch is on, so the wrapper never takes a tap on the row's free space."
     },
     {
       "paths": [

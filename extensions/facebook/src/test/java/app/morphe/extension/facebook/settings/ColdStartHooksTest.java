@@ -266,6 +266,7 @@ public class ColdStartHooksTest {
                 LocalProfileCounts.text("812 friends"));
         assertFalse("a post row built before the context got Save", PostActionButtonsForTests.addsSave());
         assertFalse("a post row built before the context got Download", PostActionButtonsForTests.addsDownload());
+        assertFalse("a post row built before the context lost its tap", PostActionButtonsForTests.leavesTheTapOff());
         assertFalse("a Marketplace feed query sent before the context skipped its ads",
                 MarketplaceAdFilterForTests.asksTheFeedToSkipAds());
         assertFalse("a Marketplace ads query sent before the context was held back",

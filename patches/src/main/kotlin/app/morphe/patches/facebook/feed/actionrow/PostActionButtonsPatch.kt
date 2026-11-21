@@ -49,8 +49,8 @@ val postActionButtonsPatch = bytecodePatch(
     name = "Post action buttons",
     description = "Adds Facebook's own Save button next to Like, Comment and Share under posts, and a Download " +
         "button on posts with a video or photos that saves them the way the post's menu does. It can also take " +
-        "Like, Comment, Share or Send out of that row. Each has its own switch, and they all start off. Find them " +
-        "in Hushfacebook settings > News feed.",
+        "Like, Comment, Share or Send out of that row, and keep a tap on the row's empty part from opening the " +
+        "comments. Each has its own switch, and they all start off. Find them in Hushfacebook settings > News feed.",
 ) {
     category("Feed")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -61,6 +61,7 @@ val postActionButtonsPatch = bytecodePatch(
         val row = actionRow()
         hookTypes(row)
         hookDownload(row)
+        ignoreRowTaps()
         enableStatus("postActionButtons")
     }
 }

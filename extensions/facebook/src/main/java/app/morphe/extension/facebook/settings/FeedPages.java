@@ -346,6 +346,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_POST_REPOST_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SHARE_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SEND_BUTTON, hides));
+                feed.addPreference(toggle(context, Settings.IGNORE_POST_ROW_TAPS,
+                        L10n.t("A tap on the empty part of the row under a post, between the buttons and the reaction "
+                                + "icons, does nothing instead of opening the comments or who reacted. The buttons work as before.")));
             }
             if (build.contains(PatchFamily.ASK_BEFORE_LIKE)) {
                 // Read on each tap, so a change shows on the next one.

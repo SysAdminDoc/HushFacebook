@@ -707,6 +707,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_post_send_button", FALSE);
 
     /**
+     * A tap on the empty part of the row under a post, between its buttons and the reaction faces,
+     * does nothing instead of opening the comments or who reacted (#540, {@link
+     * app.morphe.extension.facebook.feed.PostRowTaps}). The buttons keep their own taps. Starts off.
+     */
+    public static final BooleanSetting IGNORE_POST_ROW_TAPS =
+            new BooleanSetting("hushfacebook_ignore_post_row_taps", FALSE);
+
+    /**
      * The ads and boosted listings of Marketplace's feed: its query asks the server to skip them,
      * and its ads-only queries aren't sent.
      */

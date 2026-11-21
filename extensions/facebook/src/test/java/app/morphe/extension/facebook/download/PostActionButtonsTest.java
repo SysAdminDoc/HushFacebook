@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import app.morphe.extension.facebook.feed.PostRowTaps;
 import app.morphe.extension.facebook.feed.PostSaveButton;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -80,6 +81,7 @@ public class PostActionButtonsTest {
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
         Settings.DOWNLOAD_PHOTOS.resetToDefault();
         for (BooleanSetting hide : hides()) hide.resetToDefault();
+        Settings.IGNORE_POST_ROW_TAPS.resetToDefault();
         PostDownloadButton.videoInBuildForTests = null;
         PostDownloadButton.photoInBuildForTests = null;
         HookStatus.clear();
@@ -205,6 +207,20 @@ public class PostActionButtonsTest {
     public void downloadVideosOffMeansNoButtonForAVideo() {
         Settings.DOWNLOAD_VIDEOS.save(false);
         assertNull(click(VideoMenuItemForTests.videoPost()));
+    }
+
+    @Test
+    public void theRowKeepsItsTapUntilTheSwitchIsOn() {
+        assertFalse(Settings.IGNORE_POST_ROW_TAPS.get());
+        assertFalse(PostRowTaps.ignoreRowTaps());
+        Settings.IGNORE_POST_ROW_TAPS.save(true);
+        assertTrue(PostRowTaps.ignoreRowTaps());
+        // The switch changes no button: the row's types pass through untouched.
+        Settings.POST_SAVE_BUTTON.save(false);
+        assertSame(ROW, PostSaveButton.types(ROW, Type.SAVE));
+        assertTrue(statusLine(), statusLine().contains("post row tap left off"));
+        Settings.IGNORE_POST_ROW_TAPS.save(false);
+        assertFalse(PostRowTaps.ignoreRowTaps());
     }
 
     @Test

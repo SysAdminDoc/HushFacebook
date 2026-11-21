@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Added
 
+* `Ignore taps beside the buttons` under News feed keeps a tap on the empty part of the row under a post, between the buttons and the reaction icons, from opening the comments or who reacted. Handy when you're aiming for a video's seek bar just above. It starts off. (#540)
 * `Hide the Follow button` under Stories takes Follow off the top of a story from someone you don't follow. It starts off. (#543)
 * `Hide the reply bar` under Stories takes the bar off the bottom of other people's stories, so the repost button, the Send message box and the quick reactions can't be tapped by accident. It starts off. (#542)
 * `Hide the Up next card` under Stories starts the next stories right away, without the Up next card counting down over the first one. It starts off. (#544)

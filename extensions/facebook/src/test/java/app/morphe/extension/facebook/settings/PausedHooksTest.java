@@ -686,11 +686,13 @@ public class PausedHooksTest {
         // Your own profile's count line shows the number you typed.
         probes.put(PatchFamily.LOCAL_PROFILE_COUNTS,
                 Collections.singletonList(app.morphe.extension.facebook.profile.LocalProfileCountsForTests::swapsAFriendsCount));
-        // A post's row gets Save and loses Like, and a video post's row gets Download.
+        // A post's row gets Save and loses Like, a video post's row gets Download, and the row goes
+        // without its own tap.
         probes.put(PatchFamily.POST_ACTION_BUTTONS, Arrays.asList(
                 PostActionButtonsForTests::addsSave,
                 PostActionButtonsForTests::hidesLike,
-                PostActionButtonsForTests::addsDownload));
+                PostActionButtonsForTests::addsDownload,
+                PostActionButtonsForTests::leavesTheTapOff));
         // Marketplace's feed query asks to skip its ads, an ads-only query isn't sent, and a search
         // answer loses its ad.
         probes.put(PatchFamily.SPONSORED_MARKETPLACE, Arrays.asList(

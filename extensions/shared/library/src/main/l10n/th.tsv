@@ -588,6 +588,10 @@ Hide Share under posts	ซ่อน "แชร์" ใต้โพสต์
 Hide Send under posts	ซ่อน "ส่ง" ใต้โพสต์
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	นำปุ่มนี้ออกจากแถวใต้โพสต์ในฟีด ปุ่มอื่นๆ จะยังคงอยู่ และโพสต์ที่ซ่อนปุ่มทั้งหมดจะไม่แสดงแถวปุ่ม
+# context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
+Ignore taps beside the buttons	ไม่สนใจการแตะข้างปุ่ม
+# context: description of that switch; the reaction icons are the small stacked emoji at the end of that row, and who reacted is the list of people who reacted
+A tap on the empty part of the row under a post, between the buttons and the reaction icons, does nothing instead of opening the comments or who reacted. The buttons work as before.	การแตะส่วนที่ว่างของแถวใต้โพสต์ ระหว่างปุ่มกับไอคอนแสดงความรู้สึก จะไม่ทำอะไรเลยแทนการเปิดความคิดเห็นหรือรายชื่อผู้แสดงความรู้สึก ปุ่มต่าง ๆ ยังทำงานเหมือนเดิม
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	ไม่สามารถเปิดการตั้งค่า Hushfacebook ได้จากที่นี่ ให้แตะโลโก้ Facebook ค้างไว้แทน

@@ -592,6 +592,10 @@ Hide Share under posts	隱藏貼文下方的分享
 Hide Send under posts	隱藏貼文下方的傳送
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	從動態消息中貼文下方的按鈕列移除這個按鈕。其他按鈕保留，所有按鈕都隱藏的貼文不顯示按鈕列。
+# context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
+Ignore taps beside the buttons	忽略按鈕旁邊的點按
+# context: description of that switch; the reaction icons are the small stacked emoji at the end of that row, and who reacted is the list of people who reacted
+A tap on the empty part of the row under a post, between the buttons and the reaction icons, does nothing instead of opening the comments or who reacted. The buttons work as before.	點按貼文下方那一列的空白處（按鈕和心情圖示之間）不會有任何反應，而不是開啟留言或誰傳達了心情。按鈕照常可用。
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	無法從這裡開啟 Hushfacebook 設定。請改為長按 Facebook 標誌。

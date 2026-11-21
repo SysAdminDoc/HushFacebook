@@ -267,6 +267,7 @@ public final class SettingsBackup {
             Settings.HIDE_POST_REPOST_BUTTON,
             Settings.HIDE_POST_SHARE_BUTTON,
             Settings.HIDE_POST_SEND_BUTTON,
+            Settings.IGNORE_POST_ROW_TAPS,
             Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS,
             Settings.MARKETPLACE_ADVANCED_SEARCH,
             Settings.MARKETPLACE_FILTERS_BUTTON,

@@ -594,6 +594,10 @@ Hide Share under posts	Скрывать кнопку «Поделиться» п
 Hide Send under posts	Скрывать кнопку «Отправить» под публикациями
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Удаляет эту кнопку из строки под публикациями в Ленте. Остальные кнопки остаются. Если скрыты все кнопки публикации, строка не отображается.
+# context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
+Ignore taps beside the buttons	Игнорировать нажатия рядом с кнопками
+# context: description of that switch; the reaction icons are the small stacked emoji at the end of that row, and who reacted is the list of people who reacted
+A tap on the empty part of the row under a post, between the buttons and the reaction icons, does nothing instead of opening the comments or who reacted. The buttons work as before.	Нажатие на пустую часть строки под публикацией, между кнопками и значками реакций, ничего не делает вместо открытия комментариев или списка отреагировавших. Кнопки работают как раньше.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	Здесь нельзя открыть настройки Hushfacebook. Вместо этого нажмите и удерживайте логотип Facebook.
