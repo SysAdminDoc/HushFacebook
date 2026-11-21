@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.comments.OpenSheets;
 import app.morphe.extension.facebook.download.OpenInAnotherApp;
 import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.media.ProgressBar;
@@ -792,6 +793,8 @@ public final class FeedVideoControls {
         int height = Math.round(BAR_DP * density);
         if (visible.bottom < bottom || visible.height() < room + height) return noBar(control, "its bottom edge doesn't show", null);
         if (inGestureStrip(content, bottom)) return noBar(control, "its bottom edge is in the system's gesture strip", null);
+        // A comment sheet can end above a three-button navigation bar, and the bar showed there under it (#535).
+        if (OpenSheets.anyShown()) return noBar(control, "a comment sheet is open", null);
         Rect area = new Rect(visible.left, bottom - height, visible.right, bottom);
         View over = over(list, content, area);
         if (over != null) return noBar(control, "something lies over its bottom edge", over.getClass().getName());

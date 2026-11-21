@@ -157,6 +157,7 @@ public class FeedVideoControlsTest {
 
     @After public void restore() {
         FeedVideoControls.reset();
+        app.morphe.extension.facebook.comments.OpenSheets.reset();
         Settings.RESUME_LONG_VIDEOS.resetToDefault();
         ResumePlaybackForTests.forget();
         Settings.INLINE_FEED_VIDEO_CONTROLS.resetToDefault();
@@ -806,6 +807,23 @@ public class FeedVideoControlsTest {
         tabs.setVisibility(View.GONE);
         refreshAfterLayout();
         assertNotNull(bar());
+    }
+
+    @Test public void anOpenCommentSheetTakesTheBarOffUntilItCloses() {
+        barOn();
+        FrameLayout sheet = new FrameLayout(activity);
+        app.morphe.extension.facebook.comments.OpenSheets.opened(sheet);
+        refreshAfterLayout();
+        assertNotNull("a sheet set up but not on screen yet", bar());
+        // Away from the bar's edge, so only the sheet being open can take the bar off (#535).
+        place(root, sheet, 0, 0, 1080, 100);
+        layout();
+        refreshAfterLayout();
+        assertNull("the sheet shows", bar());
+        assertNotNull("the buttons stay on the video", button());
+        sheet.setVisibility(View.GONE);
+        refreshAfterLayout();
+        assertNotNull("closed", bar());
     }
 
     @Test public void onlyWhatShowsAcrossTheEdgeCountsNotAFrameAroundIt() {

@@ -257,6 +257,8 @@ public final class FullHeightComments {
         PauseUnderComments.sheetOpened(content);
         // So has Search comments (#420).
         CommentSearch.sheetOpened(content);
+        // And the feed video seek bar steps aside while a sheet shows (#535).
+        OpenSheets.opened(content);
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, HEADER);

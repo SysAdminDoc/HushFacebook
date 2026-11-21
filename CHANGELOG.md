@@ -46,6 +46,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* `Seek bar on feed videos` gets out of the way while comments are open. On a phone with the three navigation buttons it showed just above them, under the comments. (#535)
 * `Times on the seek bar` and `Full length on the seek bar` work with `Thin line seek bar` now. The times sit just above the line's two ends, whether you're dragging or not. Before, the thin line turned them off. (#487)
 * `Hide prompts and promos under reels` also takes the "Made with Edits" pill off the corner of a video in your feed now. That pill is a different piece from the line under a reel's caption, so the switch only caught the line. (#314)
 * With `Tap the bar to seek` on, the three dots and other buttons that sit just above a reel's progress line open again. Before, a tap on the bottom of the three dots in a saved reel jumped the video instead of opening the menu. A tap on the line itself still seeks.
