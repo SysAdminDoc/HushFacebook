@@ -1466,7 +1466,7 @@ public class FeedVideoControlsTest {
         return drawn;
     }
 
-    @Test public void thinLineRunsFlushAlongTheBottomEdgeWithNoDotOrTimesUntilADrag() {
+    @Test public void thinLineRunsFlushAlongTheBottomEdgeWithNoDotUntilADrag() {
         View speaker = cornerButton(1040, 560, "Unmute sound");
         layout();
         barOn();
@@ -1481,7 +1481,7 @@ public class FeedVideoControlsTest {
         assertEquals("it runs the whole width, with no room kept for times", 0, bar.getPaddingLeft());
         assertEquals(0, bar.getPaddingRight());
         Drawn drawn = drawn(bar);
-        assertEquals("no times", new ArrayList<String>(), drawn.texts);
+        assertEquals("the times sit over its ends (#487)", java.util.Arrays.asList("0:15", "-0:45"), drawn.texts);
         assertEquals("no dot", 0, drawn.circles);
         List<android.graphics.RectF> line = new ArrayList<>();
         for (android.graphics.RectF rect : drawn.rects) {
@@ -1496,7 +1496,8 @@ public class FeedVideoControlsTest {
         touch(bar, MotionEvent.ACTION_DOWN, 540);
         drawn = drawn(bar);
         assertEquals("a drag shows the dot", 1, drawn.circles);
-        assertEquals("and where the let go lands", java.util.Arrays.asList("0:30"), drawn.texts);
+        assertEquals("the times follow it, and the pill says where the let go lands",
+                java.util.Arrays.asList("0:30", "-0:30", "0:30"), drawn.texts);
         touch(bar, MotionEvent.ACTION_UP, 540);
         assertEquals(java.util.Arrays.asList(30000), seeks);
         assertTrue("an ordinary video is never marked behind live", rewinds.isEmpty());
@@ -1506,6 +1507,36 @@ public class FeedVideoControlsTest {
         tick();
         assertTrue("off, the times come back", bar().getPaddingLeft() > 0);
         assertEquals(java.util.Arrays.asList("0:30", "-0:30"), drawnTexts(bar()));
+    }
+
+    @Test public void fullLengthReachesTheThinLineAboveItsRightEnd() {
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_LENGTH, true);
+        tick();
+        assertEquals("it needs Times on the seek bar", new ArrayList<String>(), drawnTexts(bar()));
+        save(Settings.FEED_VIDEO_SEEK_BAR_TIMES, true);
+        tick();
+        SeekBar bar = bar();
+        assertEquals("the line keeps the whole width", 0, bar.getPaddingLeft());
+        List<String> texts = new ArrayList<>();
+        List<float[]> spots = new ArrayList<>();
+        bar.draw(new Canvas(Bitmap.createBitmap(1080, bar.getHeight(), Bitmap.Config.ARGB_8888)) {
+            @Override public void drawText(String text, float x, float y, android.graphics.Paint paint) {
+                texts.add(text);
+                spots.add(new float[] {x, y + paint.descent(), paint.getTextAlign().ordinal()});
+            }
+        });
+        assertEquals("the whole length at the right end (#487)", java.util.Arrays.asList("0:15", "1:00"), texts);
+        float lineTop = bar.getHeight() - FeedVideoControls.THIN_DP;
+        for (float[] spot : spots) assertTrue("each sits above the line: " + spot[1], spot[1] < lineTop);
+        assertTrue("the time so far by the left end", spots.get(0)[0] < 20);
+        assertEquals(android.graphics.Paint.Align.LEFT.ordinal(), (int) spots.get(0)[2]);
+        assertTrue("the length by the right end", spots.get(1)[0] > 1060);
+        assertEquals(android.graphics.Paint.Align.RIGHT.ordinal(), (int) spots.get(1)[2]);
+        save(Settings.FEED_VIDEO_SEEK_BAR_LENGTH, false);
+        tick();
+        assertEquals("off, the time left", java.util.Arrays.asList("0:15", "-0:45"), drawnTexts(bar()));
     }
 
     @Test public void aLiveVideoGetsTheThinLineAndItsSeeksMarkThePlayerBehindLiveUntilALetGoAtTheEnd() {

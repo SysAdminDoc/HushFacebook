@@ -547,7 +547,7 @@ final class VideoPages {
                                 + "Facebook's speaker and tagged people buttons move up to sit above it. "
                                 + "Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.")));
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_THIN,
-                        L10n.t("Shows a feed video's seek bar as a thin line right on its bottom edge, like Instagram's, with no dot or times until you drag it. "
+                        L10n.t("Shows a feed video's seek bar as a thin line right on its bottom edge, like Instagram's, with no dot until you drag it. "
                                 + "Live videos get it too while they can be rewound. Let go at the far right end to go back to live. "
                                 + "Facebook's speaker and tagged people buttons move up to sit above it. Needs Seek bar on feed videos on.")));
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_TIMES,

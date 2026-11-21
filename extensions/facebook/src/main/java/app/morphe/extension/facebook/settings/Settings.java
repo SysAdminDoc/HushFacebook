@@ -1956,8 +1956,9 @@ public class Settings extends BaseSettings {
 
     /**
      * With {@link #FEED_VIDEO_SEEK_BAR} on, the bar is a thin line flush with the video's bottom
-     * edge, as on Instagram, with no thumb or times until a drag, and a live video that can be
-     * rewound gets it too. It sits on the edge as {@link #FEED_VIDEO_SEEK_BAR_EDGE} does (#431).
+     * edge, as on Instagram, with no thumb until a drag, and a live video that can be rewound gets
+     * it too. It sits on the edge as {@link #FEED_VIDEO_SEEK_BAR_EDGE} does (#431). With
+     * {@link #FEED_VIDEO_SEEK_BAR_TIMES} on, its times sit just above its two ends (#487).
      * Starts off.
      */
     public static final BooleanSetting FEED_VIDEO_SEEK_BAR_THIN =

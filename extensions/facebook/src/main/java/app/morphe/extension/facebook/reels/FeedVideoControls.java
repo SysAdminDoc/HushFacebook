@@ -1501,8 +1501,8 @@ public final class FeedVideoControls {
                 thin = line;
                 invalidate();
             }
-            // The thin line runs the whole width, with no times at its ends.
-            boolean shown = !control.story && !line && timesOn();
+            // The thin line still runs the whole width, its times sitting just above its ends (#487).
+            boolean shown = !control.story && timesOn();
             times(shown, shown && lengthOn());
             int position = Math.max(0, Math.min(length, access.position(player)));
             // The player reports the old spot until a seek lands, which would spring the bar back.
@@ -1516,11 +1516,12 @@ public final class FeedVideoControls {
          * SeekBar maps a touch between its paddings, so the time under a finger stays the one it gets.
          * With [whole], Full length on the seek bar, the right end shows the video's length in place of
          * the time left (#487). The room is measured on the time left either way, the wider of the two,
-         * so the line keeps its length when the switch changes.
+         * so the line keeps its length when the switch changes. The thin line keeps no room: its times
+         * sit just above its two ends instead, and it runs the whole width as before (#487).
          */
         void times(boolean on, boolean whole) {
             int room = 0;
-            if (on && getMax() > 0) {
+            if (on && !thin && getMax() > 0) {
                 paint.setTextSize(timeSize());
                 room = Math.round(paint.measureText("-" + ProgressBar.time(getMax()))
                         + 8 * getResources().getDisplayMetrics().density);
@@ -1568,6 +1569,7 @@ public final class FeedVideoControls {
                 canvas.drawRect(start, top, end, getHeight(), paint);
                 paint.setColor(0xFFFFFFFF);
                 canvas.drawRect(start, top, x, getHeight(), paint);
+                if (times && getMax() > 0) drawTimesAbove(canvas, top - 2 * density, density);
                 return;
             }
             paint.setColor(0x4D000000);
@@ -1577,8 +1579,31 @@ public final class FeedVideoControls {
             paint.setColor(0xFFFFFFFF);
             canvas.drawRect(start, y - half, x, y + half, paint);
             canvas.drawCircle(Math.max(radius, Math.min(getWidth() - radius, x)), y, radius, paint);
-            if (times && getMax() > 0) drawTimes(canvas, y, density);
+            if (times && getMax() > 0) {
+                if (thin) drawTimesAbove(canvas, y - radius, density);
+                else drawTimes(canvas, y, density);
+            }
             if (dragging) drawTime(canvas, x, y - radius - 2 * density, density);
+        }
+        /**
+         * The thin line's times, which have no room kept beside the line: the time so far over its
+         * left end and the time left (or the whole length) over its right, ending at [bottom] (#487).
+         */
+        private void drawTimesAbove(Canvas canvas, float bottom, float density) {
+            paint.setColor(0xFFFFFFFF);
+            paint.setTextSize(timeSize());
+            paint.setShadowLayer(2 * density, 0, 0, 0xCC000000);
+            float base = bottom - paint.descent();
+            paint.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText(ProgressBar.time(getProgress()), 4 * density, base, paint);
+            paint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(rightTime(), getWidth() - 4 * density, base, paint);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.clearShadowLayer();
+        }
+        /** What the right end shows: the whole length with Full length on the seek bar, the time left otherwise. */
+        private String rightTime() {
+            return length ? ProgressBar.time(getMax()) : "-" + ProgressBar.time(getMax() - getProgress());
         }
         /**
          * The time so far at the left end and the time left (or the whole length) at the right, white
@@ -1591,8 +1616,7 @@ public final class FeedVideoControls {
             paint.setTextAlign(Paint.Align.LEFT);
             canvas.drawText(ProgressBar.time(getProgress()), 2 * density, base, paint);
             paint.setTextAlign(Paint.Align.RIGHT);
-            String right = length ? ProgressBar.time(getMax()) : "-" + ProgressBar.time(getMax() - getProgress());
-            canvas.drawText(right, getWidth() - 2 * density, base, paint);
+            canvas.drawText(rightTime(), getWidth() - 2 * density, base, paint);
             paint.setTextAlign(Paint.Align.CENTER);
             paint.clearShadowLayer();
         }
