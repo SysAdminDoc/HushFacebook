@@ -436,6 +436,25 @@ public class FeedVideoDoubleTapTest {
         assertTrue(report(), report().contains("tap shows pause, played"));
     }
 
+    @Test public void theButtonStaysWhenFacebookBindsThePlayerAgainAndItsTapStillPauses() {
+        // Seen on an emulator (588): a playing feed video is bound again soon after the tap, which
+        // took the button off, so the next tap landed on the video and brought up a new one.
+        tapShowsPause();
+        tap(0.3f);
+        layout();
+        FeedVideoControls.rebound(player);
+        FeedVideoControls.attached(player.view, player);
+        drain();
+        layout();
+        View center = FeedVideoControls.showingCenter(player);
+        assertNotNull("binding the player again took the button off", center);
+        assertTrue(center.isShown());
+        tap(0.5f);
+        assertEquals("the tap on the button didn't pause", List.of(false), commands);
+        assertEquals(0, clicks);
+        assertNotNull(FeedVideoControls.showingCenter(player));
+    }
+
     @Test public void theButtonGoesAFewSecondsLaterAndTheNextTapBringsItBack() {
         tapShowsPause();
         tap(0.3f);

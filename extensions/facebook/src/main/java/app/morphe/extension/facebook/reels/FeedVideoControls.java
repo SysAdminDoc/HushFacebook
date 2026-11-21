@@ -412,8 +412,9 @@ public final class FeedVideoControls {
                 control.centerUntil = now + CENTER_MS;
                 control.hideCenterLater();
             }
-            boolean center = !story && !full && centerOn() && control.centerGeneration == control.generation
-                    && now < control.centerUntil;
+            // Kept to the video it came up on. Facebook binds a playing feed video again now and then, and the
+            // button stays through that, as the rest do (#538).
+            boolean center = !story && !full && centerOn() && control.centerVideo != null && now < control.centerUntil;
             boolean any = play || cast || seek || open || skip || speed || center;
             if (!any || control.released || player == null
                     || container == null || access.view(player) != container) {
@@ -455,6 +456,7 @@ public final class FeedVideoControls {
             control.besideSpeaker = beside != null;
             control.cast = place(control, control.cast, cast && !target.live ? target : null, CAST, target.right, target.top);
             Rect middle = target.middle;
+            center &= target.videoId.equals(control.centerVideo);
             control.center = place(control, control.center, center && middle != null ? target : null, CENTER,
                     middle != null ? middle.left : 0, middle != null ? middle.top : 0);
             if (control.button != null) control.button.state(access.playing(player));
@@ -1083,9 +1085,13 @@ public final class FeedVideoControls {
             Button current = kind == CAST ? control.cast : kind == OPEN ? control.open : kind == BACK ? control.back
                     : kind == AHEAD ? control.ahead : kind == SPEED ? control.speed : kind == CENTER ? control.center
                     : control.button;
-            if (!on || current != button || control.generation != button.generation) return;
+            if (!on || current != button || control.generation != button.generation) {
+                if (kind == CENTER) Logger.printDebug(() -> "Tap shows pause: a tap on an old button, dropped");
+                return;
+            }
             Object player = control.player.get();
             if (player == null || !stillOver(control, button, button.params, button.videoId, button.surface)) {
+                if (kind == CENTER) Logger.printDebug(() -> "Tap shows pause: the button left its video, dropped");
                 control.remove(false);
                 return;
             }
@@ -1125,6 +1131,7 @@ public final class FeedVideoControls {
                 control.centerUntil = play ? control.centerPaused + CENTER_MS : Long.MAX_VALUE;
                 control.hideCenterLater();
                 HookStatus.counted(FAMILY, play ? "tap shows pause, played" : "tap shows pause, paused");
+                Logger.printDebug(() -> play ? "Tap shows pause: played" : "Tap shows pause: paused");
             } else {
                 HookStatus.counted(FAMILY, "inline feed control");
             }
@@ -1325,11 +1332,12 @@ public final class FeedVideoControls {
         /** Tap shows a pause button's button in the middle of the video (#538). */
         @Nullable Button center;
         /**
-         * Until when that button shows, which a tap on the video sets for the binding it had then.
-         * Long.MAX_VALUE keeps it on a video it paused, so the next tap can play it.
+         * Until when that button shows, which a tap on the video sets. Long.MAX_VALUE keeps it on a
+         * video it paused, so the next tap can play it.
          */
         volatile long centerUntil;
-        volatile long centerGeneration = -1;
+        /** The video the tap was on, which a binding of another video to this player doesn't get it. */
+        @Nullable volatile String centerVideo;
         /** When the middle button was last tapped, before which the player may still say what it did. */
         volatile long centerPaused;
         /** Takes the middle button off once its time is up, which may draw nothing else. */
@@ -1981,19 +1989,28 @@ public final class FeedVideoControls {
             control = players.get(player);
         }
         if (control == null) return false;
+        Object params = access.params(player);
+        String video = params == null ? null : access.videoId(params);
+        if (video == null || video.isEmpty()) return false;
         Button showing = control.center;
-        if (showing != null && showing.isShown() && control.centerGeneration == control.generation) return false;
-        control.centerGeneration = control.generation;
+        if (showing != null && showing.isShown() && video.equals(control.centerVideo)) {
+            Logger.printDebug(() -> "Tap shows pause: the button shows, so the tap opens the video");
+            return false;
+        }
+        control.centerVideo = video;
         control.centerPaused = 0;
         control.centerUntil = SystemClock.uptimeMillis() + CENTER_MS;
         refresh(control);
         if (control.center == null) {
             // No room for it, or not a feed video this places buttons on: Facebook opens it.
             control.centerUntil = 0;
+            control.centerVideo = null;
+            Logger.printDebug(() -> "Tap shows pause: no button on this video, so the tap opens it");
             return false;
         }
         control.hideCenterLater();
         HookStatus.counted(FAMILY, "tap shows pause");
+        Logger.printDebug(() -> "Tap shows pause: button shown");
         return true;
     }
 
