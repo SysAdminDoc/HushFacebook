@@ -1,9 +1,11 @@
 [versions]
 # Align with morphe-patches-template (Compatibility / Manager display names). Hold the patcher
 # at the version the oldest supported Morphe Manager bundles: a newer pin trips the manager's
-# Patcher-Version gate and it refuses the bundle. Manager 2.6.0 bundles 2.4.0 (stable 2026-11-15),
-# and so does desktop 2.2.0, which the fixture gates run; Manager 2.5.0 and desktop 2.1.1 bundle
-# 2.3.0. 2.4.0 moves smali to 5eaff5a2c9 and ARSCLib to 50418a07a8, which renames its value
+# Patcher-Version gate and it refuses the bundle. Manager 2.7.0 bundles 2.5.0 (stable 2026-11-21),
+# and so does desktop 2.3.0, which the fixture gates run. 2.5.0 keeps 2.4.0's smali, ARSCLib and
+# apksig and only adds API (replaceStrings, keeping the original v1/v2 signatures); it moves
+# kotlinx-serialization to 1.13.0. Manager 2.6.0 and desktop 2.2.0 bundle 2.4.0 (stable
+# 2026-11-15); Manager 2.5.0 and desktop 2.1.1 bundle 2.3.0. 2.4.0 moves smali to 5eaff5a2c9 and ARSCLib to 50418a07a8, which renames its value
 # accessors (setValueAs* to setDataAs*) and turns the ValueType enum into DataType constants, and
 # gives PackageMetadata the bundle's OBB files. Manager 2.5.0 (stable 2026-11-06) bundled 2.3.0;
 # Manager 2.4.0 bundles 2.2.0 and refuses
@@ -15,15 +17,15 @@
 # line matches a fingerprint string against the whole literal, decodes only the resources a patch
 # asks for, and hides compatiblePackages behind compatibility (PatchListGenerator rebuilds the old
 # field). Manager 1.x refuses a 2.0 bundle with its update prompt.
-morphe-patcher = "2.4.0"
+morphe-patcher = "2.5.0"
 # First stable Manager release that bundled the patcher above. The release fact check holds the
 # README's stated floor to this value.
-manager-floor = "2.6.0"
+manager-floor = "2.7.0"
 # Read by the app.morphe.patches settings plugin, not by anything in this repo: remove it and
 # configuration fails with "Version with alias smali not found in version catalog". The commit
 # resolves as com.github.MorpheApp.smali through JitPack. It is not waiting on an official
 # release, which google/smali 3.0.10 delivered on 2026-08-20. Keep it the commit the patcher
-# above requests (2.4.0 asks for 5eaff5a2c9; 2.3.0, 2.2.0, 2.1.0 and 2.0.1 for ac700e1942, 2.0.0 for 4220ae75f7; 1.14.1 to 1.15.1 asked for d856bad65f). Gradle merges
+# above requests (2.5.0 and 2.4.0 ask for 5eaff5a2c9; 2.3.0, 2.2.0, 2.1.0 and 2.0.1 for ac700e1942, 2.0.0 for 4220ae75f7; 1.14.1 to 1.15.1 asked for d856bad65f). Gradle merges
 # the two requests into one module and keeps the version that sorts higher, not the newer commit
 # (ac700e1942 would sort above 5eaff5a2c9 and win, so the pin moves with the patcher):
 # the old pin d92701d947, one commit behind d856bad65f, sorted higher and silently replaced the

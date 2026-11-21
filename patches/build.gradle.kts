@@ -1111,7 +1111,7 @@ dependencies {
     // exact version at run time; this puts it on the test compile classpath as well.
     testImplementation("com.android.tools.build:apksig:9.1.1")
     // Reads the resource tables of the fixtures, for the Material You theme's colour table. This is
-    // the module and commit the patcher brings at run time (2.4.0 pins 50418a07a8, 2.3.0 pinned
+    // the module and commit the patcher brings at run time (2.5.0 and 2.4.0 pin 50418a07a8, 2.3.0 pinned
     // 675bed2de3, 2.1.0 and 2.2.0 pinned 4695b583ef); it puts that copy on the test compile classpath
     // as well. Gradle keeps whichever of two commits sorts higher, so a stale pin here can silently
     // replace the patcher's: 675bed2de3 sorts above 50418a07a8, and left here it put the old

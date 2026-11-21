@@ -18,7 +18,7 @@ import java.io.File
  *
  * The patcher fills its class pool from an APK's dex files, and what takes a pool directly is
  * internal to it: the context's constructor, the pool's class and its setter. They are reached by
- * their JVM names, pinned to morphe-patcher 2.4.0. A bump that renames one fails here, naming it,
+ * their JVM names, pinned to morphe-patcher 2.5.0. A bump that renames one fails here, naming it,
  * rather than leaving a test that never ran the patch. Nothing is written to disk: the context only
  * names its work folders until something compiles the dex, which no test here asks for. Patcher
  * 2.3.0 began handing the pool a nullable PatcherProgress beside the classes; tests report none.
