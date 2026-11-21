@@ -557,39 +557,56 @@ class StoryViewerCleanupFixtureTest {
                     .filter { namesItselfIn(it, REPLY_BAR_SECTION) }
                 assertEquals("$name: sections naming themselves $REPLY_BAR_SECTION", 1, sections.size)
                 val section = sections.single()
+                val strips = FixtureDex.classesHolding(bundle, REACTION_BAR_SECTION)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                    .filter { namesItselfIn(it, REACTION_BAR_SECTION) }
+                assertEquals("$name: sections naming themselves $REACTION_BAR_SECTION", 1, strips.size)
+                val strip = strips.single()
                 val found = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
-                    dex.typeSection.any { it.toString() == section.type } || dex.methodSection.any { it.name == FEEDBACK_BAR_CHECK }
-                }) { (it.name == "render" && createsInstance(it, section.type)) || checkCalls(it).isNotEmpty() }
+                    dex.typeSection.any { it.toString() == section.type || it.toString() == strip.type } ||
+                        dex.methodSection.any { it.name == FEEDBACK_BAR_CHECK }
+                }) {
+                    (it.name == "render" && (createsInstance(it, section.type) || createsInstance(it, strip.type))) ||
+                        checkCalls(it).isNotEmpty()
+                }
                 val renders = found.filter { it.name == "render" && createsInstance(it, section.type) }
                 assertEquals("$name: renders building the $REPLY_BAR_SECTION", 1, renders.size)
+                val footers = found.filter { it.name == "render" && createsInstance(it, strip.type) }
+                assertEquals("$name: renders building the $REACTION_BAR_SECTION", 1, footers.size)
+                // Positive control: the footer that builds the reactions also builds the feedback bar.
+                assertTrue("$name: the footer doesn't build the feedback bar", found.filter { checkCalls(it).isNotEmpty() }
+                    .any { createsInstance(footers.single(), it.definingClass) })
                 val callers = found.filter { checkCalls(it).isNotEmpty() }
                 assertEquals("$name: methods asking $FEEDBACK_BAR_CHECK", 1, callers.size)
                 val owners = callers.flatMap(::checkCalls).map { it.definingClass }.toSet()
                 assertEquals("$name: classes answering $FEEDBACK_BAR_CHECK", 1, owners.size)
                 val owner = owners.single()
-                val classes = FixtureDex.classes(bundle,
-                    (renders.map { it.definingClass } + callers.map { it.definingClass } + owner).toSet())
+                val classes = FixtureDex.classes(bundle, (renders.map { it.definingClass } +
+                    footers.map { it.definingClass } + callers.map { it.definingClass } + owner).toSet())
                 val check = classes.getValue(owner).methods.single { it.name == FEEDBACK_BAR_CHECK }
                 // Positive controls: the check says no itself for some stories, and the feedback bar's
                 // render answers null on its no.
                 assertTrue("$name: $FEEDBACK_BAR_CHECK never says no itself", returnsFalse(check.code()))
                 assertTrue("$name: the feedback bar never answers null itself", returnsNull(callers.single().code()))
-                val holder = classes.getValue(renders.single().definingClass)
-                val stockRender = renderOf(holder)!!.code()
+                val bars = listOf("reply bar" to renders.single().definingClass, "footer" to footers.single().definingClass)
+                val stockRenders = bars.associate { (_, type) -> type to renderOf(classes.getValue(type))!!.code() }
                 val stockCheck = check.code()
 
-                val context = PatchContexts.of((sections + classes.values).distinctBy { it.type })
+                val context = PatchContexts.of((sections + strips + classes.values).distinctBy { it.type })
                 context.hideStoryReplyBar()
-                val render = context.mutableClassDefBy(holder.type).methods.single {
-                    it.name == "render" && it.parameterTypes.size == 1
-                }.code()
-                assertEquals("$name: the reply bar answers null on a yes",
-                    listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN_OBJECT),
-                    render.take(5).map { it.opcode })
-                assertEquals("$name: the reply bar asks its own switch", HIDE_REPLY_BAR, render[0].reference())
-                assertTrue("$name: the reply bar's early answer isn't null", answersNull(render.subList(3, 5)))
-                assertTrue("$name: a no doesn't go to the reply bar's render", branchesPast(render, 5))
-                assertEquals("$name: the rest of the reply bar is Facebook's", stockRender.unpadded(), render.drop(5).unpadded())
+                for ((bar, type) in bars) {
+                    val render = context.mutableClassDefBy(type).methods.single {
+                        it.name == "render" && it.parameterTypes.size == 1
+                    }.code()
+                    assertEquals("$name: the $bar answers null on a yes",
+                        listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN_OBJECT),
+                        render.take(5).map { it.opcode })
+                    assertEquals("$name: the $bar asks the reply bar's switch", HIDE_REPLY_BAR, render[0].reference())
+                    assertTrue("$name: the $bar's early answer isn't null", answersNull(render.subList(3, 5)))
+                    assertTrue("$name: a no doesn't go to the $bar's render", branchesPast(render, 5))
+                    assertEquals("$name: the rest of the $bar is Facebook's",
+                        stockRenders.getValue(type).unpadded(), render.drop(5).unpadded())
+                }
 
                 val patched = context.mutableClassDefBy(owner).methods.single { it.name == FEEDBACK_BAR_CHECK }.code()
                 assertEquals("$name: the feedback bar check says no on a yes",

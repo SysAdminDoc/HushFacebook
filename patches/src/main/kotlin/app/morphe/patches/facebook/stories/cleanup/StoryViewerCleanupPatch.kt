@@ -130,9 +130,13 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * - The bar under someone else's story (#542: repost, "Send message..." and the quick reactions) comes
  *   from one of two places the footer (LX/0BCj;) picks between by config. One is the component
  *   (LX/0BIv;) whose render builds "ReplyBarContainerSection" (LX/0BJ1;) inside a recycler keyed
- *   "reply_bar_buttons_container"; it answers null first thing on a yes. The other is the feedback
- *   bar (LX/0W8K;), whose render answers null itself unless its companion's kept
- *   isFeedbackBarSupportedForBucket says yes; that check says no first thing on a yes.
+ *   "reply_bar_buttons_container"; it answers null first thing on a yes. The other is the newer
+ *   footer (LX/0W8I;), which builds the feedback bar (LX/0W8K;) and, itself, the quick reactions'
+ *   "StoryViewerReactionBarSection" (LX/0BJ7;); it answers null first thing on a yes too. The
+ *   feedback bar's render also answers null unless its companion's kept
+ *   isFeedbackBarSupportedForBucket says yes, and that check says no first thing on a yes. A Page's
+ *   story on 588 showed why the footer needs its own hook: the feedback bar was already empty there
+ *   and the reactions stayed.
  */
 
 internal const val STORY_VIEWER_CLEANUP_PATCH = "Clean up the story viewer"
@@ -206,6 +210,13 @@ internal const val SHOW_UP_NEXT = "$STORY_VIEWER_CLEANUP->showUpNext(Z)Z"
 
 /** What the bar under someone else's story names itself in its constructor (#542). */
 internal const val REPLY_BAR_SECTION = "ReplyBarContainerSection"
+
+/**
+ * What the row of quick reactions under a story names itself in its constructor (#542). The newer
+ * footer builds it next to the feedback bar, outside the [REPLY_BAR_SECTION], which is how a Page's
+ * story keeps its reactions when the feedback bar has nothing to show.
+ */
+internal const val REACTION_BAR_SECTION = "StoryViewerReactionBarSection"
 
 /** The kept name of the check that decides whether a story gets the newer feedback bar (#542). */
 internal const val FEEDBACK_BAR_CHECK = "isFeedbackBarSupportedForBucket"
@@ -599,19 +610,30 @@ internal fun createsInstance(method: Method, type: String): Boolean = method.imp
     it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type == type
 } == true
 
+/** The one section in this build that names itself [name] in its constructor. */
+private fun BytecodePatchContext.namedSection(name: String): ClassDef {
+    val sections = classDefByStrings(name, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }.filter { namesItselfIn(it, name) }
+    return sections.singleOrNull() ?: refuse("expected one section naming itself $name, found ${sections.size}")
+}
+
 /**
- * Hooks both bars under someone else's story (#542). The component whose render builds the
- * [REPLY_BAR_SECTION] answers null first thing on a yes, and the check that decides whether a story
- * gets the newer feedback bar says no, so that bar's render answers null itself.
+ * Hooks every bar under someone else's story (#542). The component whose render builds the
+ * [REPLY_BAR_SECTION] and the newer footer, whose render builds the [REACTION_BAR_SECTION] itself,
+ * answer null first thing on a yes. The check that decides whether a story gets the newer feedback
+ * bar says no too, so that bar's render answers null wherever else it's drawn.
  */
 internal fun BytecodePatchContext.hideStoryReplyBar() {
-    val sections = classDefByStrings(REPLY_BAR_SECTION, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }.filter { namesItselfIn(it, REPLY_BAR_SECTION) }
-    val section = sections.singleOrNull() ?: refuse("expected one section naming itself $REPLY_BAR_SECTION, found ${sections.size}")
+    val section = namedSection(REPLY_BAR_SECTION)
+    val reactions = namedSection(REACTION_BAR_SECTION)
     val holders = mutableListOf<ClassDef>()
+    val footers = mutableListOf<ClassDef>()
     val checks = mutableSetOf<String>()
-    classDefForEachReferencing(types = listOf(section.type), names = listOf(FEEDBACK_BAR_CHECK)) { classDef ->
-        renderOf(classDef)?.takeIf { createsInstance(it, section.type) }?.let { holders += classDef }
+    classDefForEachReferencing(types = listOf(section.type, reactions.type), names = listOf(FEEDBACK_BAR_CHECK)) { classDef ->
+        renderOf(classDef)?.let { render ->
+            if (createsInstance(render, section.type)) holders += classDef
+            if (createsInstance(render, reactions.type)) footers += classDef
+        }
         classDef.methods.forEach { method ->
             method.implementation?.instructions?.forEach { instruction ->
                 val called = (instruction as? ReferenceInstruction)?.reference as? MethodReference
@@ -622,6 +644,9 @@ internal fun BytecodePatchContext.hideStoryReplyBar() {
     val holder = holders.singleOrNull()
         ?: refuse("expected one component whose render builds the $REPLY_BAR_SECTION, found ${holders.size}")
     mutableOf(holder.type, renderOf(holder)!!).answerWhen(HIDE_REPLY_BAR, "const/4 v0, 0x0")
+    val footer = footers.singleOrNull()
+        ?: refuse("expected one component whose render builds the $REACTION_BAR_SECTION, found ${footers.size}")
+    mutableOf(footer.type, renderOf(footer)!!).answerWhen(HIDE_REPLY_BAR, "const/4 v0, 0x0")
 
     val owner = checks.singleOrNull() ?: refuse("expected one class answering $FEEDBACK_BAR_CHECK, found ${checks.size}")
     val check = mutableClassDefBy(owner).methods.singleOrNull { it.name == FEEDBACK_BAR_CHECK && it.returnType == "Z" }
