@@ -51,6 +51,8 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *       soundtrack out of the models itself, and {@link #hideAudioLine} is asked first thing there.
  *       "Made with Edits" under the caption is a component of its own too, drawn from a flag on the
  *       video, and {@link #hideEditsLabel} is asked first thing there under the chips switch (#314).
+ *       The "Made with Edits" pill over a feed video's corner comes from Facebook's own check of
+ *       the same flag, and {@link #hideEditsPill} answers that check no under the same switch.
  *   <li>The Follow button beside a reel's author is built only when Facebook's Follow check
  *       answers yes, and {@link #hideFollowButton} is asked first thing in that check. The author
  *       row asks it on every surface, the Reels tab included. So do the author rows of sponsored
@@ -162,6 +164,10 @@ public final class ReelDeclutter {
     /** Counted under its own name each time a reel's "Made with Edits" line isn't drawn (#314). */
     static final String EDITS_ROUTE = "Reel Edits line";
     static final String EDITS_LABEL = "Made with Edits";
+
+    /** Counted under its own name each time a video's "Made with Edits" pill is answered as not shown (#314). */
+    static final String EDITS_PILL_ROUTE = "Video Edits pill";
+    static final String EDITS_PILL = "Made with Edits pill";
 
     /** Counted under its own name each time a video's slow connection message isn't shown. */
     static final String SLOW_ROUTE = "Slow connection message";
@@ -582,6 +588,32 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, EDITS_LABEL, failure);
             Logger.printException(() -> "Reel Edits line: could not read its switch", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in Facebook's check of whether a video gets the "Made with Edits"
+     * pill over its bottom corner, the one feed videos and some reels draw (#314, a feed video on
+     * 587). Every component drawing that pill asks the check, and the caption line's picker asks it
+     * too before it picks the line {@link #hideEditsLabel} already keeps out. True makes the check
+     * answer no, as it does for a video made anywhere else. It goes with the chips switch, like the
+     * line. Never throws: false asks Facebook's own check.
+     */
+    public static boolean hideEditsPill() {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(EDITS_PILL_ROUTE, 1);
+            FeedFilterCounters.sawKind(EDITS_PILL_ROUTE, EDITS_PILL);
+            boolean hide = Utils.settingsReady() && Settings.HIDE_REEL_CHIPS.get();
+            if (hide) {
+                FeedFilterCounters.removed(EDITS_PILL_ROUTE, 1, EDITS_PILL);
+                logOnce(EDITS_PILL, () -> "Video Edits pill: not shown");
+            }
+            return hide;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, EDITS_PILL, failure);
+            Logger.printException(() -> "Video Edits pill: could not read its switch", failure);
             return false;
         }
     }

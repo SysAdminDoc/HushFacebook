@@ -603,6 +603,58 @@ class CleanUpReelsShapesTest {
         assertTrue("a static helper was taken", !isEditsLabelRender(helper, getters))
     }
 
+    /**
+     * 588's "Made with Edits" pill over a feed video (#314) is drawn where Facebook's static check of
+     * the video says so: a static boolean asking the Edits getter. The caption line's picker (an
+     * Integer back), an instance method, a check asking another getter and one reading a tree flag
+     * itself are not it. The hook asks first and answers false.
+     */
+    @Test
+    fun `588's Edits pill check is the static boolean asking the Edits getter`() {
+        val flags = "Lfixture/Flags;"
+        val getters = editsGetterCalls(flagTree(flags, "IVJ", MADE_WITH_EDITS))
+        val asks = """
+            invoke-interface { p2 }, $flags->IVJ()Z
+            move-result v0
+            if-eqz v0, :no
+            const/4 v0, 0x1
+            return v0
+            :no
+            const/4 v0, 0x0
+            return v0
+        """
+        val params = listOf("Lfixture/Story;", "Lfixture/Config;", flags)
+        val check = method("A0g", params, "Z", 7, static = true, asks)
+        assertTrue(isEditsPillCheck(check, getters))
+        val picker = method("A00", params, "Ljava/lang/Integer;", 7, static = true, """
+            invoke-interface { p2 }, $flags->IVJ()Z
+            move-result v0
+            const/4 v1, 0x0
+            return-object v1
+        """)
+        assertTrue("the caption line's picker was taken", !isEditsPillCheck(picker, getters))
+        val instance = method("A0g", params, "Z", 7, static = false, asks.replace("p2", "p3"))
+        assertTrue("an instance method was taken", !isEditsPillCheck(instance, getters))
+        val asksAnother = method("A0g", params, "Z", 7, static = true, asks.replace("IVJ", "IVK"))
+        assertTrue("a check asking another getter was taken", !isEditsPillCheck(asksAnother, getters))
+        val readsFlag = method("A0g", listOf("Lcom/facebook/graphservice/tree/TreeJNI;"), "Z", 4, static = true, """
+            const v1, ${"can_viewer_comment".hashCode()}
+            invoke-virtual { p0, v1 }, Lcom/facebook/graphservice/tree/TreeJNI;->getBooleanValue(I)Z
+            move-result v0
+            invoke-interface { p0 }, $flags->IVJ()Z
+            move-result v0
+            return v0
+        """)
+        assertTrue("a check reading a tree flag itself was taken", !isEditsPillCheck(readsFlag, getters))
+
+        check.returnFalseWhen(HIDE_EDITS_PILL)
+        val body = check.body()
+        assertEquals(HIDE_EDITS_PILL, body[0].call)
+        assertEquals(Opcode.IF_EQZ, body[2].opcode)
+        assertEquals("the hook answers false", 0, (body[3] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(Opcode.RETURN, body[4].opcode)
+    }
+
     /** A reel header: p0 the row, p1 the search bar, p2 its send button, each wrapped and tagged when there is one. */
     private fun header(add: String = "Lfixture/Row;->add(Lfixture/Component;)V", sendTag: String = SEARCH_BAR_SEND) = method(
         "A00", listOf("Lfixture/Row;", "Lfixture/Component;", "Lfixture/Component;"), "Lfixture/Component;", 6, static = true, """

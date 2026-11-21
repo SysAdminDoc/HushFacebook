@@ -715,6 +715,8 @@ public class PausedHooksTest {
                 ReelDeclutter::hideAudioLine,
                 // And "Made with Edits" under the caption.
                 ReelDeclutter::hideEditsLabel,
+                // And the "Made with Edits" pill over a feed video (#314).
+                ReelDeclutter::hideEditsPill,
                 // A stalled video's slow connection message.
                 ReelDeclutter::hideSlowConnectionMessage,
                 // A feed or search video's full-screen and picture-in-picture buttons (#478).

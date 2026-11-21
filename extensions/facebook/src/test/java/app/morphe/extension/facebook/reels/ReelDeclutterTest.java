@@ -250,6 +250,30 @@ public class ReelDeclutterTest {
                 line(ReelDeclutter.EDITS_ROUTE));
     }
 
+    /**
+     * The "Made with Edits" pill over a feed video (#314) goes with the same chips switch as the
+     * caption line, under a route of its own, and comes back paused, before the settings are ready
+     * and once the switch is off.
+     */
+    @Test
+    public void theEditsPillGoesWithTheChipsSwitch() {
+        Settings.HIDE_REEL_CHIPS.save(false);
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertFalse("the audio line switch took the Edits pill", ReelDeclutter.hideEditsPill());
+        Settings.HIDE_REEL_CHIPS.save(true);
+        assertTrue(ReelDeclutter.hideEditsPill());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the Edits pill went while paused", ReelDeclutter.hideEditsPill());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the Edits pill went before the settings were ready",
+                ReelDeclutter.hideEditsPill()));
+        Settings.HIDE_REEL_CHIPS.save(false);
+        assertFalse("turning the switch off didn't bring the Edits pill back", ReelDeclutter.hideEditsPill());
+        assertEquals(ReelDeclutter.EDITS_PILL_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.EDITS_PILL
+                + ". Removed: " + ReelDeclutter.EDITS_PILL + " 1. Kinds: " + ReelDeclutter.EDITS_PILL + " 5",
+                line(ReelDeclutter.EDITS_PILL_ROUTE));
+    }
+
     /** A chips switch that can't be read draws the Edits line, and the report names the hook. */
     @Test
     public void anEditsLineSwitchThatCantBeReadDrawsTheLine() {

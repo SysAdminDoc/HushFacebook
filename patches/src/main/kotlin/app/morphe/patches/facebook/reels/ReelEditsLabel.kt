@@ -33,9 +33,15 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   reading the key itself (LX/0CTk;, v7 LX/0CTD;) and a delegating tree asking its delegate
  *   (LX/0md0;, v7 LX/0mbN;). The TreeJNI one names the interface method, so the render is the one
  *   asking it. The flag's other callers are still static helpers.
+ * - 588 (2026-11-21): a feed video made with Edits draws a "Made with Edits" pill over its corner
+ *   (#314). One of those static helpers (arm64 LX/08kw;->A0g) is Facebook's check of whether a video
+ *   gets that pill, asked by each component drawing it and by the caption line's picker. It answers
+ *   false first thing under the same switch, which is what it answers for any other video.
  */
 
 internal const val HIDE_EDITS_LABEL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->hideEditsLabel()Z"
+
+internal const val HIDE_EDITS_PILL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->hideEditsPill()Z"
 
 /** The video flag the line is drawn for. Its tree key is the name's String.hashCode(). */
 internal val MADE_WITH_EDITS = "is_made_with_edits_app".hashCode()
@@ -77,6 +83,19 @@ private fun asksEditsGetter(method: Method, getters: Set<String>): Boolean = get
         call.returnType == "Z" && call.parameterTypes.isEmpty() && "${call.definingClass}->${call.name}" in getters
     }
 
+/**
+ * Whether [method] is Facebook's check of whether a video gets the "Made with Edits" pill over its
+ * corner: a static method answering a boolean that asks one of [getters] ([editsGetterCalls]) and
+ * reads no tree flag itself. Read from 588 (2026-11-21, arm64 LX/08kw;->A0g, a (story, config, video)
+ * check also gated on a mobile config): the feed video's pill components ask it, and so does the
+ * caption line's picker, which returns an Integer and isn't one.
+ */
+internal fun isEditsPillCheck(method: Method, getters: Set<String>): Boolean {
+    if (!AccessFlags.STATIC.isSet(method.accessFlags) || method.returnType != "Z") return false
+    if (treeBooleanReads(method).isNotEmpty()) return false
+    return asksEditsGetter(method, getters)
+}
+
 /** The line's render asks the extension first thing and answers null, Facebook's own answer for any other video. */
 internal fun BytecodePatchContext.hideEditsLabel() {
     val renders = mutableListOf<Pair<String, Method>>()
@@ -87,11 +106,20 @@ internal fun BytecodePatchContext.hideEditsLabel() {
         classDef.methods.filter { isEditsLabelRender(it) }.mapTo(renders) { classDef.type to it }
     }
     // 587: the render asks the getter's interface instead of reading the tree.
+    val pillChecks = mutableListOf<Pair<String, Method>>()
     if (getters.isNotEmpty()) {
         classDefForEachReferencing(names = getters.map { it.substringAfter("->") }.distinct()) { classDef ->
             if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
             classDef.methods.filter { isEditsLabelRender(it, getters) }.mapTo(renders) { classDef.type to it }
+            classDef.methods.filter { isEditsPillCheck(it, getters) }.mapTo(pillChecks) { classDef.type to it }
         }
+    }
+    // #314 on 588: the pill over a feed video's corner is drawn wherever Facebook's own check says so.
+    if (pillChecks.isEmpty()) throw PatchException("$PATCH: expected a check asking the Edits flag for the video pill, found none")
+    for ((owner, check) in pillChecks) {
+        mutableClassDefBy(owner).methods.single {
+            it.name == check.name && it.parameterTypes.map(CharSequence::toString) == check.parameterTypes.map(CharSequence::toString)
+        }.returnFalseWhen(HIDE_EDITS_PILL)
     }
     val (owner, render) = renders.distinctBy { (type, method) -> "$type->${method.name}${method.parameterTypes.map(CharSequence::toString)}" }
         .singleOrNull()

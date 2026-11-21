@@ -44,6 +44,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* `Hide prompts and promos under reels` also takes the "Made with Edits" pill off the corner of a video in your feed now. That pill is a different piece from the line under a reel's caption, so the switch only caught the line. (#314)
 * With `Tap the bar to seek` on, the three dots and other buttons that sit just above a reel's progress line open again. Before, a tap on the bottom of the three dots in a saved reel jumped the video instead of opening the menu. A tap on the line itself still seeks.
 * A saved reel you open from your library on the Reels tab fits the screen again. Its bottom no longer runs under the comment box, so Facebook's way out of Clear mode is easy to tap.
 * With `Show the post date on reels` on, the date under a reel's author stays put. On a reel with a song, the song line no longer scrolls the date out of sight, and on the others the line holds on the date instead of turning over to the location or "New for you" a few seconds later. (#503)

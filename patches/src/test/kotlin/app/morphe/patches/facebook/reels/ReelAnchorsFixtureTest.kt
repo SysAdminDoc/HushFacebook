@@ -303,6 +303,34 @@ class ReelAnchorsFixtureTest {
         assertEquals("a declared build went unchecked: $checked", versions.toSet(), checked.keys)
     }
 
+    /**
+     * The "Made with Edits" pill over a feed video (#314), found the way the patch finds it: a static
+     * boolean asking the Edits getter, with a local for its hook. 588 has exactly one on each build.
+     */
+    @Test
+    fun `every declared build has one Made with Edits pill check, with a local for its hook`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableMapOf<String, String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val getters = mutableSetOf<String>()
+                FixtureDex.forEach(bundle) { dex -> dex.classes.forEach { getters += editsGetterCalls(it) } }
+                val checks = mutableListOf<Method>()
+                FixtureDex.forEach(bundle) { dex ->
+                    for (classDef in dex.classes) {
+                        classDef.methods.filter { isEditsPillCheck(it, getters) }.mapTo(checks) { ImmutableMethod.of(it) }
+                    }
+                }
+                assertEquals("$name: $checks", 1, checks.size)
+                assertTrue("$name: the check has no local for the hook", locals(checks.single()) >= 1)
+                checked[version] = checks.single().definingClass
+            }
+        }
+        assertEquals("a declared build went unchecked: $checked", versions.toSet(), checked.keys)
+    }
+
     @Test
     fun `the patch requires the chips the extension hides`() {
         val declutter = File(RepoFiles.root,

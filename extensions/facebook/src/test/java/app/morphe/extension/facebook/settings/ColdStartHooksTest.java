@@ -283,6 +283,7 @@ public class ColdStartHooksTest {
         assertNull(ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsRemixAttribution"))));
         assertFalse("a Reels tab audio line drawn before the context came off", ReelDeclutter.hideAudioLine());
         assertFalse("a Made with Edits line taken before the context came off", ReelDeclutter.hideEditsLabel());
+        assertFalse("a Made with Edits pill taken before the context came off", ReelDeclutter.hideEditsPill());
         assertFalse("a slow connection message posted before the context was held back",
                 ReelDeclutter.hideSlowConnectionMessage());
         assertFalse("an Up next lookup skipped before the context came off", ReelDeclutter.skipUpNextFetch());
