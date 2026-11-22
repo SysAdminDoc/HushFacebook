@@ -485,35 +485,38 @@ class MessengerHandoffShapesTest {
      */
     @Test
     fun `a build missing a handoff anchor keeps the icon and leaves the whole handoff out`() {
-        val broken = mapOf(
-            "no NotificationType" to build(leaveOut = setOf(NOTIFICATION_TYPE)),
-            "no VOIP constant" to build(leaveOut = setOf(NOTIFICATION_TYPE),
-                extra = listOf(shapes.notificationType("MARKETPLACE" to shapes.marketplace))),
-            "no VOIP handler" to build(leaveOut = setOf(HandoffShapes.HANDLER)),
-            "a VOIP handler with two handle methods" to build(leaveOut = setOf(HandoffShapes.HANDLER), extra = listOf(
+        // Each build is made right before it's patched: a patch runs on the newest context made,
+        // the one the patcher would be patching, whatever execute is handed.
+        val broken = mapOf<String, () -> BytecodePatchContext>(
+            "no NotificationType" to { build(leaveOut = setOf(NOTIFICATION_TYPE)) },
+            "no VOIP constant" to { build(leaveOut = setOf(NOTIFICATION_TYPE),
+                extra = listOf(shapes.notificationType("MARKETPLACE" to shapes.marketplace))) },
+            "no VOIP handler" to { build(leaveOut = setOf(HandoffShapes.HANDLER)) },
+            "a VOIP handler with two handle methods" to { build(leaveOut = setOf(HandoffShapes.HANDLER), extra = listOf(
                 shapes.classDef(HandoffShapes.HANDLER, shapes.claim(), shapes.handle(),
-                    shapes.method(HandoffShapes.HANDLER, "handleAgain", shapes.handleParameters, "V", 8, listOf(shapes.returnVoid))))),
-            "no parser" to build(leaveOut = setOf(HandoffShapes.PARSER)),
-            "two parsers" to build(extra = listOf(
+                    shapes.method(HandoffShapes.HANDLER, "handleAgain", shapes.handleParameters, "V", 8, listOf(shapes.returnVoid))))) },
+            "no parser" to { build(leaveOut = setOf(HandoffShapes.PARSER)) },
+            "two parsers" to { build(extra = listOf(
                 shapes.classDef("Lfixture/OtherParser;", shapes.ringType("Lfixture/OtherParser;"), shapes.payload("Lfixture/OtherParser;"),
-                    shapes.parse("Lfixture/OtherParser;")))),
-            "a parser without its parse" to build(leaveOut = setOf(HandoffShapes.PARSER),
-                extra = listOf(shapes.classDef(HandoffShapes.PARSER, shapes.ringType(), shapes.payload()))),
-            "no MessagesNotificationManager" to build(leaveOut = setOf(MESSAGES_NOTIFICATION_MANAGER)),
-            "no dispatcher" to build(leaveOut = setOf(MESSAGES_NOTIFICATION_MANAGER),
-                extra = listOf(shapes.classDef(MESSAGES_NOTIFICATION_MANAGER, shapes.dispatch("plain", call = null)))),
-            "no MQTT delegate" to build(leaveOut = setOf(MQTT_XPLAT_SERVICE_DELEGATE)),
-            "two MQTT connection constructions" to build(leaveOut = setOf(MQTT_XPLAT_SERVICE_DELEGATE), extra = listOf(
-                shapes.classDef(MQTT_XPLAT_SERVICE_DELEGATE, shapes.mqttConfig(constructions = 2)))),
-            "no push tray" to build(leaveOut = setOf(TRAY_MANAGER)),
-            "a builder without the push" to build(leaveOut = setOf(HandoffShapes.TRAY_BUILDER),
-                extra = listOf(shapes.classDef(HandoffShapes.TRAY_BUILDER))),
-            "a push without its type" to build(leaveOut = setOf(TRAY_NOTIFICATION),
-                extra = listOf(shapes.classDef(TRAY_NOTIFICATION))),
+                    shapes.parse("Lfixture/OtherParser;")))) },
+            "a parser without its parse" to { build(leaveOut = setOf(HandoffShapes.PARSER),
+                extra = listOf(shapes.classDef(HandoffShapes.PARSER, shapes.ringType(), shapes.payload()))) },
+            "no MessagesNotificationManager" to { build(leaveOut = setOf(MESSAGES_NOTIFICATION_MANAGER)) },
+            "no dispatcher" to { build(leaveOut = setOf(MESSAGES_NOTIFICATION_MANAGER),
+                extra = listOf(shapes.classDef(MESSAGES_NOTIFICATION_MANAGER, shapes.dispatch("plain", call = null)))) },
+            "no MQTT delegate" to { build(leaveOut = setOf(MQTT_XPLAT_SERVICE_DELEGATE)) },
+            "two MQTT connection constructions" to { build(leaveOut = setOf(MQTT_XPLAT_SERVICE_DELEGATE), extra = listOf(
+                shapes.classDef(MQTT_XPLAT_SERVICE_DELEGATE, shapes.mqttConfig(constructions = 2)))) },
+            "no push tray" to { build(leaveOut = setOf(TRAY_MANAGER)) },
+            "a builder without the push" to { build(leaveOut = setOf(HandoffShapes.TRAY_BUILDER),
+                extra = listOf(shapes.classDef(HandoffShapes.TRAY_BUILDER))) },
+            "a push without its type" to { build(leaveOut = setOf(TRAY_NOTIFICATION),
+                extra = listOf(shapes.classDef(TRAY_NOTIFICATION))) },
         )
         val handoffClasses = listOf(HandoffShapes.HANDLER, "Lfixture/OtherParser;", HandoffShapes.PARSER,
             MESSAGES_NOTIFICATION_MANAGER, MQTT_XPLAT_SERVICE_DELEGATE, TRAY_MANAGER)
-        for ((why, context) in broken) {
+        for ((why, make) in broken) {
+            val context = make()
             openMessengerFromTopBarPatch.execute(context)
             val tap = context.mutableClassDefBy(MessengerIconShapesTest.TAP_CLASS).methods.single()
             assertEquals("$why: the tap doesn't ask first", "open", ((tap.at(2) as ReferenceInstruction).reference as MethodReference).name)

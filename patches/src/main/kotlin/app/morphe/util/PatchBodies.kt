@@ -22,6 +22,10 @@ import app.morphe.patcher.patch.resourceContext
 // for code that still needs one (its replacements, currentBytecode and currentResources, are
 // internal to it). This file is the one place left on them: once the helpers take no receiver,
 // these go and the bodies move to execute { } as they are.
+//
+// A body runs on the patcher's current context, never on the one Patch.execute is handed: the
+// patcher hands it NoPatchContext, and the builder's execute that takes a context is hidden from
+// Kotlin. A test that makes several contexts makes each one right before it patches it.
 
 /** Runs [block] on the bytecode of the APK being patched, as `bytecodePatch { execute { } }` did. */
 internal fun PatchDefinition.executeBytecode(block: BytecodePatchContext.() -> Unit) =
