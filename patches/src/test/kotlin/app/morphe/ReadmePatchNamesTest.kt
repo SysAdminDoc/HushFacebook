@@ -202,6 +202,12 @@ class ReadmePatchNamesTest {
                     name = "Do a thing",
                 ) { }
             """.trimIndent(),
+            "the patch builder" to """
+                /** Unlike the old builders, this patch (one builder for both) runs either kind. */
+                val a = patch(
+                    name = "Do a thing",
+                ) { }
+            """.trimIndent(),
         )
 
         shapes.forEach { (shape, source) ->
@@ -226,7 +232,10 @@ class ReadmePatchNamesTest {
     }
 
     private companion object {
-        val FACTORY = Regex("""\b(?:bytecodePatch|resourcePatch|rawResourcePatch)\s*\(""")
+        // patch( is the builder patcher 2.5.0 moved every patch to. It's matched only as a call
+        // with nothing between the word and its parenthesis, so a KDoc line saying "this patch
+        // (TabLinkAnchors.kt)" isn't read as one.
+        val FACTORY = Regex("""\b(?:bytecodePatch|resourcePatch|rawResourcePatch)\s*\(|(?<![.\w])patch\(""")
         val NAME = Regex("""(?:^|[(,\s])name\s*=\s*"([^"]+)"""")
 
         // The table rows are the only lines that open with a pipe and a backticked name. The
