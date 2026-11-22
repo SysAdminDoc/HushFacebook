@@ -219,8 +219,9 @@ foreach ($patch in @($catalog.patches)) {
 
 $allNames = @($catalog.patches | ForEach-Object { $_.name })
 $allDependencies = @(Get-PatchDependencyNames -PatchList $catalog -RequestedNames $allNames | Sort-Object)
-Assert-True (($allDependencies -join ',') -eq 'BytecodePatch,ResourcePatch') `
-    "The real catalog dependency closure is not the two internal patch types: $($allDependencies -join ', ')"
+# Patcher 2.5.0 builds every patch as one type, so the unnamed internal ones all read Patch.
+Assert-True (($allDependencies -join ',') -eq 'Patch') `
+    "The real catalog dependency closure is not the internal patch type: $($allDependencies -join ', ')"
 Assert-True (Test-ReportedPatchNames -Expected $allNames `
     -Actual @($allNames + $allDependencies) -AllowedDependencies $allDependencies) `
     'A result that included the real internal dependency was rejected.'

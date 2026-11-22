@@ -101,7 +101,9 @@ private fun generatePatchList(version: String, patches: Set<Patch>) {
             it.default,
             // The patch's own name, not its Kotlin class. Every entry used to read
             // "BytecodePatch", which made the only machine-readable dependency record say
-            // nothing at all. Internal patches with no name keep the class name.
+            // nothing at all. Internal patches with no name keep the class name, which is Patch
+            // for every one of them since patcher 2.5.0's single builder (BytecodePatch and
+            // ResourcePatch before).
             //
             // Deduplicated and sorted, because this is a set written down as a list. Two patches
             // reached the same unnamed dependency twice and their rows said "BytecodePatch,
