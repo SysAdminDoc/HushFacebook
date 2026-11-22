@@ -433,6 +433,7 @@ public final class SettingsBackup {
             Settings.PICTURE_IN_PICTURE_FROM_MENU,
             Settings.PICTURE_IN_PICTURE_BUTTON,
             Settings.KEEP_PLAYING_IN_BACKGROUND,
+            Settings.NEXT_REEL_IN_BACKGROUND,
             Settings.BACKGROUND_PLAY_BUTTON,
             Settings.TURN_OFF_HDR_BRIGHTNESS,
             Settings.PREFER_SDR_RENDITIONS,

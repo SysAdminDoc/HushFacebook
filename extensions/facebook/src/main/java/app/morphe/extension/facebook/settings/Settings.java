@@ -2294,6 +2294,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_playing_in_background", FALSE);
 
     /**
+     * With {@link #KEEP_PLAYING_IN_BACKGROUND} on, a reel playing in the background goes on to the
+     * reel the Reels viewer had ready after it instead of starting over (D#524,
+     * {@link app.morphe.extension.facebook.media.NextReel}). Starts off. Off or paused, the reel you
+     * left on plays over and over, as Facebook has it.
+     */
+    public static final BooleanSetting NEXT_REEL_IN_BACKGROUND =
+            new BooleanSetting("hushfacebook_next_reel_in_background", FALSE);
+
+    /**
      * The picture-in-picture window gets a headphones button that closes the window and keeps the
      * sound going in Facebook's background player, with its notification (#455,
      * {@link app.morphe.extension.facebook.media.BackgroundPlay}). Works with {@link

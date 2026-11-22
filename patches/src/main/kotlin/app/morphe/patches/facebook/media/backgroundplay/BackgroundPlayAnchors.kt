@@ -64,6 +64,14 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   (588 LX/05mn;->A1k), sets it: it reads the player's video state manager from its own field
  *   (A1v), wraps the player through a static (Object)WeakReference call and puts that in the
  *   manager's WeakReference field (A0S).
+ * - Next reel in the background (588, read 2026-11-22): the record's one constructor (LX/082O;)
+ *   takes (player type, trigger, PlayerOrigin, rich params LX/05m5;, String video id, J, Z, Z), the
+ *   rich params right after the PlayerOrigin. The handler's check builds its "background_playback"
+ *   player from those params, which only works for a reel the Reels viewer has bound to a player.
+ *   Every bind goes through one static void method of FbGrootPlayer (LX/05mn;->A0J) taking the
+ *   player, its PlayerOrigin, the trigger and the rich params among its 13 parameters. The handler's
+ *   return lets go of its player with two calls on it taking only the trigger: the pause (KMz) and
+ *   then the release (A1Z).
  */
 
 internal const val BACKGROUND_PLAY = "$EXTENSION_PACKAGE/media/BackgroundPlay;"
@@ -77,6 +85,13 @@ internal const val ANSWERED = "$BACKGROUND_PLAY->answered(Z)V"
 internal const val NOTIFICATION_ALLOWED = "$BACKGROUND_PLAY->notificationAllowed()Z"
 internal const val RETURNING = "$BACKGROUND_PLAY->returning(Ljava/lang/Object;)V"
 internal const val RETURNED = "$BACKGROUND_PLAY->returned()V"
+
+internal const val NEXT_REEL = "$EXTENSION_PACKAGE/media/NextReel;"
+internal const val CHECKING = "$NEXT_REEL->checking(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V"
+internal const val BOUND = "$NEXT_REEL->bound(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V"
+
+/** NextReel's stub the patch fills in: the name of the player's release. */
+internal const val RELEASE_METHOD = "releaseMethod"
 
 internal const val WINDOW_ACTIONS =
     "$EXTENSION_PACKAGE/media/BackgroundPlayButton;->windowActions(Ljava/util/List;)Ljava/util/List;"
@@ -290,6 +305,39 @@ internal fun handlerChecks(handler: ClassDef, record: String): List<Method> = ha
 internal fun handlerReturns(handler: ClassDef, record: String): List<Method> = handler.methods.filter {
     !it.isStatic() && it.returnType == "V" && it.parameters() == listOf(ACTIVITY, SESSION, record) &&
         it.implementation != null
+}
+
+/**
+ * The type of the record's rich params: its one constructor of five or more parameters takes them
+ * right after the PlayerOrigin, an object that isn't a String. Null when that isn't so.
+ */
+internal fun recordParams(record: ClassDef): String? {
+    val made = record.methods.singleOrNull { it.name == "<init>" && it.parameterTypes.size >= 5 } ?: return null
+    val parameters = made.parameters()
+    val origin = parameters.indexOf(PLAYER_ORIGIN)
+    if (origin < 0) return null
+    return parameters.getOrNull(origin + 1)?.takeIf { it.startsWith("L") && it != STRING }
+}
+
+/** The static void methods of [owner], the player, taking the player, a PlayerOrigin, [trigger] and [params]. */
+internal fun binders(owner: ClassDef, trigger: String, params: String): List<Method> = owner.methods.filter {
+    val parameters = it.parameters()
+    it.isStatic() && it.returnType == "V" && it.implementation != null && owner.type in parameters &&
+        PLAYER_ORIGIN in parameters && trigger in parameters && params in parameters
+}
+
+/**
+ * The name of the release the handler's return [back] calls on its player after the pause: the
+ * second of its exactly two calls on [player] taking only [trigger]. Null when that isn't so.
+ */
+internal fun returnRelease(back: Method, player: String, trigger: String): String? {
+    val calls = back.code().mapNotNull { instruction ->
+        instruction.call?.takeIf {
+            instruction.opcode in invokeVirtual && it.definingClass == player && it.returnType == "V" &&
+                it.parameters() == listOf(trigger)
+        }
+    }
+    return if (calls.size == 2) calls[1].name else null
 }
 
 /** The instance fields of [record] of [type]. */

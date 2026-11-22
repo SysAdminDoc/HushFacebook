@@ -132,6 +132,8 @@ public final class BackgroundPlay {
     static final String TOO_EARLY = "paused before you left";
     static final String TAPPED = "paused with a tap";
     static final String TAKEN = "Facebook's handler took it";
+    /** The reel after the one playing in the background, handed on by Next reel in the background. */
+    static final String NEXT_REEL = "the next reel";
 
     private static final String SOURCE = "BackgroundPlay";
 
@@ -173,6 +175,11 @@ public final class BackgroundPlay {
         /** Whether [player] is the current player of Facebook's video state manager. No when that can't be read. */
         default boolean isCurrent(Object player) throws Exception {
             return false;
+        }
+
+        /** Pauses and lets go of [player], as the handler's return does with its own background player. */
+        default void release(Object player, String trigger) throws Exception {
+            pause(player, trigger);
         }
     }
 
@@ -269,6 +276,7 @@ public final class BackgroundPlay {
             String started = name(trigger);
             if (BACKGROUND_TRIGGER.equals(started)) backgroundPlayer = new WeakReference<>(player);
             if (start(player, started, SystemClock.uptimeMillis())) ensureManager();
+            NextReel.started(player);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, "player start", failure);
         }
@@ -316,12 +324,13 @@ public final class BackgroundPlay {
                 return handledRecently(videoId, now);
             }
             HookStatus.bound(FamilyNames.BACKGROUND_PLAY, "background handler");
-            String answer = handledRecently(videoId, now) ? TAKEN : judge(videoId, name(trigger), now);
+            String answer = NextReel.advancing ? NEXT_REEL
+                    : handledRecently(videoId, now) ? TAKEN : judge(videoId, name(trigger), now);
             windowLeftAt = 0;
             FeedFilterCounters.sawList(ROUTE, 1);
             FeedFilterCounters.sawKind(ROUTE, answer);
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: " + answer);
-            if (!CONTINUED.equals(answer)) return true;
+            if (!CONTINUED.equals(answer) && !NEXT_REEL.equals(answer)) return true;
             carrying = true;
             return false;
         } catch (Throwable failure) {
@@ -375,6 +384,7 @@ public final class BackgroundPlay {
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> accepted
                     ? "Background play: Facebook's background player took over"
                     : "Background play: Facebook's handler didn't start its player");
+            if (accepted) NextReel.carried();
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, "handler answer", failure);
         }
@@ -389,7 +399,9 @@ public final class BackgroundPlay {
 
     /** First thing in the handler's return to Facebook. */
     public static void returning(Object returning) {
-        if (returning != null && returning == handler && session) {
+        if (returning == null || returning != handler) return;
+        NextReel.stop();
+        if (session) {
             ending = true;
             keptPlaying = backgroundPlaying();
             keptPosition = keptPlaying ? backgroundPosition() : NO_POSITION;
@@ -630,6 +642,12 @@ public final class BackgroundPlay {
     }
 
     /** Whether [player] is the one Facebook's background player is running a carried video on now. */
+    /** The player Facebook's background player started last, or null. */
+    @Nullable
+    static Object currentBackgroundPlayer() {
+        return backgroundPlayer.get();
+    }
+
     static boolean isBackgroundPlayer(@Nullable Object player) {
         return player != null && playingOn() && player == backgroundPlayer.get();
     }
@@ -743,6 +761,11 @@ public final class BackgroundPlay {
         } catch (Throwable unreadable) {
             return false;
         }
+        return reelsOrigin(origin);
+    }
+
+    /** Whether [origin], a PlayerOrigin, is the Reels viewer's (see {@link #inReels}). */
+    static boolean reelsOrigin(@Nullable Object origin) {
         if (origin == null) return false;
         String name = origin.toString().toLowerCase(Locale.ROOT);
         return name.contains("fb_shorts") && !name.contains("in_feed") && !name.contains("story");
@@ -901,6 +924,7 @@ public final class BackgroundPlay {
             } catch (Throwable failure) {
                 closing = true;
             }
+            NextReel.stopped(activity);
         }
 
         @Override
@@ -949,6 +973,7 @@ public final class BackgroundPlay {
         private final Map<Class<?>, Method> playing = new ConcurrentHashMap<>();
         private final Map<Class<?>, Method> videoIds = new ConcurrentHashMap<>();
         private final Map<Class<?>, Method> pauses = new ConcurrentHashMap<>();
+        private final Map<Class<?>, Method> releases = new ConcurrentHashMap<>();
         private final Map<Class<?>, Field> managers = new ConcurrentHashMap<>();
         private final Map<Class<?>, Field> currents = new ConcurrentHashMap<>();
 
@@ -998,6 +1023,31 @@ public final class BackgroundPlay {
                 }
                 if (method == null) throw new NoSuchMethodException(name + "(trigger)");
                 pauses.put(player.getClass(), method);
+            }
+            Class type = method.getParameterTypes()[0];
+            method.invoke(player, Enum.valueOf(type, trigger));
+        }
+
+        @Override
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        public void release(Object player, String trigger) throws Exception {
+            pause(player, trigger);
+            Method method = releases.get(player.getClass());
+            if (method == null) {
+                String name = NextReel.releaseMethod();
+                if (name == null) {
+                    HookStatus.missingMember(FamilyNames.BACKGROUND_PLAY, "method", "FbGrootPlayer", "release");
+                    return;
+                }
+                for (Method each : player.getClass().getMethods()) {
+                    Class<?>[] types = each.getParameterTypes();
+                    if (each.getName().equals(name) && types.length == 1 && types[0].isEnum()) {
+                        method = each;
+                        break;
+                    }
+                }
+                if (method == null) throw new NoSuchMethodException(name + "(trigger)");
+                releases.put(player.getClass(), method);
             }
             Class type = method.getParameterTypes()[0];
             method.invoke(player, Enum.valueOf(type, trigger));
@@ -1108,6 +1158,7 @@ public final class BackgroundPlay {
         MANAGER_ASKED.set(false);
         reader = PATCHED;
         failNext = null;
+        NextReel.forget();
     }
 
     /** Takes [made] as the extension's handler, as if the manager had been made. For tests. */

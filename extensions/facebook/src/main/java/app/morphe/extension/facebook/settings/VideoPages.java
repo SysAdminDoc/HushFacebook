@@ -676,6 +676,11 @@ final class VideoPages {
                         L10n.t("A video you started with a tap, or a reel you swiped to in Reels, keeps its sound "
                                 + "after you leave Facebook, and its notification can pause it. Swiping the "
                                 + "notification away or taking a call stops it.")));
+                // Asked as each background reel nears its end, so a change counts right away.
+                playback.addPreference(toggle(context, Settings.NEXT_REEL_IN_BACKGROUND,
+                        L10n.t("When a reel playing in the background ends, the next reel plays instead of the same one "
+                                + "again. It goes through the reels Reels had loaded when you left. Works with Keep "
+                                + "playing in the background on.")));
                 if (build.contains(PatchFamily.PICTURE_IN_PICTURE)) {
                     // Asked as each window's buttons are made, so a change shows from the next window.
                     playback.addPreference(toggle(context, Settings.BACKGROUND_PLAY_BUTTON,

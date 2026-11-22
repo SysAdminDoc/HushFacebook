@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
@@ -385,7 +386,7 @@ class BackgroundPlayShapesTest {
     }
 
     @Test
-    fun `the check's hook decides first, skips four checks, names the notification and tells each answer`() {
+    fun `the check's hook hands Next reel the record, decides, skips four checks, names the notification and tells each answer`() {
         val original = check()
         val read = readHandlerCheck(original, record)
         val handler = Handler(handler(), original, original, read, "video", "trigger", record, trigger, original)
@@ -393,10 +394,15 @@ class BackgroundPlayShapesTest {
         hookCheck(hooked, handler)
         val code = hooked.implementation!!.instructions.toList()
 
+        // The handler, the session and the record, p0 to p2, as they came in.
+        val registers = hooked.implementation!!.registerCount
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, code[0].opcode)
+        assertTrue(code[0].calls(CHECKING))
+        assertEquals(listOf(registers - 3, registers - 2, registers - 1), code[0].namedRegisters())
         assertEquals(listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16,
-            Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN), code.take(9).map { it.opcode })
-        assertTrue(code[4].calls(DECIDING))
-        assertEquals(Opcode.CONST_4, code[9].opcode)
+            Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN), code.drop(1).take(9).map { it.opcode })
+        assertTrue(code[5].calls(DECIDING))
+        assertEquals(Opcode.CONST_4, code[10].opcode)
 
         val flow = ControlFlow.of(hooked)
         val liveness = RegisterLiveness.of(hooked)
@@ -454,6 +460,75 @@ class BackgroundPlayShapesTest {
         returns.forEach { assertTrue(code[it - 1].calls(RETURNED)) }
         val flow = ControlFlow.of(back)
         assertTrue("the branch lands on the told return", code[flow.normal[1].first()].calls(RETURNED))
+    }
+
+    // Next reel in the background (D#524): the record's rich params, the player's binder and the return's release.
+
+    private val params = "Lfixture/Params;"
+
+    private fun recordClass(vararg constructorTypes: String) = classDef(
+        record,
+        method(record, "<init>", constructorTypes.toList(), "V", "return-void", registers = 12,
+            flags = AccessFlags.PUBLIC.value or AccessFlags.CONSTRUCTOR.value),
+    )
+
+    @Test
+    fun `the record's rich params are its constructor's parameter after the PlayerOrigin`() {
+        assertEquals(params, recordParams(recordClass(type, trigger, PLAYER_ORIGIN, params, STRING, "J", "Z", "Z")))
+        assertNull("no PlayerOrigin", recordParams(recordClass(type, trigger, params, STRING, "J", "Z", "Z")))
+        assertNull("a String after it", recordParams(recordClass(type, trigger, PLAYER_ORIGIN, STRING, "J", "Z", "Z")))
+        assertNull("a number after it", recordParams(recordClass(type, trigger, PLAYER_ORIGIN, "J", STRING, "Z", "Z")))
+    }
+
+    private val binderTypes = listOf("Lfixture/A;", type, trigger, PLAYER_ORIGIN, player, "Lfixture/B;", "Lfixture/C;",
+        params, "I", "Z", "Z", "Z", "Z")
+
+    private fun binder(
+        name: String = "bind",
+        types: List<String> = binderTypes,
+        returns: String = "V",
+        static: Boolean = true,
+    ) = method(player, name, types, returns, if (returns == "V") "return-void" else "const/4 v0, 0x0\nreturn v0",
+        registers = 32, flags = AccessFlags.PUBLIC.value or (if (static) AccessFlags.STATIC.value else 0))
+
+    @Test
+    fun `the binder is the one static void method taking the player, an origin, the trigger and the rich params`() {
+        val owner = classDef(
+            player,
+            binder(),
+            binder("instance", static = false),
+            binder("noParams", binderTypes.map { if (it == params) "Lfixture/D;" else it }),
+            binder("noOrigin", binderTypes.map { if (it == PLAYER_ORIGIN) "Lfixture/D;" else it }),
+            binder("noPlayer", binderTypes.map { if (it == player) "Lfixture/D;" else it }),
+            binder("noTrigger", binderTypes.map { if (it == trigger) "Lfixture/D;" else it }),
+            binder("answers", returns = "Z"),
+        )
+        assertEquals(listOf("bind"), binders(owner, trigger, params).map { it.name })
+    }
+
+    @Test
+    fun `the binder tells the extension the player, its origin and the params before its own first instruction`() {
+        val bind = binder()
+        hookBinder(bind, player, params)
+        val code = bind.implementation!!.instructions.toList()
+        assertEquals(listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16,
+            Opcode.INVOKE_STATIC, Opcode.RETURN_VOID), code.map { it.opcode })
+        assertTrue(code[3].calls(BOUND))
+        // 32 registers, 13 of them the parameters: p0 is v19.
+        assertEquals(listOf(0, 19 + 4), (code[0] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+        assertEquals(listOf(1, 19 + 3), (code[1] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+        assertEquals(listOf(2, 19 + 7), (code[2] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+        assertEquals(listOf(0, 1, 2), code[3].namedRegisters())
+    }
+
+    @Test
+    fun `the return's release is its second call on the player taking only the trigger`() {
+        fun back(vararg calls: String) = method(handlerType, "back", listOf(ACTIVITY, SESSION, record), "V",
+            calls.joinToString("\n") { "invoke-virtual {p0, p0}, $player->$it($trigger)V" } + "\nreturn-void",
+            registers = 6)
+        assertEquals("release", returnRelease(back("pause", "release"), player, trigger))
+        assertNull("only a pause", returnRelease(back("pause"), player, trigger))
+        assertNull("three calls", returnRelease(back("pause", "release", "again"), player, trigger))
     }
 
     private fun windowBuilder(
