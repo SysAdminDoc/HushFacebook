@@ -55,6 +55,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* `3-dot menu items to hide` takes Interested, Not interested and Your algorithm off a reel's More sheet now. They sit in a card at the top of that sheet that's built apart from the rest, so ticking them only hid them from posts. Your algorithm is the reel's name for a post's Manage your Feed, so the list calls that row `Manage your Feed / Your algorithm`. Three more reel rows read the way the sheet shows them too: `Quality settings`, `Request community note` and `Something went wrong` were "Best guess post", "Other" and "Bug". (#475)
 * `Seek bar on feed videos` gets out of the way while comments are open. On a phone with the three navigation buttons it showed just above them, under the comments. (#535)
 * `Times on the seek bar` and `Full length on the seek bar` work with `Thin line seek bar` now. The times sit just above the line's two ends, whether you're dragging or not. Before, the thin line turned them off. (#487)
 * `Hide prompts and promos under reels` also takes the "Made with Edits" pill off the corner of a video in your feed now. That pill is a different piece from the line under a reel's caption, so the switch only caught the line. (#314)

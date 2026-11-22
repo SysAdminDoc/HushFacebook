@@ -2936,7 +2936,7 @@ Interested	Quan tâm
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	Không quan tâm
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	Quản lý bảng feed
+Manage your Feed / Your algorithm	Quản lý bảng feed / Thuật toán của bạn
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	Báo cáo
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3128,3 +3128,6 @@ Show full names	Hiện tên đầy đủ
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Tên dài ở đầu bài viết sẽ xuống dòng thay vì kết thúc bằng "...". Tên vừa một dòng vẫn chỉ chiếm một dòng.
 Dark box behind feed video names	Khung tối sau tên trên video ở Bảng tin
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Khi một video trong Bảng tin hiện tên người đăng đè lên video, tên đó nằm trên cùng khung tối. Thay đổi hiện ở các bài viết tải sau đó.
+Quality settings	Cài đặt chất lượng
+Request community note	Yêu cầu ghi chú cộng đồng
+Something went wrong	Đã xảy ra lỗi

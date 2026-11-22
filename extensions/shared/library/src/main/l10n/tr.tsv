@@ -2936,7 +2936,7 @@ Interested	İlgileniyorum
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	İlgilenmiyorum
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	Akışını yönet
+Manage your Feed / Your algorithm	Akışını yönet / Algoritman
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	Şikayet et
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3128,3 +3128,6 @@ Show full names	Adları tam göster
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Bir gönderinin üstündeki uzun ad, "..." ile bitmek yerine sonraki satıra geçer. Sığan bir ad yine tek satırda kalır.
 Dark box behind feed video names	Akıştaki video adlarının arkasında koyu kutu
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Akışındaki bir video, gönderi sahibinin adını videonun üstünde gösterdiğinde bu ad da aynı koyu kutunun üstünde durur. Değişiklik, sonrasında yüklenen gönderilerde görünür.
+Quality settings	Kalite ayarları
+Request community note	Topluluk notu iste
+Something went wrong	Bir şeyler ters gitti

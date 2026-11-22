@@ -2936,7 +2936,7 @@ Interested	Tertarik
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	Tidak tertarik
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	Kelola Feed
+Manage your Feed / Your algorithm	Kelola Feed / Algoritma Anda
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	Laporkan
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3128,3 +3128,6 @@ Show full names	Tampilkan nama lengkap
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Nama panjang di bagian atas postingan berlanjut ke baris berikutnya, bukan terpotong dengan "...". Nama yang muat tetap satu baris.
 Dark box behind feed video names	Kotak gelap di belakang nama pada video Kabar Beranda
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Saat video di Kabar Beranda menampilkan nama pemosting di atas video, nama itu tampil di atas kotak gelap yang sama. Perubahan terlihat pada postingan yang dimuat setelahnya.
+Quality settings	Pengaturan kualitas
+Request community note	Minta catatan komunitas
+Something went wrong	Terjadi kesalahan

@@ -2940,7 +2940,7 @@ Interested	有興趣
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	沒興趣
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	管理你的動態
+Manage your Feed / Your algorithm	管理你的動態 / 你的演算法
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	檢舉
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3132,3 +3132,6 @@ Show full names	顯示完整名稱
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	貼文頂端的長名稱會換到下一行，而不是以「...」結尾。放得下的名稱仍只佔一行。
 Dark box behind feed video names	動態消息影片名稱的深色底框
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	當動態消息中的影片把發布者名稱顯示在影片上時，這個名稱也會顯示在同樣的深色底框上。變更會在之後載入的貼文上生效。
+Quality settings	畫質設定
+Request community note	要求社群備註
+Something went wrong	發生錯誤

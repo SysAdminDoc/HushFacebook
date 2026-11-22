@@ -356,11 +356,91 @@ public class PostMenuItemsTest {
         assertEquals("Interested", PostMenuItems.label("SEE_MORE"));
         assertEquals("Not interested", PostMenuItems.label("SEE_LESS"));
         assertEquals("Why am I seeing this post?", PostMenuItems.label("WAIST"));
-        assertEquals("Manage your Feed", PostMenuItems.label("TUNE_YOUR_ALGORITHM"));
+        assertEquals("Manage your Feed / Your algorithm", PostMenuItems.label("TUNE_YOUR_ALGORITHM"));
         assertEquals("Add to Favorites", PostMenuItems.label("FAVORITE"));
         assertEquals("Ask meta ai", PostMenuItems.label("ASK_META_AI"));
         assertEquals("Clear mode", PostMenuItems.label("CLEAR_MODE"));
         assertEquals("Scroll to next reel automatically", PostMenuItems.label("AUTO_ADVANCE"));
+        // A reel's More sheet shows these rows by other words than their ids (588, #475).
+        assertEquals("Quality settings", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_best_guess_post_control")));
+        assertEquals("Request community note", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_other")));
+        assertEquals("Something went wrong", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_bug")));
+    }
+
+    /**
+     * A reel's More sheet draws Interested and Not interested in a header of their own: both picked,
+     * its render draws nothing, and one picked leaves the other of its two rows.
+     */
+    @Test
+    public void theReelSheetHeaderLosesThePickedPreferenceRows() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        List<String> pair = Arrays.asList("interested row", "not interested row");
+        assertFalse("nothing picked draws the header", PostMenuItems.reelPreferencesHidden());
+        assertSame(pair, PostMenuItems.reelPreferenceRows(pair));
+
+        PostMenuItems.hide(Collections.singletonList("SEE_MORE"));
+        assertFalse(PostMenuItems.reelPreferencesHidden());
+        assertEquals(Collections.singletonList("not interested row"), PostMenuItems.reelPreferenceRows(pair));
+        PostMenuItems.hide(Collections.singletonList("SEE_LESS"));
+        assertEquals(Collections.singletonList("interested row"), PostMenuItems.reelPreferenceRows(pair));
+
+        PostMenuItems.hide(Arrays.asList("SEE_MORE", "SEE_LESS"));
+        assertTrue("both picked draws nothing", PostMenuItems.reelPreferencesHidden());
+        assertSame("the render already drew nothing", pair, PostMenuItems.reelPreferenceRows(pair));
+        assertTrue(statusLine(FamilyNames.POST_MENU_ITEMS), statusLine(FamilyNames.POST_MENU_ITEMS).contains(PostMenuItems.REEL_HIDDEN));
+
+        List<String> three = Arrays.asList("a", "b", "c");
+        PostMenuItems.hide(Collections.singletonList("SEE_MORE"));
+        assertSame("another shape is left alone", three, PostMenuItems.reelPreferenceRows(three));
+        assertNull(PostMenuItems.reelPreferenceRows(null));
+    }
+
+    /**
+     * Some reel More sheets build their top card (Interested, Not interested, Your algorithm) row by
+     * row with the same builder as the sections: a picked kind gets no row, the rest and our own do.
+     */
+    @Test
+    public void aPickedKindGetsNoRowFromTheReelRowBuilder() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        ReelModel interested = new ReelModel("fds_control_type_preference_signal_positive");
+        ReelModel notInterested = new ReelModel("fds_control_type_preference_signal_negative");
+        ReelModel algorithm = new ReelModel("fds_control_type_tune_your_algorithm");
+        assertFalse("nothing picked builds every row", PostMenuItems.reelRowHidden(interested, REEL_MODEL, "A04"));
+
+        PostMenuItems.hide(Arrays.asList("SEE_MORE", "TUNE_YOUR_ALGORITHM"));
+        assertTrue(PostMenuItems.reelRowHidden(interested, REEL_MODEL, "A04"));
+        assertTrue("Your algorithm is Manage your Feed's kind", PostMenuItems.reelRowHidden(algorithm, REEL_MODEL, "A04"));
+        assertFalse(PostMenuItems.reelRowHidden(notInterested, REEL_MODEL, "A04"));
+        assertFalse("our own rows have switches of their own",
+                PostMenuItems.reelRowHidden(new ReelModel("hushfacebook_download_reel"), REEL_MODEL, "A04"));
+        assertFalse(PostMenuItems.reelRowHidden(null, REEL_MODEL, "A04"));
+        assertFalse("a model it can't load builds its row", PostMenuItems.reelRowHidden(interested, "X.Missing", "A04"));
+        assertTrue(statusLine(FamilyNames.POST_MENU_ITEMS), statusLine(FamilyNames.POST_MENU_ITEMS).contains(PostMenuItems.REEL_HIDDEN));
+
+        PatchFamilyForTests.carry();
+        assertFalse("out of the build Facebook builds it", PostMenuItems.reelRowHidden(interested, REEL_MODEL, "A04"));
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused Facebook builds it", PostMenuItems.reelRowHidden(interested, REEL_MODEL, "A04"));
+        PauseForTests.resume();
+        assertTrue("the control: running, it goes", PostMenuItems.reelRowHidden(interested, REEL_MODEL, "A04"));
+    }
+
+    @Test
+    public void outOfTheBuildOrPausedTheReelSheetHeaderIsFacebooks() {
+        List<String> pair = Arrays.asList("interested row", "not interested row");
+        PostMenuItems.hide(Arrays.asList("SEE_MORE", "SEE_LESS"));
+        PatchFamilyForTests.carry();
+        assertFalse(PostMenuItems.reelPreferencesHidden());
+        PostMenuItems.hide(Collections.singletonList("SEE_MORE"));
+        assertSame(pair, PostMenuItems.reelPreferenceRows(pair));
+
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame(pair, PostMenuItems.reelPreferenceRows(pair));
+        PauseForTests.resume();
+        assertEquals("the control: running, Interested goes",
+                Collections.singletonList("not interested row"), PostMenuItems.reelPreferenceRows(pair));
     }
 
     /** Stands in for 587's LX/0Hyj, a reel sheet row's model, whose A04 answers the row's id. */

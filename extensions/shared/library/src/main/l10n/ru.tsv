@@ -2992,7 +2992,7 @@ Interested	Интересно
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	Неинтересно
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	Управление Лентой
+Manage your Feed / Your algorithm	Управление Лентой / Ваш алгоритм
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	Пожаловаться
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3186,3 +3186,6 @@ Show full names	Показывать имена полностью
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Длинное имя вверху публикации переносится на следующую строку, а не обрывается на «...». Имя, которое помещается, по-прежнему занимает одну строку.
 Dark box behind feed video names	Темная подложка под именами на видео в ленте
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Когда видео в ленте показывает имя автора поверх видео, это имя лежит на той же темной подложке. Изменение видно на публикациях, загруженных после него.
+Quality settings	Настройки качества
+Request community note	Запросить заметку сообщества
+Something went wrong	Что-то пошло не так

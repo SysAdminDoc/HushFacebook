@@ -36,10 +36,23 @@ val postMenuItemsPatch = bytecodePatch(
 
     execute {
         postMenuSheetMissing?.let { throw PatchException(it) }
-        try {
-            hookReelMenuSheet(findReelMenuSheet())
+        val sheet = try {
+            findReelMenuSheet().also { hookReelMenuSheet(it) }
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. A reel's More sheet keeps all its rows.")
+            null
+        }
+        if (sheet != null) {
+            try {
+                hookReelRowBuilder(findReelRowBuilder(sheet), sheet)
+            } catch (moved: PatchException) {
+                patchLog.warning("${moved.message}. A reel's More sheet keeps its top card's rows.")
+            }
+        }
+        try {
+            hookReelPreferenceHeader(findReelPreferenceHeader())
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. A reel's More sheet keeps Interested and Not interested.")
         }
         enableStatus("postMenuItems")
     }

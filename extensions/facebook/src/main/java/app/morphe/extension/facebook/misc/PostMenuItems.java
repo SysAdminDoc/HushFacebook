@@ -30,6 +30,7 @@ import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 
 /**
  * What the post menu sheet's hook asks. Facebook tags each row of a post's three-dot menu with a
@@ -112,6 +113,16 @@ public final class PostMenuItems {
 
     private static volatile boolean logged;
 
+    /** The kinds of Interested and Not interested. */
+    static final String SEE_MORE = "SEE_MORE";
+    static final String SEE_LESS = "SEE_LESS";
+
+    /** The reel sheet sections logged with Debug logging on, each once. */
+    private static final Set<String> sectionsLogged = ConcurrentHashMap.newKeySet();
+    /** The most reel sheet sections logged in one run. */
+    static final int MAX_SECTIONS_LOGGED = 24;
+    static final String SECTION = "Post menu items: reel More sheet section: ";
+
     /** How the last holder handed over is read, kept since a build sorts every menu into one shape. */
     @Nullable
     private static volatile Shape shape;
@@ -168,9 +179,15 @@ public final class PostMenuItems {
             Set<String> hidden = parse(Settings.HIDDEN_POST_MENU_ITEMS.get());
             List<String> kinds = new ArrayList<>();
             List<Object> kept = null;
+            StringBuilder section = debugging() ? new StringBuilder() : null;
             for (int i = 0; i < rows.size(); i++) {
                 Object row = rows.get(i);
-                String kind = reelKind(reelId(row, modelClass, idMethod));
+                String id = reelId(row, modelClass, idMethod);
+                String kind = reelKind(id);
+                if (section != null) {
+                    if (section.length() > 0) section.append(", ");
+                    section.append(row == null ? "null" : row.getClass().getName()).append('=').append(id);
+                }
                 if (kind != null) kinds.add(kind);
                 if (kind != null && hidden.contains(kind)) {
                     if (kept == null) kept = new ArrayList<>(rows.subList(0, i));
@@ -179,6 +196,10 @@ public final class PostMenuItems {
                 }
             }
             remember(kinds);
+            if (section != null && sectionsLogged.size() < MAX_SECTIONS_LOGGED && sectionsLogged.add(section.toString())) {
+                String line = SECTION + section;
+                Logger.printDebug(() -> line);
+            }
             if (kept == null) return rows;
             HookStatus.bound(FAMILY, "reel menu items");
             for (int i = kept.size(); i < rows.size(); i++) HookStatus.counted(FAMILY, REEL_HIDDEN);
@@ -190,6 +211,85 @@ public final class PostMenuItems {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel menu items", failure);
             return rows;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the render of a reel More sheet's Interested and Not interested
+     * rows: true when both are picked, and the render draws nothing. Never throws.
+     */
+    public static boolean reelPreferencesHidden() {
+        if (!Utils.settingsReady()) return false;
+        try {
+            if (!PatchFamily.POST_MENU_ITEMS.inBuild()) return false;
+            HookStatus.invoked(FAMILY);
+            Set<String> hidden = parse(Settings.HIDDEN_POST_MENU_ITEMS.get());
+            if (!hidden.contains(SEE_MORE) || !hidden.contains(SEE_LESS)) return false;
+            HookStatus.bound(FAMILY, "reel menu Interested and Not interested");
+            HookStatus.counted(FAMILY, REEL_HIDDEN);
+            HookStatus.counted(FAMILY, REEL_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel menu Interested and Not interested", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, where that render hands its two rows, Interested and then Not interested, to
+     * their column: answers [rows] without the one picked. Anything but those two rows, or both or
+     * neither picked, comes back as it was. Never throws.
+     */
+    public static List<?> reelPreferenceRows(@Nullable List<?> rows) {
+        if (rows == null || rows.size() != 2 || !Utils.settingsReady()) return rows;
+        try {
+            if (!PatchFamily.POST_MENU_ITEMS.inBuild()) return rows;
+            Set<String> hidden = parse(Settings.HIDDEN_POST_MENU_ITEMS.get());
+            boolean interested = hidden.contains(SEE_MORE);
+            if (interested == hidden.contains(SEE_LESS)) return rows;
+            List<Object> kept = new ArrayList<>(1);
+            kept.add(rows.get(interested ? 1 : 0));
+            HookStatus.bound(FAMILY, "reel menu Interested and Not interested");
+            HookStatus.counted(FAMILY, REEL_HIDDEN);
+            return kept;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel menu Interested and Not interested", failure);
+            return rows;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the method that turns one reel More sheet row model into its
+     * row, handed the model, the model class (Java's name for it) and its id method: true when the
+     * row is of a picked kind, and the method answers no row, which the sheet's column skips. The
+     * sheet's top card (Interested, Not interested and Your algorithm, each with a line under it)
+     * is built this way, outside the section lists. Never throws.
+     */
+    public static boolean reelRowHidden(@Nullable Object row, @Nullable String model, @Nullable String idMethod) {
+        // PatchFamily names Settings, which mustn't load before the extension has its context.
+        if (row == null || model == null || idMethod == null || !Utils.settingsReady()) return false;
+        try {
+            if (!PatchFamily.POST_MENU_ITEMS.inBuild()) return false;
+            HookStatus.invoked(FAMILY);
+            String kind = reelKind(reelId(row, reelModel(model, idMethod), idMethod));
+            if (kind == null) return false;
+            remember(Collections.singletonList(kind));
+            if (!parse(Settings.HIDDEN_POST_MENU_ITEMS.get()).contains(kind)) return false;
+            HookStatus.bound(FAMILY, "reel menu rows");
+            HookStatus.counted(FAMILY, REEL_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel menu rows", failure);
+            return false;
+        }
+    }
+
+    /** Whether Debug logging is on, false when that can't be read. */
+    private static boolean debugging() {
+        try {
+            return BaseSettings.DEBUG.get();
+        } catch (Throwable failure) {
+            return false;
         }
     }
 
@@ -530,7 +630,8 @@ public final class PostMenuItems {
         switch (kind) {
             case "SEE_MORE": return L10n.t("Interested");
             case "SEE_LESS": return L10n.t("Not interested");
-            case "TUNE_YOUR_ALGORITHM": return L10n.t("Manage your Feed");
+            // A post's menu says Manage your Feed, a reel's More sheet Your algorithm.
+            case "TUNE_YOUR_ALGORITHM": return L10n.t("Manage your Feed / Your algorithm");
             case "SAVE": return L10n.t("Save");
             case "REPORT": return L10n.t("Report");
             case "CAST": return L10n.t("Cast");
@@ -547,6 +648,10 @@ public final class PostMenuItems {
             case "AUTO_ADVANCE": return L10n.t("Scroll to next reel automatically");
             case "TRANSCRIPT": return L10n.t("Transcript");
             case "AUDIO_AND_LANGUAGE": return L10n.t("Audio and language");
+            // A reel's More sheet names these rows by other words than its ids (588, 2026-11-21, #475).
+            case "BEST_GUESS_POST": return L10n.t("Quality settings");
+            case "OTHER": return L10n.t("Request community note");
+            case "BUG": return L10n.t("Something went wrong");
             default: return readable(kind);
         }
     }

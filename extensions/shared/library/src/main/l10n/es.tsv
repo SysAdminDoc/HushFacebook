@@ -2936,7 +2936,7 @@ Interested	Me interesa
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	No me interesa
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	Administrar tu feed
+Manage your Feed / Your algorithm	Administrar tu feed / Tu algoritmo
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	Reportar
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3128,3 +3128,6 @@ Show full names	Mostrar nombres completos
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Un nombre largo en la parte superior de una publicación sigue en la línea siguiente en lugar de terminar en "...". Un nombre que cabe sigue ocupando una sola línea.
 Dark box behind feed video names	Recuadro oscuro detrás de los nombres en videos del feed
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Cuando un video de tu feed muestra el nombre de quien publica encima del video, ese nombre aparece sobre el mismo recuadro oscuro. El cambio se ve en las publicaciones que se cargan después.
+Quality settings	Configuración de calidad
+Request community note	Solicitar nota de la comunidad
+Something went wrong	Algo salió mal

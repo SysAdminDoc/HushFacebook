@@ -2936,7 +2936,7 @@ Interested	สนใจ
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
 Not interested	ไม่สนใจ
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
-Manage your Feed	จัดการฟีดของคุณ
+Manage your Feed / Your algorithm	จัดการฟีดของคุณ / อัลกอริทึมของคุณ
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
 Report	รายงาน
 # context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
@@ -3128,3 +3128,6 @@ Show full names	แสดงชื่อเต็ม
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	ชื่อยาวที่ด้านบนของโพสต์จะขึ้นบรรทัดใหม่แทนการลงท้ายด้วย "..." ส่วนชื่อที่พอดีจะยังอยู่ในบรรทัดเดียว
 Dark box behind feed video names	กล่องสีเข้มหลังชื่อบนวิดีโอในฟีด
 When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	เมื่อวิดีโอในฟีดข่าวแสดงชื่อของผู้โพสต์ทับอยู่บนวิดีโอ ชื่อนั้นจะอยู่บนกล่องสีเข้มเดียวกัน การเปลี่ยนแปลงจะเห็นในโพสต์ที่โหลดหลังจากนั้น
+Quality settings	การตั้งค่าคุณภาพ
+Request community note	ขอบันทึกจากชุมชน
+Something went wrong	เกิดข้อผิดพลาดบางอย่าง

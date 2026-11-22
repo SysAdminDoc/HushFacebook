@@ -196,6 +196,105 @@ class PostMenuItemsFixtureTest {
     }
 
     @Test
+    fun `each declared build's reel sheet header asks the extension before drawing Interested and Not interested`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val loggerClasses = classesNaming(bundle, REEL_INTERESTED)
+                val byType = loggerClasses.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> byType[call.definingClass]?.let { resolveStatic(it, call) } }
+                val titles = loggerClasses.flatMap { owner -> owner.methods.filter { !isStringTable(it) && reelSheetOf(it, resolve) != null } }
+                    .mapNotNull { preferenceTitlesOf(it) }.distinct()
+                assertEquals("$name: the header's title holders the logger reads", 1, titles.size)
+                val renders = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == titles.single() } }) {
+                    readsBothTitles(it, titles.single())
+                }
+                assertEquals("$name: renders reading both titles", 1, renders.size)
+                val render = renders.single()
+                val rowsAt = preferenceRowsAt(render)
+                assertTrue("$name: ${render.definingClass}->render hands no two rows on", rowsAt != null)
+
+                val pool = (loggerClasses + ExtensionDex.classDef(SETTINGS_STATUS)).associateByTo(mutableMapOf()) { it.type }
+                pool += FixtureDex.classes(bundle, setOf(render.definingClass, titles.single()))
+                val context = PatchContexts.of(pool.values)
+                val header = context.findReelPreferenceHeader()
+                assertEquals("$name: the patch finds the same render", "${render.definingClass}->render", "${header.render.definingClass}->${header.render.name}")
+                context.hookReelPreferenceHeader(header)
+
+                val patched = context.mutableClassDefBy(render.definingClass).methods
+                    .single { readsBothTitles(it, titles.single()) }.code()
+                val original = render.code()
+                assertEquals("$name: the question and the row filter", original.size + 5 + 2, patched.size)
+                assertEquals("$name: the render asks first", POST_MENU_REEL_PREFERENCES_HIDDEN, patched[0].called())
+                assertEquals("$name: and draws nothing on a yes",
+                    listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN_OBJECT),
+                    patched.subList(1, 5).map { it.opcode })
+                val filter = patched[rowsAt!! + 5]
+                assertEquals("$name: the rows go through the extension", POST_MENU_REEL_PREFERENCE_ROWS, filter.called())
+                val rows = (filter as RegisterRangeInstruction).startRegister
+                assertEquals("$name: the rows come back in v$rows", listOf(Opcode.MOVE_RESULT_OBJECT, rows),
+                    listOf(patched[rowsAt + 6].opcode, (patched[rowsAt + 6] as OneRegisterInstruction).registerA))
+                assertEquals("$name: then go to their column", original[rowsAt].called(), patched[rowsAt + 7].called())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `each declared build's reel row builder asks the extension before building a row`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val loggerClasses = classesNaming(bundle, REEL_INTERESTED)
+                val byType = loggerClasses.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> byType[call.definingClass]?.let { resolveStatic(it, call) } }
+                val sheet = loggerClasses.flatMap { owner -> owner.methods.filter { !isStringTable(it) }.mapNotNull { reelSheetOf(it, resolve) } }
+                    .distinctBy { "${it.rows}|${it.model}->${it.idMethod}" }.single()
+                val builders = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == sheet.model } }) {
+                    buildsReelRow(it, sheet.model)
+                }
+                assertEquals("$name: methods building a row from a ${sheet.model}", 1, builders.size)
+                val builder = builders.single()
+
+                val pool = (loggerClasses + ExtensionDex.classDef(SETTINGS_STATUS)).associateByTo(mutableMapOf()) { it.type }
+                pool += FixtureDex.classes(bundle, setOf(builder.definingClass, sheet.model))
+                val context = PatchContexts.of(pool.values)
+                val found = context.findReelRowBuilder(sheet)
+                assertEquals("$name: the patch finds the same builder", "${builder.definingClass}->${builder.name}",
+                    "${found.definingClass}->${found.name}")
+                context.hookReelRowBuilder(found, sheet)
+
+                val original = builder.code()
+                val patched = context.mutableClassDefBy(builder.definingClass).method(builder).code()
+                assertEquals("$name: the question in front", original.size + 8, patched.size)
+                assertEquals("$name: the model goes first", Opcode.MOVE_OBJECT_FROM16, patched[0].opcode)
+                assertEquals("$name: with the names the extension reads its id by", listOf(javaName(sheet.model), sheet.idMethod),
+                    patched.subList(1, 3).map { it.text() })
+                assertEquals("$name: the builder asks first", POST_MENU_REEL_ROW_HIDDEN, patched[3].called())
+                assertEquals("$name: and builds no row on a yes",
+                    listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN_OBJECT),
+                    patched.subList(4, 8).map { it.opcode })
+                assertEquals("$name: then builds as before", original.map { it.opcode }, patched.drop(8).map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `the extension has the reel sheet header's hooks`() {
+        val methods = ExtensionDex.classDef(POST_MENU_ITEMS).methods
+        assertEquals(POST_MENU_REEL_PREFERENCES_HIDDEN, methods.singleOrNull { it.name == "reelPreferencesHidden" }?.descriptor())
+        assertEquals(POST_MENU_REEL_PREFERENCE_ROWS, methods.singleOrNull { it.name == "reelPreferenceRows" }?.descriptor())
+        assertEquals(POST_MENU_REEL_ROW_HIDDEN, methods.singleOrNull { it.name == "reelRowHidden" }?.descriptor())
+    }
+
+    @Test
     fun `the extension has the reel sheet's hook`() {
         val hook = ExtensionDex.classDef(POST_MENU_ITEMS).methods.singleOrNull { it.name == "reelRows" }
         assertTrue("the extension has no PostMenuItems.reelRows", hook != null)

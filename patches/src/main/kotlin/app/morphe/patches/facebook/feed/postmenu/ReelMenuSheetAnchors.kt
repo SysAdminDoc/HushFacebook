@@ -5,10 +5,18 @@
 package app.morphe.patches.facebook.feed.postmenu
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.findMutableMethodOf
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.resolveStatic
@@ -45,7 +53,30 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * 588's Android 9 build (2026-11-20) has the logger (LX/0jdE;->A02) ask a string table (LX/0vfR;->A00,
  * indexes 394 and 393) for both ids instead of holding them; the rows are LX/0is0;->A00 and the id
  * LX/0jQO;->A06.
+ *
+ * Interested and Not interested (588 arm64, 2026-11-21, #475) come from the sheet's header (LX/0ahd;->A04,
+ * an LX/0avX), whose LX/0ar9 holds the two titles as CharSequences, A01 and A00; the logger reads
+ * both. One Litho render (LX/0ZsZ;->render) draws them: two rows it lists with LX/0QQL;->A15 and hands
+ * to a column (LX/0QQN;->A0q(LX/01SY;List;Z)), or, for some sheets, a two-way control under a title.
+ * A missing header or title holder only swaps in Facebook's own strings, so the patch asks the
+ * extension first thing in that render, which draws nothing when both are picked, and runs the two
+ * rows through it before the column, which drops the one picked.
+ *
+ * Other sheets (588 arm64 on Matt's emulator account, 2026-11-21) skip that render: the sheet's
+ * section builder (LX/0aYh;->A0l) makes a top card of three row models, Interested, Not interested
+ * and Your algorithm, each with a line under it, and turns each into its row with one static method
+ * (LX/0b6s;->A00(CallerContext, LX/0b1J, ...)), as the section lists' rows are. Every caller hands
+ * that row to a column's add (LX/02gF;->A1w), which skips a null, so the patch asks the extension
+ * first thing in that method and answers no row for a picked kind.
  */
+
+internal const val POST_MENU_REEL_PREFERENCES_HIDDEN = "$POST_MENU_ITEMS->reelPreferencesHidden()Z"
+internal const val POST_MENU_REEL_PREFERENCE_ROWS =
+    "$POST_MENU_ITEMS->reelPreferenceRows(Ljava/util/List;)Ljava/util/List;"
+private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+internal const val POST_MENU_REEL_ROW_HIDDEN =
+    "$POST_MENU_ITEMS->reelRowHidden(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Z"
+private const val CALLER_CONTEXT = "Lcom/facebook/common/callercontext/CallerContext;"
 
 internal const val REEL_INTERESTED = "fds_control_type_preference_signal_positive"
 internal const val REEL_NOT_INTERESTED = "fds_control_type_preference_signal_negative"
@@ -163,4 +194,149 @@ internal fun BytecodePatchContext.hookReelMenuSheet(sheet: ReelMenuSheet) {
             """,
         )
     }
+}
+
+/** The render of a reel More sheet's Interested and Not interested header, and where it hands its two rows on. */
+internal class ReelPreferenceHeader(val render: Method, val rowsAt: Int)
+
+/** The class whose two CharSequence fields [logger] reads: the header's title holder, or null. */
+internal fun preferenceTitlesOf(logger: Method): String? {
+    val reads = logger.implementation?.instructions?.toList().orEmpty()
+        .filter { it.opcode == Opcode.IGET_OBJECT }
+        .mapNotNull { (it as ReferenceInstruction).reference as? FieldReference }
+        .filter { it.type == CHAR_SEQUENCE }
+    return reads.groupBy { it.definingClass }
+        .filterValues { fields -> fields.map { it.name }.toSet().size == 2 }
+        .keys.singleOrNull()
+}
+
+/** Whether [method] is a render reading both of [titles]' CharSequence fields. */
+internal fun readsBothTitles(method: Method, titles: String): Boolean =
+    method.name == "render" && method.implementation?.instructions?.toList().orEmpty()
+        .filter { it.opcode == Opcode.IGET_OBJECT }
+        .mapNotNull { (it as ReferenceInstruction).reference as? FieldReference }
+        .filter { it.definingClass == titles && it.type == CHAR_SEQUENCE }
+        .map { it.name }.toSet().size == 2
+
+/** The register an invoke hands as its argument [index], counting a static call's first as 0. */
+private fun Instruction.argument(index: Int): Int? = when (this) {
+    is RegisterRangeInstruction -> startRegister + index
+    is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).getOrNull(index)
+    else -> null
+}
+
+/**
+ * Where [render] hands the header's rows to their column: the one static call taking something, a
+ * List and a boolean whose List the call just before it answered. Null unless there is exactly one.
+ */
+internal fun preferenceRowsAt(render: Method): Int? {
+    val code = render.implementation?.instructions?.toList() ?: return null
+    return code.indices.filter { at ->
+        val call = code[at].called()
+        at >= 2 && call != null &&
+            (code[at].opcode == Opcode.INVOKE_STATIC || code[at].opcode == Opcode.INVOKE_STATIC_RANGE) &&
+            call.parameterTypes.size == 3 && call.parameterTypes[1] == LIST && call.parameterTypes[2] == "Z" &&
+            code[at - 1].opcode == Opcode.MOVE_RESULT_OBJECT &&
+            (code[at - 1] as OneRegisterInstruction).registerA == code[at].argument(1) &&
+            code[at - 2].called()?.returnType == LIST
+    }.singleOrNull()
+}
+
+/**
+ * Finds the render of the reel More sheet's Interested and Not interested header through the sheet
+ * logger's title holder. Refuses unless exactly one render reads both titles and hands two rows on.
+ */
+internal fun BytecodePatchContext.findReelPreferenceHeader(): ReelPreferenceHeader {
+    val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+    val titles = methodsNaming(REEL_INTERESTED) { !isStringTable(it) }
+        .filter { reelSheetOf(it, resolve) != null }
+        .mapNotNull { preferenceTitlesOf(it) }
+        .distinct().singleOrNull()
+        ?: refuseReelSheet("expected the sheet logger to read one header holding Interested and Not interested")
+    val renders = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(titles)) { owner ->
+        if (owner.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        owner.methods.filterTo(renders) { readsBothTitles(it, titles) }
+    }
+    val render = renders.singleOrNull()
+        ?: refuseReelSheet("expected one render reading both of $titles' titles, found ${renders.size}")
+    val rowsAt = preferenceRowsAt(render)
+        ?: refuseReelSheet("${render.definingClass}->render hands its two rows on in no way the patch knows")
+    if (render.returnType == "V" || render.implementation!!.registerCount - render.parameterTypes.size - 1 < 1) {
+        refuseReelSheet("${render.definingClass}->render has no room for the patch's question")
+    }
+    return ReelPreferenceHeader(render, rowsAt)
+}
+
+/**
+ * Runs the header's two rows through the extension before their column, then asks it first thing
+ * in the render whether to draw nothing, as when both rows are picked.
+ */
+internal fun BytecodePatchContext.hookReelPreferenceHeader(header: ReelPreferenceHeader) {
+    val render = mutableClassDefBy(header.render.definingClass).findMutableMethodOf(header.render)
+    val rows = (render.getInstruction<Instruction>(header.rowsAt)).argument(1)!!
+    render.addInstructions(
+        header.rowsAt,
+        """
+            invoke-static/range { v$rows .. v$rows }, $POST_MENU_REEL_PREFERENCE_ROWS
+            move-result-object v$rows
+        """,
+    )
+    render.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $POST_MENU_REEL_PREFERENCES_HIDDEN
+            move-result v0
+            if-eqz v0, :draw
+            const/4 v0, 0x0
+            return-object v0
+        """,
+        ExternalLabel("draw", render.getInstruction(0)),
+    )
+}
+
+/** Whether [method] turns one row [model] into its row: static, handed a CallerContext and then the model, answering one of Facebook's classes. */
+internal fun buildsReelRow(method: Method, model: String): Boolean {
+    val params = method.parameterTypes.map { it.toString() }
+    return AccessFlags.STATIC.isSet(method.accessFlags) && params.size >= 2 &&
+        params[0] == CALLER_CONTEXT && params[1] == model && ownClass(method.returnType) &&
+        method.implementation != null
+}
+
+/**
+ * Finds the one method turning a reel More sheet row model into its row. Refuses unless exactly one
+ * does and it has three registers of its own for the patch's question.
+ */
+internal fun BytecodePatchContext.findReelRowBuilder(sheet: ReelMenuSheet): Method {
+    val builders = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(sheet.model)) { owner ->
+        if (owner.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        owner.methods.filterTo(builders) { buildsReelRow(it, sheet.model) }
+    }
+    val builder = builders.singleOrNull()
+        ?: refuseReelSheet("expected one method building a row from a ${sheet.model}, found ${builders.size}")
+    val parameterRegisters = builder.parameterTypes.size + builder.parameterTypes.count { it.toString() == "J" || it.toString() == "D" }
+    if (builder.implementation!!.registerCount - parameterRegisters < 3) {
+        refuseReelSheet("${builder.definingClass}->${builder.name} has no room for the patch's question")
+    }
+    return builder
+}
+
+/** Asks the extension first thing in [builder] whether its row is of a picked kind, and answers no row on a yes. */
+internal fun BytecodePatchContext.hookReelRowBuilder(builder: Method, sheet: ReelMenuSheet) {
+    val method = mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v2, p1
+            const-string v0, "${javaName(sheet.model)}"
+            const-string v1, "${sheet.idMethod}"
+            invoke-static { v2, v0, v1 }, $POST_MENU_REEL_ROW_HIDDEN
+            move-result v0
+            if-eqz v0, :build
+            const/4 v0, 0x0
+            return-object v0
+        """,
+        ExternalLabel("build", method.getInstruction(0)),
+    )
 }
