@@ -114,6 +114,8 @@ public class DexDiff {
     /** Anything under here is the bundle's own code rather than the host's. */
     private static final String OWN = "Lapp/morphe/";
 
+    private static final String OBJECT = "Ljava/lang/Object;";
+
     private static final class RemovalAllowlist {
         final Set<String> methods = new TreeSet<>();
         final Set<String> dexEntries = new TreeSet<>();
@@ -996,8 +998,11 @@ public class DexDiff {
      * the factory's arguments. Whether the held class can be the wanted one is only known once
      * every class has been read, so the caller decides which of these stand (see refuses). An
      * invoke-interface's receiver is left alone, as ART lets any object through to one.
+     * [superclasses] and [interfaces] are the whole APK's, read before any method, which the
+     * classes where two paths meet are worked out from (see joinTypes).
      */
-    private static List<String[]> typeChecks(ClassDef cd, Method m) {
+    private static List<String[]> typeChecks(ClassDef cd, Method m, Map<String, String> superclasses,
+            Set<String> interfaces) {
         List<String[]> out = new ArrayList<>();
         MethodImplementation impl = m.getImplementation();
         if (impl == null) return out;
@@ -1014,7 +1019,7 @@ public class DexDiff {
             if (kindOf(p) == 'L') parameterType.put(register, p.toString());
             register += slots(p);
         }
-        String[][] types = registerTypes(impl, layout, parameterType);
+        String[][] types = registerTypes(impl, layout, parameterType, superclasses, interfaces);
         for (int k = 0; k < layout.instructions.size(); k++) {
             Instruction i = layout.instructions.get(k);
             if (types[k] == null || !(i instanceof ReferenceInstruction)) continue;
@@ -1084,14 +1089,18 @@ public class DexDiff {
      * as a type descriptor; null where that isn't known (a narrow or wide value, a null, or paths
      * that disagree), and a null row where no path reaches the instruction. The parameters and
      * this start with their declared classes, what makes an object gives its class, a move copies
-     * it, and anything else leaves the register unknown. ART merges two classes into the class
-     * they share; this leaves them unknown, so wherever it's unsure, nothing is judged. An
-     * instance-of tested right below leaves the tested register unknown on the branch where it's
-     * an instance (see narrowed). An exception edge carries the classes from before the throwing
-     * instruction, as in registerKinds.
+     * it, and anything else leaves the register unknown. Where two paths meet with different
+     * classes, the register holds the class they share, as ART merges them (see joinTypes), and
+     * stays unknown wherever that can't be told, so nothing unsure is judged. ART doesn't narrow
+     * a register after an if-eqz: a null-checked walk through one register (load the holder,
+     * branch past the next load when it's null, load the view from it) meets as the holder's and
+     * the view's shared class, Object, and handing that on as a View rejected the scroll-away
+     * controller on 588 at launch (2026-11-22). An instance-of tested right below leaves the
+     * tested register unknown on the branch where it's an instance (see narrowed). An exception
+     * edge carries the classes from before the throwing instruction, as in registerKinds.
      */
     private static String[][] registerTypes(MethodImplementation impl, Layout layout,
-            Map<Integer, String> parameterType) {
+            Map<Integer, String> parameterType, Map<String, String> superclasses, Set<String> interfaces) {
         int count = layout.instructions.size();
         String[][] before = new String[count][];
         if (count == 0) return before;
@@ -1115,15 +1124,17 @@ public class DexDiff {
             for (int s = 0; s < next.size(); s++) {
                 // An if-eqz falls through where its instance-of said yes, and an if-nez branches there.
                 boolean instanceEdge = instance != null && (i.getOpcode() == Opcode.IF_EQZ ? s == 0 : s == 1);
-                flowTypes(before, indexAt, work, next.get(s), instanceEdge ? instance : after);
+                flowTypes(before, indexAt, work, next.get(s), instanceEdge ? instance : after, superclasses, interfaces);
             }
-            for (int address : handlers(impl, i, at)) flowTypes(before, indexAt, work, address, before[k]);
+            for (int address : handlers(impl, i, at)) {
+                flowTypes(before, indexAt, work, address, before[k], superclasses, interfaces);
+            }
         }
         return before;
     }
 
     private static void flowTypes(String[][] before, Map<Integer, Integer> indexAt, Deque<Integer> work,
-            int address, String[] state) {
+            int address, String[] state, Map<String, String> superclasses, Set<String> interfaces) {
         Integer successor = indexAt.get(address);
         if (successor == null) return;
         if (before[successor] == null) {
@@ -1134,12 +1145,52 @@ public class DexDiff {
         boolean changed = false;
         String[] into = before[successor];
         for (int r = 0; r < into.length; r++) {
-            if (into[r] != null && !into[r].equals(state[r])) {
-                into[r] = null;
-                changed = true;
-            }
+            if (into[r] == null || into[r].equals(state[r])) continue;
+            into[r] = joinTypes(into[r], state[r], superclasses, interfaces);
+            changed = true;
         }
         if (changed) work.add(successor);
+    }
+
+    /**
+     * The class two paths' classes meet as: the nearest class both extend, through the APK's
+     * superclasses, as ART merges them. Null, which leaves the register unknown, when either side
+     * is unknown, an array or an interface, or when what they share lies among classes whose
+     * superclasses aren't known here. A platform class never extends one of the APK's, so when
+     * one side's chain reaches Object through the APK's own classes and the other's runs into a
+     * platform class without meeting it, they meet at Object. A chain that runs into a class
+     * neither the APK nor the platform defines, which Facebook loads later from its own stores,
+     * leaves the register unknown, since ART can't merge it before then either. Each join moves a
+     * register up its chain or to unknown, so the flow still settles.
+     */
+    private static String joinTypes(String a, String b, Map<String, String> superclasses, Set<String> interfaces) {
+        if (a == null || b == null) return null;
+        if (a.equals(b)) return a;
+        if (a.startsWith("[") || b.startsWith("[") || takesAnyObject(a, interfaces) || takesAnyObject(b, interfaces)) {
+            return null;
+        }
+        List<String> left = superchain(a, superclasses);
+        List<String> right = superchain(b, superclasses);
+        Set<String> shared = new HashSet<>(right);
+        for (String type : left) if (shared.contains(type)) return type;
+        String leftEnd = left.get(left.size() - 1);
+        String rightEnd = right.get(right.size() - 1);
+        if (leftEnd.equals(OBJECT) && isPlatform(rightEnd)) return OBJECT;
+        if (rightEnd.equals(OBJECT) && isPlatform(leftEnd)) return OBJECT;
+        return null;
+    }
+
+    /** [type] and its superclasses in order, ending at the first class the APK doesn't define. */
+    private static List<String> superchain(String type, Map<String, String> superclasses) {
+        List<String> chain = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        String at = type;
+        while (at != null && seen.add(at)) {
+            chain.add(at);
+            if (!superclasses.containsKey(at)) break;
+            at = superclasses.get(at);
+        }
+        return chain;
     }
 
     /** The classes after one instruction. [previous] is the one above it, whose answer a move-result takes. */
@@ -1231,10 +1282,22 @@ public class DexDiff {
      * when none of its superclasses is. An interface on either side is left alone, and so is a
      * class neither the APK nor the platform defines, which Facebook loads later from its own
      * stores, since what it extends isn't known here.
+     *
+     * <p>A platform class one of the APK's classes extends, so a class and not an interface (a
+     * View, a Drawable), is judged too, against a held class whose superclasses are known all
+     * the way to Object: the Object two paths meet as (see joinTypes), or an APK class built
+     * straight on Object. Nothing below Object is a View, which is how the scroll-away hook's
+     * View parameter rejected its controller on 588 (2026-11-22). A held platform class is left
+     * alone there, since its own superclasses aren't known.
      */
-    private static boolean refuses(String have, String wanted, Map<String, String> superclasses, Set<String> interfaces) {
-        if (have.equals(wanted) || !superclasses.containsKey(wanted) || interfaces.contains(wanted)
-                || interfaces.contains(have)) return false;
+    private static boolean refuses(String have, String wanted, Map<String, String> superclasses, Set<String> interfaces,
+            Set<String> platformClasses) {
+        if (have.equals(wanted) || interfaces.contains(wanted) || interfaces.contains(have)) return false;
+        if (!superclasses.containsKey(wanted)) {
+            if (!platformClasses.contains(wanted)) return false;
+            List<String> chain = superchain(have, superclasses);
+            return !chain.contains(wanted) && chain.get(chain.size() - 1).equals(OBJECT);
+        }
         if (have.startsWith("[")) return true;
         String type = have;
         while (superclasses.containsKey(type)) {
@@ -1760,6 +1823,8 @@ public class DexDiff {
         Map<String, Integer> superclassDex = new HashMap<>();
         MultiDexContainer<? extends DexFile> container =
                 DexFileFactory.loadDexContainer(apk, Opcodes.getDefault());
+        // Every class's place is read before any method, since where two paths meet the type
+        // flow takes the class they share (see joinTypes).
         for (String entry : container.getDexEntryNames()) {
             int dexNumber = appDexNumber(entry);
             for (ClassDef cd : container.getEntry(entry).getDexFile().getClasses()) {
@@ -1774,6 +1839,16 @@ public class DexDiff {
                     superclasses.put(cd.getType(), cd.getSuperclass());
                     superclassDex.put(cd.getType(), dexNumber);
                 }
+            }
+        }
+        // The platform classes the APK's own classes extend, which are classes and not interfaces.
+        Set<String> platformClasses = new HashSet<>();
+        for (String parent : superclasses.values()) {
+            if (parent != null && !superclasses.containsKey(parent) && isPlatform(parent)) platformClasses.add(parent);
+        }
+        platformClasses.remove(OBJECT);
+        for (String entry : container.getDexEntryNames()) {
+            for (ClassDef cd : container.getEntry(entry).getDexFile().getClasses()) {
                 for (Method m : cd.getMethods()) {
                     String s = sig(cd, m);
                     List<String> left = wanted.contains(s) ? unchecked.get(s) : null;
@@ -1781,7 +1856,7 @@ public class DexDiff {
                         List<String> findings = structuralFindings(cd, m);
                         if (!findings.isEmpty()) out.computeIfAbsent(s, k -> new ArrayList<>()).addAll(findings);
                         for (String[] found : objectReturns(m)) uncast.add(new String[]{s, found[0], found[1]});
-                        for (String[] found : typeChecks(cd, m)) {
+                        for (String[] found : typeChecks(cd, m, superclasses, interfaces)) {
                             mistyped.add(new String[]{s, found[0], found[1], found[2], found[3]});
                         }
                     }
@@ -1815,7 +1890,7 @@ public class DexDiff {
         }
         List<String[]> refused = new ArrayList<>();
         for (String[] found : mistyped) {
-            if (refuses(found[2], found[1], superclasses, interfaces)) refused.add(found);
+            if (refuses(found[2], found[1], superclasses, interfaces, platformClasses)) refused.add(found);
         }
         Map<String, Set<String>> declared = declaredMembers(container, refused, superclasses, superclassDex);
         for (String[] found : refused) {

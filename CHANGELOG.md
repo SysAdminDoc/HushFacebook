@@ -55,6 +55,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * **Tooling:** The build moves to Gradle 9.9.2, still pinned by checksum. 9.8.2 sits inside seven Gradle advisories from November, the worst being GHSA-3cfg-jpcr-gfp3, where a version catalog's values could run as code.
 * **Tooling:** Guava moves to 33.8.0 and Bouncy Castle to 1.87, and the extension tests run on Robolectric 4.18.1. Guava 33.8.0 fixes GHSA-v5x9-67m3-7m56. Bouncy Castle 1.87 fixes the twelve CVEs its release notes list. Neither one ends up in the patches you install, since both only run while the bundle is built and tested. The release check also lists a Guava inside GHSA-v5x9 now, since that advisory isn't in the public database it asks.
 * **Tooling:** The patches move off Morphe patcher's `bytecodePatch` and `resourcePatch` builders, which 2.5.0 marks deprecated and a later patcher will drop, to its `patch()`. Patch names, descriptions, defaults and options stay the same, so Manager keeps the patches you picked.
+* **Tooling:** The register check that runs before a release now follows an object's class where two code paths meet, the way Android's own verifier does. A hook that hands a View parameter what Android sees as a plain Object now fails on the desktop instead of a phone rejecting the whole class at launch, which is how the cold-start tab bar fix first broke on a phone.
 
 ### Fixed
 
