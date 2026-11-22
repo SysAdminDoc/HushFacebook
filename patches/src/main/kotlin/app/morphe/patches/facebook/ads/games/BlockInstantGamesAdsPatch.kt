@@ -6,12 +6,13 @@ package app.morphe.patches.facebook.ads.games
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 
 /**
@@ -21,7 +22,7 @@ import app.morphe.util.findMutableMethodOf
  * answers and with what code.
  */
 @Suppress("unused")
-val blockInstantGamesAdsPatch = bytecodePatch(
+val blockInstantGamesAdsPatch = patch(
     name = "Block Instant Games ads",
     description = "Games you play inside Facebook show no ads, so you can keep playing without breaks. A " +
         "rewarded ad gives no reward unless you also turn on the switch that counts it as watched. On by " +
@@ -32,7 +33,7 @@ val blockInstantGamesAdsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val bridges = classDefByStrings(AD_MESSAGES.first(), StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .filter { owner -> owner.methods.any(::isPostMessage) }

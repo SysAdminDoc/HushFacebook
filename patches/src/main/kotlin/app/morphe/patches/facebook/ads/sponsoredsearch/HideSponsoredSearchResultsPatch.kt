@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.search.isPageConstructor
 import app.morphe.patches.facebook.search.pageConstructorOf
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.singleOrPatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -54,7 +55,7 @@ internal class SearchPages(
  * constructor that doesn't hand its page there.
  */
 @Suppress("unused")
-val hideSponsoredSearchResultsPatch = bytecodePatch(
+val hideSponsoredSearchResultsPatch = patch(
     name = "Hide sponsored search results",
     description = "Removes the ads from Facebook's search results, so you see the people, Pages and posts you " +
         "searched for. On by default. Turn it off in Hushfacebook settings > Search.",
@@ -65,7 +66,7 @@ val hideSponsoredSearchResultsPatch = bytecodePatch(
     dependsOn(facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val search = searchPages()
         fillModuleStubs(search)
         val page = mutableClassDefBy(search.page)

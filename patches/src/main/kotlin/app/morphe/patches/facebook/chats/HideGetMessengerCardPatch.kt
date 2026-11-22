@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 private const val HIDE = "$EXTENSION_PACKAGE/chats/MessengerCard;->hide()Z"
 
@@ -26,7 +27,7 @@ private const val HIDE = "$EXTENSION_PACKAGE/chats/MessengerCard;->hide()Z"
  * as it does on a Facebook that sees Messenger, and the chats, search and notes below stay.
  */
 @Suppress("unused")
-val hideGetMessengerCardPatch = bytecodePatch(
+val hideGetMessengerCardPatch = patch(
     name = "Hide the Get Messenger card",
     description = "Hides the \"Get the Messenger app\" card at the top of Chats when Messenger is already " +
         "installed. A patched Facebook may not see that Messenger is there, so it keeps showing the card. On by " +
@@ -37,7 +38,7 @@ val hideGetMessengerCardPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val questions = classDefByStrings(TOP_BANNER_TAG, StringComparisonType.EQUALS).mapNotNull(::cardQuestion)
         val question = questions.singleOrNull() ?: throw PatchException(
             "$PATCH: expected one Chats plugin whose builder loads \"$TOP_BANNER_TAG\" and whose show question " +

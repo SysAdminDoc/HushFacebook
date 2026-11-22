@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.GRAPHQL_STORY
@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Field
 import com.android.tools.smali.dexlib2.iface.Method
@@ -52,7 +53,7 @@ internal class TimelineStory(val render: Method, val unit: StoryUnit, val sponso
  * own posts, and every other row of the profile, are drawn as before.
  */
 @Suppress("unused")
-val hideSponsoredProfilePostsPatch = bytecodePatch(
+val hideSponsoredProfilePostsPatch = patch(
     name = "Hide sponsored profile posts",
     description = "Removes the ads between posts on someone's profile or a Page, so you only see what they " +
         "posted. On by default. Turn it off in Hushfacebook settings > News feed.",
@@ -63,7 +64,7 @@ val hideSponsoredProfilePostsPatch = bytecodePatch(
     dependsOn(facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val story = timelineStory()
         fillStoryModelStub(PROFILE_AD_FILTER, SPONSORED_DATA_STUB, story.sponsoredData)
         mutableRender(story).skipSponsoredStories(story.unit)

@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -73,7 +74,7 @@ internal const val HOLDS = "$META_AI_SUMMARIES->holds(Ljava/lang/String;)Z"
  * In the default selection with its switch off: it only acts once the switch is turned on.
  */
 @Suppress("unused")
-val hideMetaAiCommentSummariesPatch = bytecodePatch(
+val hideMetaAiCommentSummariesPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide Meta AI comment summaries",
     description = "Removes Meta AI's summary of the comments from the top of the comment sheet and from under " +
@@ -85,7 +86,7 @@ val hideMetaAiCommentSummariesPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         val sheet = pluginSocket(SHEET_SOCKET, SHEET_DEEP_DIVE, listOf(SHEET_SUMMARY))
         val post = pluginSocket(POST_SOCKET, POST_SUMMARY)

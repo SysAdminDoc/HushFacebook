@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -22,6 +22,7 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -41,7 +42,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * results. It adds no hook of its own.
  */
 @Suppress("unused")
-val hideSponsoredMarketplaceListingsPatch = bytecodePatch(
+val hideSponsoredMarketplaceListingsPatch = patch(
     name = "Hide sponsored Marketplace listings",
     description = "Removes ads and boosted listings from Marketplace's feed and search results, so you see more " +
         "of what people are selling. Listings people post stay. It also reads rules typed into Marketplace " +
@@ -55,7 +56,7 @@ val hideSponsoredMarketplaceListingsPatch = bytecodePatch(
     dependsOn(facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val sends = classDefByStrings(NETWORKING_TAG, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .flatMap { owner -> owner.methods.filter(::isSendRequest) }

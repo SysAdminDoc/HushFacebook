@@ -7,6 +7,7 @@
  */
 package app.morphe.patches.facebook.downloads.story
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.downloads.photo.fillCdnResize
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.shared.reportedFieldNames
@@ -19,10 +20,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -71,7 +72,7 @@ internal const val STORY_WITHOUT_CDN = "a story's Save photo saves the photo at 
 private const val REMEMBER_HELPER = "hushfacebookRememberSource"
 
 @Suppress("unused")
-val downloadStoryPatch = bytecodePatch(
+val downloadStoryPatch = patch(
     name = "Download any story",
     description = "Adds Save to the menu of any story, including stories with music, so you can keep the ones " +
         "you like. Videos save at the quality you set, best by default. On by default. Turn it off in " +
@@ -102,7 +103,7 @@ val downloadStoryPatch = bytecodePatch(
     //
     // Both halves stay because they are different limits. The first still has to be answered, or
     // there is no item to tap.
-    execute {
+    executeBytecode {
         // The class of the action that the menu creates. The patch finds it through the event that
         // the action reports, because Redex gives the class a new name on every Facebook release.
         val saveAction = run {

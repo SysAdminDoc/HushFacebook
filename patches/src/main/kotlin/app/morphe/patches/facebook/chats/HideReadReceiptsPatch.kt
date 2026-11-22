@@ -6,13 +6,14 @@ package app.morphe.patches.facebook.chats
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 
 /**
  * Keeps Facebook from telling the sender that you've read a chat that opens inside Facebook. See
@@ -21,7 +22,7 @@ import app.morphe.util.classDefForEachReferencing
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val hideReadReceiptsPatch = bytecodePatch(
+val hideReadReceiptsPatch = patch(
     // The README table check reads this literal; READ_RECEIPTS_PATCH carries the same text for the messages.
     name = "Hide read receipts",
     description = "People you chat with in chats that open inside Facebook don't see that you've read their " +
@@ -32,7 +33,7 @@ val hideReadReceiptsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         hideReadReceipts()
         enableStatus("readReceipts")
     }

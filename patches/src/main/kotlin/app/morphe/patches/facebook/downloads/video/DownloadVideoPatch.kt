@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.downloads.photo.SUBATTACHMENTS_FIELD
@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -83,7 +84,7 @@ private const val REMEMBER_HELPER = "hushfacebookRememberVideoSource"
  * own three-dot menu gets the row too (#509, [viewerMenu]).
  */
 @Suppress("unused")
-val downloadVideoPatch = bytecodePatch(
+val downloadVideoPatch = patch(
     name = "Download any video",
     description = "Adds Download to phone to the menu of videos in the feed, in Watch and in the photo and video " +
         "viewer, so you can save them to watch later. A post with several videos gets Save all videos. A video " +
@@ -96,7 +97,7 @@ val downloadVideoPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
     dependsOn(facebookExtensionPatch, commentSheetDialogPatch)
 
-    execute {
+    executeBytecode {
         val menu = postMenu()
         // Found before any hook goes in, so a build without the sheet fails whole.
         val addCommentVideoRow = commentSheetVideoRow()

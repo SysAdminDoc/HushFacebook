@@ -12,7 +12,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.iface.Method
 
 private const val SWITCH = "$EXTENSION_PACKAGE/feed/FeedFilter;->hideSponsoredStories()Z"
@@ -49,7 +50,7 @@ internal fun BytecodePatchContext.adBucketDataSource(placement: Method): Mutable
 }
 
 @Suppress("unused")
-val hideSponsoredStoriesPatch = bytecodePatch(
+val hideSponsoredStoriesPatch = patch(
     name = "Hide sponsored stories",
     description = "Removes ad cards from the story viewer, so swiping through stories shows only what people " +
         "posted. On by default. Turn it off in Hushfacebook settings > Stories.",
@@ -68,7 +69,7 @@ val hideSponsoredStoriesPatch = bytecodePatch(
     // All four sources are neutered, not just one. They sit in the same chain, a factory picks
     // between two of them by flag, and one of them only fetches once the viewer is already open --
     // which is the ad that survives into a session and disappears on the next cold start.
-    execute {
+    executeBytecode {
         listOf(
             InorganicClashResolverFingerprint.method,
             adBucketDataSource(AdBucketPlacementFingerprint.method),

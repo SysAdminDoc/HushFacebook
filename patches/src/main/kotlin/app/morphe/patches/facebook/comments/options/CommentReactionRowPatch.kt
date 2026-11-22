@@ -7,11 +7,12 @@ package app.morphe.patches.facebook.comments.options
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -110,10 +111,10 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
  * and refuses unless the plugin's reads, the shared check, the comment list's layout and the older
  * row's icon cap are all there.
  */
-internal val commentReactionRowPatch = bytecodePatch {
+internal val commentReactionRowPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         hookTopReactionPicks()
     }
 }

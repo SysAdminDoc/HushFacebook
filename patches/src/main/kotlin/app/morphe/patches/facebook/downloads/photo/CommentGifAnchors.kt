@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.options.GRAPHQL_COMMENT
 import app.morphe.patches.facebook.downloads.video.ATTACHMENTS_FIELD
@@ -20,6 +20,7 @@ import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.getFreeRegisterProvider
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -376,7 +377,7 @@ internal fun BytecodePatchContext.commentSheetDialog(patch: String): () -> Unit 
  * sheet after their tap. Download any photo and Download any video both depend on it, so the hook
  * goes in once with either or both.
  */
-internal val commentSheetDialogPatch = bytecodePatch {
+internal val commentSheetDialogPatch = patch {
     dependsOn(facebookExtensionPatch)
-    execute { commentSheetDialog(SHEET_PATCHES)() }
+    executeBytecode { commentSheetDialog(SHEET_PATCHES)() }
 }

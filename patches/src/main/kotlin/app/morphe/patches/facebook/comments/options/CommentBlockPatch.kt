@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.ads.sponsoredsearch.enumConstantFields
@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.extension.requireParameterIntact
 import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -293,10 +294,10 @@ internal fun blockHelper(
  * The block button's hooks go in. Nameless, so Comment sheet options carries it and its
  * fixture tests run it on its own. Everything is found before anything changes.
  */
-internal val commentBlockPatch = bytecodePatch {
+internal val commentBlockPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val sites = commentBlockSites(
             dislikeBuilder(classDefByOrNull(COMMENT_DOWNVOTE)),
             blockHolders(DOWNVOTE_CLICK).flatMap { holder -> holder.methods.filter { holdsString(it, DOWNVOTE_CLICK) } },

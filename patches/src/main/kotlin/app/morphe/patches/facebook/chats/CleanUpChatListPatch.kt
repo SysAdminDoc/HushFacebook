@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.methodsNaming
@@ -22,6 +22,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.cloneMutableAndPreserveParameters
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -45,7 +46,7 @@ internal const val IMMUTABLE_COPY_OF = "$IMMUTABLE_LIST_TYPE->copyOf(Ljava/util/
  * the switches off. Every anchor is found before the first edit.
  */
 @Suppress("unused")
-val cleanUpChatListPatch = bytecodePatch(
+val cleanUpChatListPatch = patch(
     // The README table check reads this literal; CHAT_LIST_PATCH carries the same text for the messages.
     name = "Clean up Facebook's chat list",
     description = "Tidies Chats inside Facebook. One switch empties the row of notes and who's active above your " +
@@ -58,7 +59,7 @@ val cleanUpChatListPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val store = classDefByStrings(NOTES_TILES, StringComparisonType.EQUALS).mapNotNull(::notesTrayOf).singleOrNull()
             ?: throw PatchException(
                 "$CHAT_LIST_PATCH: expected one tile state whose constructor checks \"$NOTES_TILES\" and stores " +

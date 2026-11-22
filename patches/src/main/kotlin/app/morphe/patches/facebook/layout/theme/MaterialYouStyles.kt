@@ -5,9 +5,10 @@
 package app.morphe.patches.facebook.layout.theme
 
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -144,8 +145,8 @@ internal fun BytecodePatchContext.fdsTokens(): Pair<ClassDef, TokenConstants> {
  * Reads [tokenAttributeNames] out of the token enum FDSColors resolves. On its own for Accent
  * color, which needs the names and not [plainTokens]' scan of the whole app.
  */
-internal val fdsTokenNamesPatch = bytecodePatch {
-    execute {
+internal val fdsTokenNamesPatch = patch {
+    executeBytecode {
         tokenAttributeNames = fdsTokens().second.attributes.entries
             .associate { (token, attribute) -> "attr_0x%08x".format(attribute) to token }
         check(tokenAttributeNames.size > FULL_THEME_ITEMS) {
@@ -158,10 +159,10 @@ internal val fdsTokenNamesPatch = bytecodePatch {
  * Reads [tokenAttributeNames] and [plainTokens] out of the token enum FDSColors resolves, and
  * [integerReadAttributeIds] out of the styleable arrays.
  */
-internal val fdsTokenAttributesPatch = bytecodePatch {
+internal val fdsTokenAttributesPatch = patch {
     dependsOn(fdsTokenNamesPatch)
 
-    execute {
+    executeBytecode {
         val (tokenClass, constants) = fdsTokens()
         plainTokens = dataReadTokens({ visit -> classDefForEach { visit(it) } }, constants, tokenAttributeField(tokenClass)) { names, visit ->
             classDefForEachReferencing(names = names) { visit(it) }

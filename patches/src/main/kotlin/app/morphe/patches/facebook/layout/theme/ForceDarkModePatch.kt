@@ -4,11 +4,12 @@
  */
 package app.morphe.patches.facebook.layout.theme
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /**
  * Facebook's dark mode controller answers dark while the switch is on (#64). Facebook's Settings
@@ -19,7 +20,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * setting when their switch is set. With a theme in the build too, the one hook serves both.
  */
 @Suppress("unused")
-val forceDarkModePatch = bytecodePatch(
+val forceDarkModePatch = patch(
     // The README table check reads this literal.
     name = "Force dark mode",
     description = "Keeps Facebook in dark mode whatever its own setting says. Useful on tablets, where " +
@@ -30,7 +31,7 @@ val forceDarkModePatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         hookDarkModeAnswer()
         enableStatus("forceDarkMode")
     }

@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsNaming
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
@@ -30,7 +31,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * changes until the switch is turned on and an order is chosen.
  */
 @Suppress("unused")
-val defaultCommentOrderPatch = bytecodePatch(
+val defaultCommentOrderPatch = patch(
     name = "Default comment order",
     description = "Opens comments in the order you choose, Most relevant, Newest, All comments or Oldest, instead of the " +
         "one Facebook picks. Handy if you always want the newest first. Starts off. Turn it on and pick an order " +
@@ -40,7 +41,7 @@ val defaultCommentOrderPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // 586's Android 9 build's builder asks a string table for each variable's name.
         val resolve = variableTables()
         val builders = methodsNaming(ORDER_VARIABLE) { requestFields(it, resolve) != null }

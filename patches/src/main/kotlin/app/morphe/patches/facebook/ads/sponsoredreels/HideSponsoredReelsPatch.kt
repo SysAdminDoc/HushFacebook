@@ -7,6 +7,7 @@
  */
 package app.morphe.patches.facebook.ads.sponsoredreels
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -16,6 +17,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.returnEarly
 import app.morphe.util.singleOrPatchException
 import app.morphe.util.superclassChain
@@ -23,7 +25,6 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -46,7 +47,7 @@ private const val SETTABLE_FUTURE = "Lcom/google/common/util/concurrent/Settable
 private const val PATCH = SPONSORED_REELS_PATCH
 
 @Suppress("unused")
-val hideSponsoredReelsPatch = bytecodePatch(
+val hideSponsoredReelsPatch = patch(
     name = "Hide sponsored reels",
     description = "Removes ads from Reels and Watch, including product banners over reels and ads in the middle " +
         "of videos, so you can watch without interruptions. On by default. Turn it off in Hushfacebook settings " +
@@ -58,7 +59,7 @@ val hideSponsoredReelsPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // The server inlines the ads into each fetched page, so the page arriving at the
         // collection is where they come out: see ReelPages.kt for how the three methods and the
         // ad item base are found. Replace the incoming page with one that has no ads in it, at

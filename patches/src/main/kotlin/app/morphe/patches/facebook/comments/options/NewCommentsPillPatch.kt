@@ -7,10 +7,11 @@ package app.morphe.patches.facebook.comments.options
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -64,10 +65,10 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
  * fixture tests run it on its own. It finds the spot before changing anything and refuses unless
  * there's exactly one.
  */
-internal val newCommentsPillPatch = bytecodePatch {
+internal val newCommentsPillPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val classes = mutableListOf<ClassDef>()
         classDefForEach { classDef: ClassDef ->
             if (!classDef.type.startsWith(EXTENSION_CLASSES)) classes += classDef

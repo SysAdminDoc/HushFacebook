@@ -7,13 +7,14 @@
  */
 package app.morphe.patches.facebook.ads.prefetch
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.shared.neuterOrReason
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.handleTargets
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.util.executeBytecode
 
 private const val PATCH = "Block background ad prefetch"
 
@@ -34,7 +35,7 @@ internal val AD_PREFETCH_SCHEDULERS = listOf(
 )
 
 @Suppress("unused")
-val blockAdPrefetchPatch = bytecodePatch(
+val blockAdPrefetchPatch = patch(
     name = "Block background ad prefetch",
     description = "Stops the jobs Facebook runs in the background to download ads, and the model it ranks them " +
         "with, before you ever see them. Works as soon as you patch it in, with no switch.",
@@ -54,7 +55,7 @@ val blockAdPrefetchPatch = bytecodePatch(
     //
     // Each scheduler stands alone, so a build that renamed some still gets the others blocked, and
     // the patch log names each one left running. None found stops the patch.
-    execute {
+    executeBytecode {
         handleTargets(PATCH, "ad prefetch schedulers", AD_PREFETCH_SCHEDULERS) { neuterOrReason(it) }
 
         enableStatus("adPrefetch")

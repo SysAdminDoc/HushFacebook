@@ -13,7 +13,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
@@ -34,6 +34,7 @@ import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -163,7 +164,7 @@ internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSessi
  * model into null, and a list of reel cards into one without the shop kinds while the switch is on.
  */
 @Suppress("unused")
-val hideAffiliateLinksPatch = bytecodePatch(
+val hideAffiliateLinksPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide affiliate product links",
     description = "Removes the shopping cards that affiliate links add to reels, feed posts and comments, plus " +
@@ -175,7 +176,7 @@ val hideAffiliateLinksPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val anchors = findAffiliateAnchors()
         val label = findCommissionLabel()
         for (read in label.readers) {

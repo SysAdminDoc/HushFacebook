@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.layout.theme
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -17,6 +17,8 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.reels.resolveCalled
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
+import app.morphe.util.finalizeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -50,7 +52,7 @@ private const val SPANNABLE = "Landroid/text/Spannable;"
  * and while Material You is in the build, which decides every colour this would.
  */
 @Suppress("unused")
-val accentColorPatch = bytecodePatch(
+val accentColorPatch = patch(
     // The README table check reads this literal.
     name = "Accent color",
     description = "Swaps Facebook's blue on links, buttons, switches and the selected tab for a color you like " +
@@ -63,7 +65,7 @@ val accentColorPatch = bytecodePatch(
     dependsOn(facebookExtensionPatch)
     dependsOn(accentResourcePatch)
 
-    execute {
+    executeBytecode {
         enableStatus("accentColor")
         fillResourceBlues(accentResourceBlues)
         loadAccentTables()
@@ -75,7 +77,7 @@ val accentColorPatch = bytecodePatch(
 
     // After every patch's execute, as the themes do, so each hook here goes after theirs and gets
     // their colour.
-    finalize {
+    finalizeBytecode {
         hookDarkModeAnswer()
         hookColourResolvers(mig = ACCENT_MIG, fds = ACCENT_FDS)
     }

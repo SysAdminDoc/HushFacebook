@@ -5,7 +5,7 @@
 package app.morphe.patches.facebook.chats
 
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.shared.redexOriginalName
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 
 /**
  * Keeps Facebook from showing others that you're typing, in chats that open inside Facebook and in
@@ -22,7 +23,7 @@ import app.morphe.util.classDefForEachReferencing
  * In the default selection with both switches off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
-val hideTypingIndicatorPatch = bytecodePatch(
+val hideTypingIndicatorPatch = patch(
     // The README table check reads this literal; TYPING_PATCH carries the same text for the messages.
     name = "Hide typing indicator",
     description = "Others don't see that you're typing, in chats that open inside Facebook and in comment boxes, " +
@@ -33,7 +34,7 @@ val hideTypingIndicatorPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         hideTypingIndicator()
         enableStatus("typingIndicator")
     }

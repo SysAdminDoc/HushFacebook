@@ -5,11 +5,12 @@
  */
 package app.morphe.patches.facebook.chats
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /**
  * Photos and videos sent from a chat that opens inside Facebook go out as the originals.
@@ -19,7 +20,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * In Morphe Manager's default selection with the switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val originalChatMediaPatch = bytecodePatch(
+val originalChatMediaPatch = patch(
     // The README table check reads this literal; ORIGINAL_MEDIA_PATCH carries the same text for the messages.
     name = "Send chat photos and videos at original quality",
     description = "Photos and videos you send from chats that open inside Facebook go out as the originals " +
@@ -30,7 +31,7 @@ val originalChatMediaPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("originalChatMedia")
         val anchors = findOriginalMediaAnchors()
         hookOriginalMedia(anchors)

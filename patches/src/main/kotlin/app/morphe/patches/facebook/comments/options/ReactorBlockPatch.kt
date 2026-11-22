@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.comments.options
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.sponsoredsearch.invokeRegisters
 import app.morphe.patches.facebook.comments.summaries.descriptor
@@ -20,6 +20,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireFreeAt
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -198,10 +199,10 @@ private fun Method.mountsTextView(): Boolean =
  * and a build where something isn't found keeps its reaction lists stock, with a warning, instead
  * of stopping Comment sheet options.
  */
-internal val reactorBlockPatch = bytecodePatch {
+internal val reactorBlockPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         try {
             addReactorBlock()
         } catch (failure: PatchException) {

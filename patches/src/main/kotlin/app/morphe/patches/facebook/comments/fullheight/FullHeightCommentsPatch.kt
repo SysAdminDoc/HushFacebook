@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.summaries.descriptor
@@ -33,6 +33,7 @@ import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -200,7 +201,7 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * In the default selection with its switches off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
-val fullHeightCommentsPatch = bytecodePatch(
+val fullHeightCommentsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Open comments at full height",
     description = "Opens the comment sheet at full or half height instead of part way up. Full height fills the " +
@@ -214,7 +215,7 @@ val fullHeightCommentsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         requireStatusMethod("fullHeightComments")
         val params = classDefByOrNull(POPOVER_PARAMS) ?: refuse("$POPOVER_PARAMS isn't in this build")

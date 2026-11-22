@@ -7,6 +7,7 @@
  */
 package app.morphe.patches.facebook.ads.telemetry
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.shared.neuterOrReason
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -16,9 +17,9 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.iface.Method
@@ -93,7 +94,7 @@ private const val NO_AD_ID_ROW = """
 """
 
 @Suppress("unused")
-val blockAdTelemetryPatch = bytecodePatch(
+val blockAdTelemetryPatch = patch(
     name = "Block ad telemetry",
     description = "Stops Facebook watching for screenshots of ads and reporting which apps you install after " +
         "seeing ads, and stops several of the ways it sends your phone's advertising ID, so less of what you do " +
@@ -115,7 +116,7 @@ val blockAdTelemetryPatch = bytecodePatch(
     //
     // Each class stands alone, so a build that renamed some still gets the others stopped, and the
     // patch log names each one left running. None found stops the patch.
-    execute {
+    executeBytecode {
         handleTargets(PATCH, "ad telemetry classes", AD_TELEMETRY) { neuterOrReason(it) }
 
         // The advertising ID reporting is extra: a build without one of these still gets the

@@ -10,7 +10,7 @@
 package app.morphe.patches.facebook.ads.sponsoredposts
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.sponsoredreels.holdAdPills
 import app.morphe.patches.facebook.feed.hook.feedFilterHookPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.util.executeBytecode
 
 internal const val SPONSORED_POSTS_PATCH = "Hide sponsored posts"
 
@@ -26,7 +27,7 @@ internal const val SPONSORED_POSTS_PATCH = "Hide sponsored posts"
 internal const val HOLDS_FEED_AD_PILL = "$EXTENSION_PACKAGE/ads/FeedAdPills;->holdsAdPill(Ljava/lang/String;)Z"
 
 @Suppress("unused")
-val hideSponsoredPostsPatch = bytecodePatch(
+val hideSponsoredPostsPatch = patch(
     name = "Hide sponsored posts",
     description = "Removes sponsored and promoted posts from the news feed, with no gap left behind, so you see " +
         "fewer ads. It also keeps the floating ad button off an ad's comments. On by default. Turn it off in " +
@@ -42,7 +43,7 @@ val hideSponsoredPostsPatch = bytecodePatch(
     // Rejecting at the collection boundary means nothing downstream sees the ad: no placeholder,
     // no impression. The edge already carries the server's story category, so this costs one
     // cached-enum lookup rather than a walk of the story tree for sponsored_data.
-    execute {
+    executeBytecode {
         // An ad that still reaches the feed, or one opened from a link, shows its comments without
         // the floating ad button: the permalink page's and the comment flyout's. This asks first in
         // the same pill check Hide sponsored reels asks in, so either patch works alone.

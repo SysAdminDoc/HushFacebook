@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.methodsNaming
@@ -29,6 +29,7 @@ import app.morphe.patches.facebook.notifications.postNothingWhenBlocked
 import app.morphe.patches.facebook.notifications.trayPost
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -79,7 +80,7 @@ internal const val CHATS_IN_MESSENGER = "$HANDOFF->chatsInMessenger()Z"
  * the rest, says so in the patch log, and MessengerHandoff.chatsInBuild stays false.
  */
 @Suppress("unused")
-val openMessengerFromTopBarPatch = bytecodePatch(
+val openMessengerFromTopBarPatch = patch(
     // The README table check reads this literal; ICON_PATCH carries the same text for the messages.
     name = "Open Messenger from the top bar",
     description = "Makes the Messenger icon at the top of Facebook open the Messenger app instead of Facebook's " +
@@ -95,7 +96,7 @@ val openMessengerFromTopBarPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // 586 asks a string table for the Reels tab's entry point, so the tap is found by naming it.
         val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
         val taps = methodsNaming(REELS_TAB_ENTRY) { isIconTapShaped(it) }.filter { isIconTap(it, resolve) }

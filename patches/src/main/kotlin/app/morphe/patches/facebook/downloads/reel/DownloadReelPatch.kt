@@ -8,6 +8,7 @@
 package app.morphe.patches.facebook.downloads.reel
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.refresh.enumConstant
@@ -32,12 +33,12 @@ import app.morphe.patches.facebook.misc.extension.requireParameterIntact
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.singleOrPatchException
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.readsAfter
@@ -176,7 +177,7 @@ internal const val VERTICAL_UFI = "$HANDLER->verticalUfi(Z)Z"
  * reads a shared place saves the wrong one.
  */
 @Suppress("unused")
-val downloadReelPatch = bytecodePatch(
+val downloadReelPatch = patch(
     name = "Download any reel",
     description = "Adds a Download button beside every reel and a Download row to its More menu, so you can keep " +
         "reels on your phone. Videos save at the quality you set, best by default. The More menu also gets Copy " +
@@ -189,7 +190,7 @@ val downloadReelPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // ---- the Kotlin type the handler runs on ------------------------------------------------
         //
         // The handler is a Java class implementing Function1, and the extension carries no Kotlin
