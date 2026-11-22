@@ -5,7 +5,7 @@
 package app.morphe.patches.facebook.coexist
 
 import app.morphe.patcher.patch.Patch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import java.io.File
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
@@ -78,7 +78,7 @@ class ClonedPackageOrderTest {
      */
     @Test
     fun aSelectionOfOnlyLaterNamedPatchesRunsCloneAppFirst() {
-        val cloneApp = resourcePatch(name = "Clone app") { }
+        val cloneApp = patch(name = "Clone app") { }
         val bundle = bundlePatches()
         val hideSponsoredPosts = bundle.single { it.name == "Hide sponsored posts" }
         val useTheSystemFont = bundle.single { it.name == "Use the system font" }
