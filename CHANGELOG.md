@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are in the [changelog archive](docs/changelog-archive.md).
 
-## Unreleased
+## 0.24.0 (2026-11-22)
+
+* This one moves to Facebook 588.0.0.42.55 and needs Morphe Manager 2.7.0 or newer, so update Manager and grab the new Facebook APK before you repatch. Every patch now goes in on the Android 9 and 10 build too. There's a lot new here. The next reel can play in the background, groups can keep the tab bar, and a tap on a feed video can bring up a pause button instead of opening Reels. Stories can lose their reply bar and Up next card, Facebook can go through a proxy you name (handy for VLESS), and a tablet can keep the feed in a column down the middle. On the fix side, reels fit the screen on a tablet held sideways and behind see-through bars, and `Play saved videos in a row` no longer stops on a saved post or shakes between videos. The tab bar also comes all the way back when you scroll to the top, and on Android 17 a close for using too much memory leaves a crash file and counts toward safe mode.
 
 ### Added
 
