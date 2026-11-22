@@ -303,6 +303,89 @@ public class TabBarScrollAwayTest {
         assertNull("a see-through bar's pager got the kept bar's listener", TabBarScrollAway.CLEARED_PAGERS.get(pager));
     }
 
+    /** A list standing in for the feed, which can or can't still scroll up. */
+    private static View feed(boolean canScrollUp) {
+        return new androidx.recyclerview.widget.RecyclerView(RuntimeEnvironment.getApplication(), true) {
+            @Override
+            public boolean canScrollVertically(int direction) {
+                return direction < 0 && canScrollUp;
+            }
+        };
+    }
+
+    @Test
+    public void onlyAListAtItsTopBringsTheBarsAllTheWayBack() {
+        // Facebook checks the view is a list before it treats it as one, and a view that can't
+        // scroll would read as always at its top.
+        View notAList = new View(RuntimeEnvironment.getApplication());
+        assertEquals("a view that isn't a list changed the distance", -40, TabBarScrollAway.shownAtTop(notAList, -40));
+        // The hook takes an Object (with no manager it gets null), so anything but a view is left alone.
+        assertEquals("something that isn't a view changed the distance", -40, TabBarScrollAway.shownAtTop(new Object(), -40));
+        String line = statusLine();
+        assertFalse("a distance left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+    }
+
+    @Test
+    public void theBarsComeAllTheWayBackOnceTheFeedReachesItsTop() {
+        // Whatever the switches: a bar Facebook slides away on its own stops short the same way.
+        assertEquals("at the feed's top the bars got only Facebook's distance", TabBarScrollAway.ALL_THE_WAY_BACK,
+                TabBarScrollAway.shownAtTop(feed(false), -40));
+        assertTrue("the distance doesn't beat a tall bar", TabBarScrollAway.ALL_THE_WAY_BACK < -10_000);
+        assertEquals("below the feed's top the distance changed", -40, TabBarScrollAway.shownAtTop(feed(true), -40));
+        assertEquals("a scroll down was changed", 40, TabBarScrollAway.shownAtTop(feed(false), 40));
+        assertEquals("with no view the distance changed", -40, TabBarScrollAway.shownAtTop(null, -40));
+        String line = statusLine();
+        assertTrue(line, line != null && line.endsWith("Counted: " + TabBarScrollAway.BARS_BACK_AT_TOP + " 1"));
+    }
+
+    @Test
+    public void pausedOrNotReadyTheBarsComeBackAsFacebookBringsThem() {
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(reason);
+            assertEquals("a Hushfacebook paused by " + reason + " changed the distance", -40,
+                    TabBarScrollAway.shownAtTop(feed(false), -40));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertEquals("the distance changed before the settings were ready",
+                -40, TabBarScrollAway.shownAtTop(feed(false), -40)));
+        String line = statusLine();
+        assertFalse("a distance left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+    }
+
+    @Test
+    public void theOpeningNudgeIsSkippedOnlyWhileTheSwitchSlidesTheBar() {
+        Settings.TAB_BAR_SCROLL_AWAY.save(true);
+        assertFalse("skipped before Facebook asked whether the bar slides", TabBarScrollAway.skipsOpeningNudge());
+        assertTrue(TabBarScrollAway.slidesAway());
+        assertTrue("the nudge ran with the switch sliding the bar", TabBarScrollAway.skipsOpeningNudge());
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook skipped the nudge", TabBarScrollAway.skipsOpeningNudge());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("skipped before the settings were ready", TabBarScrollAway.skipsOpeningNudge()));
+        Settings.TAB_BAR_SCROLL_AWAY.save(false);
+        assertFalse("skipped with the switch off", TabBarScrollAway.skipsOpeningNudge());
+    }
+
+    @Test
+    public void aKeptSeeThroughBarOrFacebooksOwnAnswerLeavesTheNudge() {
+        // A kept see-through bar takes the scroll-away layout too, but it never slides.
+        Settings.KEEP_TAB_BAR.save(true);
+        Settings.TRANSLUCENT_BARS.save(true);
+        assertTrue(TabBarScrollAway.slidesAway());
+        assertFalse("a kept bar skipped the nudge", TabBarScrollAway.skipsOpeningNudge());
+
+        // Off, Facebook's server settings decide the slide, and its nudge stays with it.
+        Settings.KEEP_TAB_BAR.resetToDefault();
+        Settings.TRANSLUCENT_BARS.resetToDefault();
+        TabBarScrollAway.forgetBuilt();
+        assertFalse(TabBarScrollAway.slidesAway());
+        assertFalse("Facebook's own slide skipped the nudge", TabBarScrollAway.skipsOpeningNudge());
+    }
+
     @Test
     public void aKeptTopBarHoldsStillAndTheOtherEntriesMove() {
         assertFalse("the top bar's switch doesn't start off", Settings.KEEP_TOP_BAR.get());

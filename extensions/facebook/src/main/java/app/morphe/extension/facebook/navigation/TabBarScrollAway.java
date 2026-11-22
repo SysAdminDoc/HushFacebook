@@ -24,6 +24,7 @@ import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.IntegerSetting;
 import app.morphe.extension.shared.settings.Setting;
 
@@ -140,6 +141,7 @@ public final class TabBarScrollAway {
     public static void forgetBuilt() {
         builtKept = null;
         builtSeeThrough = null;
+        slidOnOurSwitch = false;
         tabsInTopEntry = false;
         droppedTop = 0;
         loggedUnder = false;
@@ -548,6 +550,7 @@ public final class TabBarScrollAway {
                 HookStatus.bound(FAMILY, "tab bar scroll-away");
                 HookStatus.counted(FAMILY, SLIDES_AWAY);
                 Logger.printDebug(() -> "Tab bar scroll-away: the bar at the bottom slides away");
+                slidOnOurSwitch = true;
                 return true;
             }
             if (keptUnderSeeThrough()) {
@@ -559,6 +562,74 @@ public final class TabBarScrollAway {
             return false;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "tab bar scroll-away", failure);
+            return false;
+        }
+    }
+
+    /** Whether {@link #slidesAway()} answered yes for the switch in this process, so the bar at the bottom slides away. */
+    private static volatile boolean slidOnOurSwitch;
+
+    /** Counted each time the bars are brought all the way back as the feed reaches its top. */
+    static final String BARS_BACK_AT_TOP = "Bars brought all the way back at the top";
+    /** Counted each time Facebook's nudge of the feed after a cold start is skipped. */
+    static final String NUDGE_SKIPPED = "Opening nudge of the feed skipped";
+
+    /**
+     * A distance that brings any bar all the way back. Facebook takes it off each bar's hidden part
+     * and stops at 0, fully shown, so the size only has to beat the tallest bar.
+     */
+    static final int ALL_THE_WAY_BACK = -(1 << 20);
+
+    /**
+     * The hook at the start of the step of Facebook's scroll-away that brings the bars back as the
+     * feed scrolls up, with the view the bars scroll with and the distance, below 0. When that view
+     * can't scroll up any more, the answer brings every bar all the way back. A short scroll near the
+     * top hides the bars, and Facebook then snaps them all fully out of sight, the bottom one by its
+     * whole height, while the feed itself moved less. Scrolling back to the top then gave back only
+     * as much as the feed moved, and the bottom tabs stopped short, over the gesture handle. Facebook's
+     * own snap back works by scrolling the feed up, which can't happen at the top. Any other distance,
+     * paused, before the settings are ready or on a failure, it's Facebook's own.
+     *
+     * <p>The view comes in as an Object. When Facebook has no manager the register still holds that
+     * null manager, and ART's verifier merges the two paths to Object, so a View parameter had it
+     * reject the whole class and Facebook didn't start (S22, 588, 2026-11-22). Only a list counts,
+     * as Facebook checks before it treats the view as one: a view that can't scroll at all would
+     * read as always at its top and pop the bars back on every scroll up.
+     */
+    public static int shownAtTop(@Nullable Object content, int distance) {
+        try {
+            if (distance >= 0 || !(content instanceof View)) return distance;
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || HushfacebookPause.isPaused()) return distance;
+            View list = (View) content;
+            if (!TranslucentBars.isList(list) || list.canScrollVertically(-1)) return distance;
+            HookStatus.bound(FAMILY, "bars back at the top");
+            HookStatus.counted(FAMILY, BARS_BACK_AT_TOP);
+            Logger.printDebug(() -> "Top bars: the feed is at its top, every bar comes all the way back");
+            return ALL_THE_WAY_BACK;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "bars back at the top", failure);
+            return distance;
+        }
+    }
+
+    /**
+     * The hook at the start of Facebook's nudge of the feed a few seconds after a cold start, which
+     * scrolls Home down a little on its own. True skips it. With the bar at the bottom set to slide
+     * away, that scroll took the top bar and the tab bar off screen before anything was touched, so
+     * Home opened scrolled with no tabs. Only while Hide the tab bar while scrolling slides the bar in
+     * this process; otherwise, paused, before the settings are ready or on a failure, the nudge runs.
+     */
+    public static boolean skipsOpeningNudge() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!slidOnOurSwitch || !Utils.settingsReady() || !Settings.TAB_BAR_SCROLL_AWAY.get()) return false;
+            HookStatus.bound(FAMILY, "opening nudge");
+            HookStatus.counted(FAMILY, NUDGE_SKIPPED);
+            Logger.printDebug(() -> "Top bars: Facebook's opening nudge of the feed skipped, the tab bar slides away");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "opening nudge", failure);
             return false;
         }
     }

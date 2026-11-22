@@ -70,8 +70,12 @@ class TabBarScrollAwayFixtureTest {
         val topHolders: List<ClassDef>,
         val entry: ClassDef,
         val pagerHolders: List<ClassDef>,
+        val controllers: List<ClassDef>,
+        val nudgeHolders: List<ClassDef>,
     ) {
-        fun context() = PatchContexts.of((gateHolders + gateClass + topHolders + entry + pagerHolders).distinctBy { it.type })
+        fun context() = PatchContexts.of(
+            (gateHolders + gateClass + topHolders + entry + pagerHolders + controllers + nudgeHolders).distinctBy { it.type },
+        )
     }
 
     private fun pieces(bundle: File): Pieces {
@@ -84,7 +88,96 @@ class TabBarScrollAwayFixtureTest {
         val entryType = scrollAwayEntryName(topScrollAwayViews(topHolders)).definingClass
         val pagerHolders = nonExtension(bundle, PAGER_INIT)
         assertTrue("$name: nothing is traced as \"$PAGER_INIT\"", pagerHolders.isNotEmpty())
-        return Pieces(holders, gateClass, topHolders, FixtureDex.classes(bundle, setOf(entryType)).values.single(), pagerHolders)
+        val controllers = nonExtension(bundle, CONTROLLER_SCROLL)
+        assertTrue("$name: nothing is traced as \"$CONTROLLER_SCROLL\"", controllers.isNotEmpty())
+        val nudgeHolders = nonExtension(bundle, COMPOSER_NUDGE)
+        assertTrue("$name: nothing schedules \"$COMPOSER_NUDGE\"", nudgeHolders.isNotEmpty())
+        return Pieces(holders, gateClass, topHolders, FixtureDex.classes(bundle, setOf(entryType)).values.single(), pagerHolders,
+            controllers, nudgeHolders)
+    }
+
+    @Test
+    fun `each declared build brings the bars all the way back at the feed's top and can skip the opening nudge`() {
+        val checked = mutableSetOf<String>()
+        for ((version, bundles) in declaredBundles()) {
+            for (bundle in bundles) {
+                val name = bundle.name
+                val pieces = pieces(bundle)
+                val step = barsShowStep(pieces.controllers)
+                val controller = pieces.controllers.single { it.type == step.definingClass }
+                assertEquals("$name: the show step takes the distance, which bars, and the entries",
+                    listOf("I", "Z", "Ljava/util/List;"), step.parameterTypes.map(CharSequence::toString))
+                // Negative control: the hide step has the same shape and comes before the trace name.
+                val scroll = controller.methods.single { method -> method.code().any { it.loads() == CONTROLLER_SCROLL } }
+                val stepCalls = scroll.code().withIndex().filter { (_, instruction) ->
+                    instruction.calls()?.startsWith("${controller.type}->${step.name}(") == true
+                }
+                val show = scroll.code().indexOfFirst { it.loads() == SHOW_BARS }
+                assertTrue("$name: the show step is called before \"$SHOW_BARS\"", stepCalls.isNotEmpty() && stepCalls.all { it.index > show })
+                val hideSteps = scroll.code().take(show).mapNotNull { it.calls() }
+                    .filter { it.startsWith("${controller.type}->") && it.endsWith("(IZLjava/util/List;)V") }.toSet()
+                assertTrue("$name: no hide step of the same shape before \"$SHOW_BARS\"", hideSteps.isNotEmpty())
+                assertTrue("$name: the hide step was taken for the show step", "${controller.type}->${step.name}(IZLjava/util/List;)V" !in hideSteps)
+
+                val (manager, content) = scrollContent(controller)
+                assertEquals("$name: the view the bars scroll with", "Landroid/view/View;", content.type)
+                assertEquals("$name: the manager is the controller's own field", controller.type, manager.definingClass)
+                assertEquals("$name: the view is read off the manager", manager.type, content.definingClass)
+
+                val (nudge, at) = openingNudge(pieces.nudgeHolders)
+                val nudgeCode = nudge.code()
+                assertTrue("$name: the nudge clears a Runnable right before the hook",
+                    nudgeCode[at - 1].opcode == Opcode.IPUT_OBJECT &&
+                        ((nudgeCode[at - 1] as ReferenceInstruction).reference as FieldReference).type == "Ljava/lang/Runnable;")
+                assertTrue("$name: the nudge doesn't ask whether the feed is at its top after the hook",
+                    nudgeCode.drop(at).any { it.calls()?.endsWith("->isAtTop()Z") == true })
+
+                val context = pieces.context()
+                tabBarScrollAwayPatch.execute(context)
+                val original = step.code()
+                val patchedStep = context.mutableClassDefBy(controller.type).methods.single { it.sameAs(step) }
+                val patched = patchedStep.code()
+                val where = "$name: ${step.definingClass}->${step.name}"
+                assertEquals("$where gains eight instructions", original.size + 8, patched.size)
+                assertEquals("$where: this is copied first", Opcode.MOVE_OBJECT_FROM16, patched[0].opcode)
+                val view = (patched[0] as OneRegisterInstruction).registerA
+                assertTrue("$where: the view goes in v$view, which isn't a local", view < step.localRegisterCount())
+                assertEquals("$where: the manager is read", manager.toString(),
+                    ((patched[1] as ReferenceInstruction).reference as FieldReference).toString())
+                assertEquals("$where: no manager skips the view", Opcode.IF_EQZ, patched[2].opcode)
+                assertEquals("$where: the view is read", content.toString(),
+                    ((patched[3] as ReferenceInstruction).reference as FieldReference).toString())
+                assertEquals("$where: the distance is copied down", Opcode.MOVE_FROM16, patched[4].opcode)
+                assertEquals("$where: then handed to the extension", SHOWN_AT_TOP, patched[5].calls())
+                val call = patched[5] as FiveRegisterInstruction
+                val moved = (patched[4] as OneRegisterInstruction).registerA
+                assertEquals("$where: with the view and the distance", listOf(view, moved), listOf(call.registerC, call.registerD))
+                // With no manager the view's register still holds the manager's type, and ART merges
+                // it with View to Object where the paths meet. A View parameter failed verification
+                // and Facebook didn't start (S22, 588, 2026-11-22).
+                assertEquals("$where: the view goes in as an Object, which every path into the call holds",
+                    "Ljava/lang/Object;", ((patched[5] as ReferenceInstruction).reference as MethodReference).parameterTypes.first().toString())
+                assertEquals("$where: the distance comes back", Opcode.MOVE_RESULT, patched[6].opcode)
+                assertEquals("$where: and goes back where Facebook reads it", Opcode.MOVE_FROM16, patched[7].opcode)
+                val distanceRegister = step.implementation!!.registerCount - 3
+                assertEquals("$where: into the distance's register", distanceRegister, (patched[7] as OneRegisterInstruction).registerA)
+                assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(8).map { it.opcode })
+                assertEquals("$where: no manager lands on the distance's copy", setOf(3, 4),
+                    ControlFlow.of(patchedStep).normal[2].toSet())
+
+                val patchedNudge = context.mutableClassDefBy(nudge.definingClass).methods.single { it.sameAs(nudge) }.code()
+                val nudgeWhere = "$name: ${nudge.definingClass}->run"
+                assertEquals("$nudgeWhere gains four instructions", nudgeCode.size + 4, patchedNudge.size)
+                assertEquals("$nudgeWhere: Facebook's code up to the clearing stays", nudgeCode.take(at).map { it.opcode },
+                    patchedNudge.take(at).map { it.opcode })
+                assertEquals("$nudgeWhere: the extension is asked", SKIPS_OPENING_NUDGE, patchedNudge[at].calls())
+                assertEquals("$nudgeWhere: a yes returns", Opcode.RETURN_VOID, patchedNudge[at + 3].opcode)
+                assertEquals("$nudgeWhere: Facebook's code after the hook stays", nudgeCode.drop(at).map { it.opcode },
+                    patchedNudge.drop(at + 4).map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
     }
 
     @Test

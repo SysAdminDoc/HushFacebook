@@ -26,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -66,6 +67,23 @@ internal const val DEACTIVATE_SCROLL_AWAY = "ScrollAwayNavigationController.deac
 internal const val REACTIVATE_SCROLL_AWAY = "ScrollAwayNavigationController.reactivateScrollaway"
 internal const val TOP_BARS_LET_GO = "$TAB_BAR_SCROLL_AWAY->topBarsLetGo()V"
 internal const val TOP_BARS_TAKEN_BACK = "$TAB_BAR_SCROLL_AWAY->topBarsTakenBack()V"
+
+/**
+ * The trace names inside Facebook's scroll-away controller: its scroll step, the part of that step
+ * that brings the bars back as the feed scrolls up, and its snap of the bars back into sight.
+ */
+internal const val CONTROLLER_SCROLL = "BaseScrollAwayNavigationController.onScroll"
+internal const val SHOW_BARS = "BaseScrollAwayNavigationController.showCurrentScrollAwayViews"
+internal const val SNAP_SHOWN = "BaseScrollAwayNavigationController.snapToFullyShown"
+internal const val SHOWN_AT_TOP = "$TAB_BAR_SCROLL_AWAY->shownAtTop(Ljava/lang/Object;I)I"
+
+/** The name Facebook schedules its nudge of the feed after a cold start under. */
+internal const val COMPOSER_NUDGE = "composerScrollNudge"
+internal const val SKIPS_OPENING_NUDGE = "$TAB_BAR_SCROLL_AWAY->skipsOpeningNudge()Z"
+
+private const val VIEW = "Landroid/view/View;"
+private const val RECYCLER_VIEW = "Landroidx/recyclerview/widget/RecyclerView;"
+private const val RUNNABLE = "Ljava/lang/Runnable;"
 
 private const val STRING = "Ljava/lang/String;"
 private const val SET_PADDING = "Landroid/view/View;->setPadding(IIII)V"
@@ -153,7 +171,158 @@ internal val tabBarScrollAwayPatch = bytecodePatch {
             )
             mutableClassDefBy(switch.definingClass).findMutableMethodOf(switch).tellsExtensionFirst(call)
         }
+        try {
+            val controllers = classDefByStrings(CONTROLLER_SCROLL, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+            val step = barsShowStep(controllers)
+            val (manager, content) = scrollContent(controllers.single { it.type == step.definingClass })
+            mutableClassDefBy(step.definingClass).findMutableMethodOf(step).showsBarsAtTop(manager, content)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the tab bar can stop short of the bottom as the feed comes back to its top")
+        }
+        try {
+            val (nudge, at) = openingNudge(
+                classDefByStrings(COMPOSER_NUDGE, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+            )
+            mutableClassDefBy(nudge.definingClass).findMutableMethodOf(nudge).skipsNudge(at)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a cold start can still open Home scrolled with the tab bar set to slide away")
+        }
     }
+}
+
+/**
+ * The step of Facebook's scroll-away controller that brings the bars back by a distance as the feed
+ * scrolls up (588 `LX/03Fg;->A0G`): the one method of its own class taking (int, boolean, List) that
+ * the method of [controllers] traced as [CONTROLLER_SCROLL] calls after it loads [SHOW_BARS]. The
+ * hide step before it has the same shape, so the trace name tells them apart. Refuses unless one.
+ */
+internal fun barsShowStep(controllers: List<ClassDef>): Method {
+    val steps = controllers.flatMap { controller ->
+        controller.methods.filter { method -> method.implementation?.instructions?.any { loadsString(it, CONTROLLER_SCROLL) } == true }
+            .flatMap { scroll ->
+                val code = scroll.implementation!!.instructions.toList()
+                val from = code.indexOfFirst { loadsString(it, SHOW_BARS) }
+                if (from < 0) emptyList() else code.drop(from).mapNotNull(::calledMethod).filter { called ->
+                    called.definingClass == controller.type && called.returnType == "V" &&
+                        called.parameterTypes.map(CharSequence::toString) == listOf("I", "Z", "Ljava/util/List;")
+                }.mapNotNull { called ->
+                    controller.methods.firstOrNull { it.name == called.name && MethodUtil.methodSignaturesMatch(it, called) }
+                }
+            }
+    }.distinctBy { "${it.definingClass}->${it.name}" }
+    return steps.singleOrNull()
+        ?: refuse("expected one step that brings the bars back after \"$SHOW_BARS\", found ${steps.size}")
+}
+
+/**
+ * Where [controller] keeps the view the bars scroll with (588 `LX/03Fg;->A07`, then that object's
+ * `A01`): in its method traced as [SNAP_SHOWN], a field read off this, then a View field read off
+ * what it gave and tested as a RecyclerView, which the snap scrolls. Refuses unless exactly one pair.
+ */
+internal fun scrollContent(controller: ClassDef): Pair<FieldReference, FieldReference> {
+    val pairs = controller.methods.filter { method ->
+        !AccessFlags.STATIC.isSet(method.accessFlags) &&
+            method.implementation?.instructions?.any { loadsString(it, SNAP_SHOWN) } == true
+    }.flatMap { snap ->
+        val code = snap.implementation!!.instructions.toList()
+        val self = snap.implementation!!.registerCount - snap.parameterTypes.sumOf { parameterSize(it.toString()) } - 1
+        code.indices.mapNotNull { at ->
+            val holder = code[at].takeIf { it.opcode == Opcode.IGET_OBJECT } as? TwoRegisterInstruction ?: return@mapNotNull null
+            if (holder.registerB != self) return@mapNotNull null
+            val view = (at + 1..minOf(at + 4, code.lastIndex)).firstOrNull { next ->
+                val read = code[next].takeIf { it.opcode == Opcode.IGET_OBJECT } as? TwoRegisterInstruction
+                read != null && read.registerB == holder.registerA &&
+                    ((read as ReferenceInstruction).reference as FieldReference).type == VIEW
+            } ?: return@mapNotNull null
+            val viewRegister = (code[view] as TwoRegisterInstruction).registerA
+            val tested = code.getOrNull(view + 1)?.takeIf { it.opcode == Opcode.INSTANCE_OF } as? TwoRegisterInstruction
+            if (tested == null || tested.registerB != viewRegister ||
+                ((tested as ReferenceInstruction).reference as TypeReference).type != RECYCLER_VIEW
+            ) return@mapNotNull null
+            ((code[at] as ReferenceInstruction).reference as FieldReference) to
+                ((code[view] as ReferenceInstruction).reference as FieldReference)
+        }
+    }.distinctBy { (manager, content) -> "$manager $content" }
+    return pairs.singleOrNull()
+        ?: refuse("expected one view the bars scroll with in ${controller.type}'s \"$SNAP_SHOWN\", found ${pairs.size}")
+}
+
+/**
+ * Puts the extension at the start of [this], the step that brings the bars back: the view they
+ * scroll with ([content] read off [manager], read off this, null when there's no manager) and the
+ * distance go in, and the distance comes back, far enough to bring every bar all the way back once
+ * the view can't scroll up any more. Two locals carry them, since this and the distance may sit
+ * past v15. With no manager the view's local still holds the manager, so ART types it as Object
+ * where the two paths meet and the extension takes an Object: a View there failed verification.
+ */
+internal fun MutableMethod.showsBarsAtTop(manager: FieldReference, content: FieldReference) {
+    val self = implementation!!.registerCount - parameterTypes.sumOf { parameterSize(it.toString()) } - 1
+    val distance = parameterRegisters(this).single { (type) -> type == "I" }.second
+    if (self > 255 || distance > 255) refuse("$definingClass->$name keeps this or the distance past v255")
+    // A jump back to the start would ask twice, harmless, but the method has never had one.
+    val first = implementation!!.instructions[0] as BuilderInstruction
+    if (first.location.labels.isNotEmpty()) refuse("$definingClass->$name has a jump back to its start")
+    val (view, moved) = freeLocalsAt(PATCH, 0, 2, highest = 15)
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v$view, v$self
+            iget-object v$view, v$view, $manager
+            if-eqz v$view, :ask
+            iget-object v$view, v$view, $content
+            :ask
+            move/from16 v$moved, v$distance
+            invoke-static { v$view, v$moved }, $SHOWN_AT_TOP
+            move-result v$moved
+            move/from16 v$distance, v$moved
+        """,
+    )
+}
+
+/**
+ * Facebook's nudge of the feed a few seconds after a cold start (588 `LX/03o7;->run`): the `run()V`
+ * of [holders] that loads [COMPOSER_NUDGE] to schedule itself again, and the index right after it
+ * clears its own pending task, its first write of a null Runnable field. Skipping from there leaves
+ * that field clear, as a finished nudge does. Refuses unless exactly one such run.
+ */
+internal fun openingNudge(holders: List<ClassDef>): Pair<Method, Int> {
+    val runs = holders.flatMap { holder ->
+        holder.methods.filter { method ->
+            method.name == "run" && method.returnType == "V" && method.parameterTypes.isEmpty() &&
+                method.implementation?.instructions?.any { loadsString(it, COMPOSER_NUDGE) } == true
+        }
+    }
+    val run = runs.singleOrNull() ?: refuse("expected one run of the nudge scheduled as \"$COMPOSER_NUDGE\", found ${runs.size}")
+    val code = run.implementation!!.instructions.toList()
+    val cleared = code.indexOfFirst {
+        it.opcode == Opcode.IPUT_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).type == RUNNABLE
+    }
+    val nulled = code.getOrNull(cleared - 1)?.takeIf { it.opcode == Opcode.CONST_4 } as? OneRegisterInstruction
+    if (cleared < 0 || nulled == null || nulled.registerA != (code[cleared] as TwoRegisterInstruction).registerA ||
+        (code[cleared - 1] as NarrowLiteralInstruction).narrowLiteral != 0
+    ) refuse("${run.definingClass}->run doesn't start by clearing its pending task")
+    return run to cleared + 1
+}
+
+/**
+ * Puts the extension at [at] in the nudge's run: a yes returns before the feed is scrolled, and a
+ * no goes on to Facebook's next instruction. Nothing may jump to [at], since that would skip the ask.
+ */
+internal fun MutableMethod.skipsNudge(at: Int) {
+    val next = implementation!!.instructions[at] as BuilderInstruction
+    if (next.location.labels.isNotEmpty()) refuse("$definingClass->$name has a jump past the clearing of its pending task")
+    val register = freeLocalsAt(PATCH, at, 1, highest = 255).single()
+    addInstructionsWithLabels(
+        at,
+        """
+            invoke-static { }, $SKIPS_OPENING_NUDGE
+            move-result v$register
+            if-eqz v$register, :nudge
+            return-void
+        """,
+        ExternalLabel("nudge", getInstruction(at)),
+    )
 }
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
