@@ -2310,6 +2310,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Segurar o vídeo de uma publicação também abre as reações dela. Isso vem antes de Pressionar e segurar abre os comentários. Com Segurar um vídeo do feed para 2x ativado, ele vence e o vídeo toca rápido.
 Reaction	Reação
 Pick one each time	Escolher toda vez
+Slide to pick one	Deslizar para escolher
 Like	Curtir
 Love	Amei
 Care	Força
@@ -2317,9 +2318,11 @@ Haha	Haha
 Wow	Uau
 Sad	Triste
 Angry	Grr
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Escolher toda vez. As reações abrem sobre a publicação, então deslize até uma e solte, ou solte e toque em uma.
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	Escolher toda vez. As reações abrem perto do seu dedo, então deslize até uma e solte, ou solte e toque em uma. Um toque em qualquer outro lugar as fecha.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	Deslizar para escolher. As reações abrem perto do seu dedo, então deslize até uma e solte. Soltar em qualquer outro lugar as fecha.
 %1$s. Holding a post gives it straight away.	%1$s. Segurar uma publicação já dá essa reação na hora.
 Holding a post to react will open the reactions to pick from.	Segurar uma publicação para reagir vai abrir as reações para escolher.
+Holding a post to react will open the reactions to slide to one.	Segurar uma publicação para reagir vai abrir as reações para deslizar até uma.
 Holding a post to react will give %1$s.	Segurar uma publicação para reagir vai dar %1$s.
 Select text	Selecionar texto
 Done	Concluído

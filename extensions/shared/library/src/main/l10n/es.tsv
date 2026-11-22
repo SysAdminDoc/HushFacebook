@@ -2424,6 +2424,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Mantener pulsado el video de una publicación también abre sus reacciones. Va antes que Mantener pulsado abre los comentarios. Con Mantener pulsado un vídeo del feed para 2x activado, ese gana y el video se reproduce rápido.
 Reaction	Reacción
 Pick one each time	Elegir cada vez
+Slide to pick one	Deslizar para elegir
 Like	Me gusta
 Love	Me encanta
 Care	Me importa
@@ -2431,9 +2432,11 @@ Haha	Me divierte
 Wow	Me asombra
 Sad	Me entristece
 Angry	Me enoja
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Elegir cada vez. Las reacciones se abren sobre la publicación, así que desliza hasta una y suelta, o suelta y toca una.
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	Elegir cada vez. Las reacciones se abren junto a tu dedo, así que desliza hasta una y suelta, o suelta y toca una. Un toque en cualquier otro lugar las cierra.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	Deslizar para elegir. Las reacciones se abren junto a tu dedo, así que desliza hasta una y suelta. Soltar en cualquier otro lugar las cierra.
 %1$s. Holding a post gives it straight away.	%1$s. Mantener pulsada una publicación la da al instante.
 Holding a post to react will open the reactions to pick from.	Mantener pulsada una publicación para reaccionar abrirá las reacciones para elegir.
+Holding a post to react will open the reactions to slide to one.	Mantener pulsada una publicación para reaccionar abrirá las reacciones para deslizar hasta una.
 Holding a post to react will give %1$s.	Mantener pulsada una publicación para reaccionar dará %1$s.
 Select text	Seleccionar texto
 Done	Listo

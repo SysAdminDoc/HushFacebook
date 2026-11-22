@@ -2424,6 +2424,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Wenn du das Video eines Beitrags gedrückt hältst, öffnen sich ebenfalls seine Reaktionen. Das hat Vorrang vor „Gedrückthalten öffnet Kommentare“. Ist „Feed-Video für 2x gedrückt halten“ an, gewinnt dieser Schalter und das Video läuft schneller.
 Reaction	Reaktion
 Pick one each time	Jedes Mal auswählen
+Slide to pick one	Zum Auswählen wischen
 Like	Gefällt mir
 Love	Love
 Care	Umarmung
@@ -2431,9 +2432,11 @@ Haha	Haha
 Wow	Wow
 Sad	Traurig
 Angry	Wütend
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Jedes Mal auswählen. Die Reaktionen öffnen sich über dem Beitrag. Wisch zu einer und lass los, oder lass los und tippe auf eine.
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	Jedes Mal auswählen. Die Reaktionen öffnen sich bei deinem Finger. Wisch zu einer und lass los, oder lass los und tippe auf eine. Ein Tippen an einer anderen Stelle schließt sie.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	Zum Auswählen wischen. Die Reaktionen öffnen sich bei deinem Finger. Wisch zu einer und lass los. Lässt du woanders los, schließen sie sich.
 %1$s. Holding a post gives it straight away.	%1$s. Wenn du einen Beitrag gedrückt hältst, wird sie sofort vergeben.
 Holding a post to react will open the reactions to pick from.	Wenn du einen Beitrag zum Reagieren gedrückt hältst, öffnen sich die Reaktionen zum Auswählen.
+Holding a post to react will open the reactions to slide to one.	Wenn du einen Beitrag zum Reagieren gedrückt hältst, öffnen sich die Reaktionen, um zu einer zu wischen.
 Holding a post to react will give %1$s.	Wenn du einen Beitrag zum Reagieren gedrückt hältst, wird %1$s vergeben.
 Select text	Text auswählen
 Done	Fertig

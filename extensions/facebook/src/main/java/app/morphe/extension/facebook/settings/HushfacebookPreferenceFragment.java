@@ -2042,6 +2042,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 return L10n.t("Sad");
             case ANGRY:
                 return L10n.t("Angry");
+            case SLIDE:
+                return L10n.t("Slide to pick one");
             default:
                 return L10n.t("Pick one each time");
         }
@@ -2050,8 +2052,12 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     /** What the choice does, for the row's summary. */
     static String holdReactionSummary(HoldReaction reaction) {
         if (reaction == HoldReaction.PICK) {
-            return L10n.t("Pick one each time. The reactions open over the post, so slide to one and let go, or let go "
-                    + "and tap one.");
+            return L10n.t("Pick one each time. The reactions open by your finger, so slide to one and let go, or let go "
+                    + "and tap one. A tap anywhere else closes them.");
+        }
+        if (reaction == HoldReaction.SLIDE) {
+            return L10n.t("Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go "
+                    + "anywhere else closes them.");
         }
         return L10n.f("%1$s. Holding a post gives it straight away.", holdReactionLabel(reaction));
     }

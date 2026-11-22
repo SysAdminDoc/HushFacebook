@@ -299,7 +299,7 @@ public final class PostLongPress {
      * reaction tray when the hold reacts, its comments otherwise. Says whether it happened.
      */
     private static boolean act(View row, List<View> footer) {
-        return reacting ? ReactionHold.start(footer.get(0), row) : open(footer.get(1));
+        return reacting ? ReactionHold.start(footer.get(0), row, downY) : open(footer.get(1));
     }
 
     /** The photo's own long press was timed from the same touch, so it would run next: cancels it. */

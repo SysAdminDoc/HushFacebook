@@ -15,7 +15,10 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.comments.options.DOCK_NAME
 import app.morphe.patches.facebook.comments.options.UFI_DOCK
+import app.morphe.patches.facebook.comments.options.reactionPicker
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegister
@@ -46,6 +49,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -55,6 +59,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
@@ -122,7 +127,16 @@ internal class GestureAnchors(
     val holderInit: Method,
     /** The reaction tray's constructors, which hand each tray to Hold a feed photo or video to react. */
     val docks: List<Method>,
+    /** The onTouch of the touch interceptor the reaction picker gives the tray's popup, and how it reads the tray's pill. */
+    val trayTouch: TrayTouch,
 )
+
+/**
+ * The tray popup's touch interceptor's [touch], and the fields it reads the tray's pill through: its
+ * own [controller] field holding the picker, the picker's [dock] field holding the tray, and the
+ * tray's [pill] drawable, the one whose bounds [touch] tests a press against.
+ */
+internal class TrayTouch(val touch: Method, val controller: FieldReference, val dock: FieldReference, val pill: FieldReference)
 
 /**
  * One long-press handler's `invoke` and the static field of the Unit it returns, and its constructor
@@ -364,7 +378,73 @@ internal fun BytecodePatchContext.findGestureAnchors(): GestureAnchors {
     keyboardStore(params, keyboard)
         ?: refuse("expected $FEEDBACK_PARAMS's constructor to store ${keyboard.name} once, from a register nothing reads after the store")
     val docks = dockConstructors(classDefByOrNull(UFI_DOCK) ?: refuse("this build has no $UFI_DOCK"))
-    return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch, params, keyboard, sheet, holderInit, docks)
+    val picker = reactionPicker(
+        classDefByStrings(DOCK_NAME, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+    )
+    val trayTouch = trayTouch(picker) { type -> classDefByOrNull(type) }
+    return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch, params, keyboard, sheet, holderInit, docks, trayTouch)
+}
+
+/**
+ * The onTouch of the touch interceptor [picker], the method that opens the reaction tray, gives the
+ * tray's popup: the class it news up last before its one call to setTouchInterceptor, which
+ * implements OnTouchListener. Its onTouch needs four free locals for the hook, and reads the tray's
+ * pill as [trayPill] says.
+ */
+internal fun trayTouch(picker: Method, classOf: (String) -> ClassDef?): TrayTouch {
+    val code = picker.implementation!!.instructions.toList()
+    val sets = code.withIndex().filter { (_, instruction) ->
+        instruction.opcode == Opcode.INVOKE_VIRTUAL &&
+            ((instruction as ReferenceInstruction).reference as? MethodReference)?.let {
+                it.definingClass == POPUP_WINDOW && it.name == SET_TOUCH_INTERCEPTOR
+            } == true
+    }
+    val set = sets.singleOrNull()
+        ?: refuse("expected ${picker.definingClass}->${picker.name} to set one touch interceptor, found ${sets.size}")
+    val made = code.subList(0, set.index).lastOrNull { it.opcode == Opcode.NEW_INSTANCE }
+        ?: refuse("${picker.definingClass}->${picker.name} news up nothing before setTouchInterceptor")
+    val type = ((made as ReferenceInstruction).reference as TypeReference).type
+    val listener = classOf(type) ?: refuse("this build has no $type, the tray's touch interceptor")
+    if (listener.interfaces.none { it.toString() == ON_TOUCH_LISTENER }) refuse("$type isn't an OnTouchListener")
+    val touches = listener.methods.filter { method ->
+        method.name == "onTouch" && method.returnType == "Z" && method.implementation != null &&
+            method.parameterTypes.map(CharSequence::toString) == listOf(VIEW, MOTION)
+    }
+    val touch = touches.singleOrNull() ?: refuse("expected $type to have one onTouch(View, MotionEvent), found ${touches.size}")
+    if (touch.localRegisterCount() < 4) refuse("$type's onTouch has ${touch.localRegisterCount()} local registers, the hook needs 4")
+    return trayPill(touch)
+}
+
+/**
+ * How [touch], the tray popup's touch interceptor, reads the tray's pill: the one drawable it calls
+ * getBounds on, read from a field just before; the one field it reads the tray (that field's class)
+ * from; and its own one field holding what the tray is read from.
+ */
+internal fun trayPill(touch: Method): TrayTouch {
+    val type = touch.definingClass
+    val body = touch.implementation!!.instructions.toList()
+    val measures = body.withIndex().filter { (_, instruction) ->
+        instruction.opcode == Opcode.INVOKE_VIRTUAL &&
+            ((instruction as ReferenceInstruction).reference as? MethodReference)?.let {
+                it.definingClass == DRAWABLE && it.name == GET_BOUNDS
+            } == true
+    }
+    val measure = measures.singleOrNull()
+        ?: refuse("expected $type's onTouch to measure one drawable, found ${measures.size}")
+    val read = body.getOrNull(measure.index - 1)?.takeIf { it.opcode == Opcode.IGET_OBJECT }
+    val pill = (read as? ReferenceInstruction)?.reference as? FieldReference
+    if (pill == null || pill.type != DRAWABLE ||
+        (read as TwoRegisterInstruction).registerA != (measure.value as FiveRegisterInstruction).registerC
+    ) refuse("$type's onTouch doesn't read the drawable it measures from a field just before")
+    fun fieldsRead(wanted: (FieldReference) -> Boolean) = body.filter { it.opcode == Opcode.IGET_OBJECT }
+        .mapNotNull { (it as ReferenceInstruction).reference as? FieldReference }.filter(wanted).distinct()
+    val docks = fieldsRead { it.type == pill.definingClass }
+    val dock = docks.singleOrNull()
+        ?: refuse("expected $type's onTouch to read the tray (${pill.definingClass}) from one field, found ${docks.size}")
+    val controllers = fieldsRead { it.definingClass == type && it.type == dock.definingClass }
+    val controller = controllers.singleOrNull()
+        ?: refuse("expected $type to read ${dock.definingClass} from one field of its own, found ${controllers.size}")
+    return TrayTouch(touch, controller, dock, pill)
 }
 
 /** Every constructor of the reaction tray, each still holding the tray in this at every return. */
@@ -514,6 +594,34 @@ internal fun BytecodePatchContext.applyGestureAnchors(anchors: GestureAnchors) {
             made.addInstructionsAtControlFlowLabel(index, "invoke-static/range { p0 .. p0 }, $DOCK_MADE")
         }
     }
+
+    // First thing in the tray popup's touch interceptor: a press off a hold's tray closes it, and the
+    // interceptor returns true before Facebook reads the touch as a pick. The tray's pill is read the
+    // way the interceptor reads it, null when there's no tray to read it from.
+    val tray = anchors.trayTouch
+    fun FieldReference.descriptor() = "${this.definingClass}->${this.name}:${this.type}"
+    val trayTouch = mutableClassDefBy(tray.touch.definingClass).findMutableMethodOf(tray.touch)
+    trayTouch.addInstructionsWithLabels(
+        0,
+        """
+            const/4 v3, 0x0
+            move-object/from16 v0, p0
+            iget-object v0, v0, ${tray.controller.descriptor()}
+            if-eqz v0, :ask
+            iget-object v0, v0, ${tray.dock.descriptor()}
+            if-eqz v0, :ask
+            iget-object v3, v0, ${tray.pill.descriptor()}
+            :ask
+            move-object/from16 v1, p1
+            move-object/from16 v2, p2
+            invoke-static/range { v1 .. v3 }, $TRAY_TOUCHED
+            move-result v0
+            if-eqz v0, :stock
+            const/4 v0, 0x1
+            return v0
+        """,
+        ExternalLabel("stock", trayTouch.getInstruction(0)),
+    )
 
     // Every touch on a Facebook screen, with the activity, for a press held on a feed post. The
     // extension may turn the rest of a gesture it took into a cancel; the range form borrows no register.

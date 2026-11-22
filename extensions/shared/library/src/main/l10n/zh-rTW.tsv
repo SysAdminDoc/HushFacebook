@@ -2428,6 +2428,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	長按貼文的影片也會開啟它的心情選項。它優先於「長按開啟留言」。開啟「長按動態消息影片以 2 倍速播放」時，以該開關為準，影片會快速播放。
 Reaction	心情
 Pick one each time	每次都選擇
+Slide to pick one	滑動選擇
 Like	讚
 Love	大心
 Care	加油
@@ -2435,9 +2436,11 @@ Haha	哈
 Wow	哇
 Sad	嗚
 Angry	怒
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	每次都選擇。心情選項會在貼文上方開啟，滑到其中一個後放開，或放開後點一個。
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	每次都選擇。心情選項會在手指旁開啟，滑到其中一個後放開，或放開後點一個。點其他任何地方會關閉它們.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	滑動選擇。心情選項會在手指旁開啟，滑到其中一個後放開。在其他地方放開會關閉它們.
 %1$s. Holding a post gives it straight away.	%1$s。長按貼文會立即傳達這個心情。
 Holding a post to react will open the reactions to pick from.	長按貼文來傳達心情將開啟心情選項讓你選擇。
+Holding a post to react will open the reactions to slide to one.	長按貼文來傳達心情將開啟心情選項讓你滑動選擇.
 Holding a post to react will give %1$s.	長按貼文來傳達心情將傳達%1$s。
 Select text	選取文字
 Done	完成

@@ -7,12 +7,15 @@ package app.morphe.extension.facebook.reels;
 import androidx.annotation.Nullable;
 
 /**
- * What Hold to react gives (#454): the reaction tray to pick from, or one reaction straight
- * away. {@link #index} is the reaction's place in Facebook's tray, which has listed Like, Love, Care,
- * Haha, Wow, Sad and Angry in that order since Care came in.
+ * What Hold to react gives (#454): the reaction tray to pick from, by sliding to one or letting go
+ * and tapping one, the tray to slide to one only, or one reaction straight away. {@link #index} is
+ * the reaction's place in Facebook's tray, which has listed Like, Love, Care, Haha, Wow, Sad and
+ * Angry in that order since Care came in.
  */
 public enum HoldReaction {
     PICK("pick", -1),
+    /** The tray, picked from by sliding only: letting go anywhere but on a reaction closes it. */
+    SLIDE("slide", -1),
     LIKE("like", 0),
     LOVE("love", 1),
     CARE("care", 2),
@@ -29,6 +32,11 @@ public enum HoldReaction {
     HoldReaction(String fileValue, int index) {
         this.fileValue = fileValue;
         this.index = index;
+    }
+
+    /** Whether the hold opens the tray to pick from, rather than giving one reaction. */
+    public boolean picks() {
+        return index < 0;
     }
 
     /** The choice a settings file names, or null when it names none this build knows. */

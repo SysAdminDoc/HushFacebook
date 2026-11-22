@@ -2424,6 +2424,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Menahan video postingan juga membuka reaksinya. Ini didahulukan sebelum Tekan lama membuka komentar. Jika Tahan video feed untuk 2x aktif, sakelar itu yang didahulukan dan video diputar cepat.
 Reaction	Reaksi
 Pick one each time	Pilih setiap kali
+Slide to pick one	Geser untuk memilih
 Like	Suka
 Love	Super
 Care	Peduli
@@ -2431,9 +2432,11 @@ Haha	Haha
 Wow	Wow
 Sad	Sedih
 Angry	Marah
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Pilih setiap kali. Reaksi terbuka di atas postingan, jadi geser ke salah satunya lalu lepaskan, atau lepaskan lalu ketuk salah satunya.
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	Pilih setiap kali. Reaksi terbuka di dekat jarimu, jadi geser ke salah satunya lalu lepaskan, atau lepaskan lalu ketuk salah satunya. Ketukan di tempat lain akan menutupnya.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	Geser untuk memilih. Reaksi terbuka di dekat jarimu, jadi geser ke salah satunya lalu lepaskan. Melepaskan di tempat lain akan menutupnya.
 %1$s. Holding a post gives it straight away.	%1$s. Menahan postingan langsung memberikannya.
 Holding a post to react will open the reactions to pick from.	Menahan postingan untuk bereaksi akan membuka reaksi untuk dipilih.
+Holding a post to react will open the reactions to slide to one.	Menahan postingan untuk bereaksi akan membuka reaksi untuk digeser ke salah satunya.
 Holding a post to react will give %1$s.	Menahan postingan untuk bereaksi akan memberikan %1$s.
 Select text	Pilih teks
 Done	Selesai

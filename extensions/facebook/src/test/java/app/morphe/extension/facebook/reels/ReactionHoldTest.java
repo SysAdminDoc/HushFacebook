@@ -11,6 +11,9 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -19,9 +22,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.widget.FrameLayout;
+import android.widget.PopupWindow;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -74,7 +79,18 @@ public class ReactionHoldTest {
     /** How many reactions the tray Like's long press shows lists; 0 shows none. */
     private int trayLists = 7;
     /** The last tray shown. */
-    private View tray;
+    private Tray tray;
+    /** Whether the tray shows in a popup window over Like, as Facebook shows it, rather than inside the screen. */
+    private boolean trayInPopup;
+    /** The popup the last tray shows in, when {@link #trayInPopup}. */
+    private PopupWindow popup;
+    /** Where Facebook puts the popup's top: over Like, the tray's height above it. */
+    private static final int TRAY_TOP = 628;
+    private static final int TRAY_HEIGHT = 160;
+    /** What Facebook's touch interceptor got after the patch's question, as the action. */
+    private final List<String> interceptor = new ArrayList<>();
+    /** Where a lift on Like gives a reaction, as Facebook's tray does under the finger; -1 for nowhere. */
+    private int pickAtX = -1;
     /** The player whose video the photo becomes in {@link #photoPlaysAVideo}, held here since the hold keeps players weakly. */
     private final Object player = new Object();
 
@@ -98,6 +114,7 @@ public class ReactionHoldTest {
 
     @After
     public void restore() {
+        if (popup != null && popup.isShowing()) popup.dismiss();
         PostLongPress.reset();
         FeedVideoHold.reset();
         Settings.HOLD_PHOTO_TO_REACT.resetToDefault();
@@ -163,6 +180,22 @@ public class ReactionHoldTest {
         likeButton.setOnTouchListener((v, event) -> {
             like.add(MotionEvent.actionToString(event.getActionMasked()) + " " + Math.round(event.getX()) + ","
                     + Math.round(event.getY()) + " " + Math.round(event.getRawX()) + "," + Math.round(event.getRawY()));
+            // Facebook's tray gives the reaction under a finger that lets go on one, and stops taking
+            // touches as it closes. 588 closes it on every lift (LX/039O;->A01 calls A02, which makes
+            // the popup untouchable), and a lift that picked nothing opens it to tap a moment later.
+            if (event.getActionMasked() == MotionEvent.ACTION_UP && popup != null) {
+                popup.setTouchable(false);
+                popup.update();
+                if (Math.round(event.getRawX()) == pickAtX) {
+                    picked.add(-1);
+                } else {
+                    PopupWindow shown = popup;
+                    v.postDelayed(() -> {
+                        shown.setTouchable(true);
+                        shown.update();
+                    }, 16);
+                }
+            }
             return true;
         });
         place(bar, likeButton, 0, 0, 162, 124);
@@ -174,19 +207,70 @@ public class ReactionHoldTest {
     private void showTray() {
         tray = new Tray(activity, trayLists, picked);
         ReactionHold.dockMade(tray);
+        if (trayInPopup) {
+            // As 588's reaction picker does: a focusable popup the tray's size over Like, placed from the
+            // top of the screen, whose touch interceptor takes every touch, the patch asking first with
+            // the tray's pill.
+            popup = new PopupWindow(tray, 900, TRAY_HEIGHT);
+            popup.setTouchable(true);
+            popup.setFocusable(true);
+            popup.setClippingEnabled(false);
+            popup.setBackgroundDrawable(new ColorDrawable(0));
+            Tray shown = tray;
+            popup.setTouchInterceptor((v, event) -> {
+                if (ReactionHold.trayTouched(v, event, shown.pill)) return true;
+                interceptor.add(MotionEvent.actionToString(event.getActionMasked()));
+                return true;
+            });
+            popup.showAtLocation(root, Gravity.TOP | Gravity.LEFT, 100, TRAY_TOP);
+            return;
+        }
         place(root, tray, 100, 400, 1000, 560);
         layOut();
     }
 
-    /** The reaction tray, listing [count] reactions to a screen reader and noting which one it clicks. */
+    /** The layout of the popup the tray shows in. */
+    private WindowManager.LayoutParams trayWindow() {
+        return (WindowManager.LayoutParams) tray.getRootView().getLayoutParams();
+    }
+
+    /** A touch on the screen while the popup shows, which goes to the popup: the patch's question, then Facebook's interceptor. */
+    private MotionEvent onPopup(int action, int x, int y) {
+        MotionEvent event = event(action, x, y);
+        tray.getRootView().dispatchTouchEvent(event);
+        return event;
+    }
+
+    /** Where on the screen the tray's [n]th reaction sits. */
+    private Rect reaction(int n) {
+        return tray.reaction(n);
+    }
+
+    /**
+     * The reaction tray, listing [count] reactions to a screen reader and noting which one it clicks.
+     * As 588's does on a phone with no screen reader running, its accessibility helper builds no
+     * reaction's node (none has a label, and Facebook's ExploreByTouchHelper throws), and it draws the
+     * reactions on a pill that ends short of its popup's bottom.
+     */
     private static final class Tray extends View {
         private final int count;
         private final List<Integer> picked;
+        /** The pill behind the reactions, in the tray's own coordinates. */
+        final Drawable pill = new ColorDrawable(0xFFFFFFFF);
 
         Tray(Context context, int count, List<Integer> picked) {
             super(context);
             this.count = count;
             this.picked = picked;
+            pill.setBounds(10, 20, 880, 140);
+        }
+
+        /** Where on the screen reaction [n] sits: in a row across the pill, 100 px each, 20 apart. */
+        Rect reaction(int n) {
+            int[] at = new int[2];
+            getLocationOnScreen(at);
+            int left = at[0] + 20 + n * 120;
+            return new Rect(left, at[1] + 30, left + 100, at[1] + 130);
         }
 
         @Override
@@ -194,10 +278,11 @@ public class ReactionHoldTest {
             return new AccessibilityNodeProvider() {
                 @Override
                 public AccessibilityNodeInfo createAccessibilityNodeInfo(int id) {
-                    AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain(Tray.this);
-                    if (id == View.NO_ID) {
-                        for (int i = 0; i < count; i++) info.addChild(Tray.this, i);
+                    if (id != View.NO_ID) {
+                        throw new RuntimeException("Callbacks must add text or a content description in populateNodeForVirtualViewId()");
                     }
+                    AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain(Tray.this);
+                    for (int i = 0; i < count; i++) info.addChild(Tray.this, i);
                     return info;
                 }
 
@@ -290,6 +375,106 @@ public class ReactionHoldTest {
         assertEquals(MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at[0], at[1])).getActionMasked());
         holdLongEnough();
         assertEquals(3, like.size());
+    }
+
+    /** A tray to pick from opens by the finger: its popup moves up by how far the finger is above Like. */
+    @Test
+    public void aTrayToPickFromOpensByTheFinger() {
+        trayInPopup = true;
+        int[] at = middleOf(photo);
+        int[] likeAt = new int[2];
+        likeButton.getLocationOnScreen(likeAt);
+        int by = Math.round(at[1] - (likeAt[1] + likeButton.getHeight() / 2f));
+        assertTrue("the finger is above Like: " + by, by < -200);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertEquals(List.of("long"), like);
+        assertEquals("the tray's window moved up by the finger's height above Like", TRAY_TOP + by, trayWindow().y);
+        assertTrue(statusLine(), statusLine().contains(ReactionHold.PLACED + " 1"));
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+        waitFor(100);
+        assertTrue("Pick one each time leaves the tray open to tap", popup.isShowing());
+        assertEquals("and moves it once", TRAY_TOP + by, trayWindow().y);
+    }
+
+    /**
+     * A press off the reactions of a tray a hold left open closes it and gives nothing, even in the
+     * tray's reach below them, where Facebook would pick the reaction above the finger. A press on a
+     * reaction goes on to Facebook.
+     */
+    @Test
+    public void aTapOffTheReactionsClosesTheHoldsTrayAndGivesNothing() {
+        trayInPopup = true;
+        int[] at = middleOf(photo);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+        waitFor(100);
+        assertTrue("the lift leaves the tray open to tap", popup.isShowing());
+
+        Rect love = reaction(1);
+        onPopup(MotionEvent.ACTION_DOWN, love.centerX(), love.centerY());
+        onPopup(MotionEvent.ACTION_UP, love.centerX(), love.centerY());
+        assertEquals("a tap on a reaction is Facebook's", List.of("ACTION_DOWN", "ACTION_UP"), interceptor);
+        assertTrue(popup.isShowing());
+
+        Rect wow = reaction(4);
+        onPopup(MotionEvent.ACTION_DOWN, wow.centerX(), wow.bottom + 20);
+        onPopup(MotionEvent.ACTION_MOVE, wow.centerX(), wow.bottom + 25);
+        onPopup(MotionEvent.ACTION_UP, wow.centerX(), wow.bottom + 25);
+        assertEquals("Facebook never saw the press under Wow", 2, interceptor.size());
+        waitFor(500);
+        assertFalse("the press closed the tray", popup.isShowing());
+        assertTrue(statusLine(), statusLine().contains(ReactionHold.CLOSED_BY_TAP + " 1"));
+        assertTrue("and picked nothing: " + picked, picked.isEmpty());
+    }
+
+    /** The tray Like's own long press opens isn't a hold's, so every press on it stays Facebook's. */
+    @Test
+    public void aTrayLikesOwnLongPressOpenedIsLeftToFacebook() {
+        trayInPopup = true;
+        int[] at = middleOf(likeButton);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        likeButton.performLongClick();
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+        assertTrue(popup.isShowing());
+        assertEquals("Facebook's own tray stays where Facebook put it", TRAY_TOP, trayWindow().y);
+
+        Rect wow = reaction(4);
+        onPopup(MotionEvent.ACTION_DOWN, wow.centerX(), wow.bottom + 20);
+        onPopup(MotionEvent.ACTION_UP, wow.centerX(), wow.bottom + 20);
+        assertEquals(List.of("ACTION_DOWN", "ACTION_UP"), interceptor);
+        assertTrue(popup.isShowing());
+    }
+
+    /**
+     * Slide to pick one: letting go without having picked closes the tray Facebook would leave open,
+     * and a slide that lets go on a reaction gives it, leaving the closing tray to Facebook.
+     */
+    @Test
+    public void slideToPickOneClosesATrayTheLiftLeftOpen() {
+        trayInPopup = true;
+        Settings.HOLD_REACTION.save(HoldReaction.SLIDE);
+        int[] at = middleOf(photo);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertTrue(popup.isShowing());
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+        waitFor(500);
+        assertFalse("letting go off the reactions closed the tray", popup.isShowing());
+        assertTrue(statusLine(), statusLine().contains(ReactionHold.CLOSED_ON_LIFT + " 1"));
+        assertTrue(picked.toString(), picked.isEmpty());
+
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        Rect haha = reaction(3);
+        pickAtX = haha.centerX();
+        send(event(MotionEvent.ACTION_MOVE, haha.centerX(), haha.centerY()));
+        send(event(MotionEvent.ACTION_UP, haha.centerX(), haha.centerY()));
+        waitFor(500);
+        assertEquals("the slide gave the reaction it let go on", List.of(-1), picked);
+        assertTrue("the closing tray is Facebook's to close", popup.isShowing());
+        assertTrue(statusLine(), statusLine().contains(ReactionHold.CLOSED_ON_LIFT + " 1"));
     }
 
     @Test

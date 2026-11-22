@@ -692,6 +692,7 @@ public class SettingsBackupPreference extends Preference {
     /** The sentence that says what a hold to react gives after an import, for a photo and a video alike (#454). */
     static String holdReactionSentence(HoldReaction reaction) {
         if (reaction == HoldReaction.PICK) return L10n.t("Holding a post to react will open the reactions to pick from.");
+        if (reaction == HoldReaction.SLIDE) return L10n.t("Holding a post to react will open the reactions to slide to one.");
         return L10n.f("Holding a post to react will give %1$s.", HushfacebookPreferenceFragment.holdReactionLabel(reaction));
     }
 

@@ -2424,6 +2424,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Bir gönderinin videosunu basılı tutmak da tepkilerini açar. Bu, Basılı tutma yorumları açar'dan önce gelir. 2x için akıştaki videoya basılı tut açıkken o kazanır ve video hızlı oynar.
 Reaction	Tepki
 Pick one each time	Her seferinde seç
+Slide to pick one	Kaydırarak seç
 Like	Beğen
 Love	Bayıldım
 Care	Yanındayım
@@ -2431,9 +2432,11 @@ Haha	Haha
 Wow	Vay
 Sad	Üzgün
 Angry	Kızgın
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Her seferinde seç. Tepkiler gönderinin üstünde açılır, yani birine kaydırıp bırak ya da bırakıp birine dokun.
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	Her seferinde seç. Tepkiler parmağının yanında açılır, yani birine kaydırıp bırak ya da bırakıp birine dokun. Başka bir yere dokunmak onları kapatır.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	Kaydırarak seç. Tepkiler parmağının yanında açılır, yani birine kaydırıp bırak. Başka bir yerde bırakmak onları kapatır.
 %1$s. Holding a post gives it straight away.	%1$s. Bir gönderiyi basılı tutmak bunu hemen verir.
 Holding a post to react will open the reactions to pick from.	Tepki için bir gönderiyi basılı tutmak, seçmen için tepkileri açar.
+Holding a post to react will open the reactions to slide to one.	Tepki için bir gönderiyi basılı tutmak, birine kaydırman için tepkileri açar.
 Holding a post to react will give %1$s.	Tepki için bir gönderiyi basılı tutmak %1$s verir.
 Select text	Metni seç
 Done	Bitti

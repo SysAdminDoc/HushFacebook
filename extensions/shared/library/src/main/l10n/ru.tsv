@@ -2470,6 +2470,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Удержание видео публикации тоже открывает её реакции. Это срабатывает раньше, чем «Долгое нажатие открывает комментарии». Если включено «Удерживать видео в Ленте для скорости 2x», срабатывает оно, и видео играет быстрее.
 Reaction	Реакция
 Pick one each time	Выбирать каждый раз
+Slide to pick one	Выбирать проведением
 Like	Нравится
 Love	Супер
 Care	Мы вместе
@@ -2477,9 +2478,11 @@ Haha	Ха-ха
 Wow	Ух ты
 Sad	Сочувствую
 Angry	Возмутительно
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Выбирать каждый раз. Реакции открываются поверх публикации: проведите к нужной и отпустите или отпустите и нажмите на неё.
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	Выбирать каждый раз. Реакции открываются у пальца: проведите к нужной и отпустите или отпустите и нажмите на неё. Нажатие в любом другом месте закрывает их.
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	Выбирать проведением. Реакции открываются у пальца: проведите к нужной и отпустите. Если отпустить в другом месте, они закроются.
 %1$s. Holding a post gives it straight away.	%1$s. Удержание публикации сразу ставит эту реакцию.
 Holding a post to react will open the reactions to pick from.	Удержание публикации для реакции откроет реакции для выбора.
+Holding a post to react will open the reactions to slide to one.	Удержание публикации для реакции откроет реакции, к которым нужно провести пальцем.
 Holding a post to react will give %1$s.	Удержание публикации для реакции поставит «%1$s».
 Select text	Выбрать текст
 Done	Готово

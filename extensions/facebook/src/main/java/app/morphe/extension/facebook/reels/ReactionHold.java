@@ -4,10 +4,18 @@
  */
 package app.morphe.extension.facebook.reels;
 
+import android.content.Context;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 
@@ -21,6 +29,7 @@ import java.util.List;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
@@ -46,6 +55,19 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Like only skips the tray a long press on Like opens. A hold asks for the tray, so while one
  * opens it {@link #opening} lets it through.
+ *
+ * <p>A tray to pick from opens where the finger is (#454): Facebook shows it in a popup window of its
+ * own placed over Like, and the hold moves that window up by how far the finger is above Like, so it
+ * sits by the finger as it sits by Like on Like's own long press. Facebook finds the reaction under a
+ * finger from where the tray is on screen, so its picking moves with it.
+ *
+ * <p>The popup takes every touch on the screen while it shows, through a touch interceptor that
+ * turns a press inside the tray's reach, which runs from the tray down toward Like, into a pick. A
+ * press that missed the reactions could give one that way. For a tray a hold opened, the interceptor
+ * asks {@link #trayTouched} first, with the tray's pill, the drawable behind the reactions that
+ * Facebook tests a press against before stretching it toward Like, and a press off the pill closes
+ * the tray as Back does, giving nothing. With Slide to pick one, letting go anywhere but on a
+ * reaction closes it too, where Facebook would leave it open to tap one.
  */
 public final class ReactionHold {
     private static final String FAMILY = FamilyNames.REEL_GESTURES;
@@ -59,12 +81,22 @@ public final class ReactionHold {
     static final String NO_TRAY = "feed post reactions: no tray showed";
     static final String OTHER_TRAY = "feed post reactions: the tray doesn't list seven reactions";
     static final String NOT_CLICKED = "feed post reactions: the tray took no click";
+    /** Counted for each tray to pick from moved up to the finger. */
+    static final String PLACED = "feed post reactions opened by the finger";
+    /** Counted for each tray closed by a press off its reactions. */
+    static final String CLOSED_BY_TAP = "feed post reactions closed by a tap off them";
+    /** Counted for each tray Slide to pick one closed because the finger let go off its reactions. */
+    static final String CLOSED_ON_LIFT = "feed post reactions closed on a lift off them";
+    /** Counted when the tray's window didn't take the Back that closes it. */
+    static final String NOT_CLOSED = "feed post reactions: the tray's window didn't close";
 
     /** How many reactions Facebook's tray lists: Like, Love, Care, Haha, Wow, Sad and Angry. */
     static final int REACTIONS = 7;
     /** How many more times, and how many milliseconds apart, the tray is looked for before a choice is clicked. */
     private static final int SHOW_TRIES = 10;
     private static final long SHOW_WAIT = 50L;
+    /** How long after the lift Slide to pick one reads the tray, once Facebook has settled it. */
+    private static final long LIFT_SETTLE = 120L;
     /** The most trays kept track of; Facebook makes about one per screen. */
     private static final int KEPT = 8;
 
@@ -76,6 +108,12 @@ public final class ReactionHold {
     private static volatile boolean opening;
     /** Counts holds, so a tray looked for later is only clicked for the same one. */
     private static int holds;
+    /** The tray the last hold opened to pick from, while no finger has gone down on the screen under it since. */
+    private static WeakReference<View> held = new WeakReference<>(null);
+    /** The last hold's tray closes when the finger lets go off its reactions (Slide to pick one). */
+    private static boolean slideOnly;
+    /** A press on the tray's window closed it, so the rest of that gesture goes nowhere. */
+    private static boolean closing;
     private static Handler main;
 
     private ReactionHold() {
@@ -119,6 +157,7 @@ public final class ReactionHold {
     /** A finger went down: whatever the last hold left is over, a click still waiting for its tray included. */
     static void pressed() {
         holds++;
+        held = new WeakReference<>(null);
         ended();
     }
 
@@ -131,9 +170,10 @@ public final class ReactionHold {
 
     /**
      * Opens the reaction tray of the post whose Like button is [likeButton], inside [row], as a long
-     * press on Like does, and says whether it opened. With a reaction chosen it's then clicked.
+     * press on Like does, and says whether it opened. A tray to pick from is moved by the finger,
+     * which is [fingerY] down the screen; with a reaction chosen it's clicked instead.
      */
-    static boolean start(View likeButton, View row) {
+    static boolean start(View likeButton, View row, float fingerY) {
         View host = longClickable(likeButton, row);
         if (host == null) {
             counted(NO_LONG_PRESS);
@@ -146,7 +186,7 @@ public final class ReactionHold {
         try {
             took = host.performLongClick();
         } finally {
-            opening = choice == HoldReaction.PICK;
+            opening = choice.picks();
         }
         if (!took) {
             opening = false;
@@ -154,13 +194,172 @@ public final class ReactionHold {
             return false;
         }
         counted(OPENED);
-        if (choice == HoldReaction.PICK) {
+        if (choice.picks()) {
             like = new WeakReference<>(host);
             forwarding = true;
+            slideOnly = choice == HoldReaction.SLIDE;
+            placeOnceShown(host, fingerY, hold, SHOW_TRIES);
         } else {
             chooseOnceShown(choice, hold, SHOW_TRIES);
         }
         return true;
+    }
+
+    /**
+     * Keeps the tray the hold opened to pick from and moves it by the finger, at once when Facebook
+     * showed it while Like's long press ran, so it opens there, or on a later frame, looking again
+     * [tries] more times. The next finger down stops it.
+     */
+    private static void placeOnceShown(View host, float fingerY, int hold, int tries) {
+        try {
+            if (hold != holds) return;
+            View tray = newestInWindow();
+            if (tray == null) {
+                if (tries > 0) main().postDelayed(() -> placeOnceShown(host, fingerY, hold, tries - 1), SHOW_WAIT);
+                return;
+            }
+            held = new WeakReference<>(tray);
+            int by = moveBy(tray, host, fingerY);
+            if (by != 0) {
+                counted(PLACED);
+                Logger.printDebug(() -> "Feed post reactions: the tray moved " + by + " px to the finger");
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "feed post reactions' place", failure);
+        }
+    }
+
+    /** The newest tray kept that sits in a popup window of its own, shown or about to be, or null. */
+    @Nullable
+    private static View newestInWindow() {
+        for (int i = docks.size() - 1; i >= 0; i--) {
+            View dock = docks.get(i).get();
+            if (dock != null && windowOf(dock) != null) return dock;
+        }
+        return null;
+    }
+
+    /**
+     * The layout of the popup window [tray] sits in, or null when it sits in none of its own: a
+     * closed tray is taken out of its window, and one inside a screen isn't moved.
+     */
+    @Nullable
+    static WindowManager.LayoutParams windowOf(View tray) {
+        View top = tray.getRootView();
+        if (top == tray) return null;
+        ViewGroup.LayoutParams params = top.getLayoutParams();
+        if (!(params instanceof WindowManager.LayoutParams)) return null;
+        WindowManager.LayoutParams window = (WindowManager.LayoutParams) params;
+        boolean popup = window.type >= WindowManager.LayoutParams.FIRST_SUB_WINDOW
+                && window.type <= WindowManager.LayoutParams.LAST_SUB_WINDOW;
+        return popup ? window : null;
+    }
+
+    /**
+     * Moves [tray]'s window up by how far the finger, [fingerY] down the screen, is above the middle
+     * of Like's [host], keeping its top under the status bar, and says by how many pixels. Facebook
+     * places the window from the top of the screen.
+     */
+    static int moveBy(View tray, View host, float fingerY) {
+        WindowManager.LayoutParams window = windowOf(tray);
+        if (window == null || !host.isAttachedToWindow()) return 0;
+        if ((window.gravity & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) return 0;
+        int[] at = new int[2];
+        host.getLocationOnScreen(at);
+        int by = Math.round(fingerY - (at[1] + host.getHeight() / 2f));
+        Rect shown = new Rect();
+        host.getWindowVisibleDisplayFrame(shown);
+        by = Math.max(by, shown.top - window.y);
+        if (by >= 0) return 0;
+        window.y += by;
+        View top = tray.getRootView();
+        WindowManager windows = (WindowManager) top.getContext().getSystemService(Context.WINDOW_SERVICE);
+        windows.updateViewLayout(top, window);
+        return by;
+    }
+
+    /**
+     * Injection point, first thing in the touch interceptor of the reaction tray's popup, which every
+     * touch on the screen goes through while the tray shows; [window] is the popup's top view and
+     * [pill] the tray's pill, or null. Says whether the touch is taken here. A press off the reactions
+     * of a tray a hold opened closes the tray and takes the rest of that gesture; everything else
+     * goes on to Facebook.
+     */
+    public static boolean trayTouched(@Nullable View window, @Nullable MotionEvent event, @Nullable Drawable pill) {
+        try {
+            if (window == null || event == null) return false;
+            int action = event.getActionMasked();
+            if (action != MotionEvent.ACTION_DOWN) {
+                if (!closing) return false;
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) closing = false;
+                return true;
+            }
+            closing = false;
+            View tray = held.get();
+            if (tray == null || tray.getRootView() != window || !Utils.settingsReady() || !on()) return false;
+            Rect reactions = reactionsOf(tray, pill);
+            int x = Math.round(event.getRawX());
+            int y = Math.round(event.getRawY());
+            if (reactions.contains(x, y)) return false;
+            closing = true;
+            Logger.printDebug(() -> "Feed post reactions: a press at " + x + "," + y + ", off the reactions at "
+                    + reactions.toShortString() + ", closes the tray");
+            counted(close(window) ? CLOSED_BY_TAP : NOT_CLOSED);
+            return true;
+        } catch (Throwable failure) {
+            closing = false;
+            HookStatus.threw(FAMILY, "feed post reactions' tap", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Where on the screen [tray]'s reactions are: its [pill], placed in the tray as Facebook draws
+     * it, or the tray itself without one. Not from the tray's accessibility helper, which builds no
+     * reaction's node while no screen reader runs (each has no label then, and the helper throws).
+     */
+    static Rect reactionsOf(View tray, @Nullable Drawable pill) {
+        int[] at = new int[2];
+        tray.getLocationOnScreen(at);
+        Rect reactions = pill == null ? new Rect() : new Rect(pill.getBounds());
+        if (reactions.isEmpty()) reactions.set(0, 0, tray.getWidth(), tray.getHeight());
+        reactions.offset(at[0], at[1]);
+        return reactions;
+    }
+
+    /**
+     * Closes the popup whose top view is [window] as Back does, giving nothing, and says whether the
+     * window took it. Popup windows close themselves on Back.
+     */
+    private static boolean close(View window) {
+        long now = SystemClock.uptimeMillis();
+        window.dispatchKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0));
+        return window.dispatchKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0));
+    }
+
+    /**
+     * Slide to pick one, a moment after hold [hold]'s finger let go: a tray still waiting for a tap
+     * closes. Facebook reads every lift as a close and stops the tray taking touches, and a lift that
+     * picked nothing opens it to tap again, so the tray is read once that has settled. One the lift
+     * picked from stays untouchable as it closes, and is left to close. A finger down since stops it.
+     */
+    private static void closeIfWaiting(int hold) {
+        try {
+            if (hold != holds) return;
+            View tray = held.get();
+            WindowManager.LayoutParams window = tray == null ? null : windowOf(tray);
+            if (window == null) {
+                Logger.printDebug(() -> "Feed post reactions: the lift left no tray to close");
+                return;
+            }
+            if ((window.flags & WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE) != 0) {
+                Logger.printDebug(() -> "Feed post reactions: the lift picked a reaction, so the tray closes itself");
+                return;
+            }
+            counted(close(tray.getRootView()) ? CLOSED_ON_LIFT : NOT_CLOSED);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "feed post reactions' lift", failure);
+        }
     }
 
     /** [view] or the nearest view holding it inside [row] that takes a long press, or null. */
@@ -175,7 +374,8 @@ public final class ReactionHold {
 
     /**
      * Hands Like a copy of [event], a touch of the gesture whose hold opened the tray, as Like's own
-     * touch. Nothing when no hold left one to pick from. The lift or a cancel ends it.
+     * touch. Nothing when no hold left one to pick from. The lift or a cancel ends it, and with Slide
+     * to pick one a lift that picked nothing closes the tray.
      */
     static void forward(MotionEvent event) {
         if (!forwarding) return;
@@ -192,7 +392,13 @@ public final class ReactionHold {
                 copy.recycle();
             }
         }
-        if (host == null || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) ended();
+        if (host == null || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            ended();
+            if (action == MotionEvent.ACTION_UP && slideOnly) {
+                int hold = holds;
+                main().postDelayed(() -> closeIfWaiting(hold), LIFT_SETTLE);
+            }
+        }
     }
 
     /**
@@ -258,5 +464,7 @@ public final class ReactionHold {
     static void reset() {
         pressed();
         docks.clear();
+        slideOnly = false;
+        closing = false;
     }
 }

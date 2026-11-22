@@ -99,6 +99,11 @@ class OpenCommentsFixtureTest {
         val feedbackParams: ClassDef,
         val holder: ClassDef,
         val dock: ClassDef,
+        /** The classes holding the reaction picker's log name, and the touch interceptor its popup gets. */
+        val pickerHolders: List<ClassDef>,
+        val interceptor: ClassDef,
+        /** The interceptor's onTouch and the fields it reads the tray's pill through. */
+        val tray: TrayTouch,
     )
 
     /** The classes the patch reads in [bundle], each the only one of its kind. */
@@ -137,7 +142,13 @@ class OpenCommentsFixtureTest {
         val holderType = sheetCalls(click, doubleTapLike.parameterTypes[0].toString()).holder
         val holder = FixtureDex.classes(bundle, setOf(holderType)).getValue(holderType)
         val dock = FixtureDex.classes(bundle, setOf(UFI_DOCK))[UFI_DOCK] ?: throw AssertionError("$name: no $UFI_DOCK")
-        return Found(helper, doubleTapLike, component, view, heart, button, click, handlers, attachmentClass, owners, activity, feedbackParams, holder, dock)
+        val pickerHolders = FixtureDex.classesHolding(bundle, DOCK_NAME)
+        val picker = pickerHolders.flatMap { it.methods }.filter(::isReactionPicker)
+            .also { assertEquals("$name: reaction pickers", 1, it.size) }.single()
+        val tray = trayTouch(picker) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
+        val interceptor = FixtureDex.classes(bundle, setOf(tray.touch.definingClass)).getValue(tray.touch.definingClass)
+        return Found(helper, doubleTapLike, component, view, heart, button, click, handlers, attachmentClass, owners, activity,
+            feedbackParams, holder, dock, pickerHolders, interceptor, tray)
     }
 
     @Test
@@ -240,6 +251,35 @@ class OpenCommentsFixtureTest {
                 assertTrue("$name: no reaction picker news up the tray", pickers.isNotEmpty() && pickers.all { picker ->
                     picker.code().any { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == UFI_DOCK }
                 })
+
+                // The popup's touch interceptor the picker gives the tray: an OnTouchListener whose onTouch
+                // reads the tray and asks whether the popup still shows, as 588's LX/0jlw does.
+                val trayTouch = found.interceptor.methods.single { it.name == "onTouch" }
+                assertTrue("$name: ${found.interceptor.type} isn't an OnTouchListener",
+                    found.interceptor.interfaces.any { it.toString() == ON_TOUCH_LISTENER })
+                assertEquals("$name: the interceptor's onTouch", listOf(VIEW, MOTION), trayTouch.parameterTypes.map(CharSequence::toString))
+                assertTrue("$name: the interceptor's onTouch has fewer than 4 free locals", trayTouch.localRegisterCount() >= 4)
+                // It reads the tray's pill as 588's does: its own field holds the picker, which holds
+                // the tray (the class RopeStyleUFIDockView extends), whose drawable it measures.
+                val tray = found.tray
+                assertEquals("$name: the interceptor's own field", found.interceptor.type, tray.controller.definingClass)
+                assertTrue("$name: the tray's field isn't the picker's (${tray.dock.definingClass})",
+                    found.pickerHolders.any { it.type == tray.dock.definingClass } && tray.controller.type == tray.dock.definingClass)
+                assertTrue("$name: the pill's class ${tray.pill.definingClass} isn't the tray's",
+                    tray.pill.definingClass in listOf(found.dock.type, found.dock.superclass) && tray.dock.type == tray.pill.definingClass)
+                assertEquals("$name: the pill", DRAWABLE, tray.pill.type)
+                assertTrue("$name: the interceptor's onTouch doesn't read the tray", trayTouch.code().any {
+                    it.opcode == Opcode.CHECK_CAST && (it as ReferenceInstruction).reference.toString() == UFI_DOCK
+                })
+                assertTrue("$name: the interceptor's onTouch doesn't ask whether the popup shows", trayTouch.code().any {
+                    it.call?.let { call -> call.definingClass == POPUP_WINDOW && call.name == "isShowing" } == true
+                })
+                // The control: the picker sets this one interceptor, and no other listener it news up is taken.
+                val pickerCode = pickers.single().code()
+                val listenersMade = pickerCode.filter { it.opcode == Opcode.NEW_INSTANCE }.map { (it as ReferenceInstruction).reference.toString() }
+                assertTrue("$name: the picker never news up ${found.interceptor.type}", found.interceptor.type in listenersMade)
+                assertEquals("$name: the picker's setTouchInterceptor calls", 1,
+                    pickerCode.count { it.call?.let { call -> call.definingClass == POPUP_WINDOW && call.name == SET_TOUCH_INTERCEPTOR } == true })
                 checked += version
             }
         }
@@ -253,8 +293,8 @@ class OpenCommentsFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = read(bundle)
-                val classes = (listOf(found.helper, found.component, found.view, found.attachmentClass, found.button, found.activity, found.feedbackParams, found.holder, found.dock) +
-                    found.owners + found.handlers + feedPhotoFixtureClasses(bundle)).distinctBy { it.type } +
+                val classes = (listOf(found.helper, found.component, found.view, found.attachmentClass, found.button, found.activity, found.feedbackParams, found.holder, found.dock, found.interceptor) +
+                    found.owners + found.handlers + found.pickerHolders + feedPhotoFixtureClasses(bundle)).distinctBy { it.type } +
                     ExtensionDex.classDef(SETTINGS_STATUS) + ExtensionDex.classDef(REEL_GESTURES)
                 val context = PatchContexts.of(classes)
                 turnOffDoubleTapLikePatch.execute(context)
@@ -274,6 +314,8 @@ class OpenCommentsFixtureTest {
                 val paramsBefore = anchors.params.code()
                 val storeBefore = keyboardStore(anchors.params, anchors.keyboard)!!
                 val docksBefore = anchors.docks.associate { key(it) to it.code() }
+                assertEquals("$name: the tray's touch interceptor", found.interceptor.type, anchors.trayTouch.touch.definingClass)
+                val trayTouchBefore = anchors.trayTouch.touch.code()
                 context.applyGestureAnchors(anchors)
 
                 fun patched(method: Method): Method =
@@ -427,6 +469,35 @@ class OpenCommentsFixtureTest {
                         made.filter { it.call.toString() != DOCK_MADE }.map { it.opcode })
                 }
 
+                // The tray's touch interceptor: the tray's pill read from this through the picker and the
+                // tray, nulls skipped, then the popup's view, the event and the pill (p1, p2 and the pill,
+                // in v1 to v3) asked about first, true returned at once, the rest Facebook's.
+                val intercepted = patched(anchors.trayTouch.touch)
+                val trayTouch = intercepted.code()
+                val registers = intercepted.implementation!!.registerCount
+                assertEquals("$name: shape of the interceptor's hook",
+                    listOf(Opcode.CONST_4, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.IF_EQZ, Opcode.IGET_OBJECT,
+                        Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16,
+                        Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN),
+                    trayTouch.take(14).map { it.opcode })
+                fun moved(at: Int) = (trayTouch[at] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) }
+                fun fieldRead(at: Int) = (trayTouch[at] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) } to
+                    ((trayTouch[at] as ReferenceInstruction).reference as FieldReference).let { "${it.definingClass}->${it.name}:${it.type}" }
+                fun FieldReference.descriptor() = "${this.definingClass}->${this.name}:${this.type}"
+                assertEquals("$name: the pill starts null", listOf(3, 0),
+                    listOf((trayTouch[0] as OneRegisterInstruction).registerA, (trayTouch[0] as NarrowLiteralInstruction).narrowLiteral))
+                assertEquals("$name: this", listOf(0, registers - 3), moved(1))
+                assertEquals("$name: the picker", listOf(0, 0) to found.tray.controller.descriptor(), fieldRead(2))
+                assertEquals("$name: the tray", listOf(0, 0) to found.tray.dock.descriptor(), fieldRead(4))
+                assertEquals("$name: the pill", listOf(3, 0) to found.tray.pill.descriptor(), fieldRead(6))
+                assertEquals("$name: the view and the event", listOf(listOf(1, registers - 2), listOf(2, registers - 1)), listOf(moved(7), moved(8)))
+                assertEquals("$name: the interceptor's question", TRAY_TOUCHED, trayTouch[9].call.toString())
+                val asked = trayTouch[9] as RegisterRangeInstruction
+                assertEquals("$name: the interceptor hands v1 to v3", listOf(1, 3), listOf(asked.startRegister, asked.registerCount))
+                assertEquals("$name: the interceptor answers true", 1, (trayTouch[12] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the rest of the interceptor is Facebook's", trayTouchBefore.map { it.opcode },
+                    trayTouch.drop(14).map { it.opcode })
+
                 // The stub in the extension presses the button's click handler.
                 val stub = context.mutableClassDefBy(REEL_GESTURES).methods.single { it.name == OPEN_STUB }.code()
                 assertEquals("$name: the stub's press", "${found.button.type}->${found.click.name}", stub.first { it.opcode == Opcode.INVOKE_STATIC }.call!!.let { it.definingClass + "->" + it.name })
@@ -477,6 +548,12 @@ class OpenCommentsFixtureTest {
         assertTrue("dockMade isn't public static",
             AccessFlags.PUBLIC.isSet(dockMade!!.accessFlags) && AccessFlags.STATIC.isSet(dockMade.accessFlags))
         assertEquals(DOCK_MADE, "${dockMade.definingClass}->${dockMade.name}(${dockMade.parameterTypes.joinToString("")})${dockMade.returnType}")
+        val trayTouched = reactions.methods.singleOrNull { it.name == "trayTouched" }
+        assertNotNull("ReactionHold has no trayTouched", trayTouched)
+        assertTrue("trayTouched isn't public static",
+            AccessFlags.PUBLIC.isSet(trayTouched!!.accessFlags) && AccessFlags.STATIC.isSet(trayTouched.accessFlags))
+        assertEquals(TRAY_TOUCHED,
+            "${trayTouched.definingClass}->${trayTouched.name}(${trayTouched.parameterTypes.joinToString("")})${trayTouched.returnType}")
     }
 
     private companion object {

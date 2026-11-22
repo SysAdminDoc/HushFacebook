@@ -2424,6 +2424,7 @@ Holding a post's photo opens its reactions, as holding Like does. It comes befor
 Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	การแตะวิดีโอของโพสต์ค้างไว้ก็จะเปิดความรู้สึกขึ้นมาเช่นกัน การตั้งค่านี้จะมีผลก่อน "แตะค้างไว้เพื่อเปิดความคิดเห็น" ถ้าเปิด "แตะค้างที่วิดีโอในฟีดเพื่อเล่น 2x" ไว้ สวิตช์นั้นจะมีผลแทนและวิดีโอจะเล่นเร็วขึ้น
 Reaction	ความรู้สึก
 Pick one each time	เลือกทุกครั้ง
+Slide to pick one	เลื่อนเพื่อเลือก
 Like	ถูกใจ
 Love	รักเลย
 Care	ห่วงใย
@@ -2431,9 +2432,11 @@ Haha	ฮ่าๆ
 Wow	ว้าว
 Sad	เศร้า
 Angry	โกรธ
-Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	เลือกทุกครั้ง ความรู้สึกจะเปิดขึ้นเหนือโพสต์ ให้เลื่อนนิ้วไปที่ความรู้สึกที่ต้องการแล้วปล่อย หรือปล่อยนิ้วแล้วแตะเลือก
+Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	เลือกทุกครั้ง ความรู้สึกจะเปิดขึ้นข้างนิ้วของคุณ ให้เลื่อนนิ้วไปที่ความรู้สึกที่ต้องการแล้วปล่อย หรือปล่อยนิ้วแล้วแตะเลือก แตะที่อื่นเพื่อปิด
+Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go anywhere else closes them.	เลื่อนเพื่อเลือก ความรู้สึกจะเปิดขึ้นข้างนิ้วของคุณ ให้เลื่อนนิ้วไปที่ความรู้สึกที่ต้องการแล้วปล่อย ปล่อยนิ้วที่อื่นเพื่อปิด
 %1$s. Holding a post gives it straight away.	%1$s การแตะโพสต์ค้างไว้จะใส่ความรู้สึกนี้ทันที
 Holding a post to react will open the reactions to pick from.	การแตะโพสต์ค้างไว้เพื่อแสดงความรู้สึกจะเปิดความรู้สึกขึ้นมาให้เลือก
+Holding a post to react will open the reactions to slide to one.	การแตะโพสต์ค้างไว้เพื่อแสดงความรู้สึกจะเปิดความรู้สึกให้เลื่อนนิ้วไปเลือก
 Holding a post to react will give %1$s.	การแตะโพสต์ค้างไว้เพื่อแสดงความรู้สึกจะใส่ความรู้สึก %1$s
 Select text	เลือกข้อความ
 Done	เรียบร้อย

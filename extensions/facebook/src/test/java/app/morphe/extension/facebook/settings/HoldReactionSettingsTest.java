@@ -109,14 +109,20 @@ public class HoldReactionSettingsTest {
             List<Preference> rows = rowsOf(page(controller));
             ValueRows.HoldReactionRow row = (ValueRows.HoldReactionRow) rows.get(indexOfKey(rows, Settings.HOLD_REACTION.key));
             assertEquals("Reaction", String.valueOf(row.getTitle()));
-            assertEquals(Arrays.asList("Pick one each time", "Like", "Love", "Care", "Haha", "Wow", "Sad", "Angry"),
-                    texts(row.getEntries()));
-            assertEquals(Arrays.asList("PICK", "LIKE", "LOVE", "CARE", "HAHA", "WOW", "SAD", "ANGRY"),
+            assertEquals(Arrays.asList("Pick one each time", "Slide to pick one", "Like", "Love", "Care", "Haha", "Wow", "Sad",
+                    "Angry"), texts(row.getEntries()));
+            assertEquals(Arrays.asList("PICK", "SLIDE", "LIKE", "LOVE", "CARE", "HAHA", "WOW", "SAD", "ANGRY"),
                     texts(row.getEntryValues()));
             assertEquals(HoldReaction.PICK, Settings.HOLD_REACTION.get());
             assertEquals("PICK", row.getValue());
-            assertEquals("Pick one each time. The reactions open over the post, so slide to one and let go, or let go "
-                    + "and tap one.", String.valueOf(row.getSummary()));
+            assertEquals("Pick one each time. The reactions open by your finger, so slide to one and let go, or let go "
+                    + "and tap one. A tap anywhere else closes them.", String.valueOf(row.getSummary()));
+
+            row.setValue("SLIDE");
+            ShadowLooper.idleMainLooper();
+            assertEquals(HoldReaction.SLIDE, Settings.HOLD_REACTION.savedValue());
+            assertEquals("Slide to pick one. The reactions open by your finger, so slide to one and let go. Letting go "
+                    + "anywhere else closes them.", String.valueOf(row.getSummary()));
 
             row.setValue("HAHA");
             ShadowLooper.idleMainLooper();

@@ -67,6 +67,19 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
  *   accessibility helper, so it needs the tray: every constructor of the class hands the new tray
  *   to the extension just before it returns, reading this (one constructor in 587, taking a Context
  *   and the session, 13 registers). The range form borrows no register.
+ *   The picker shows the tray in a focusable PopupWindow, which takes every touch on the screen
+ *   while it shows, and gives it a touch interceptor it news up just before setTouchInterceptor (588
+ *   `LX/0jlw;`, made in `LX/039O;->A07`): a press inside the tray's reach, which runs from the tray
+ *   down toward Like, becomes a pick of the reaction above or below the finger, and only a press
+ *   outside it closes the tray. The interceptor's onTouch asks the extension first, with the popup's
+ *   top view, the event and the tray's pill, the drawable whose bounds Facebook tests a press
+ *   against before stretching them toward Like; an answer of true returns true before Facebook
+ *   reads the touch, so a press off a hold's tray closes it instead of reacting. The pill is read
+ *   the way onTouch reads it (588: the interceptor's `A00` controller, its `A04` tray, the tray's
+ *   `A0J` drawable, the one onTouch calls getBounds on), into v0 and v3, nulls skipped, and the
+ *   three arguments go in v1 to v3 (10 locals in 588). The tray's accessibility helper can't
+ *   stand in: on a device without TalkBack it builds no reaction node (each has no label, so
+ *   ExploreByTouchHelper throws), as the emulator showed.
  *
  * What isn't covered: a feed post's double tap (every part of a post already reacts to a single tap,
  * so a second tap can't be waited for without delaying it), a reel with neither a Comment button
@@ -122,3 +135,17 @@ internal const val KEYBOARD = "$EXTENSION_PACKAGE/reels/PostLongPress;->keyboard
 
 /** Where each reaction tray made goes, for Hold a feed photo or video to react to click a chosen reaction in. */
 internal const val DOCK_MADE = "$EXTENSION_PACKAGE/reels/ReactionHold;->dockMade(Ljava/lang/Object;)V"
+
+/** Asked first with each touch the reaction tray's popup takes, so a press off a hold's tray closes it. */
+internal const val TRAY_TOUCHED =
+    "$EXTENSION_PACKAGE/reels/ReactionHold;->trayTouched(Landroid/view/View;Landroid/view/MotionEvent;Landroid/graphics/drawable/Drawable;)Z"
+
+/** The tray's pill, a drawable the interceptor measures with getBounds. */
+internal const val DRAWABLE = "Landroid/graphics/drawable/Drawable;"
+internal const val GET_BOUNDS = "getBounds"
+
+/** The popup the reaction picker shows the tray in, and the touch interceptor it's given. */
+internal const val POPUP_WINDOW = "Landroid/widget/PopupWindow;"
+internal const val SET_TOUCH_INTERCEPTOR = "setTouchInterceptor"
+internal const val ON_TOUCH_LISTENER = "Landroid/view/View\$OnTouchListener;"
+internal const val MOTION = "Landroid/view/MotionEvent;"
