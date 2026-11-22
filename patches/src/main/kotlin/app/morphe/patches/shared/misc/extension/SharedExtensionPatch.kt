@@ -7,7 +7,9 @@ package app.morphe.patches.shared.misc.extension
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
+import app.morphe.util.executeBytecode
+import app.morphe.util.finalizeBytecode
 import app.morphe.util.returnEarly
 import app.morphe.util.BundleIdentity
 import com.android.tools.smali.dexlib2.iface.Method
@@ -26,7 +28,7 @@ fun sharedExtensionPatch(
     extensionName: String,
     isYouTubeOrYouTubeMusic: Boolean,
     vararg hooks: ExtensionHook,
-) = bytecodePatch {
+) = patch {
     dependsOn(sharedExtensionPatch(isYouTubeOrYouTubeMusic, *hooks))
 
     extendWith("extensions/$extensionName.mpe")
@@ -41,17 +43,17 @@ fun sharedExtensionPatch(
 fun sharedExtensionPatch(
     isYouTubeOrYouTubeMusic: Boolean,
     vararg hooks: ExtensionHook,
-) = bytecodePatch {
+) = patch {
     val extensionName = if (isYouTubeOrYouTubeMusic) "shared-youtube" else "shared"
     val readBuildIdentity = BundleIdentity.boundToClass(BundleIdentity::class.java)
     extendWith("extensions/$extensionName.mpe")
 
-    execute {
+    executeBytecode {
         // Verify the extension class exists.
         classDefBy(EXTENSION_CLASS_DESCRIPTOR)
     }
 
-    finalize {
+    finalizeBytecode {
         // The hooks are made in finalize to ensure that the context is hooked before any other patches.
         hooks.forEach { hook -> hook(EXTENSION_CLASS_DESCRIPTOR) }
 

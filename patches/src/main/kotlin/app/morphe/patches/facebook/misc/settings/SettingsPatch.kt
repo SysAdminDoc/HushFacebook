@@ -9,7 +9,7 @@ package app.morphe.patches.facebook.misc.settings
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.coexist.MAX_APP_NAME
@@ -31,6 +31,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.resignedtrust.fbnsSignersPatch
 import app.morphe.patches.facebook.notifications.pushDiagnosticsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.Opcode
@@ -90,7 +91,7 @@ internal fun BytecodePatchContext.declaredInHierarchy(
  * to the manifest.
  */
 @Suppress("unused")
-val settingsPatch = bytecodePatch(
+val settingsPatch = patch(
     name = "Hushfacebook settings",
     description = "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook " +
         "and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the " +
@@ -155,7 +156,7 @@ val settingsPatch = bytecodePatch(
     dependsOn(pushDiagnosticsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // A build whose code the patcher can't read is refused first, naming the build it most
         // likely is, before anything in it changes.
         compressedCodeRefusal(classDefByOrNull(FACEBOOK_APPLICATION) != null, classDefByOrNull(MAIN_TAB_ACTIVITY))

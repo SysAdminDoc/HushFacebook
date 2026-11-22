@@ -8,11 +8,12 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -136,21 +137,21 @@ internal fun BytecodePatchContext.applyModuleEvidence(sites: List<ModuleEvidence
  * brings it into every build. It reads and changes nothing. A build missing an anchor goes on
  * without it, with a warning: a throw here would stop Hushfacebook settings, and every patch with it.
  */
-internal val moduleDownloadEvidencePatch = bytecodePatch {
+internal val moduleDownloadEvidencePatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // Dependencies run before Settings, and its refusal has to be what explains an opaque
         // Android 9 build, so nothing is looked up in one.
         if (compressedCodeRefusal(classDefByOrNull(FACEBOOK_APPLICATION) != null, classDefByOrNull(MAIN_TAB_ACTIVITY)) != null) {
-            return@execute
+            return@executeBytecode
         }
         val sites = try {
             findModuleEvidenceSites()
         } catch (missing: Exception) {
             val why = if (missing is PatchException) missing.message else "$EVIDENCE: ${missing::class.java.name}: ${missing.message}"
             patchLog.warning("$why. Debug reports go on without the module downloader's steps.")
-            return@execute
+            return@executeBytecode
         }
         applyModuleEvidence(sites)
     }

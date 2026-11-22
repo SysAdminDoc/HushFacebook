@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.misc.sharelinks
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.singleOrPatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -51,7 +52,7 @@ private const val SANITIZE =
  * Facebook made for that share. Its hook is ownPostLinkPatch's.
  */
 @Suppress("unused")
-val sanitizeSharingLinksPatch = bytecodePatch(
+val sanitizeSharingLinksPatch = patch(
     name = "Sanitize sharing links",
     description = "Takes Facebook's tracking tags off links you share or copy, so you share a clean link. A " +
         "facebook.com/share/ link is made for one share, so Facebook can still trace that kind back to you, and " +
@@ -64,7 +65,7 @@ val sanitizeSharingLinksPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
     dependsOn(facebookExtensionPatch, ownPostLinkPatch)
 
-    execute {
+    executeBytecode {
         val tracker = mutableClassDefBy(ExternalShareTrackerFingerprint.method.definingClass)
         val trackerMethods = listOf(
             // The link a share hands out, with mibextid added for its source and destination.

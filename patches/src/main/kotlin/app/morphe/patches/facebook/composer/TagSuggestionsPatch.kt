@@ -7,13 +7,14 @@ package app.morphe.patches.facebook.composer
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Field
 
@@ -26,7 +27,7 @@ import com.android.tools.smali.dexlib2.iface.Field
  * so turning it on is the choice.
  */
 @Suppress("unused")
-val tagSuggestionsOnlyAfterAtPatch = bytecodePatch(
+val tagSuggestionsOnlyAfterAtPatch = patch(
     name = "Tag suggestions only after @",
     description = "Stops Facebook offering people to tag while you type ordinary words in posts and comments, so " +
         "names don't pop up in your way. Typing @ still brings up the list. Starts off. Turn it on in " +
@@ -36,7 +37,7 @@ val tagSuggestionsOnlyAfterAtPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val boxes = classDefByStrings(COMMON_WORDS_FAILURE, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .flatMap { owner -> owner.methods.filter(::isMentionFiltering) }

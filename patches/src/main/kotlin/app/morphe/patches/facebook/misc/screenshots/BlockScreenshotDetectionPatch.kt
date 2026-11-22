@@ -5,7 +5,7 @@
 package app.morphe.patches.facebook.misc.screenshots
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.extendsClass
 
 /**
@@ -27,7 +28,7 @@ import app.morphe.util.extendsClass
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val blockScreenshotDetectionPatch = bytecodePatch(
+val blockScreenshotDetectionPatch = patch(
     // The README table check reads this literal; DETECTION_PATCH carries the same text for the messages.
     name = "Block screenshot detection",
     description = "Stops Facebook noticing when you take a screenshot or record the screen, in the feed, Reels, " +
@@ -38,7 +39,7 @@ val blockScreenshotDetectionPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val observer = classDefByOrNull(SCREENSHOT_OBSERVER)?.methods?.filter(::isObserverChange).orEmpty()
         if (observer.size != 1) {
             throw PatchException("$DETECTION_PATCH: expected one onChange(boolean, Uri) in $SCREENSHOT_OBSERVER, found ${observer.size}")

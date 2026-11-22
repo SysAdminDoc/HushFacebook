@@ -8,12 +8,13 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -62,10 +63,10 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
  * Sanitize sharing links carries it and its fixture test runs it on its own. Refuses unless the
  * controller, its cache read and the one method building a post's share link are each found once.
  */
-internal val ownPostLinkPatch = bytecodePatch {
+internal val ownPostLinkPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         hookOwnPostLink()
     }
 }

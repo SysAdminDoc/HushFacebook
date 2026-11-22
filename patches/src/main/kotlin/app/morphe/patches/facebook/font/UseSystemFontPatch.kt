@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.Opcode
@@ -68,7 +69,7 @@ internal const val OWN_INFLATED = "$OWN_FONT->inflated($VIEW)V"
  * padding in place.
  */
 @Suppress("unused")
-val useSystemFontPatch = bytecodePatch(
+val useSystemFontPatch = patch(
     name = "Use the system font",
     description = "Draws Facebook's text in your phone's font instead of Meta's, or in a font file you pick, so " +
         "Facebook matches the rest of your phone. Icons and emoji keep their own. Starts off. Turn it on in " +
@@ -78,7 +79,7 @@ val useSystemFontPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         hookVariableFontBuilders(hookTypefaceRepository())
         hookReactNativeFonts()
         hookRobotoBuilder()

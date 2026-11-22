@@ -6,7 +6,7 @@ package app.morphe.patches.facebook.misc.appicons
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -27,7 +28,7 @@ import com.android.tools.smali.dexlib2.iface.Method
  * it's a choice to make. Everything is found before anything changes.
  */
 @Suppress("unused")
-val unlockAppIconsPatch = bytecodePatch(
+val unlockAppIconsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Unlock app icons",
     description = "Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page (Menu > " +
@@ -39,7 +40,7 @@ val unlockAppIconsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val providers = classDefByStrings(PROVIDER_TAG, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }.filter(::isBenefitProvider)
         val provider = providers.singleOrNull()

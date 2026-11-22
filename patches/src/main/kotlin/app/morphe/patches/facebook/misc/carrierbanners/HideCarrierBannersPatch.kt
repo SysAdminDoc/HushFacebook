@@ -9,12 +9,13 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -138,7 +139,7 @@ internal fun BytecodePatchContext.hookCarrierBanners() {
 }
 
 @Suppress("unused")
-val hideCarrierBannersPatch = bytecodePatch(
+val hideCarrierBannersPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide carrier data banners",
     description = "On carriers with Facebook Flex, hides the Data mode bar with its buy mobile data button, or the " +
@@ -149,7 +150,7 @@ val hideCarrierBannersPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         hookCarrierBanners()
         enableStatus("carrierBanners")
     }

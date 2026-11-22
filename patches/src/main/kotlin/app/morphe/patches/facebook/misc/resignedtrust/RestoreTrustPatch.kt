@@ -7,6 +7,7 @@
  */
 package app.morphe.patches.facebook.misc.resignedtrust
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -15,10 +16,10 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.util.executeBytecode
 
 private const val PACKAGE_INFO = "Landroid/content/pm/PackageInfo;"
 
@@ -26,7 +27,7 @@ private const val ORIGINAL_SIGNERS = "Lapp/morphe/extension/facebook/misc/Facebo
     "originalSigners(Landroid/content/pm/PackageInfo;)Ljava/util/List;"
 
 @Suppress("unused")
-val restoreTrustPatch = bytecodePatch(
+val restoreTrustPatch = patch(
     name = "Restore screens on re-signed builds",
     description = "Fixes profiles, photos, posts and some Settings pages that won't open on a patched Facebook, " +
         "lets a Messenger or Facebook Lite patched in the same Manager sign in through it, and opens Instagram " +
@@ -40,7 +41,7 @@ val restoreTrustPatch = bytecodePatch(
 
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val method = PackageSignersFingerprint.method
         val owner = mutableClassDefBy(method.definingClass)
 

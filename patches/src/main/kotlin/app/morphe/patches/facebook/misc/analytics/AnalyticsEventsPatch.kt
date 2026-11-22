@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.misc.analytics
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -49,10 +50,10 @@ internal const val PRIVACY_CONTEXT = "Lcom/facebook/logginginfra/falco/PrivacyCo
  * and the extension asks each feature only when its patch is in the build. A second question put
  * in front of the first left Facebook spinning on its start screen (#408, 585).
  */
-internal val analyticsEventsPatch = bytecodePatch {
+internal val analyticsEventsPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes.
         val factories = analyticsEventFactories()
         if (factories.isEmpty()) {

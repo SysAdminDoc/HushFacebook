@@ -5,13 +5,14 @@
 package app.morphe.patches.facebook.misc.screenshots
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 
 /**
  * Lets screenshots and screen recordings show the screens Facebook marks secure. See
@@ -21,7 +22,7 @@ import app.morphe.util.classDefForEachReferencing
  * of screenshots, so showing it is a choice to make.
  */
 @Suppress("unused")
-val allowScreenshotsPatch = bytecodePatch(
+val allowScreenshotsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Allow screenshots",
     description = "Lets you take screenshots and screen recordings on the pages where Facebook blocks them, so " +
@@ -31,7 +32,7 @@ val allowScreenshotsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val owners = mutableSetOf<String>()
         // A flags call names Window, a flags write LayoutParams.
         classDefForEachReferencing(types = listOf(WINDOW, LAYOUT_PARAMS)) { classDef ->

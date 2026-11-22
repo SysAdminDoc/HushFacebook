@@ -7,17 +7,18 @@
  */
 package app.morphe.patches.facebook.misc.externalbrowser
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeBytecode
 import app.morphe.util.namedRegisters
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.singleOrPatchException
@@ -54,7 +55,7 @@ internal val IN_APP_BROWSERS = listOf(
 )
 
 @Suppress("unused")
-val openLinksExternallyPatch = bytecodePatch(
+val openLinksExternallyPatch = patch(
     name = "Open links in external browser",
     description = "Opens web links in your own browser instead of Facebook's built-in one, without Facebook " +
         "tracking the click. Facebook pages still open in the app. On by default. Turn it off in Hushfacebook " +
@@ -71,7 +72,7 @@ val openLinksExternallyPatch = bytecodePatch(
     // Each hook goes in after the superclass call. At that point the activity is a valid Activity
     // for the extension, and the browser is not built yet. The extension returns false when the
     // link must stay in the app. The injected branch then continues into the original code.
-    execute {
+    executeBytecode {
         val hooked = IN_APP_BROWSERS.sumOf { descriptor ->
             val classDef = mutableClassDefByOrNull(descriptor) ?: return@sumOf 0
 

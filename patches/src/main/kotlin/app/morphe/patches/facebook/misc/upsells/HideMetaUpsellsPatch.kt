@@ -4,12 +4,13 @@
  */
 package app.morphe.patches.facebook.misc.upsells
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.misc.sharesheet.shareSheetHookPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /**
  * Hide Menu promotions takes Meta's other products out of the Menu; this takes the pushes for them
@@ -31,7 +32,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * nobody has seen it on a signed-in account yet.
  */
 @Suppress("unused")
-val hideMetaUpsellsPatch = bytecodePatch(
+val hideMetaUpsellsPatch = patch(
     name = "Hide Meta upsells",
     description = "Hides Meta's pushes for its other products, such as Edits, Threads cross-posting, Meta " +
         "Verified, avatar stickers and Meta AI's Imagine, so you see fewer sales pitches. Starts off. Turn on " +
@@ -43,7 +44,7 @@ val hideMetaUpsellsPatch = bytecodePatch(
     dependsOn(shareSheetHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         hideMetaUpsells()
         enableStatus("metaUpsells")
     }

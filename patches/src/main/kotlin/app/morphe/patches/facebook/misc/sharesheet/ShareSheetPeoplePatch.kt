@@ -7,12 +7,13 @@ package app.morphe.patches.facebook.misc.sharesheet
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.media.progressbar.extendsType
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.search.branchTarget
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -80,10 +81,10 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
  * anything changes, and it refuses unless the render has exactly the two helper adds and the one
  * built from the list of people, and unless an add they share is reached by nothing else.
  */
-internal val shareSheetPeoplePatch = bytecodePatch {
+internal val shareSheetPeoplePatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         hookShareSheetPeople()
     }
 }

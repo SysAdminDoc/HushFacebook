@@ -9,13 +9,14 @@ package app.morphe.patches.facebook.misc.resignedtrust
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.MAIN_TAB_ACTIVITY
 import app.morphe.patches.facebook.misc.settings.compressedCodeRefusal
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -36,20 +37,20 @@ private const val FBNS_FIX = "Push service signer fix"
  * A build without the check goes on without the fix and says so in the patch log, the way the other
  * hidden patches of the settings patch do: a throw here would stop every patch with it.
  */
-internal val fbnsSignersPatch = bytecodePatch {
+internal val fbnsSignersPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // The settings patch's refusal has to be what explains an Android 9 build, so nothing is
         // looked up in one.
         if (compressedCodeRefusal(classDefByOrNull(FACEBOOK_APPLICATION) != null, classDefByOrNull(MAIN_TAB_ACTIVITY)) != null) {
-            return@execute
+            return@executeBytecode
         }
         val method = try {
             FbnsPackageCheckFingerprint.method
         } catch (missing: Exception) {
             patchLog.warning("$FBNS_FIX: Facebook's push service package check wasn't found. A re-signed build may keep restarting its push service.")
-            return@execute
+            return@executeBytecode
         }
         try {
             method.routeFbnsSigners()

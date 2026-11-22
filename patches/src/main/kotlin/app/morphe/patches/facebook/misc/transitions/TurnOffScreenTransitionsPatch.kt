@@ -5,12 +5,13 @@
 package app.morphe.patches.facebook.misc.transitions
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /**
  * Shows Facebook's tabs, its Menu and the screens that open over it without the slide between
@@ -32,7 +33,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * something it does to you.
  */
 @Suppress("unused")
-val turnOffScreenTransitionsPatch = bytecodePatch(
+val turnOffScreenTransitionsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Turn off screen transitions",
     description = "Shows Facebook's tabs, Menu, photos and new screens at once, without the slide or zoom between " +
@@ -43,7 +44,7 @@ val turnOffScreenTransitionsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Both are found before either is changed, so a build missing one is left as it was.
         val showTab = ShowTabFingerprint.method
         val snapToPanel = SnapToPanelFingerprint.method

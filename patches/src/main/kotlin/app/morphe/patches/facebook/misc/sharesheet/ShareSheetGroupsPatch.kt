@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.upsells.enumConstant
 import app.morphe.patches.facebook.misc.upsells.isEnumNaming
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -91,10 +92,10 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
  * sheet items carries it and its fixture tests run it on its own. Everything is found before
  * anything changes, and it refuses unless each place is found once.
  */
-internal val shareSheetGroupsPatch = bytecodePatch {
+internal val shareSheetGroupsPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         hookShareSheetGroups()
     }
 }

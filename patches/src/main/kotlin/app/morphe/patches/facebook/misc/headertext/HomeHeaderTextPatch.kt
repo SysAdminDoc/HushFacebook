@@ -5,7 +5,7 @@
 package app.morphe.patches.facebook.misc.headertext
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.appicons.dressLogoAfter
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 internal const val PATCH = "Home header text"
 
@@ -29,7 +30,7 @@ internal const val DRESS_HEADER = "$EXTENSION_PACKAGE/misc/HeaderText;->dress(La
  * wordmark, so the patch sits in the default selection.
  */
 @Suppress("unused")
-val homeHeaderTextPatch = bytecodePatch(
+val homeHeaderTextPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Home header text",
     description = "Shows your own words or picture at the top of Home instead of the Facebook logo. Words take " +
@@ -40,7 +41,7 @@ val homeHeaderTextPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val bar = mutableClassDefByOrNull(WORDMARK_NAVIGATION_BAR)
             ?: throw PatchException("$PATCH: this Facebook has no $WORDMARK_NAVIGATION_BAR, the home feed's top bar")
         val builders = bar.methods.filter { holdsString(it, CREATE_WORDMARK_VIEW) }

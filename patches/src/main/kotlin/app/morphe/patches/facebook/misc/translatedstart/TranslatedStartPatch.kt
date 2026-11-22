@@ -6,7 +6,7 @@ package app.morphe.patches.facebook.misc.translatedstart
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -27,7 +28,7 @@ internal const val SKIP_APP_INITS = "$EXTENSION_PACKAGE/misc/TranslatedStart;->"
     "skipAppInits(Ljava/util/Set;)Ljava/util/Set;"
 
 @Suppress("unused")
-val translatedStartPatch = bytecodePatch(
+val translatedStartPatch = patch(
     name = "Start on x86 devices",
     description = "Stops Facebook crashing or freezing at start on x86 devices, such as computer emulators and " +
         "x86 Chromebooks. Most phones and tablets don't need it, and it doesn't change how they start. Works as " +
@@ -40,7 +41,7 @@ val translatedStartPatch = bytecodePatch(
 
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         requireStatusMethod("translatedStart")
         ApplicationDelegateFingerprint.method.skipMoreAppInits()
         enableStatus("translatedStart")

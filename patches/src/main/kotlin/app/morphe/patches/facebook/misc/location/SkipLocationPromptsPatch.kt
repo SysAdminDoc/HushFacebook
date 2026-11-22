@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.updates.CONTEXTUAL_FILTER
 import app.morphe.patches.facebook.updates.PROMOTION_DEFINITION
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
@@ -103,7 +104,7 @@ internal fun BytecodePatchContext.skipLocationPromotion() {
 }
 
 @Suppress("unused")
-val skipLocationPromptsPatch = bytecodePatch(
+val skipLocationPromptsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Skip location prompts",
     description = "Stops Facebook from showing its page asking you to allow Location Services, the one with Skip " +
@@ -113,7 +114,7 @@ val skipLocationPromptsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         skipLocationPromotion()
         enableStatus("locationPrompts")
     }

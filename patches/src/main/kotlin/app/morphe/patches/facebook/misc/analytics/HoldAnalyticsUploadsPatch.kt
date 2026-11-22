@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.misc.analytics
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -31,7 +32,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * for less background traffic, which is a choice to make, not a fix.
  */
 @Suppress("unused")
-val holdAnalyticsUploadsPatch = bytecodePatch(
+val holdAnalyticsUploadsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hold back analytics uploads",
     description = "Stops Facebook sending its usage reports in the background and skips the learning jobs it " +
@@ -43,7 +44,7 @@ val holdAnalyticsUploadsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val missing = mutableListOf<String>()
         fun <T> one(what: String, matches: List<T>): T? {
             if (matches.size == 1) return matches.single()

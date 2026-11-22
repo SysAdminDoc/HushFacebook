@@ -192,6 +192,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/util/PatchBodies.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for Morphe patcher 2.5.0: runs a patch body written against a bytecode or resource context inside patch()'s execute and finalize blocks, so the patches leave the deprecated bytecodePatch and resourcePatch builders with their bodies unchanged."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostXButton.kt"
       ],
       "origin": "original",

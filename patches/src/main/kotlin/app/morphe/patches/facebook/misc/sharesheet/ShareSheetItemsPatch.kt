@@ -4,11 +4,12 @@
  */
 package app.morphe.patches.facebook.misc.sharesheet
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /**
  * Lets people pick which items Facebook's share sheet shows. The hook is shareSheetHookPatch's;
@@ -27,7 +28,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * nobody has seen it on a signed-in account yet.
  */
 @Suppress("unused")
-val shareSheetItemsPatch = bytecodePatch(
+val shareSheetItemsPatch = patch(
     name = "Share sheet items",
     description = "Lets you hide items you never use from Facebook's share sheet, such as WhatsApp, Meta AI or " +
         "Copy link, so the ones you want are easier to reach. Nothing is hidden until you pick. Choose them in " +
@@ -38,7 +39,7 @@ val shareSheetItemsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch, shareSheetHookPatch, shareSheetGroupsPatch, shareSheetPeoplePatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         enableStatus("shareSheetItems")
     }
 }
