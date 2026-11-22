@@ -12,8 +12,8 @@ import app.morphe.patcher.patch.ResourcePatchContext
 import app.morphe.patcher.patch.bytecodeContext
 import app.morphe.patcher.patch.resourceContext
 
-// Patcher 2.5.0 deprecates bytecodePatch and resourcePatch for patch(), whose execute and
-// finalize blocks take no receiver and reach the APK through the patcher's global functions.
+// Patcher 2.5.0 deprecates bytecodePatch and resourcePatch for the one patch builder, whose execute
+// and finalize blocks take no receiver and reach the APK through the patcher's global functions.
 // The patch bodies here, and the hundreds of helpers they call, are written against a context
 // receiver, so these run such a body on the context of the APK being patched, and a body moved
 // over unchanged does what it did under the old builder.
@@ -26,19 +26,23 @@ import app.morphe.patcher.patch.resourceContext
 // A body runs on the patcher's current context, never on the one Patch.execute is handed: the
 // patcher hands it NoPatchContext, and the builder's execute that takes a context is hidden from
 // Kotlin. A test that makes several contexts makes each one right before it patches it.
+//
+// They're inline so the block handed to execute and finalize is built in the patch's own file. A
+// patch with no name is known by that block's class in the patcher's log and errors, and built
+// here every one of them read PatchBodies.
 
 /** Runs [block] on the bytecode of the APK being patched, as `bytecodePatch { execute { } }` did. */
-internal fun PatchDefinition.executeBytecode(block: BytecodePatchContext.() -> Unit) =
+internal inline fun PatchDefinition.executeBytecode(crossinline block: BytecodePatchContext.() -> Unit) =
     execute { bytecodeContext.block() }
 
 /** Runs [block] on the bytecode once every patch has run, as `bytecodePatch { finalize { } }` did. */
-internal fun PatchDefinition.finalizeBytecode(block: BytecodePatchContext.() -> Unit) =
+internal inline fun PatchDefinition.finalizeBytecode(crossinline block: BytecodePatchContext.() -> Unit) =
     finalize { bytecodeContext.block() }
 
 /** Runs [block] on the resources of the APK being patched, as `resourcePatch { execute { } }` did. */
-internal fun PatchDefinition.executeResources(block: ResourcePatchContext.() -> Unit) =
+internal inline fun PatchDefinition.executeResources(crossinline block: ResourcePatchContext.() -> Unit) =
     execute { resourceContext.block() }
 
 /** Runs [block] on the resources once every patch has run, as `resourcePatch { finalize { } }` did. */
-internal fun PatchDefinition.finalizeResources(block: ResourcePatchContext.() -> Unit) =
+internal inline fun PatchDefinition.finalizeResources(crossinline block: ResourcePatchContext.() -> Unit) =
     finalize { resourceContext.block() }
