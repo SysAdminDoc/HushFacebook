@@ -7,7 +7,8 @@
 package app.morphe.patches.facebook.misc.settings
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
+import app.morphe.util.executeResources
 import java.io.File
 
 /** The drawable the settings page's header shows, by the name SettingsHeader in the extension reads. */
@@ -50,8 +51,8 @@ internal fun addSettingsPictures(res: File) {
 }
 
 /** Puts the settings header's logo into the app's resources. */
-internal val settingsLogoPatch = resourcePatch {
-    execute {
+internal val settingsLogoPatch = patch {
+    executeResources {
         // Patcher 2.0 decodes only what a patch asks for. Hushfacebook's names are asked for so one
         // already in the APK shows up and is refused.
         decode("res/drawable*/hushfacebook_settings_*.png")

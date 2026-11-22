@@ -12,8 +12,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.patch.stringOption
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -22,6 +21,9 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
+import app.morphe.util.finalizeResources
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
@@ -313,13 +315,13 @@ internal fun requestClone(packageName: String, label: String) {
     cloneRequest = CloneRequest(packageName, label)
 }
 
-internal val cloneResources = resourcePatch {
-    execute {
+internal val cloneResources = patch {
+    executeResources {
         cloneRequest = null
     }
     // After every other patch has added its providers and permission names (Search photo's provider among them).
-    finalize {
-        val request = cloneRequest ?: return@finalize
+    finalizeResources {
+        val request = cloneRequest ?: return@finalizeResources
         cloneRequest = null
         // App name may have decoded it already. Decoding it again would read it back from the APK.
         if (!get(CLONE_STRINGS, false).exists()) decode(CLONE_STRINGS)
@@ -335,7 +337,7 @@ internal val cloneResources = resourcePatch {
 }
 
 @Suppress("unused")
-val cloneInstallPatch = bytecodePatch(
+val cloneInstallPatch = patch(
     name = "Clone install under another package name",
     description = "Installs a second copy of Facebook beside the first under its own package name and app name, " +
         "for a phone where Facebook came preinstalled and a patched one won't install over it. Hushfacebook " +
@@ -368,7 +370,7 @@ val cloneInstallPatch = bytecodePatch(
         required = true,
     ) { isCloneLabel(it) }
 
-    execute {
+    executeBytecode {
         val target = packageName?.takeIf(::isClonePackage) ?: fail("$packageName can't be used as a package name")
         val label = appLabel?.takeIf(::isCloneLabel) ?: fail("\"$appLabel\" can't be used as an app name")
         requireStatusMethod("cloneInstall")

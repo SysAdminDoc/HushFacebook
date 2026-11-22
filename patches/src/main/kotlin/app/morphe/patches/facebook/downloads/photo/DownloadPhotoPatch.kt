@@ -6,8 +6,7 @@ package app.morphe.patches.facebook.downloads.photo
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY_ATTACHMENT
 import app.morphe.patches.facebook.downloads.video.IMMUTABLE_LIST
 import app.morphe.patches.facebook.downloads.video.callAfterMenuFill
@@ -20,6 +19,8 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 
@@ -59,8 +60,8 @@ internal fun Document.declarePhotoSearchProvider(packageName: String) {
     )
 }
 
-private val photoSearchProviderPatch = resourcePatch {
-    execute {
+private val photoSearchProviderPatch = patch {
+    executeResources {
         document("AndroidManifest.xml").use { it.declarePhotoSearchProvider(packageMetadata.packageName) }
     }
 }
@@ -95,7 +96,7 @@ internal val SUBATTACHMENTS_FIELD = "subattachments".hashCode()
  * (ListingPhotoAnchors.kt).
  */
 @Suppress("unused")
-val downloadPhotoPatch = bytecodePatch(
+val downloadPhotoPatch = patch(
     // The README table check reads this literal; PHOTO_PATCH carries the same text for the messages.
     name = "Download any photo",
     description = "Shows Save photo on every photo you open, even where the poster turned saving off, and saves " +
@@ -107,7 +108,7 @@ val downloadPhotoPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch, photoSearchProviderPatch, commentSheetDialogPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // The post menu's anchors are found before either hook goes in, so a build without one
         // fails whole instead of keeping the photo hooks with no switch in settings.
         val addPostMenuItem = postMenuPhotoItem()

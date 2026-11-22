@@ -7,6 +7,7 @@
  */
 package app.morphe.patches.facebook.layout.theme
 
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -20,12 +21,12 @@ import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.settings.declaredInHierarchy
 import app.morphe.patches.shared.misc.extension.EXTENSION_CLASS_DESCRIPTOR
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
-import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.colorOption
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
 import com.android.tools.smali.dexlib2.AccessFlags
-import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -318,11 +319,11 @@ private const val NIGHT_COLORS = "res/values-night/colors.xml"
  * Facebook strips resource names and renames its classes about every two weeks, so a name is not an
  * anchor here. A value of this exact shape is a colour and nothing else.
  */
-private fun amoledThemeResourcePatch(background: () -> Int) = resourcePatch {
+private fun amoledThemeResourcePatch(background: () -> Int) = patch {
     // The FDS token names, for light mode's surfaces in the light style ([repointLightSurfaces]).
     dependsOn(fdsTokenNamesPatch)
 
-    execute {
+    executeResources {
         val written = "#%08x".format(background())
         var changed = 0
         val rewritten = mutableMapOf<String, Int>()
@@ -578,7 +579,7 @@ private fun isDarkBackground(value: String): Boolean {
 }
 
 @Suppress("unused")
-val amoledThemePatch = bytecodePatch(
+val amoledThemePatch = patch(
     name = "AMOLED black theme",
     description = "Makes Facebook's dark mode black, or a dark color you pick, instead of dark gray, which can " +
         "save battery on OLED screens. Cards and menus stay a shade lighter than the page. Turn on Black cards in " +
@@ -613,7 +614,7 @@ val amoledThemePatch = bytecodePatch(
 
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // Facebook's own answer for whether its dark mode is on, which every route asks: the Video
         // tab stays dark in light mode, from the same dark style and colour resources.
         hookDarkModeAnswer()

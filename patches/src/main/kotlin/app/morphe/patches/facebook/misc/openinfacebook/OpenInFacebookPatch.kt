@@ -5,13 +5,14 @@
 package app.morphe.patches.facebook.misc.openinfacebook
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 
@@ -66,8 +67,8 @@ internal fun Document.declareOpenInFacebook() {
     filter.child("data", "android:mimeType" to "text/plain")
 }
 
-private val openInFacebookResourcePatch = resourcePatch {
-    execute {
+private val openInFacebookResourcePatch = patch {
+    executeResources {
         document("AndroidManifest.xml").use { it.declareOpenInFacebook() }
     }
 }
@@ -78,7 +79,7 @@ private val openInFacebookResourcePatch = resourcePatch {
  * page or the link to Open in Facebook does.
  */
 @Suppress("unused")
-val openInFacebookPatch = bytecodePatch(
+val openInFacebookPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Open in Facebook from the share menu",
     description = "Adds Open in Facebook to Android's share menu. Share a Facebook link or page to it from " +
@@ -91,7 +92,7 @@ val openInFacebookPatch = bytecodePatch(
     dependsOn(openInFacebookResourcePatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         classDefByOrNull(OPEN_IN_FACEBOOK_CLASS) ?: throw PatchException("$PATCH: the extension has no $OPEN_IN_FACEBOOK_CLASS")
         enableStatus("openInFacebook")
     }

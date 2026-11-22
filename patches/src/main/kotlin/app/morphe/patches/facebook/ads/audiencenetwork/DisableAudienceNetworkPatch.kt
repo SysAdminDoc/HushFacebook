@@ -9,12 +9,13 @@
 package app.morphe.patches.facebook.ads.audiencenetwork
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.handleTargets
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -39,8 +40,8 @@ private val COMPONENT_TAGS = setOf("activity", "activity-alias", "service", "rec
  * Disabling is enough (nothing can bind to or start the component), and it keeps the manifest diff
  * readable and reversible, unlike removing the entries.
  */
-private val disableAudienceNetworkResourcePatch = resourcePatch {
-    execute {
+private val disableAudienceNetworkResourcePatch = patch {
+    executeResources {
         document("AndroidManifest.xml").use { document -> disableAudienceNetwork(document) }
     }
 }
@@ -72,7 +73,7 @@ internal fun disableAudienceNetwork(manifest: Document) {
 }
 
 @Suppress("unused")
-val disableAudienceNetworkPatch = bytecodePatch(
+val disableAudienceNetworkPatch = patch(
     name = "Disable Audience Network",
     description = "Stops Facebook serving its ads inside other apps on your phone. Those apps show their own ads " +
         "or none, and their rewarded ads may fail. Works as soon as you patch it in, with no switch.",
@@ -83,7 +84,7 @@ val disableAudienceNetworkPatch = bytecodePatch(
     dependsOn(disableAudienceNetworkResourcePatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Facebook's startup task turns the ipc components on again, so its calls go through
         // the extension (see AudienceNetworkAnchors.kt).
         val setup = mutableClassDefByOrNull(REMOTE_APIS_SETUP)

@@ -10,8 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -20,6 +19,9 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
+import app.morphe.util.finalizeBytecode
+import app.morphe.util.finalizeResources
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -348,12 +350,12 @@ internal fun Document.colourValues(): Map<String, String> {
         .associate { it.getAttribute("name") to it.textContent.trim() }
 }
 
-private val materialYouResourcePatch = resourcePatch {
+private val materialYouResourcePatch = patch {
     dependsOn(fdsTokenAttributesPatch)
 
     // After every patch's own work, so AMOLED's black has gone in first and stays: black is no
     // tone this recolours.
-    finalize {
+    finalizeResources {
         // Patcher 2.0 decodes only the files a patch asks for: an undecoded file does not exist yet, so
         // the state list check below needs its folder decoded too.
         decode("res/values*/colors.xml", "res/values*/style*.xml", V31_STATE_LISTS)
@@ -420,7 +422,7 @@ private val materialYouResourcePatch = resourcePatch {
 }
 
 @Suppress("unused")
-val materialYouThemePatch = bytecodePatch(
+val materialYouThemePatch = patch(
     name = "Material You theme",
     description = "Gives Facebook the colors of your wallpaper on Android 12 and newer, so it matches your " +
         "phone. Dark mode takes them everywhere, and light mode on its grays, blues and selected tab. It isn't " +
@@ -435,14 +437,14 @@ val materialYouThemePatch = bytecodePatch(
 
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         enableStatus("materialYouTheme")
     }
 
     // After every patch's execute, so with AMOLED in the build its hooks and rewrites are already
     // there: each hook here goes after AMOLED's and gets AMOLED's colour, and AMOLED's black is no
     // dark-theme colour this recolours.
-    finalize {
+    finalizeBytecode {
         // The selected tab's reads are found first: a build without them fails before any hook
         // below goes in.
         val recolourSelectedTab = selectedTabColourHook()

@@ -6,10 +6,11 @@ package app.morphe.patches.facebook.coexist
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.RegisterLiveness
+import app.morphe.util.executeResources
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -117,9 +118,9 @@ internal fun Document.putAppName(name: String, stringName: String = APP_NAME_STR
  * Writes the name [appName] answers into the labels. With no name picked, it opens no file, so
  * the manifest and the resources stay byte for byte as they were.
  */
-internal fun appLabelPatch(appName: () -> String?) = resourcePatch {
-    execute {
-        val name = pickedAppName(appName()) ?: return@execute
+internal fun appLabelPatch(appName: () -> String?) = patch {
+    executeResources {
+        val name = pickedAppName(appName()) ?: return@executeResources
         // Checked before the manifest changes, so a build without it is refused untouched.
         // Patcher 2.0 decodes only the files a patch asks for: an undecoded file does not exist yet.
         decode(STRINGS)

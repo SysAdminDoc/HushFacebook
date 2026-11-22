@@ -16,8 +16,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.encodedValue.MutableStringEncodedValue
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -25,6 +24,8 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
@@ -515,23 +516,23 @@ internal fun rerouteManifestToGmsCore(document: Document) {
 }
 
 /** Checks every bytecode edit first, so nothing refuses after the manifest changed. */
-internal val gmsCorePreflightPatch = bytecodePatch {
+internal val gmsCorePreflightPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         requireStatusMethod("gmsCore")
         planGmsCore()
     }
 }
 
 /** Points Facebook's manifest at microG-RE, once the preflight found every bytecode edit. */
-internal val gmsCoreManifestPatch = resourcePatch {
+internal val gmsCoreManifestPatch = patch {
     dependsOn(gmsCorePreflightPatch)
-    execute { document("AndroidManifest.xml").use(::rerouteManifestToGmsCore) }
+    executeResources { document("AndroidManifest.xml").use(::rerouteManifestToGmsCore) }
 }
 
 @Suppress("unused")
-val gmsCoreSupportPatch = bytecodePatch(
+val gmsCoreSupportPatch = patch(
     name = "GmsCore support",
     description = "For phones that run microG-RE instead of Google Play services. Facebook asks microG-RE for its " +
         "push notifications, and microG-RE gets the signature of Meta's own Facebook for the Google services that " +
@@ -545,7 +546,7 @@ val gmsCoreSupportPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch, gmsCoreManifestPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Found again rather than carried over: patches that ran since may have edited these classes.
         applyGmsCore(planGmsCore())
         enableStatus("gmsCore")

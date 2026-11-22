@@ -8,12 +8,14 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
+import app.morphe.util.finalizeResources
 import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
@@ -637,20 +639,20 @@ internal fun BytecodePatchContext.routeMetaAppLookups(): Int {
 private var stockAuthorities: Set<String> = emptySet()
 private var stockPermissions: Set<String> = emptySet()
 
-private val clonedPackageManifestPatch = resourcePatch {
-    execute {
+private val clonedPackageManifestPatch = patch {
+    executeResources {
         document("AndroidManifest.xml").use {
             stockAuthorities = it.ownAuthorities(packageMetadata.packageName)
             stockPermissions = it.ownPermissions(packageMetadata.packageName)
         }
     }
 
-    finalize {
+    finalizeResources {
         // The stock list is read before any patch runs, so the providers patches add since (Search
         // photo's) are read here, still under the stock package until this moves them.
         val followed = document("AndroidManifest.xml").use {
             it.followRenamedPackage(packageMetadata.packageName, stockAuthorities + it.ownAuthorities(packageMetadata.packageName), stockPermissions)
-        } ?: return@finalize
+        } ?: return@finalizeResources
         patchLog.info(
             "The package was renamed, so ${followed.declarations} permission declaration(s) still under the old name " +
                 "moved under the new one, ${followed.permissions} mention(s) of a permission now name the renamed " +
@@ -664,10 +666,10 @@ private val clonedPackageManifestPatch = resourcePatch {
  * declares and authorities it owns, and its code reaches its own providers. On an install nobody
  * renamed, the manifest is left as it was and the extension hands every authority back unchanged.
  */
-internal val clonedPackagePatch = bytecodePatch {
+internal val clonedPackagePatch = patch {
     dependsOn(clonedPackageManifestPatch, facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         routeOwnAuthorities(packageMetadata.packageName, stockAuthorities)
         routeBuiltAuthorities(packageMetadata.packageName, stockAuthorities)
         routeRemoteViewsPackage(packageMetadata.packageName)

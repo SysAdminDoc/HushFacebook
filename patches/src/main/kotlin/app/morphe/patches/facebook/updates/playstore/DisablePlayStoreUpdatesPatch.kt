@@ -40,8 +40,7 @@ package app.morphe.patches.facebook.updates.playstore
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -49,6 +48,10 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
+import app.morphe.util.finalizeBytecode
+import app.morphe.util.finalizeResources
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -81,14 +84,14 @@ internal fun Document.raiseVersionCode() {
 }
 
 @Suppress("unused")
-private val disablePlayStoreUpdatesResourcePatch = resourcePatch {
-    execute {
+private val disablePlayStoreUpdatesResourcePatch = patch {
+    executeResources {
         document("AndroidManifest.xml").use { document ->
             originalVersionCode = document.versionCode()
         }
     }
 
-    finalize {
+    finalizeResources {
         document("AndroidManifest.xml").use { document ->
             document.raiseVersionCode()
         }
@@ -140,7 +143,7 @@ internal fun MutableMethod.readRealVersionCode(): Int {
 }
 
 @Suppress("unused")
-val disablePlayStoreUpdatesPatch = bytecodePatch(
+val disablePlayStoreUpdatesPatch = patch(
     name = "Disable Play Store updates",
     description = "Stops Google Play offering Facebook updates, which a patched app can't take anyway. It isn't " +
         "selected by default because once it's installed, a build without it can't install over it. It doesn't " +
@@ -151,14 +154,14 @@ val disablePlayStoreUpdatesPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch, disablePlayStoreUpdatesResourcePatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("playStoreUpdates")
         val stub = classDefByOrNull(EXTENSION_CLASS)?.methods?.singleOrNull(::isOriginalVersionCodeStub)
         if (stub == null) throw PatchException("Disable Play Store updates: $EXTENSION_CLASS has no originalVersionCode()I")
         enableStatus("playStoreUpdates")
     }
 
-    finalize {
+    finalizeBytecode {
         mutableClassDefBy(EXTENSION_CLASS).methods.single(::isOriginalVersionCodeStub).returnEarly(originalVersionCode)
 
         // Every class but the extension's own, Hushfacebook's other extension classes included.

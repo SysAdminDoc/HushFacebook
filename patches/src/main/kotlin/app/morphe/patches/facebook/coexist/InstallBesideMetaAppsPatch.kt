@@ -4,16 +4,17 @@
  */
 package app.morphe.patches.facebook.coexist
 
-import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
+import app.morphe.util.executeResources
 
 /** The manifest half: both shared permissions renamed wherever the manifest names one. */
-private val renameSharedPermissionsPatch = resourcePatch {
-    execute {
+private val renameSharedPermissionsPatch = patch {
+    executeResources {
         document("AndroidManifest.xml").use { it.renameSharedPermissions() }
     }
 }
@@ -39,7 +40,7 @@ private val renameSharedPermissionsPatch = resourcePatch {
  * No switch: a manifest can't change at run time, so the patch stays in while paused.
  */
 @Suppress("unused")
-val installBesideMetaAppsPatch = bytecodePatch(
+val installBesideMetaAppsPatch = patch(
     name = "Install beside Meta's apps",
     description = "Lets the official Messenger, Facebook Lite, Business Suite and Workplace install next to your " +
         "patched Facebook. Without it, Android refuses them because they share two permissions with Facebook. " +
@@ -52,7 +53,7 @@ val installBesideMetaAppsPatch = bytecodePatch(
 
     dependsOn(renameSharedPermissionsPatch, facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         routeSharedLiterals()
         enableStatus("installBesideMetaApps")
     }

@@ -5,8 +5,9 @@
 package app.morphe.patches.facebook.misc.appicons
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeResources
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import javax.xml.parsers.DocumentBuilderFactory
@@ -183,9 +184,9 @@ private fun Element.drawInline(drawable: Element) {
  * Restyles the launcher icon with the style [iconStyle] answers. With Facebook's own icon picked,
  * it opens no file, so the resources stay byte for byte as they were.
  */
-internal fun launcherIconPatch(iconStyle: () -> String?) = resourcePatch {
-    execute {
-        val style = pickedIconStyle(iconStyle()) ?: return@execute
+internal fun launcherIconPatch(iconStyle: () -> String?) = patch {
+    executeResources {
+        val style = pickedIconStyle(iconStyle()) ?: return@executeResources
         // Read with a plain parser: a document() closes by writing its file back.
         val read = { path: String -> DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(get(path)) }
         val icon = appResource(applicationIcon(read("AndroidManifest.xml")))
@@ -197,7 +198,7 @@ internal fun launcherIconPatch(iconStyle: () -> String?) = resourcePatch {
             drawHushfacebookIcon(read(iconPath))
             document(iconPath).use { drawHushfacebookIcon(it) }
             patchLog.info("$OPTION: the home screen icon is Hushfacebook's logo ($iconPath).")
-            return@execute
+            return@executeResources
         }
         val glyph = monochromeReference(read(iconPath))
         val glyphPath = singleXml(decode(resourceGlob(glyph)), glyph, VECTOR, read)

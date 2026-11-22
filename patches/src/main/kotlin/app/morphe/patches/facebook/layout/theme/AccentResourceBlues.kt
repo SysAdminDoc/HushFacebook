@@ -6,9 +6,10 @@ package app.morphe.patches.facebook.layout.theme
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeResources
 import app.morphe.util.returnEarly
 import java.io.File
 import org.w3c.dom.Document
@@ -101,10 +102,10 @@ private fun blue(value: String?, first: Map<String, String>, fallback: Map<Strin
  * Finds route five's table. After the token names, which come off the token enum. A build where no
  * style gives a token one of Facebook's blues keeps routes one to four; it only says so.
  */
-internal val accentResourcePatch = resourcePatch {
+internal val accentResourcePatch = patch {
     dependsOn(fdsTokenNamesPatch)
 
-    execute {
+    executeResources {
         // Patcher 2.0 decodes only the files a patch asks for, and a folder lists only those.
         decode("res/values*/colors.xml", "res/values/style*.xml")
         val folders = get("res", false).listFiles().orEmpty()
