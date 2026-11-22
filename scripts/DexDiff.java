@@ -1146,7 +1146,12 @@ public class DexDiff {
         String[] into = before[successor];
         for (int r = 0; r < into.length; r++) {
             if (into[r] == null || into[r].equals(state[r])) continue;
-            into[r] = joinTypes(into[r], state[r], superclasses, interfaces);
+            // Only a join that moves the register counts: one that lands where it already was (Base
+            // joined with a class under Base) would queue the successor again for nothing, and two
+            // such joins in nested loops queue each other forever.
+            String joined = joinTypes(into[r], state[r], superclasses, interfaces);
+            if (into[r].equals(joined)) continue;
+            into[r] = joined;
             changed = true;
         }
         if (changed) work.add(successor);
@@ -1160,8 +1165,9 @@ public class DexDiff {
      * one side's chain reaches Object through the APK's own classes and the other's runs into a
      * platform class without meeting it, they meet at Object. A chain that runs into a class
      * neither the APK nor the platform defines, which Facebook loads later from its own stores,
-     * leaves the register unknown, since ART can't merge it before then either. Each join moves a
-     * register up its chain or to unknown, so the flow still settles.
+     * leaves the register unknown, since ART can't merge it before then either. The flow requeues a
+     * block only when a join moves a register, and each move goes up its chain or to unknown, so
+     * it settles.
      */
     private static String joinTypes(String a, String b, Map<String, String> superclasses, Set<String> interfaces) {
         if (a == null || b == null) return null;
