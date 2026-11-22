@@ -13,10 +13,12 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -35,10 +37,15 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import app.morphe.extension.facebook.misc.AppLockForTests;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -181,6 +188,8 @@ public class SavedChainTest {
         forgetEarlierTouches();
         HookStatus.clear();
         SavedChain.resetForTests();
+        // A fresh process: the window list is read from this test's window manager, not an earlier test's.
+        AppLockForTests.disarm();
         RuntimeEnvironment.getApplication().registerActivityLifecycleCallbacks(screens);
         Settings.SAVED_VIDEOS_IN_ORDER.save(true);
     }
@@ -816,5 +825,163 @@ public class SavedChainTest {
         idle(SavedChain.POST_CHECK_MS + 100);
         assertFalse("the chain kept closing posts past its limit", last.get().isFinishing());
         assertNull(SavedChain.chainForTests());
+    }
+
+    /**
+     * Facebook 588's saved post page: a window over the Saved page's own screen, with no screen of
+     * its own. As on the S22 (2026-11-22), a Back key handed to its views is swallowed with nothing
+     * closing, since Back reaches it through Android's back callbacks, which end in its own Back.
+     */
+    static final class PostWindow extends Dialog {
+        final boolean keepsBack;
+        int backs;
+        int escapes;
+
+        PostWindow(Activity page, boolean keepsBack) {
+            super(page);
+            this.keepsBack = keepsBack;
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event) {
+            if (event.getKeyCode() == KeyEvent.KEYCODE_ESCAPE) {
+                // Android 14 and later: a dialog cancels on Escape.
+                if (event.getAction() == KeyEvent.ACTION_UP) {
+                    escapes++;
+                    cancel();
+                }
+                return true;
+            }
+            return event.getKeyCode() == KeyEvent.KEYCODE_BACK || super.dispatchKeyEvent(event);
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public void onBackPressed() {
+            backs++;
+            if (!keepsBack) super.onBackPressed();
+        }
+    }
+
+    /** A saved post opening as a window over Saved, which loses the focus to it. */
+    private PostWindow openPostWindow() {
+        return openPostWindow(false);
+    }
+
+    /**
+     * What Facebook 588 hands a dialog's window as its callback on the S22 (2026-11-22): a proxy
+     * whose handler passes each call on to the dialog it holds in a plain field.
+     */
+    static final class Forwarder implements InvocationHandler {
+        private final Object target;
+
+        Forwarder(Object target) {
+            this.target = target;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            try {
+                return method.invoke(target, args);
+            } catch (InvocationTargetException thrown) {
+                throw thrown.getCause();
+            }
+        }
+    }
+
+    private PostWindow openPostWindow(boolean keepsBack) {
+        PostWindow post = new PostWindow(page, keepsBack);
+        post.getWindow().setCallback((Window.Callback) Proxy.newProxyInstance(Window.Callback.class.getClassLoader(),
+                new Class<?>[]{Window.Callback.class}, new Forwarder(post)));
+        post.setContentView(new FrameLayout(page));
+        post.show();
+        pageController.windowFocusChanged(false);
+        idle(0);
+        return post;
+    }
+
+    @Test
+    public void aPostShownAsAWindowOverSavedGetsBackAndTheCardAfterItPlays() {
+        chainTappedCardOne();
+        PostWindow post = openPostWindow();
+        idle(SavedChain.POST_CHECK_MS - 100);
+        assertTrue("the post closed before a slow video had its chance", post.isShowing());
+        idle(200);
+        assertFalse("the chain stopped on a saved post shown over Saved", post.isShowing());
+        assertEquals("one Back", 1, post.backs);
+        SavedChain.Chain chain = SavedChain.chainForTests();
+        assertNotNull("closing the post ended the chain", chain);
+        assertEquals("card 1", chain.card.label);
+        assertEquals(1, chain.postsSkipped);
+        assertTrue(statusLine(), statusLine().contains(SavedChain.POST_SKIPPED + " 1"));
+
+        pageController.windowFocusChanged(true);
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("the card after the post wasn't tapped", TAP, touchesOf(2));
+        for (int other : new int[]{0, 1, 3, 4, 5}) assertTrue("card " + other + " was tapped", touchesOf(other).isEmpty());
+
+        ReelsViewer viewer = openViewer(SAVED);
+        idle(SavedChain.POST_CHECK_MS + 100);
+        assertFalse("a saved video was closed as a post", viewer.isFinishing());
+        assertEquals("card 2", SavedChain.chainForTests().card.label);
+    }
+
+    @Test
+    public void aPostWindowThatKeepsItsBackIsDismissedAndTheChainGoesOn() {
+        chainTappedCardOne();
+        PostWindow post = openPostWindow(true);
+        idle(SavedChain.POST_CHECK_MS + 100);
+        assertTrue("the post wasn't given its Back first", post.isShowing());
+        assertEquals(1, post.backs);
+        idle(SavedChain.SETTLE_MS);
+        assertFalse("a post that kept its Back stayed open", post.isShowing());
+
+        pageController.windowFocusChanged(true);
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("the card after the post wasn't tapped", TAP, touchesOf(2));
+    }
+
+    @Test
+    public void aPostWindowWhoseDialogCantBeReadGetsEscapeAndTheChainGoesOn() {
+        SavedChain.readWindows = false;
+        try {
+            chainTappedCardOne();
+            PostWindow post = openPostWindow();
+            idle(SavedChain.POST_CHECK_MS + 100);
+            assertFalse("a post window with no dialog to read stayed open", post.isShowing());
+            assertEquals(1, post.escapes);
+            assertEquals(0, post.backs);
+
+            pageController.windowFocusChanged(true);
+            idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+            assertEquals("the card after the post wasn't tapped", TAP, touchesOf(2));
+        } finally {
+            SavedChain.readWindows = true;
+        }
+    }
+
+    @Test
+    public void aWindowAlreadyOverSavedOrOpenedByHandStays() {
+        openSaved(6, true);
+        press(1);
+        PostWindow mine = openPostWindow();
+        idle(SavedChain.TOUCH_WINDOW_MS + 500);
+        assertTrue("a post the user opened was closed", mine.isShowing());
+        assertNull(SavedChain.chainForTests());
+        mine.dismiss();
+        pageController.windowFocusChanged(true);
+
+        playing(0);
+        SavedChain.ended(new Object());
+        idle(0);
+        PostWindow early = new PostWindow(page, false);
+        early.setContentView(new FrameLayout(page));
+        early.show();
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + SavedChain.TOUCH_WINDOW_MS);
+        assertTrue("a window up before the chain's tap was closed", early.isShowing());
+        assertEquals(0, early.backs);
+        assertEquals(0, early.escapes);
+        assertFalse(statusLine().contains(SavedChain.POST_SKIPPED));
     }
 }
