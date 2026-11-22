@@ -22,7 +22,7 @@ Each row in the [patch table](docs/patches.md) says how its switch starts. The a
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.23.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.23.0), with 126 patches. It includes all changes since v0.22.0, among them folding long posts and comments at the length you pick, background play for a video you started, switches for Facebook's new Repost button, watched stories moving to the end of the tray, and the move to Facebook 588.0.0.42.55, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.24.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.24.0), with 127 patches. It includes all changes since v0.23.0, among them background play for the next reel, a tab bar that stays in groups, a pause button for feed videos, a proxy you can point Facebook at, a centered feed column on tablets, and the move to Facebook 588.0.0.42.55, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](docs/patches.md)
 

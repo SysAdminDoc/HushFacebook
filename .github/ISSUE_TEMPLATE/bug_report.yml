@@ -18,7 +18,7 @@ body:
     attributes:
       label: Hushfacebook and Facebook versions
       description: Long-press Facebook's icon and tap Hushfacebook. Copy the version below its status. If you have the new category pages, open More settings, then About, and copy the Version line.
-      placeholder: Version 0.23.0 for Facebook 588.0.0.42.55
+      placeholder: Version 0.24.0 for Facebook 588.0.0.42.55
     validations:
       required: true
   - type: input
