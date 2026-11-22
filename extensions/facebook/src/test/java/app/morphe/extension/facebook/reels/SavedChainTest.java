@@ -701,4 +701,120 @@ public class SavedChainTest {
         assertFalse(viewer.isFinishing());
         assertFalse("a chain that never ran counted a next card", statusLine().contains(SavedChain.NEXT));
     }
+
+    /** A saved post's page: a screen a card opens over Saved that isn't the Reels viewer. */
+    public static final class PostPage extends Activity {
+        @Override
+        protected void onCreate(Bundle state) {
+            super.onCreate(state);
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
+            setContentView(new FrameLayout(this));
+        }
+    }
+
+    /** A saved post's page opening over Saved, in front, with no Reels viewer saying where it's from. */
+    private ActivityController<PostPage> openPost() {
+        pageController.pause();
+        ActivityController<PostPage> post = Robolectric.buildActivity(PostPage.class).setup();
+        post.windowFocusChanged(true);
+        idle(0);
+        return post;
+    }
+
+    /** The post's page closing and Saved back in front. */
+    private void postClosed(ActivityController<PostPage> post) {
+        post.pause();
+        pageController.resume();
+        post.stop().destroy();
+    }
+
+    /** A chain on card 0 whose video ended, with Saved back and card 1 just tapped by the chain. */
+    private void chainTappedCardOne() {
+        openSaved(6, true);
+        playing(0);
+        SavedChain.ended(new Object());
+        idle(0);
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("card 1 wasn't tapped", TAP, touchesOf(1));
+        touchesOf(1).clear();
+    }
+
+    @Test
+    public void aPostTheChainOpenedIsClosedForTheCardAfterIt() {
+        chainTappedCardOne();
+        ActivityController<PostPage> post = openPost();
+        idle(SavedChain.POST_CHECK_MS - 100);
+        assertFalse("the post closed before a slow video had its chance", post.get().isFinishing());
+        idle(200);
+        assertTrue("the chain stopped on a saved post", post.get().isFinishing());
+        SavedChain.Chain chain = SavedChain.chainForTests();
+        assertNotNull("closing the post ended the chain", chain);
+        assertEquals("the chain's card", "card 1", chain.card.label);
+        assertEquals(1, chain.postsSkipped);
+        assertNotNull("Saved showed while the post closed", coverOnSaved());
+        assertTrue(statusLine(), statusLine().contains(SavedChain.POST_SKIPPED + " 1"));
+
+        postClosed(post);
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("the card after the post wasn't tapped", TAP, touchesOf(2));
+        for (int other : new int[]{0, 1, 3, 4, 5}) assertTrue("card " + other + " was tapped", touchesOf(other).isEmpty());
+
+        // Card 2 is a video: its viewer says it's from Saved, and the chain carries on from there.
+        ReelsViewer viewer = openViewer(SAVED);
+        idle(SavedChain.POST_CHECK_MS + 100);
+        assertFalse("a saved video was closed as a post", viewer.isFinishing());
+        assertEquals("card 2", SavedChain.chainForTests().card.label);
+        assertEquals("a video started the post count over", 0, SavedChain.chainForTests().postsSkipped);
+    }
+
+    @Test
+    public void aVideoThatSaysWhereItsFromLateStays() {
+        chainTappedCardOne();
+        ActivityController<PostPage> slow = openPost();
+        idle(SavedChain.POST_CHECK_MS / 2);
+        SavedChain.viewerOpening(SAVED);
+        idle(SavedChain.POST_CHECK_MS);
+        assertFalse("a slow saved video was closed as a post", slow.get().isFinishing());
+        assertNotNull(SavedChain.chainForTests());
+        assertFalse(SavedChain.chainForTests().moving);
+        assertFalse(statusLine().contains(SavedChain.POST_SKIPPED));
+    }
+
+    @Test
+    public void aPostOpenedByHandOrWithTheSwitchOffStays() {
+        openSaved(6, true);
+        press(1);
+        ActivityController<PostPage> mine = openPost();
+        idle(SavedChain.POST_CHECK_MS + 500);
+        assertFalse("a post the user opened was closed", mine.get().isFinishing());
+        assertNull(SavedChain.chainForTests());
+        postClosed(mine);
+
+        chainTappedCardOne();
+        Settings.SAVED_VIDEOS_IN_ORDER.save(false);
+        ActivityController<PostPage> off = openPost();
+        idle(SavedChain.POST_CHECK_MS + 500);
+        assertFalse("off, the chain closed a post", off.get().isFinishing());
+        assertFalse(statusLine().contains(SavedChain.POST_SKIPPED));
+    }
+
+    @Test
+    public void aRunOfPostsEndsTheChainOnTheLastOneAllowed() {
+        chainTappedCardOne();
+        SavedChain.Chain chain = null;
+        ActivityController<PostPage> post = openPost();
+        idle(SavedChain.POST_CHECK_MS + 100);
+        chain = SavedChain.chainForTests();
+        assertNotNull(chain);
+        // Pretend the chain already closed the most it may: the next post it opens stays.
+        chain.postsSkipped = SavedChain.MAX_POSTS_SKIPPED;
+        postClosed(post);
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals(TAP, touchesOf(2));
+        ActivityController<PostPage> last = openPost();
+        idle(SavedChain.POST_CHECK_MS + 100);
+        assertFalse("the chain kept closing posts past its limit", last.get().isFinishing());
+        assertNull(SavedChain.chainForTests());
+    }
 }

@@ -53,7 +53,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * page is back, the card after the one played (by its label when it has one, else its place in the
  * grid, left to right and then down) is scrolled into view if it has to be and tapped, and the
  * viewer that opens starts the chain again. The last saved video closes as well, and with no card
- * after it the chain ends on Saved. Back from the viewer, another viewer opening from anywhere but
+ * after it the chain ends on Saved. A card the chain taps can be a saved post, which opens a post
+ * page instead and used to end the chain there (#404, a reporter's video): a screen that comes in
+ * front from the chain's own tap with no saved video starting is closed again ({@link #closePost})
+ * and the card after it tapped. Back from the viewer, another viewer opening from anywhere but
  * Saved, the Saved page closing, a page that doesn't come back within {@link #RETURN_WINDOW_MS},
  * the switch going off and Pause each end the chain.
  *
@@ -142,6 +145,19 @@ public final class SavedChain {
     /** The longest the cover stays on Saved, whatever happens. */
     static final long COVER_MS = RETURN_WINDOW_MS + 2000;
 
+    /**
+     * How long a screen a tapped card opened is in front, with no saved video starting, before it
+     * counts as a post. Facebook's Reels viewer says where it opens from as it's built, before it's
+     * in front, so this only waits out a slow one.
+     */
+    static final long POST_CHECK_MS = 500;
+
+    /** How many posts in a row the chain closes before it gives up on Saved. */
+    static final int MAX_POSTS_SKIPPED = 12;
+
+    /** Counted each time a card the chain tapped opened a post, which it closed for the card after it. */
+    static final String POST_SKIPPED = "Saved post skipped";
+
     /** The clock for tests, or null for the uptime clock. */
     @Nullable static LongSupplier clockForTests;
 
@@ -183,10 +199,27 @@ public final class SavedChain {
         int scrolls;
         /** Which card Saved taps once it's back: 1 the one after, -1 the one before. */
         int direction = 1;
+        /** How many posts in a row the chain has closed to get here (#404). */
+        int postsSkipped;
 
         Chain(Card card, long openedAt) {
             this.card = card;
             this.openedAt = openedAt;
+        }
+    }
+
+    /** The card the chain just tapped on Saved, until a saved video opens from it or it's known to be a post. */
+    static final class Tapped {
+        final WeakReference<Activity> page;
+        final long at;
+        final int direction;
+        final int postsSkipped;
+
+        Tapped(Activity page, long at, int direction, int postsSkipped) {
+            this.page = new WeakReference<>(page);
+            this.at = at;
+            this.direction = direction;
+            this.postsSkipped = postsSkipped;
         }
     }
 
@@ -231,6 +264,7 @@ public final class SavedChain {
 
     @Nullable private static Card lastCard;
     @Nullable private static Chain chain;
+    @Nullable private static Tapped tapped;
     @Nullable private static Drag drag;
     /**
      * The event {@link #touched} read last, with its times and its action as left after the read, and
@@ -447,6 +481,7 @@ public final class SavedChain {
                 if (card == null && chain != null) return; // The same viewer asking again.
                 lastCard = null;
                 chain = null;
+                tapped = null; // A saved video, so the card the chain tapped was no post.
             }
             if (!on()) return;
             long at = now();
@@ -568,6 +603,54 @@ public final class SavedChain {
         return true;
     }
 
+    /**
+     * On the main thread, [POST_CHECK_MS] after [screen] came in front from a card the chain tapped:
+     * with no saved video started from it and [screen] still in front, the card was a post or
+     * something else that isn't a video (#404). The chain closes it with no animation, keeps Saved
+     * covered, and taps the card after the post once Saved is back, or the one before it after a
+     * swipe down. A card the user pressed is never closed, and after [MAX_POSTS_SKIPPED] posts in a
+     * row the chain ends there.
+     */
+    static void closePost(Activity screen, Tapped opened) {
+        try {
+            Chain skipped;
+            Activity page;
+            synchronized (SavedChain.class) {
+                if (tapped != opened) return;
+                tapped = null;
+                if (chain != null) return;
+                Card card = lastCard;
+                page = opened.page.get();
+                if (card == null || page == null || card.page.get() != page || card.at < opened.at) return;
+                if (screen == page || screen.isFinishing() || screen != resumed.get()) return;
+                if (!on()) return;
+                if (opened.postsSkipped >= MAX_POSTS_SKIPPED) {
+                    Logger.printDebug(() -> "Saved videos in a row: " + MAX_POSTS_SKIPPED
+                            + " posts in a row, so it stops on this one");
+                    return;
+                }
+                lastCard = null;
+                skipped = new Chain(card, now());
+                skipped.viewer = new WeakReference<>(screen);
+                skipped.moving = true;
+                skipped.direction = opened.direction;
+                skipped.postsSkipped = opened.postsSkipped + 1;
+                chain = skipped;
+            }
+            HookStatus.bound(FAMILY, CHAIN_HOOK);
+            HookStatus.counted(FAMILY, POST_SKIPPED);
+            Logger.printDebug(() -> "Saved videos in a row: the card opened a post, not a video, so it's closed for the "
+                    + (opened.direction > 0 ? "next" : "previous") + " one");
+            coverPage(page);
+            screen.finish();
+            screen.overridePendingTransition(0, 0);
+            Utils.runOnMainThreadDelayed(() -> giveUp(skipped), RETURN_WINDOW_MS);
+        } catch (Throwable failure) {
+            disarm();
+            HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
+        }
+    }
+
     /** Ends a chain whose Saved page never came back. */
     private static void giveUp(Chain current) {
         synchronized (SavedChain.class) {
@@ -682,6 +765,7 @@ public final class SavedChain {
             synchronized (SavedChain.class) {
                 if (chain != current) return;
                 chain = null; // The viewer the tap opens starts the next chain.
+                tapped = new Tapped(page, now(), back ? -1 : 1, current.postsSkipped);
             }
             int left = next.getLeft();
             int top = next.getTop();
@@ -922,6 +1006,7 @@ public final class SavedChain {
     private static void disarm() {
         synchronized (SavedChain.class) {
             chain = null;
+            tapped = null;
         }
         if (cover.get() != null) uncoverAfter(0);
     }
@@ -989,6 +1074,17 @@ public final class SavedChain {
             if (back != null) {
                 Chain next = back;
                 Utils.runOnMainThreadDelayed(() -> tapNext(next), SETTLE_MS);
+            }
+            Tapped card;
+            synchronized (SavedChain.class) {
+                card = tapped;
+                if (card != null && (chain != null || activity == card.page.get() || now() - card.at > TOUCH_WINDOW_MS)) {
+                    card = null;
+                }
+            }
+            if (card != null) {
+                Tapped opened = card;
+                Utils.runOnMainThreadDelayed(() -> closePost(activity, opened), POST_CHECK_MS);
             }
         }
 
