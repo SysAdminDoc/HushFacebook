@@ -34,9 +34,11 @@ import app.morphe.extension.shared.Utils;
  * moment later fills the screen with it, up under the bar (S22 2026-11-22, a frame-by-frame
  * recording of a swipe). Opening one saved video by hand, that's barely seen. The chain opens a new
  * viewer for every saved video, though, so each swipe ended with the video jumping, the shake a
- * reporter saw. So the viewer the chain opens stays black until its video has moved into place, or
- * has stayed in one place for {@link #HOLD_MS}, and never longer than {@link #MAX_MS}. A saved post
- * the chain is about to close gets the same black from its first frame. Main thread only.
+ * reporter saw. So the viewer the chain opens stays black until its video has moved up to the top of
+ * the window, or has stayed in one place for {@link #HOLD_MS}, and never longer than {@link #MAX_MS}.
+ * Facebook can lay the video out fitted more than once before it fills the screen, so a move that
+ * leaves it under the status bar starts the hold over rather than showing it. A saved post the chain
+ * is about to close gets the same black from its first frame. Main thread only.
  */
 final class SettleCover {
     /** How long a video may hold its first place before it shows anyway, on a phone where Facebook doesn't move it. */
@@ -129,7 +131,19 @@ final class SettleCover {
                     return;
                 }
                 if (found != video.get() || !Arrays.equals(place, now)) {
-                    show(root, "once it moved into place", at);
+                    int[] was = place;
+                    Logger.printDebug(() -> "Saved videos in a row: the next video moved from " + where(was) + " to "
+                            + where(now) + ", " + (at - since) + " ms after it opened");
+                    if (now[1] <= 0) {
+                        show(root, "once it moved into place", at);
+                        return;
+                    }
+                    // Still under the status bar: Facebook lays it out more than once on its way up
+                    // (S22 2026-11-22), so the hold starts over from here.
+                    place = now;
+                    placedAt = at;
+                    video = new WeakReference<>(found);
+                    Utils.runOnMainThreadDelayed(this::check, HOLD_MS);
                 } else if (at - placedAt >= HOLD_MS) {
                     show(root, "after it held its place", at);
                 }
@@ -184,6 +198,10 @@ final class SettleCover {
         if (!(view instanceof ViewGroup)) return;
         ViewGroup group = (ViewGroup) view;
         for (int i = 0; i < group.getChildCount(); i++) find(group.getChildAt(i), best, visible);
+    }
+
+    private static String where(int[] place) {
+        return place[2] + "x" + place[3] + " at " + place[0] + "," + place[1];
     }
 
     /** Where [video] sits in its window and how big it is. */

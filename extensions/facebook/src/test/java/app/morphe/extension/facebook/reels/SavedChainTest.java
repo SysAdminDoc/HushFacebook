@@ -131,10 +131,24 @@ public class SavedChainTest {
             setContentView(video);
         }
 
-        /** Facebook filling the screen with the video a moment later, up under the status bar. */
+        /**
+         * Facebook filling the screen with the video a moment later, up under the status bar: its
+         * viewer draws edge to edge, so the video's top is the window's top (0,0 on the S22).
+         */
         void fill() {
-            player.setLayoutParams(new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            int[] content = new int[2];
+            content().getLocationInWindow(content);
+            FrameLayout.LayoutParams full = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            full.topMargin = -content[1];
+            player.setLayoutParams(full);
+        }
+
+        /** Facebook laying the video out again on its way, still under the status bar. */
+        void refit() {
+            FrameLayout.LayoutParams fitted = new FrameLayout.LayoutParams(360, 600);
+            fitted.topMargin = 40;
+            player.setLayoutParams(fitted);
         }
 
         @Override
@@ -1119,6 +1133,28 @@ public class SavedChainTest {
         next.fill();
         frame(next);
         assertFalse("the next video stayed black once in place", black(next));
+    }
+
+    /**
+     * On the S22 the black came off as Facebook first laid the video out again, still fitted under
+     * the status bar, so the jump to the full screen showed after all (2026-11-22, two frames of
+     * it). Only a move up to the top of the screen counts, and any other move starts the hold over.
+     */
+    @Test
+    public void aMoveThatStaysUnderTheStatusBarKeepsTheNextVideoBlack() {
+        chainTappedCardOne();
+        ReelsViewer next = openViewer(SAVED, 1, true);
+        frame(next);
+        idle(SettleCover.HOLD_MS - 300);
+        next.refit();
+        frame(next);
+        assertTrue("the next video showed while still under the status bar", black(next));
+        idle(SettleCover.HOLD_MS - 200);
+        frame(next);
+        assertTrue("the hold didn't start over at the move", black(next));
+        next.fill();
+        frame(next);
+        assertFalse("the next video stayed black once it filled the screen", black(next));
     }
 
     @Test
