@@ -144,6 +144,19 @@ public class SavedChainTest {
             player.setLayoutParams(full);
         }
 
+        /**
+         * Facebook giving the video its own shape, wider than the window and centered, its top a
+         * pixel below the window's (1185x2105 at -52,1 on the S22).
+         */
+        void cropToFill() {
+            int[] content = new int[2];
+            content().getLocationInWindow(content);
+            FrameLayout.LayoutParams crop = new FrameLayout.LayoutParams(400, 700);
+            crop.leftMargin = -20;
+            crop.topMargin = 1 - content[1];
+            player.setLayoutParams(crop);
+        }
+
         /** Facebook laying the video out again on its way, still under the status bar. */
         void refit() {
             FrameLayout.LayoutParams fitted = new FrameLayout.LayoutParams(360, 600);
@@ -1132,29 +1145,55 @@ public class SavedChainTest {
         assertTrue("the next video showed before Facebook moved it into place", black(next));
         next.fill();
         frame(next);
+        assertTrue("the next video showed as Facebook moved it", black(next));
+        idle(SettleCover.MOVED_HOLD_MS + 50);
+        frame(next);
         assertFalse("the next video stayed black once in place", black(next));
     }
 
     /**
      * On the S22 the black came off as Facebook first laid the video out again, still fitted under
      * the status bar, so the jump to the full screen showed after all (2026-11-22, two frames of
-     * it). Only a move up to the top of the screen counts, and any other move starts the hold over.
+     * it). Each move starts a short hold over, so the video shows only once it stops moving.
      */
     @Test
-    public void aMoveThatStaysUnderTheStatusBarKeepsTheNextVideoBlack() {
+    public void eachMoveStartsTheHoldOverSoTheNextVideoShowsOnceItStopsMoving() {
         chainTappedCardOne();
         ReelsViewer next = openViewer(SAVED, 1, true);
         frame(next);
         idle(SettleCover.HOLD_MS - 300);
         next.refit();
         frame(next);
-        assertTrue("the next video showed while still under the status bar", black(next));
-        idle(SettleCover.HOLD_MS - 200);
+        assertTrue("the next video showed as Facebook moved it", black(next));
+        idle(SettleCover.MOVED_HOLD_MS - 100);
         frame(next);
-        assertTrue("the hold didn't start over at the move", black(next));
+        assertTrue("the next video showed between two of Facebook's layouts", black(next));
         next.fill();
         frame(next);
-        assertFalse("the next video stayed black once it filled the screen", black(next));
+        idle(SettleCover.MOVED_HOLD_MS - 100);
+        frame(next);
+        assertTrue("the hold didn't start over at the second move", black(next));
+        idle(150);
+        frame(next);
+        assertFalse("the next video stayed black once it stopped moving", black(next));
+    }
+
+    /**
+     * On the S22 the full-screen video's top sits a pixel below the window's (2026-11-22, 1185x2105
+     * at -52,1), so where it lands can't tell that it's in place, and every saved video waited out
+     * the long hold. It shows a short hold after Facebook's last move instead.
+     */
+    @Test
+    public void aVideoFacebookMovedShowsShortlyAfterItsLastMove() {
+        chainTappedCardOne();
+        ReelsViewer next = openViewer(SAVED, 1, true);
+        frame(next);
+        idle(250);
+        next.cropToFill();
+        frame(next);
+        idle(SettleCover.MOVED_HOLD_MS + 50);
+        frame(next);
+        assertFalse("the next video waited out the long hold after Facebook moved it", black(next));
     }
 
     @Test

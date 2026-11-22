@@ -34,15 +34,18 @@ import app.morphe.extension.shared.Utils;
  * moment later fills the screen with it, up under the bar (S22 2026-11-22, a frame-by-frame
  * recording of a swipe). Opening one saved video by hand, that's barely seen. The chain opens a new
  * viewer for every saved video, though, so each swipe ended with the video jumping, the shake a
- * reporter saw. So the viewer the chain opens stays black until its video has moved up to the top of
- * the window, or has stayed in one place for {@link #HOLD_MS}, and never longer than {@link #MAX_MS}.
- * Facebook can lay the video out fitted more than once before it fills the screen, so a move that
- * leaves it under the status bar starts the hold over rather than showing it. A saved post the chain
- * is about to close gets the same black from its first frame. Main thread only.
+ * reporter saw. So the viewer the chain opens stays black until its video has stopped moving: it
+ * shows {@link #MOVED_HOLD_MS} after Facebook's last move of it, or after {@link #HOLD_MS} when
+ * Facebook never moves it, and never later than {@link #MAX_MS}. Facebook can lay the video out more
+ * than once on its way to the full screen, so each move starts that short hold over. A saved post the
+ * chain is about to close gets the same black from its first frame. Main thread only.
  */
 final class SettleCover {
     /** How long a video may hold its first place before it shows anyway, on a phone where Facebook doesn't move it. */
     static final long HOLD_MS = 700;
+
+    /** How long a video must stay put after Facebook moved it before it shows. */
+    static final long MOVED_HOLD_MS = 200;
 
     /** The longest a screen the chain opened stays black, whatever happens. */
     static final long MAX_MS = 2500;
@@ -94,6 +97,7 @@ final class SettleCover {
         private WeakReference<View> video = new WeakReference<>(null);
         @Nullable private int[] place;
         private long placedAt;
+        private boolean moved;
         private boolean done;
 
         Watch(View decor, long since) {
@@ -117,7 +121,7 @@ final class SettleCover {
                 }
                 long at = SavedChain.now();
                 if (at - since >= MAX_MS) {
-                    show(root, "after the longest wait", at);
+                    reveal(root, "after the longest wait", at);
                     return;
                 }
                 View found = biggestVideo(root);
@@ -134,18 +138,15 @@ final class SettleCover {
                     int[] was = place;
                     Logger.printDebug(() -> "Saved videos in a row: the next video moved from " + where(was) + " to "
                             + where(now) + ", " + (at - since) + " ms after it opened");
-                    if (now[1] <= 0) {
-                        show(root, "once it moved into place", at);
-                        return;
-                    }
-                    // Still under the status bar: Facebook lays it out more than once on its way up
-                    // (S22 2026-11-22), so the hold starts over from here.
+                    // Facebook can lay it out more than once on its way to the full screen, a frame or
+                    // two apart (S22 2026-11-22), so each move starts a short hold over.
                     place = now;
                     placedAt = at;
+                    moved = true;
                     video = new WeakReference<>(found);
-                    Utils.runOnMainThreadDelayed(this::check, HOLD_MS);
-                } else if (at - placedAt >= HOLD_MS) {
-                    show(root, "after it held its place", at);
+                    Utils.runOnMainThreadDelayed(this::check, MOVED_HOLD_MS);
+                } else if (at - placedAt >= (moved ? MOVED_HOLD_MS : HOLD_MS)) {
+                    reveal(root, moved ? "once it stopped moving" : "after it held its place", at);
                 }
             } catch (Throwable failure) {
                 View root = decor.get();
@@ -155,7 +156,7 @@ final class SettleCover {
             }
         }
 
-        private void show(View root, String why, long at) {
+        private void reveal(View root, String why, long at) {
             lift(root);
             stop(root);
             Logger.printDebug(() -> "Saved videos in a row: the next video showed " + why + ", "
