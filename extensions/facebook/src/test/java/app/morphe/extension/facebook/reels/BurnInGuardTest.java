@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
@@ -824,8 +825,14 @@ public class BurnInGuardTest {
         assertEquals(why + ": the video itself", 1f, video.getAlpha(), 0f);
     }
 
-    /** The phone's animator duration scale, 0 being animations off in the developer options. */
+    /**
+     * The phone's animator duration scale, 0 being animations off in the developer options: the
+     * setting, which the guard reads up to Android 12 (this runs at 30), and ValueAnimator's copy of
+     * it, which 13 and newer read.
+     */
     private static void animationScale(float scale) {
+        android.provider.Settings.Global.putFloat(RuntimeEnvironment.getApplication().getContentResolver(),
+                android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, scale);
         ReflectionHelpers.callStaticMethod(ValueAnimator.class, "setDurationScale",
                 ReflectionHelpers.ClassParameter.from(float.class, scale));
     }

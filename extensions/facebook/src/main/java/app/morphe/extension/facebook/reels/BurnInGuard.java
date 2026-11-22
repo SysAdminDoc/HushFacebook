@@ -12,6 +12,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -603,9 +604,19 @@ public final class BurnInGuard {
         return animationScale() > 0f;
     }
 
-    /** The phone's animation duration scale, which Smooth fade's length follows. */
+    /**
+     * The phone's animation duration scale, which Smooth fade's length follows. Android 13 made
+     * ValueAnimator's getter for it public. Before that the getter is hidden, so this reads the
+     * setting it mirrors, through the screen in front or the application the guard watches: 1,
+     * Android's default, with neither.
+     */
     static float animationScale() {
-        return ValueAnimator.getDurationScale();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return ValueAnimator.getDurationScale();
+        Context context = front.get();
+        if (context == null) context = watching.get();
+        if (context == null) return 1f;
+        return android.provider.Settings.Global.getFloat(context.getContentResolver(),
+                android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f);
     }
 
     private static void dim(View view, float factor) {
