@@ -16,6 +16,9 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.KeyEvent;
@@ -37,6 +40,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -353,10 +357,20 @@ public class SavedChainTest {
 
     private static final List<Integer> TAKEN = List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL);
 
-    /** The black cover over the Saved page's content, or null when it's off. */
-    private View coverOnSaved() {
-        ViewGroup content = page.findViewById(android.R.id.content);
-        return content.getChildCount() > 1 ? content.getChildAt(content.getChildCount() - 1) : null;
+    /** Whether the Saved page is covered in black. */
+    private boolean savedCovered() {
+        return black(page);
+    }
+
+    /**
+     * Whether the middle of [screen]'s window comes out black when it draws, everything over its
+     * views included. Needs native graphics.
+     */
+    private static boolean drawsBlack(Activity screen) {
+        View decor = screen.getWindow().getDecorView();
+        Bitmap shot = Bitmap.createBitmap(decor.getWidth(), decor.getHeight(), Bitmap.Config.ARGB_8888);
+        decor.draw(new Canvas(shot));
+        return shot.getPixel(decor.getWidth() / 2, decor.getHeight() / 4) == Color.BLACK;
     }
 
     private ReelsViewer playing(int card) {
@@ -451,22 +465,45 @@ public class SavedChainTest {
 
         idle(SavedChain.SLIDE_MS + 50);
         assertTrue("a swipe up stayed in the viewer", viewer.isFinishing());
-        View cover = coverOnSaved();
-        assertNotNull("Saved showed between one saved video and the next", cover);
-        assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO, cover.getImportantForAccessibility());
+        assertTrue("Saved showed between one saved video and the next", savedCovered());
 
         backToSaved();
         idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
         assertEquals("the tap under the cover didn't reach card 2", TAP, touchesOf(2));
         assertTrue("card 0 was tapped", touchesOf(0).isEmpty());
         assertTrue(statusLine(), statusLine().contains(SavedChain.NEXT + " 1"));
-        assertNotNull("the cover came off before the next video opened", coverOnSaved());
+        assertTrue("the cover came off before the next video opened", savedCovered());
 
         openViewer(SAVED);
         assertEquals("the next chain's card", "card 2", SavedChain.chainForTests().card.label);
-        assertNotNull("the cover came off as the next video opened, before it drew", coverOnSaved());
+        assertTrue("the cover came off as the next video opened, before it drew", savedCovered());
         idle(SavedChain.UNCOVER_MS + 50);
-        assertNull("the cover stayed on Saved", coverOnSaved());
+        assertFalse("the cover stayed on Saved", savedCovered());
+    }
+
+    /**
+     * On the S22 the Saved grid showed for 80 ms as the chain's tap opened a saved post, and again
+     * as the post closed: Facebook laid its page back out over the black the chain had put after it
+     * (2026-11-22, a frame-by-frame recording). Whatever Facebook adds or moves, Saved stays black.
+     */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void savedStaysBlackWhenFacebookPutsItsPageBackOverTheCover() {
+        openSaved(6, true);
+        page.list.setBackgroundColor(Color.WHITE);
+        ReelsViewer viewer = playing(1);
+        swipe(viewer, 600, 300);
+        idle(SavedChain.SLIDE_MS + 50);
+        backToSaved();
+        idle(0);
+        assertTrue("Saved showed between one saved video and the next", drawsBlack(page));
+
+        ViewGroup content = page.findViewById(android.R.id.content);
+        View facebooks = content.getChildAt(0);
+        content.removeView(facebooks);
+        content.addView(facebooks);
+        idle(0);
+        assertTrue("Saved showed once Facebook put its page back on top", drawsBlack(page));
     }
 
     /**
@@ -527,7 +564,7 @@ public class SavedChainTest {
         assertEquals("the video didn't slide back", 0f, viewer.content().getTranslationY(), 0.5f);
         assertNotNull(SavedChain.chainForTests());
         assertFalse(SavedChain.chainForTests().moving);
-        assertNull(coverOnSaved());
+        assertFalse(savedCovered());
     }
 
     @Test
@@ -551,7 +588,7 @@ public class SavedChainTest {
         assertFalse("a swipe down on the first saved video left it", viewer.isFinishing());
         assertEquals(0f, viewer.content().getTranslationY(), 0.5f);
         assertNotNull(SavedChain.chainForTests());
-        assertNull(coverOnSaved());
+        assertFalse(savedCovered());
     }
 
     @Test
@@ -622,12 +659,12 @@ public class SavedChainTest {
         SavedChain.ended(player);
         idle(0);
         assertTrue("the last saved reel went on to Facebook's suggestions", viewer.isFinishing());
-        assertNotNull(coverOnSaved());
+        assertTrue(savedCovered());
 
         backToSaved();
         idle(SavedChain.SETTLE_MS + SavedChain.SCROLL_SETTLE_MS + SavedChain.PRESS_MS + 50);
         assertNull("the chain went on past the last card", SavedChain.chainForTests());
-        assertNull("Saved stayed covered with nothing to play", coverOnSaved());
+        assertFalse("Saved stayed covered with nothing to play", savedCovered());
         for (int card = 0; card < 6; card++) {
             assertTrue("card " + card + " was tapped after the last one", touchesOf(card).isEmpty());
         }
@@ -799,7 +836,7 @@ public class SavedChainTest {
         assertNotNull("closing the post ended the chain", chain);
         assertEquals("the chain's card", "card 1", chain.card.label);
         assertEquals(1, chain.postsSkipped);
-        assertNotNull("Saved showed while the post closed", coverOnSaved());
+        assertTrue("Saved showed while the post closed", savedCovered());
         assertTrue(statusLine(), statusLine().contains(SavedChain.POST_SKIPPED + " 1"));
 
         postClosed(post);

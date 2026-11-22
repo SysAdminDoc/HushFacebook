@@ -9,7 +9,6 @@ import android.app.Application;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
@@ -310,7 +309,9 @@ public final class SavedChain {
     private static long readEventTime;
     private static int readAction;
     private static boolean readAnswer;
+    /** The window of the Saved page the chain covered in black, and that page. */
     private static WeakReference<View> cover = new WeakReference<>(null);
+    private static WeakReference<Activity> coveredPage = NO_SCREEN;
     private static int coverToken;
     private static WeakReference<Activity> resumed = NO_SCREEN;
     private static WeakReference<Activity> lastCreated = NO_SCREEN;
@@ -1015,20 +1016,20 @@ public final class SavedChain {
     }
 
     /**
-     * Lays black over [page]'s content, so it doesn't show between one saved video and the next.
-     * Main thread. Touches pass through it, and {@link #cardAt} looks past it.
+     * Lays black over everything [page]'s window draws, so it doesn't show between one saved video
+     * and the next. Main thread. It's drawn over the window's views rather than being one of them,
+     * so touches pass through it, and Facebook laying its page out again on top of a view added
+     * after it doesn't show the page (S22 2026-11-22: the grid showed for 80 ms as a post opened).
      */
     static void coverPage(@Nullable Activity page) {
         if (page == null) return;
-        View content = page.findViewById(android.R.id.content);
-        if (!(content instanceof ViewGroup)) return;
+        Window window = page.getWindow();
+        if (window == null) return;
         uncover();
-        View black = new View(page);
-        black.setBackgroundColor(Color.BLACK);
-        black.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        ((ViewGroup) content).addView(black, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        cover = new WeakReference<>(black);
+        View decor = window.getDecorView();
+        SettleCover.blackOut(decor);
+        cover = new WeakReference<>(decor);
+        coveredPage = new WeakReference<>(page);
         int token = ++coverToken;
         Utils.runOnMainThreadDelayed(() -> {
             if (coverToken == token) uncover();
@@ -1037,12 +1038,11 @@ public final class SavedChain {
 
     /** Takes the cover off the Saved page, if one is on. Main thread. */
     static void uncover() {
-        View black = cover.get();
+        View decor = cover.get();
         cover = new WeakReference<>(null);
+        coveredPage = NO_SCREEN;
         coverToken++;
-        if (black == null) return;
-        ViewParent parent = black.getParent();
-        if (parent instanceof ViewGroup) ((ViewGroup) parent).removeView(black);
+        SettleCover.lift(decor);
     }
 
     /** Takes the cover off after [delay], unless another one went on meanwhile. Main thread. */
@@ -1054,9 +1054,6 @@ public final class SavedChain {
         }, delay);
     }
 
-    private static boolean isCover(View view) {
-        return view == cover.get();
-    }
 
     /**
      * Taps the card after the chain's, or the one before it after a swipe down, once the Saved page
@@ -1287,7 +1284,7 @@ public final class SavedChain {
             View hit = null;
             for (int i = group.getChildCount() - 1; i >= 0; i--) {
                 View child = group.getChildAt(i);
-                if (child == null || child.getVisibility() != View.VISIBLE || isCover(child)) continue;
+                if (child == null || child.getVisibility() != View.VISIBLE) continue;
                 float cx = px + group.getScrollX() - child.getLeft() - child.getTranslationX();
                 float cy = py + group.getScrollY() - child.getTop() - child.getTranslationY();
                 if (cx >= 0 && cy >= 0 && cx < child.getWidth() && cy < child.getHeight()) {
@@ -1434,7 +1431,7 @@ public final class SavedChain {
             if (black != null && back == null) {
                 // The next video's screen in front keeps the cover while it opens. Saved back with
                 // nothing to tap shows at once.
-                if (black.getContext() == activity) uncover();
+                if (coveredPage.get() == activity) uncover();
                 else uncoverAfter(UNCOVER_MS);
             }
             if (back != null) {
@@ -1494,6 +1491,7 @@ public final class SavedChain {
         drag = null;
         readEvent = null;
         cover = new WeakReference<>(null);
+        coveredPage = NO_SCREEN;
         coverToken = 0;
         resumed = NO_SCREEN;
         lastCreated = NO_SCREEN;
