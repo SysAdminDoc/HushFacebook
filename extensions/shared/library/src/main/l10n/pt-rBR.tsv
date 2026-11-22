@@ -2765,6 +2765,10 @@ Hide the tab bar on the Reels tab	Ocultar a barra de abas na aba Reels
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	A barra de abas some enquanto a aba Reels está aberta, e o reel ocupa a tela inteira. As outras abas mantêm a barra. Reinicie o Facebook para ver a mudança.
 Hide the line along the tab bar	Ocultar a linha da barra de abas
 The thin line Facebook draws along the edge of the tab bar goes away on every tab. Tap a tab to see the change.	A linha fina que o Facebook desenha na borda da barra de abas some em todas as abas. Toque em uma aba para ver a mudança.
+# context: switch title on the tab bar settings page; a group is a Facebook group's page; the tab bar is the row of Home, Reels, Groups... tabs
+Keep the tab bar in groups	Manter a barra de abas nos grupos
+# context: summary of that switch; "along the bottom" means at the bottom edge of the screen
+A group you open keeps the tab bar along the bottom, so a tap takes you straight to another tab. Works while the tab bar is at the bottom. Open a group to see the change.	Um grupo que você abre mantém a barra de abas embaixo, então um toque leva você direto para outra aba. Funciona enquanto a barra de abas está embaixo. Abra um grupo para ver a mudança.
 Playback speed in the post menu	Velocidade de reprodução no menu da publicação
 A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	O menu de três pontos de um vídeo do feed ou do Watch ganha Velocidade de reprodução, de 0,5x a 3x, inclusive em vídeos ao vivo. Desligado por padrão, porque ainda não foi testado em uma conta real.
 Double tap to skip on feed videos	Toque duplo para pular nos vídeos do feed

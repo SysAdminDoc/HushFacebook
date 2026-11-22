@@ -70,6 +70,7 @@ import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.CenteredFeed;
+import app.morphe.extension.facebook.navigation.GroupTabBar;
 import app.morphe.extension.facebook.navigation.HiddenStatusBar;
 import app.morphe.extension.facebook.navigation.MarketplaceFilterButton;
 import app.morphe.extension.facebook.navigation.ReelsTab;
@@ -206,6 +207,8 @@ public final class SettingsEntry {
                 HiddenStatusBar.watch(context);
                 // Center the feed on big screens (#531): each main screen's lists as it lays out.
                 CenteredFeed.watch(context);
+                // Keep the tab bar in groups (#503): each group's page as it comes to the front.
+                GroupTabBar.watch(context);
             }
             // Open feed videos on their own, a Clean up Reels switch: which screen is in front.
             // And the top bar of the full-screen player, another (#311): looked through after each layout.

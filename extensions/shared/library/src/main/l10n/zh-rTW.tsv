@@ -2883,6 +2883,10 @@ Hide the tab bar on the Reels tab	在 Reels 分頁隱藏分頁列
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	開啟 Reels 分頁時分頁列會消失，Reels 佔滿整個螢幕。其他分頁保留分頁列。重新啟動 Facebook 後生效.
 Hide the line along the tab bar	隱藏分頁列邊上的線
 The thin line Facebook draws along the edge of the tab bar goes away on every tab. Tap a tab to see the change.	Facebook 沿分頁列邊緣畫的細線會在所有分頁消失。點一下任一分頁即可看到變更.
+# context: switch title on the tab bar settings page; a group is a Facebook group's page; the tab bar is the row of Home, Reels, Groups... tabs
+Keep the tab bar in groups	在社團中保留分頁列
+# context: summary of that switch; "along the bottom" means at the bottom edge of the screen
+A group you open keeps the tab bar along the bottom, so a tap takes you straight to another tab. Works while the tab bar is at the bottom. Open a group to see the change.	開啟的社團會在底部保留分頁列，點一下就能直接切換到其他分頁。只在分頁列位於底部時有效。開啟一個社團即可看到變更.
 Playback speed in the post menu	貼文選單中的播放速度
 A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	動態消息或 Watch 影片的三點選單會加入播放速度，從 0.5 倍到 3 倍，直播影片也適用。預設停用，因為尚未使用真實帳號測試。
 Double tap to skip on feed videos	動態影片雙擊跳轉

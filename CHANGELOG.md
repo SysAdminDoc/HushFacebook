@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Added
 
+* `Keep the tab bar in groups` in the tab bar settings. Facebook opens a group on a page of its own with no tab bar, so the only way to another tab was Back. With this on, a group keeps the tab bar along the bottom, and tapping a tab takes you straight there. It works while the tab bar is at the bottom and starts off. (#503)
 * `Show reactions on the Like button` under News feed moves a post's reaction icons from the far end of the row under it onto the Like button, right before the count, the way the summary line used to read. The button still likes and reacts like before. A video that shows its views there gets one Like icon, or your own reaction once you react. It starts off, and `Hide the reaction preview on posts` wins when both are on. (#541)
 * `Tap shows a pause button on feed videos` under Video and audio stops a tap from opening a feed video in Reels. The tap brings up a big play/pause button in the middle of the video and the video keeps playing. Tap the button to pause or play, or tap the video again while it shows to open it. It starts off, and with Tap to play on it needs Inline feed video controls on too. (#538)
 * `Hide the live video comment bar` under Comments and writing takes the comment box and the row of reactions off the bottom of a live video, so a stray tap won't send a reaction or open the keyboard. The live comments stay. It starts off. (#537)

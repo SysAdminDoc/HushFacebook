@@ -112,6 +112,10 @@ final class HushfacebookPages {
             tabs.addPreference(toggle(context, Settings.HIDE_TAB_BAR_LINE,
                     L10n.t("The thin line Facebook draws along the edge of the tab bar goes away on every tab. "
                             + "Tap a tab to see the change.")));
+            // Asked as each group's page comes to the front, so a change shows on the next group opened.
+            tabs.addPreference(toggle(context, Settings.TAB_BAR_IN_GROUPS,
+                    L10n.t("A group you open keeps the tab bar along the bottom, so a tap takes you straight to another "
+                            + "tab. Works while the tab bar is at the bottom. Open a group to see the change.")));
             subheading(tabs, L10n.t("Top bar"));
             // Asked each time Facebook moves the top bar, so it takes effect on the next scroll.
             tabs.addPreference(toggle(context, Settings.KEEP_TOP_BAR,

@@ -524,6 +524,7 @@ public final class SettingsBackup {
             Settings.PHONE_LAYOUT_ON_BIG_SCREENS,
             Settings.HIDE_REELS_TAB_BAR,
             Settings.HIDE_TAB_BAR_LINE,
+            Settings.TAB_BAR_IN_GROUPS,
             Settings.TRANSLUCENT_BARS,
             Settings.ROUNDED_TAB_BAR,
             Settings.HIDE_STATUS_BAR,

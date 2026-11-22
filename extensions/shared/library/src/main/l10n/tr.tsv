@@ -2879,6 +2879,10 @@ Hide the tab bar on the Reels tab	Reels sekmesinde sekme çubuğunu gizle
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	Reels sekmesi açıkken sekme çubuğu kaybolur ve reel tüm ekranı kaplar. Diğer sekmeler çubuğu korur. Değişikliği görmek için Facebook'u yeniden başlatın.
 Hide the line along the tab bar	Sekme çubuğundaki çizgiyi gizle
 The thin line Facebook draws along the edge of the tab bar goes away on every tab. Tap a tab to see the change.	Facebook'un sekme çubuğunun kenarına çizdiği ince çizgi tüm sekmelerde kaybolur. Değişikliği görmek için bir sekmeye dokunun.
+# context: switch title on the tab bar settings page; a group is a Facebook group's page; the tab bar is the row of Home, Reels, Groups... tabs
+Keep the tab bar in groups	Gruplarda sekme çubuğunu koru
+# context: summary of that switch; "along the bottom" means at the bottom edge of the screen
+A group you open keeps the tab bar along the bottom, so a tap takes you straight to another tab. Works while the tab bar is at the bottom. Open a group to see the change.	Açtığın bir grup sekme çubuğunu altta tutar, böylece tek dokunuş seni doğrudan başka bir sekmeye götürür. Sekme çubuğu alttayken çalışır. Değişikliği görmek için bir grup aç.
 Playback speed in the post menu	Gönderi menüsünde oynatma hızı
 A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	Akıştaki veya Watch'taki bir videonun üç nokta menüsüne 0,5x ile 3x arasında Oynatma hızı eklenir, canlı videolarda da. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 Double tap to skip on feed videos	Akış videolarında atlamak için çift dokun

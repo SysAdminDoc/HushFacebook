@@ -3267,6 +3267,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_tab_bar_line", FALSE);
 
     /**
+     * A group's page, which Facebook opens on a screen of its own with no tab bar, gets a copy of the
+     * main screen's tab bar along its bottom (#503, {@link app.morphe.extension.facebook.navigation.GroupTabBar}).
+     * Off by default. Asked as each group's page comes to the front, so a change shows on the next one.
+     */
+    public static final BooleanSetting TAB_BAR_IN_GROUPS =
+            new BooleanSetting("hushfacebook_tab_bar_in_groups", FALSE);
+
+    /**
      * The top bar and the tab bar let the feed show through, with a blur of it behind them on
      * Android 12 and newer (#124, {@link app.morphe.extension.facebook.navigation.TranslucentBars}).
      * Asked as each frame of the main screen draws, so a change shows right away. A kept tab bar is
