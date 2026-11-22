@@ -7,8 +7,8 @@ package app.morphe.patches.facebook.feed.foldtext
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
-import app.morphe.patcher.patch.BytecodePatch
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.patch.Patch
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -311,7 +311,7 @@ class FoldFixtureTest {
 
                 // Whatever order the three run in, each keeps its hooks in the builder (and the cut's method).
                 val returns = textCode.count { it.opcode == Opcode.RETURN_OBJECT }
-                val orders: List<List<BytecodePatch>> = listOf(
+                val orders: List<List<Patch>> = listOf(
                     listOf(foldLongTextPatch, showFullPostTextPatch, translatePostsPatch),
                     listOf(showFullPostTextPatch, translatePostsPatch, foldLongTextPatch),
                     listOf(translatePostsPatch, foldLongTextPatch, showFullPostTextPatch),

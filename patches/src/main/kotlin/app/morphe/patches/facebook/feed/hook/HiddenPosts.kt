@@ -6,13 +6,14 @@ package app.morphe.patches.facebook.feed.hook
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -118,10 +119,10 @@ internal fun hidePublish(method: Method, resolve: (MethodReference) -> Method?):
  *
  * <p>A build that moved the publishes only loses this, with a warning, never the guard.
  */
-internal val hiddenPostsPatch = bytecodePatch {
+internal val hiddenPostsPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val naming = classDefByStrings(LOCAL_STORY_VISIBILITY, StringComparisonType.EQUALS).associateBy { it.type }
         val resolve = { call: MethodReference -> naming[call.definingClass]?.let { resolveStatic(it, call) } }
         val publishes = (naming.values + classDefByStrings(VISIBILITY_BUILDER_CAST, StringComparisonType.EQUALS))
@@ -130,7 +131,7 @@ internal val hiddenPostsPatch = bytecodePatch {
             .filter { it.id <= 15 && it.visibility <= 15 }
         if (publishes.isEmpty()) {
             patchLog.warning("Hidden posts: no publish of $LOCAL_STORY_VISIBILITY found. A refresh can bring a hidden post back.")
-            return@execute
+            return@executeBytecode
         }
         for (publish in publishes) {
             val found = publish.method

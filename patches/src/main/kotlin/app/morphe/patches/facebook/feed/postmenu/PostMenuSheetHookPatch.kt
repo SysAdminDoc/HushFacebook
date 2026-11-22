@@ -5,9 +5,10 @@
 package app.morphe.patches.facebook.feed.postmenu
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.executeBytecode
 
 /** Why the post menu sheet hook stayed out of this build, or null when it went in. */
 internal var postMenuSheetMissing: String? = null
@@ -24,10 +25,10 @@ internal var postMenuSheetMissing: String? = null
  * its work and its Playback speed row stays under More options. Post menu items has nothing else
  * to do, so it refuses then ([postMenuSheetMissing]).
  */
-internal val postMenuSheetHookPatch = bytecodePatch {
+internal val postMenuSheetHookPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         postMenuSheetMissing = try {
             hookPostMenuSheet(findPostMenuSheet())
             null

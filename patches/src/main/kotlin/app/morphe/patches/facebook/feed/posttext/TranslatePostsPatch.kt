@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
@@ -20,6 +20,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -54,7 +55,7 @@ internal const val TRANSLATION_TOUCH = "$POST_TRANSLATION->touch($MOTION_EVENT)V
  * hands a held press to the post's own long press. It only reads the event, through the range form.
  */
 @Suppress("unused")
-val translatePostsPatch = bytecodePatch(
+val translatePostsPatch = patch(
     // The README table check reads this literal.
     name = "Translate posts",
     description = "Translates posts in another language through Google Translate, from a Translate line under " +
@@ -64,7 +65,7 @@ val translatePostsPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val builder = findPostTextBuilder(TRANSLATE_PATCH)
         val activity = classDefByOrNull(FRAGMENT_ACTIVITY)
             ?: throw PatchException("$TRANSLATE_PATCH: this build has no $FRAGMENT_ACTIVITY")

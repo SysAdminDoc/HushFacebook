@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.summaries.descriptor
@@ -30,6 +30,7 @@ import app.morphe.patches.facebook.misc.upsells.dropCaptionDeepDive
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
@@ -117,7 +118,7 @@ private const val STRING_EQUALS = "Ljava/lang/String;->equals(Ljava/lang/Object;
  * their own yes and otherwise run on into the other, so their order doesn't matter.
  */
 @Suppress("unused")
-val hideMetaAiQuestionsPatch = bytecodePatch(
+val hideMetaAiQuestionsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide Meta AI questions under posts",
     description = "Removes the row of Meta AI questions Facebook adds under some posts, for a cleaner feed. The " +
@@ -127,7 +128,7 @@ val hideMetaAiQuestionsPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val socket = findPillSocket()
         val pill = defaultPill(socket.method)
         if (socket.answers.any { it >= pill.index }) {

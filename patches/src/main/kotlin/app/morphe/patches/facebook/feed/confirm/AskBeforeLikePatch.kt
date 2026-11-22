@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.isStringTable
@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -174,7 +175,7 @@ internal data class LikeHandler(val kind: Int, val method: Method, val arm: Arm?
  * A build missing a Follow or story reaction handler keeps the Like questions and warns.
  */
 @Suppress("unused")
-val askBeforeLikePatch = bytecodePatch(
+val askBeforeLikePatch = patch(
     name = "Ask before a like",
     description = "Switches that make a tap on Like under a post, beside a reel or under a comment, on Follow in a " +
         "post or beside a reel, or on a reaction at the bottom of a story, ask first, and only Continue goes ahead, " +
@@ -187,7 +188,7 @@ val askBeforeLikePatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("askBeforeLike")
         askBeforeLike()
         try {

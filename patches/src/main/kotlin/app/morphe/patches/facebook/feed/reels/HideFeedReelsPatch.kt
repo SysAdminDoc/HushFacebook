@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.fillStoryModelStub
@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.shared.FEED_STORY_CATEGORY
 import app.morphe.patches.facebook.shared.addNewEdgeToCollection
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -75,7 +76,7 @@ internal const val HIDE_PRE_EOF_REELS = "$EXTENSION_PACKAGE/feed/FeedFilter;->hi
  * those two are the only callers of the tail adder, so no third way in goes unseen.
  */
 @Suppress("unused")
-val hideFeedReelsPatch = bytecodePatch(
+val hideFeedReelsPatch = patch(
     name = "Hide Reels in the feed",
     description = "Removes the rows of reels between posts and the reels Facebook adds where your feed ends, so " +
         "the feed sticks to posts. A reel a friend posts stays. Starts off. Turn it on in Hushfacebook settings " +
@@ -86,7 +87,7 @@ val hideFeedReelsPatch = bytecodePatch(
     dependsOn(feedFilterHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val names = categoryNames(classDefBy(FEED_STORY_CATEGORY))
         val missing = REELS_CATEGORIES.filterNot(names::contains)
         if (missing.isNotEmpty()) {

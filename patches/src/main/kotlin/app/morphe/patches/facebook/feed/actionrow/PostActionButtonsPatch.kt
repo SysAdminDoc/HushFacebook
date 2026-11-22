@@ -6,7 +6,7 @@ package app.morphe.patches.facebook.feed.actionrow
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.downloads.photo.SUBATTACHMENTS_FIELD
@@ -26,6 +26,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.namedRegisters
 import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -45,7 +46,7 @@ internal const val TYPES_HELPER = "hushfacebookActionTypes"
 internal const val DOWNLOAD_HELPER = "hushfacebookDownloadButton"
 
 @Suppress("unused")
-val postActionButtonsPatch = bytecodePatch(
+val postActionButtonsPatch = patch(
     name = "Post action buttons",
     description = "Adds Facebook's own Save button next to Like, Comment and Share under posts, and a Download " +
         "button on posts with a video or photos that saves them the way the post's menu does. It can also take " +
@@ -56,7 +57,7 @@ val postActionButtonsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("postActionButtons")
         val row = actionRow()
         hookTypes(row)

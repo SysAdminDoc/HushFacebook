@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.feed.hook.feedFilterHookPatch
 import app.morphe.patches.facebook.menu.menuSubpagesPatch
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -57,7 +58,7 @@ internal const val HOME_COMPOSER = 2
  * switch.
  */
 @Suppress("unused")
-val hideStoriesTrayPatch = bytecodePatch(
+val hideStoriesTrayPatch = patch(
     name = "Hide Stories tray",
     description = "Hides the row of stories at the top of the feed, the stories between posts, or the \"What's " +
         "on your mind?\" row at the top of Home, so you reach posts sooner. Starts off. Turn on the parts you " +
@@ -68,7 +69,7 @@ val hideStoriesTrayPatch = bytecodePatch(
     dependsOn(settingsPatch, feedFilterHookPatch, menuSubpagesPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val legacy = classDefByStrings(ADD_STORIES_ADAPTER, StringComparisonType.EQUALS).flatMap(::legacyTrayAdapters)
         val classic = legacy.singleOrNull() ?: throw PatchException(
             "Expected one tray adapter holding \"$ADD_STORIES_ADAPTER\", found ${legacy.size}",

@@ -16,7 +16,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -32,6 +32,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.namedRegisters
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -107,7 +108,7 @@ internal const val FEED_REQUEST_SENT = "$EXTENSION_PACKAGE/feed/FeedRequestParam
  * In the default selection with its switch off: it only acts once the switch is turned on.
  */
 @Suppress("unused")
-val followingFeedHomePatch = bytecodePatch(
+val followingFeedHomePatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Following feed on Home",
     description = "Makes Home show the newest posts from the friends, groups and Pages you follow instead of " +
@@ -122,7 +123,7 @@ val followingFeedHomePatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         requireStatusMethod("followingHome")
         val feedTypes = classDefByOrNull(HOME_FEED_TYPE_CLASS) ?: refuse("$HOME_FEED_TYPE_CLASS isn't in this APK")

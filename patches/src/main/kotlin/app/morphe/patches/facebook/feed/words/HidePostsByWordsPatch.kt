@@ -6,7 +6,7 @@ package app.morphe.patches.facebook.feed.words
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.sponsoredprofile.mutableRender
 import app.morphe.patches.facebook.ads.sponsoredprofile.skipSponsoredStories
 import app.morphe.patches.facebook.ads.sponsoredprofile.timelineStory
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -83,7 +84,7 @@ internal const val PATCH = "Hide posts by words"
  * goes into a log, the diagnostic report or a request.
  */
 @Suppress("unused")
-val hidePostsByWordsPatch = bytecodePatch(
+val hidePostsByWordsPatch = patch(
     name = "Hide posts by words",
     description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
         "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
@@ -98,7 +99,7 @@ val hidePostsByWordsPatch = bytecodePatch(
     dependsOn(feedFilterHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val story = classDefBy(GRAPHQL_STORY)
         val message = messageAccessor(story)
         val attached = attachedStoryAccessors(story).singleOrNull() ?: throw PatchException(

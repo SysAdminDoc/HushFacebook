@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.feed.posttext
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
-import app.morphe.patcher.patch.BytecodePatch
+import app.morphe.patcher.patch.Patch
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
@@ -96,7 +96,7 @@ class TranslatePostsFixtureTest {
     }
 
     /** The builder after [patches], with the feed post component and its state ([foldTypes]) there for Show full post text. */
-    private fun builderAfter(bundle: File, patches: List<BytecodePatch>, builder: Method, foldTypes: Set<String>): List<Instruction> {
+    private fun builderAfter(bundle: File, patches: List<Patch>, builder: Method, foldTypes: Set<String>): List<Instruction> {
         val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY) + foldTypes)
         val owner = classes.getValue(builder.definingClass)
         val context = PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList())

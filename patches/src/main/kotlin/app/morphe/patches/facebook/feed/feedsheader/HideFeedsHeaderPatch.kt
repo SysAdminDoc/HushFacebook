@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.shared.redexOriginalName
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.literalReads
 import app.morphe.util.namedRegisters
@@ -80,7 +81,7 @@ private const val CONTEXT = "Landroid/content/Context;"
  * posts start at the top.
  */
 @Suppress("unused")
-val hideFeedsHeaderPatch = bytecodePatch(
+val hideFeedsHeaderPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide the Feeds header",
     description = "Takes the title row and the All, Favorites, Friends, Groups and Pages filters off the top of " +
@@ -91,7 +92,7 @@ val hideFeedsHeaderPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val fragment = classDefByOrNull(FEED_FILTERS_FRAGMENT) ?: refuse("this build has no $FEED_FILTERS_FRAGMENT")
         val answers = navBarAnswers(fragment)
         val handOver = filtersHandOver(fragment)

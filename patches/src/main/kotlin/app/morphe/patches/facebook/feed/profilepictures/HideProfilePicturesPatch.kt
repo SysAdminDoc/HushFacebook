@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -77,7 +78,7 @@ private val NULL_LOADS = setOf(Opcode.CONST_4, Opcode.CONST_16)
  * In the default selection with both switches off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
-val hideProfilePicturesPatch = bytecodePatch(
+val hideProfilePicturesPatch = patch(
     name = "Hide profile pictures",
     description = "Switches that take the profile picture off the top of posts and off comments, so the name " +
         "starts where the picture was. Both start off. Turn them on in Hushfacebook settings > News feed and " +
@@ -87,7 +88,7 @@ val hideProfilePicturesPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("profilePictures")
         hideProfilePictures()
         enableStatus("profilePictures")

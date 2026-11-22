@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.addressed
@@ -29,6 +29,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -283,7 +284,7 @@ internal fun albumLayouts(names: Method, holder: ClassDef): AlbumLayouts {
  * whether a layout applies starts by asking the extension whether to pass the layout over.
  */
 @Suppress("unused")
-val photoCarouselPatch = bytecodePatch(
+val photoCarouselPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Photo carousel",
     description = "Shows a post's photos and videos in a row you swipe through, one at a time with a 4/10 count and dots, " +
@@ -294,7 +295,7 @@ val photoCarouselPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val names = AlbumLayoutNamesFingerprint.method
         val layouts = albumLayouts(names, classDefBy(names.definingClass))
         val applies = mutableClassDefBy(names.definingClass).methods.single {

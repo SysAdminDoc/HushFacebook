@@ -8,13 +8,14 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.hook.feedFilterHookPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -59,7 +60,7 @@ internal const val SEEN = "$SEEN_POSTS->seen(Ljava/lang/Object;)V"
  * ([feedFilterHookPatch]) itself, so picked alone it hides as well as remembers.
  */
 @Suppress("unused")
-val hideSeenPostsPatch = bytecodePatch(
+val hideSeenPostsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide seen posts",
     description = "Keeps posts you've already scrolled past out of the feed when it loads again, for 1, 3, 7, " +
@@ -70,7 +71,7 @@ val hideSeenPostsPatch = bytecodePatch(
     dependsOn(settingsPatch, feedFilterHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val gate = findDwellGate(findSeenMethod())
         mutableClassDefBy(gate.runner.definingClass).findMutableMethodOf(gate.runner).addInstructions(
             gate.index,

@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.feed.postdates
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.firstAfterRewrite
 import app.morphe.util.firstHolding
@@ -55,7 +56,7 @@ internal const val VALUE_OF_BOOLEAN = "Ljava/lang/String;->valueOf(Z)Ljava/lang/
  * which turns a yes into a no while the switch is on, so the header takes its one-line path.
  */
 @Suppress("unused")
-val keepPostDatesPatch = bytecodePatch(
+val keepPostDatesPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep post dates",
     description = "Keeps the date under the poster's name, so you can always tell how old a post is. Facebook's " +
@@ -67,7 +68,7 @@ val keepPostDatesPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val choice = findCyclingChoice()
         mutableClassDefBy(choice.method.definingClass).findMutableMethodOf(choice.method).hookCyclingChoice(choice)
         addSubtitlePieces { patchLog.warning(it) }

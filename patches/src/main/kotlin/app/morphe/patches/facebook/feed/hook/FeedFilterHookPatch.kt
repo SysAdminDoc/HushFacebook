@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.shared.feedUnitGetter
 import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.shared.storyCategoryGetter
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.Method
@@ -97,10 +98,10 @@ private fun hidesEdgeHelper(categoryGetter: String, feedUnit: Method) = Immutabl
  * <p>A post the person hid could come back as a new edge on a pull to refresh, so the guard also
  * brings the hooks that remember each hide and Undo (HiddenPosts.kt).
  */
-internal val feedFilterHookPatch = bytecodePatch {
+internal val feedFilterHookPatch = patch {
     dependsOn(facebookExtensionPatch, homeTailFetchPatch, heldInsertsPatch, hiddenPostsPatch)
 
-    execute {
+    executeBytecode {
         val categoryGetter = storyCategoryGetter()
         val feedUnit = feedUnitGetter()
         // Both targets are found before either changes, so a build missing one is left as it was.

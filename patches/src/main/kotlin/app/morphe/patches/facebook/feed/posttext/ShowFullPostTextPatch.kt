@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.feed.posttext
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.isStringTable
@@ -23,6 +23,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.containsLiteralInstruction
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
 import app.morphe.util.writersReaching
@@ -108,7 +109,7 @@ private val SWITCHES = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH)
  * get the same box (#490): see [findTrayNames], [findOpenStoryNames] and [findReelNames].
  */
 @Suppress("unused")
-val showFullPostTextPatch = bytecodePatch(
+val showFullPostTextPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Show full post text",
     description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
@@ -121,7 +122,7 @@ val showFullPostTextPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val builder = findPostTextBuilder(PATCH)
         val method = mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder)
         // Translate posts adds to this method too, and may have run first, so the place is read from it as it is now.

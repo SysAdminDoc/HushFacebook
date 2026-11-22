@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.feed.aidetected
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.sponsoredreels.dropItemFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.filterPageFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.filterSectionsFirst
@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
@@ -82,7 +83,7 @@ private const val PATCH = "Hide AI-detected posts"
  * Facebook's own promotion, not anyone's post, so that switch starts on.
  */
 @Suppress("unused")
-val hideAiDetectedPostsPatch = bytecodePatch(
+val hideAiDetectedPostsPatch = patch(
     name = "Hide AI-detected posts",
     description = "Removes posts and reels Facebook marked as made with AI, posts creators labeled as AI, posts " +
         "with Meta's AI characters and Meta AI cards in the feed. Only the Meta AI cards switch starts on. " +
@@ -94,7 +95,7 @@ val hideAiDetectedPostsPatch = bytecodePatch(
     dependsOn(feedFilterHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val story = classDefBy(GRAPHQL_STORY)
         val accessors = detectedInfoAccessors(story)
         val accessor = accessors.singleOrNull() ?: throw PatchException(

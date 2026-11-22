@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.literalReads
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -147,7 +148,7 @@ private const val HOLD_SCROLL_TO_TOP = "$EXTENSION_PACKAGE/feed/HomeBack;->holdS
  * the whole patch rather than keeping some hooks with its switch row hidden.
  */
 @Suppress("unused")
-val blockReturnRefreshPatch = bytecodePatch(
+val blockReturnRefreshPatch = patch(
     name = "Block background-return feed refresh",
     description = "Keeps your place in the feed when you come back to Facebook within ten minutes, or any time " +
         "with No time limit on, so you don't lose what you were reading. A second switch, Back leaves Home where it " +
@@ -158,7 +159,7 @@ val blockReturnRefreshPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val callbacks = classDefByStrings(CONTROLLER, StringComparisonType.EQUALS)
             .flatMap { it.methods.filter(::isReturnRefreshCallback) }
         val callbackFound = callbacks.singleOrNull() ?: throw PatchException(

@@ -8,7 +8,7 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY
 import app.morphe.patches.facebook.downloads.video.MENU
 import app.morphe.patches.facebook.downloads.video.VIEW
@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -62,7 +63,7 @@ internal object ResharesListLauncherFingerprint : Fingerprint(
  * list and what it shows are Facebook's.
  */
 @Suppress("unused")
-val seeWhoSharedPatch = bytecodePatch(
+val seeWhoSharedPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "See who shared",
     description = "Adds See who shared to a post's menu, which opens Facebook's list of the people who shared " +
@@ -72,7 +73,7 @@ val seeWhoSharedPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val launcher = ResharesListLauncherFingerprint.method
         val menu = postMenu()
         fillOpenList(launcher)

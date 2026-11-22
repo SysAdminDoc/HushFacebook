@@ -24,7 +24,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.DISCOVER_FEED_UNIT_TYPE
@@ -61,6 +61,7 @@ import app.morphe.patches.facebook.search.hookPreSearchList
 import app.morphe.patches.facebook.search.hookPreSearchQuery
 import app.morphe.patches.facebook.search.hookPreSearchSections
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -135,7 +136,7 @@ internal const val HIDE_PROFILE_SECTION =
     "$EXTENSION_PACKAGE/feed/ProfileSuggestions;->hideSection(Ljava/lang/Object;)Z"
 
 @Suppress("unused")
-val hideSuggestedPostsPatch = bytecodePatch(
+val hideSuggestedPostsPatch = patch(
     name = "Hide suggested and promoted posts",
     description = "Removes what Facebook adds to the feed besides ads, like \"Suggested for you\" posts, " +
         "\"People you may know\" and suggested groups, so you see more from people you follow. Most of its " +
@@ -147,7 +148,7 @@ val hideSuggestedPostsPatch = bytecodePatch(
     dependsOn(feedFilterHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireSuggestedUnits()
         requireFeedTypeName(PEOPLE_YOU_MAY_KNOW_TYPE)
         requireTaggedFeedTypeName(GROUPS_YOU_SHOULD_JOIN_TYPE)
