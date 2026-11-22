@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
@@ -85,6 +86,9 @@ public class TabBarScrollAwayTest {
         TabBarScrollAway.Stored.ROW_MADE.resetToDefault();
         TabBarScrollAway.Stored.LIST_HEIGHT.resetToDefault();
         TabBarScrollAway.Stored.ROW_SETUP.resetToDefault();
+        TabBarScrollAway.Stored.WIDE_ROW_MADE.resetToDefault();
+        TabBarScrollAway.Stored.WIDE_LIST_HEIGHT.resetToDefault();
+        TabBarScrollAway.Stored.WIDE_ROW_SETUP.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
         HookStatus.clear();
@@ -665,6 +669,48 @@ public class TabBarScrollAwayTest {
         assertEquals("and rows made ahead on Home take the same", 2400, TabBarScrollAway.rowFor(2062, -1, 0));
         list.setPadding(0, 30, 0, 50);
         assertEquals("inside the list's padding", 2320, TabBarScrollAway.reelsListHeight());
+    }
+
+    @Test
+    public void aReelsRowWorkedOutForTheScreenHeldTheOtherWayFitsTheTurnedList() {
+        // #531 on a 3:2 tablet (S22 set to 1600x2400 with Facebook let turn, 588, 2026-11-22):
+        // Facebook keeps the row height it worked out when the screen turns, so a row worked out
+        // upright ran past the bottom of the screen on its side, and one worked out on its side
+        // stopped short upright with the next reel below it.
+        Settings.BOTTOM_TAB_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("on its side, a row worked out upright is taller than the window", 1600,
+                TabBarScrollAway.rowFor(2198, -1, 1600, 1600));
+        assertEquals("upright, a row worked out on its side is short of the list", 2400,
+                TabBarScrollAway.rowFor(1398, -1, 2400, 2400));
+        assertEquals("a list shorter than a row that fits the window is still passed over", 2400,
+                TabBarScrollAway.rowFor(1398, -1, 1200, 2400));
+        assertEquals("with the window unknown nothing is taken for a turn", 2500,
+                TabBarScrollAway.rowFor(2500, -1, 1300, 0));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused", 2198, TabBarScrollAway.reelRow(2198, null));
+    }
+
+    @Test
+    public void theRowHeightsSeenAreKeptForEachWayUp() {
+        // #531: a tablet started on its side after a start upright made its rows ahead with the
+        // upright heights, which didn't match, so the reels came out short.
+        Settings.BOTTOM_TAB_BAR.save(true);
+        Settings.TRANSLUCENT_BARS.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("upright, seen once", 2400, TabBarScrollAway.rowFor(2198, -1, 2400));
+        RuntimeEnvironment.setQualifiers("+land");
+        onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertTrue("the main screen is on its side", TabBarScrollAway.wide());
+        assertEquals("on its side, seen once", 1600, TabBarScrollAway.rowFor(1398, -1, 1600));
+        assertEquals("made ahead on its side", 1600, TabBarScrollAway.rowFor(1398, -1, 0));
+        RuntimeEnvironment.setQualifiers("+port");
+        onTabOf(new FeedTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertFalse(TabBarScrollAway.wide());
+        assertEquals("made ahead upright, the upright heights still there", 2400,
+                TabBarScrollAway.rowFor(2198, -1, 0));
     }
 
     /** A main screen that says whether it shows in a picture in picture window. */
