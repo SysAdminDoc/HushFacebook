@@ -3525,6 +3525,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_reaction_preview", FALSE);
 
     /**
+     * A post's stacked reaction faces leave the end of its button row and sit on its Like button,
+     * right before the count ({@link app.morphe.extension.facebook.feed.LikeButtonFaces}, #541). Off
+     * by default, and {@link #HIDE_POST_REACTIONS} overrules it. A change shows on the posts drawn
+     * after it.
+     */
+    public static final BooleanSetting REACTIONS_ON_LIKE_BUTTON =
+            new BooleanSetting("hushfacebook_reactions_on_like_button", FALSE);
+
+    /**
      * The friend bubbles over a post's photo or video, each a friend's picture with the reaction they
      * left, are left out, and the media is drawn as for a post nobody Facebook shows reacted to
      * ({@link app.morphe.extension.facebook.feed.PostPrompts#hideReactionBubbles}, #483). Off by

@@ -78,9 +78,9 @@ val hidePostPromptsPatch = bytecodePatch(
     name = "Hide post prompts",
     description = "Removes the strip Facebook adds to some posts, like \"Are you interested in this post?\", " +
         "\"Show less\" or follow suggestions, so posts look less cluttered. No gap is left. On by default. Turn " +
-        "it off in Hushfacebook settings > News feed. Eight more switches there, Hide the Follow link on posts, " +
+        "it off in Hushfacebook settings > News feed. Nine more switches there, Hide the Follow link on posts, " +
         "Hide the Subscribe link on posts, Hide the Join button on posts, Hide the X on posts, Hide counts on posts, " +
-        "Hide the reaction preview on posts, Hide friends' reactions on photos and videos and Hide who reacted " +
+        "Hide the reaction preview on posts, Show reactions on the Like button, Hide friends' reactions on photos and videos and Hide who reacted " +
         "under posts, start off.",
 ) {
     category("Feed")
@@ -93,6 +93,7 @@ val hidePostPromptsPatch = bytecodePatch(
         hidePostX()
         hidePostCounts()
         hideReactionPreview()
+        reactionsOnLikeButton()
         hideReactionCount()
         hideReactionBubbles()
         hideReactorNames()

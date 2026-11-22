@@ -102,6 +102,7 @@ import app.morphe.extension.facebook.feed.MetaAiQuestions;
 import app.morphe.extension.facebook.feed.NotificationFooter;
 import app.morphe.extension.facebook.feed.PostDates;
 import app.morphe.extension.facebook.feed.PostPrompts;
+import app.morphe.extension.facebook.feed.LikeButtonFaces;
 import app.morphe.extension.facebook.feed.AskBeforeLike;
 import app.morphe.extension.facebook.feed.ProfilePictures;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
@@ -556,6 +557,18 @@ public class PausedHooksTest {
                 // The reaction preview is left undrawn only while the patch runs.
                 PostPrompts::hideReactionPreview,
                 () -> PostPrompts.hideReactionPreview(true),
+                // A Like button's icon is noted, and with a count it takes the post's faces (#541).
+                // Hide the reaction preview on posts overrules it, so it's off for this probe.
+                () -> {
+                    Settings.HIDE_POST_REACTIONS.save(false);
+                    try {
+                        Object thumb = new Object();
+                        LikeButtonFaces.remember(thumb, null);
+                        return LikeButtonFaces.remembering() && LikeButtonFaces.facesFor(thumb, "12") != null;
+                    } finally {
+                        Settings.HIDE_POST_REACTIONS.save(true);
+                    }
+                },
                 // So is the count beside a post's faces.
                 () -> PostPrompts.reactionCount("56") == null,
                 // The friend bubbles over a post's media are left out.

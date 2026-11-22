@@ -312,6 +312,11 @@ final class FeedPages {
                         L10n.t("Hides the stacked reaction icons and the reactions count under posts. The space stays, "
                                 + "so a tap where they were still opens the list of reactions. To take the number off the Like "
                                 + "button too, turn on Hide counts on posts.")));
+                feed.addPreference(toggle(context, Settings.REACTIONS_ON_LIKE_BUTTON,
+                        L10n.t("Moves a post's reaction faces from the end of its button row onto the Like button, "
+                                + "right before the count. The Like button likes and reacts as before. A video showing "
+                                + "its views there gets one Like face, or your own reaction once you react. Hide the "
+                                + "reaction preview on posts overrules it. A change shows on the posts drawn after it.")));
                 feed.addPreference(toggle(context, Settings.HIDE_REACTION_BUBBLES,
                         L10n.t("Takes away the friend's picture with a reaction on it that Facebook puts on a photo or "
                                 + "video when a friend reacted. A change shows on the posts drawn after it.")));

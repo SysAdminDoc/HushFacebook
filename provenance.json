@@ -1022,6 +1022,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/ReactionsOnLikeButton.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #541: a post's reaction faces drawn on its Like button. In Facebook 588 the compact Like button of the feed footer is built by two statics of LikeButtonFeedUFIFooterItemPlugin (a kept class name) that take a Context, the session, the plugin, the reaction and the button text, and return the button's look: a style, a text color, an icon and the text. The litho footer builds the same look itself, in the one other method that takes the reaction and calls the look's constructor. The patch adds a helper to the plugin that hands the extension each look's icon and the face it stands for, and calls it on every look those three build. The footer's renderer only puts the count into the look later, so a second helper runs first thing in the constructors of the button renderer that takes the finished look, and swaps an icon the extension knows for one holding its faces drawable when the text has a count. That renderer's one method that draws a drawable icon builds its image with a square size, so the patch gives a faces drawable a wider box there. The facepile drawable's own draw already asks the extension, and now hands it the drawable, so the faces it would draw at the end of the row move onto that row's Like button."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/ads/sponsoredreels/ReelItemStory.kt"
       ],
       "origin": "original",

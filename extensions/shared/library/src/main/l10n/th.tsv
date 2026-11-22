@@ -1970,6 +1970,10 @@ Puts the speaker button in the side column of reels, right above the three dots.
 Hide the reaction preview on posts	ซ่อนการแสดงตัวอย่างความรู้สึกบนโพสต์
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions. To take the number off the Like button too, turn on Hide counts on posts.	ซ่อนไอคอนความรู้สึกที่ซ้อนกันและจำนวนความรู้สึกใต้โพสต์ โดยพื้นที่ว่างจะยังคงอยู่ ดังนั้นการแตะบริเวณนั้นจะยังคงเปิดรายการความรู้สึก หากต้องการนำตัวเลขออกจากปุ่ม "ถูกใจ" ด้วย ให้เปิด "ซ่อนจำนวนบนโพสต์"
+# context: switch title under News feed; the reactions are the small stacked reaction icons (Like, Love, Haha) a post shows next to its count; the Like button is the button under a post, use Facebook's name for it
+Show reactions on the Like button	แสดงความรู้สึกบนปุ่มถูกใจ
+# context: summary of that switch; the faces are those reaction icons; "Hide the reaction preview on posts" is another switch, match its own row
+Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	ย้ายไอคอนความรู้สึกของโพสต์จากท้ายแถวปุ่มไปไว้บนปุ่ม "ถูกใจ" ก่อนตัวเลขพอดี ปุ่ม "ถูกใจ" ยังกดถูกใจและแสดงความรู้สึกได้เหมือนเดิม วิดีโอที่แสดงยอดการดูตรงนั้นจะได้ไอคอนถูกใจหนึ่งอัน หรือความรู้สึกของคุณเองเมื่อคุณแสดงความรู้สึก "ซ่อนการแสดงตัวอย่างความรู้สึกบนโพสต์" มีผลเหนือกว่า การเปลี่ยนแปลงจะเห็นได้ในโพสต์ที่แสดงหลังจากนั้น
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	ซ่อนการแสดงตัวอย่างความรู้สึกในความคิดเห็น
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions

@@ -4,6 +4,8 @@
  */
 package app.morphe.extension.facebook.feed;
 
+import android.graphics.drawable.Drawable;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -411,6 +413,18 @@ public final class PostPrompts {
             HookStatus.threw(FAMILY, comment ? "comment reaction preview" : "reaction preview", failure);
             return false;
         }
+    }
+
+    /**
+     * The hook the patch puts at the start of the stacked faces' draw, handed the faces themselves
+     * and whether they belong to a comment. Each surface answers to its own Hide switch as {@link
+     * #hideReactionPreview(boolean)} does, and a post's faces that switch keeps are then offered to
+     * Show reactions on the Like button, which holds them back while the row's Like button draws them
+     * (#541).
+     */
+    public static boolean hideReactionPreview(Drawable facepile, boolean comment) {
+        if (hideReactionPreview(comment)) return true;
+        return !comment && LikeButtonFaces.movedFrom(facepile);
     }
 
     /**

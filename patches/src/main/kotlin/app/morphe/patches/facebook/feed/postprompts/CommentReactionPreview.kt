@@ -69,17 +69,20 @@ internal const val COMMENT_STASH = "hushStashCommentFaces"
 internal const val COMMENT_COPY = "hushCopyCommentFaces"
 internal const val STASH_COMMENT_FACES = "$POST_PROMPTS->stashCommentFaces(Z)V"
 internal const val TAKE_COMMENT_FACES = "$POST_PROMPTS->takeCommentFaces()Z"
-internal const val HIDE_FACEPILE = "$POST_PROMPTS->hideReactionPreview(Z)Z"
+internal const val HIDE_FACEPILE = "$POST_PROMPTS->hideReactionPreview(Landroid/graphics/drawable/Drawable;Z)Z"
 internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment;"
 
 /** Whether [method] takes a GraphQLComment, which is how the comment row's builder is told apart. */
 internal fun takesComment(method: Method): Boolean =
     method.parameterTypes.any { it.toString() == GRAPHQL_COMMENT }
 
-/** The smali that asks the extension about the facepile Drawable's own surface, answering in v0. */
+/**
+ * The smali that asks the extension about the facepile Drawable, handing it the Drawable itself (for
+ * Show reactions on the Like button, #541) and its own surface, answering in v0.
+ */
 internal fun facepileAsk(facepile: String): String =
     "iget-boolean v0, p0, $facepile->$COMMENT_FLAG:Z\n" +
-        "invoke-static { v0 }, $HIDE_FACEPILE"
+        "invoke-static { p0, v0 }, $HIDE_FACEPILE"
 
 internal fun isCommentComponent(classDef: ClassDef): Boolean =
     classDef.methods.any { holdsString(it, COMMENT_COMPONENT_NAME) } &&
