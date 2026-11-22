@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.iface.Method
 
 private const val UPDATE_PROMPTS = "$EXTENSION_PACKAGE/updates/UpdatePrompts;"
@@ -32,7 +33,7 @@ private const val BLOCK_VERSION_CEILING = "$UPDATE_PROMPTS->blockVersionCeiling(
  * missing one stops the patch naming all of them.
  */
 @Suppress("unused")
-val stopUpdatePromptsPatch = bytecodePatch(
+val stopUpdatePromptsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Stop update prompts",
     description = "Stops Facebook asking you to update, since a patched app can't install Meta's updates anyway. " +
@@ -44,7 +45,7 @@ val stopUpdatePromptsPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val missing = mutableListOf<String>()
         fun one(what: String, matches: List<Method>): Method? {
             if (matches.size == 1) return matches.single()

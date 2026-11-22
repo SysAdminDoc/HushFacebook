@@ -4,7 +4,7 @@
  */
 package app.morphe.patches.facebook.navigation.marketplaceonly
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.menu.hushfacebookInTheMenuPatch
@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.notifications.blockPromotionalNotificationsPa
 import app.morphe.patches.facebook.navigation.starttab.openOnChosenTabPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabBarFilterPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 internal const val PATCH = "Marketplace only"
 
@@ -27,7 +28,7 @@ internal const val PATCH = "Marketplace only"
  * Included in the default selection, with its runtime switch off until the person opts in.
  */
 @Suppress("unused")
-val marketplaceOnlyPatch = bytecodePatch(
+val marketplaceOnlyPatch = patch(
     name = "Marketplace only",
     description = "Turns Facebook into a Marketplace app for buying and selling without the feed. The tab bar " +
         "keeps only Marketplace, Notifications and your profile or Menu, and Facebook opens on Marketplace. " +
@@ -40,7 +41,7 @@ val marketplaceOnlyPatch = bytecodePatch(
         blockPromotionalNotificationsPatch, marketplaceFeedPrefetchPatch, tabBarFilterPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         enableStatus("marketplaceOnly")
     }
 }

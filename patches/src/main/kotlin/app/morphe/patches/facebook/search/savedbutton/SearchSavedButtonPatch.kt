@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.search.savedbutton
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.extendsClass
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -50,7 +51,7 @@ internal const val ATTACH = "$SAVED_BUTTON_CLASS->attach($LINEAR_LAYOUT)V"
  * Saved button at its end with the switch on.
  */
 @Suppress("unused")
-val searchSavedButtonPatch = bytecodePatch(
+val searchSavedButtonPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Saved button in search",
     description = "Adds a Saved button at the end of the search bar, so your saved posts and videos are one tap " +
@@ -60,7 +61,7 @@ val searchSavedButtonPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("searchSavedButton")
         val bars = searchBars()
         val bar = bars.singleOrNull()

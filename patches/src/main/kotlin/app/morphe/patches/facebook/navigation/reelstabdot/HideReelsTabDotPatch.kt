@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
@@ -41,10 +42,10 @@ internal const val CLEAR = "$REELS_TAB_DOT->clear(Ljava/lang/Object;)Z"
  * the method carries one Hushfacebook call whichever of them is in, and each only switches its own
  * rule on.
  */
-internal val jewelCountHookPatch = bytecodePatch {
+internal val jewelCountHookPatch = patch {
     dependsOn(settingsPatch)
 
-    execute {
+    executeBytecode {
         applyJewelCount(findJewelCount())
     }
 }
@@ -55,7 +56,7 @@ internal val jewelCountHookPatch = bytecodePatch {
  * takes it.
  */
 @Suppress("unused")
-val hideReelsTabDotPatch = bytecodePatch(
+val hideReelsTabDotPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide the Reels tab dot",
     description = "Takes the new-item dot and count off the Reels tab, called Video on some accounts, so it " +
@@ -67,7 +68,7 @@ val hideReelsTabDotPatch = bytecodePatch(
     dependsOn(jewelCountHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         enableStatus("reelsTabDot")
     }
 }

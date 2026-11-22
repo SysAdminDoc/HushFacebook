@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.ControlFlow
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -127,10 +128,10 @@ private const val GATE_WINDOW = 16
  * navigation bar, and for one part of the top bar under a server setting. That float goes through
  * the extension too, and a kept top bar gets 0, so it doesn't fade out in place.
  */
-internal val tabBarScrollAwayPatch = bytecodePatch {
+internal val tabBarScrollAwayPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val holders = classDefByStrings(BOTTOM_TABS_CONTAINER, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val gate = scrollAwayGate(holders)

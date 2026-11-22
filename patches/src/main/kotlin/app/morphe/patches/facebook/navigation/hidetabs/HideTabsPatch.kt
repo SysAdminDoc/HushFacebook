@@ -4,13 +4,14 @@
  */
 package app.morphe.patches.facebook.navigation.hidetabs
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabBarFilterPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabLinksPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabOrderPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /** The classes Facebook keeps the names of for each tab Hide tabs can take off, as the extension's HiddenTabs knows them. */
 internal val HIDEABLE_TABS = mapOf(
@@ -45,7 +46,7 @@ internal val HIDEABLE_TABS = mapOf(
  * In the default selection with every switch off, so it changes nothing until a tab is picked.
  */
 @Suppress("unused")
-val hideTabsPatch = bytecodePatch(
+val hideTabsPatch = patch(
     name = "Hide tabs",
     description = "Takes the tabs you pick off the tab bar, such as Friends, Marketplace, Groups, Gaming or " +
         "Events, so the bar only has what you use, and puts the ones left in the order you want. Each page stays " +
@@ -57,7 +58,7 @@ val hideTabsPatch = bytecodePatch(
     dependsOn(settingsPatch, tabBarFilterPatch, tabLinksPatch, tabOrderPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         enableStatus("hiddenTabs")
     }
 }

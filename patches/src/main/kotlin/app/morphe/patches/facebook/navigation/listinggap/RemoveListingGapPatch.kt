@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.navigation.listinggap
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -270,7 +271,7 @@ internal fun MutableMethod.trimSafeAreaView(viewType: String) {
  * edge to edge gets the same insets as before.
  */
 @Suppress("unused")
-val removeListingGapPatch = bytecodePatch(
+val removeListingGapPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Remove the gap above Marketplace listings",
     description = "Takes out the empty band some phones show between the status bar and a Marketplace listing's " +
@@ -283,7 +284,7 @@ val removeListingGapPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val (map, callers) = insetsMapCallers()
         val (viewType, viewListeners) = safeAreaViewListeners()
         // Every call is checked before any is changed, so a build missing a register leaves all as they were.

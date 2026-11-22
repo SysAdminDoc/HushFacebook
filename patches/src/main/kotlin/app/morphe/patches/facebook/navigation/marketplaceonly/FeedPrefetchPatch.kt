@@ -5,7 +5,7 @@
 package app.morphe.patches.facebook.navigation.marketplaceonly
 
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.navigation.tabbar.callRegisters
 import app.morphe.patches.facebook.shared.redexOriginalName
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -149,9 +150,9 @@ private fun screenOnGuard(method: Method): PrefetchGuard? {
 private fun Instruction.registerA() = (this as OneRegisterInstruction).registerA
 
 /** Hidden dependency: the single Marketplace switch owns these guards too. */
-internal val marketplaceFeedPrefetchPatch = bytecodePatch {
+internal val marketplaceFeedPrefetchPatch = patch {
     dependsOn(settingsPatch)
-    execute {
+    executeBytecode {
         val found = mutableListOf<Pair<ClassDef, PrefetchGuard>>()
         val dispatches = mutableListOf<Pair<ClassDef, MethodReference>>()
         classDefForEach { owner ->

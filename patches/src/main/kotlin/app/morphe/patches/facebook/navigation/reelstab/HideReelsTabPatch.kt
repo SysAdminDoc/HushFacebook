@@ -4,12 +4,13 @@
  */
 package app.morphe.patches.facebook.navigation.reelstab
 
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabBarFilterPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabLinksPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 
 /**
  * Takes the Reels tab, which some accounts call Video, off Facebook's tab bar. The tab bar filter
@@ -27,7 +28,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * until it's turned on.
  */
 @Suppress("unused")
-val hideReelsTabPatch = bytecodePatch(
+val hideReelsTabPatch = patch(
     name = "Hide the Reels tab",
     description = "Takes the Reels tab, called Video on some accounts, off the tab bar, so Reels isn't one tap " +
         "away. Reels in your feed and reel links still open. Starts off. Turn it on in Hushfacebook settings > " +
@@ -37,7 +38,7 @@ val hideReelsTabPatch = bytecodePatch(
     dependsOn(settingsPatch, tabBarFilterPatch, tabLinksPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         enableStatus("reelsTab")
     }
 }

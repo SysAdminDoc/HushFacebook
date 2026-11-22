@@ -6,10 +6,11 @@ package app.morphe.patches.facebook.navigation.tabbar
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -19,10 +20,10 @@ import com.android.tools.smali.dexlib2.iface.Method
  * tab bar is built. Marketplace only and Hide the Reels tab both depend on it, so the builder
  * carries one call whichever of them are selected; each switches its own rule on in the extension.
  */
-internal val tabBarFilterPatch = bytecodePatch {
+internal val tabBarFilterPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val filters = mutableListOf<Pair<Method, TabFilter>>()
         classDefForEachReferencing(types = listOf(NAVIGATION_CONFIG)) { classDef ->
             if (classDef.fields.none { it.type == NAVIGATION_CONFIG }) return@classDefForEachReferencing

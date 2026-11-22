@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -27,6 +27,7 @@ import app.morphe.patches.facebook.profile.childGetters
 import app.morphe.patches.facebook.profile.filterChildren
 import app.morphe.patches.facebook.profile.isChildGetter
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -123,7 +124,7 @@ internal const val HEADER_FLAG = "hushKeptOpen"
  * shortcuts from the list where it sits beside the profile row. See MenuBloks.java.
  */
 @Suppress("unused")
-val hideMenuPromotionsPatch = bytecodePatch(
+val hideMenuPromotionsPatch = patch(
     name = "Hide Menu promotions",
     description = "Hides the Upgrades and Also from Meta sections and the Muse card in Facebook's Menu, so the " +
         "Menu has fewer ads for Meta's products. Settings, Help and your shortcuts stay. On by default. Turn it " +
@@ -136,7 +137,7 @@ val hideMenuPromotionsPatch = bytecodePatch(
     dependsOn(settingsPatch, menuSubpagesPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val isGroupEnum = { type: String -> classDefByOrNull(type)?.let { isEnumNaming(it, SECTION_NAMES) } == true }
 
         val native = single(NATIVE_SECTION_KEY, "native Menu group section", ::isNativeSectionChildren)

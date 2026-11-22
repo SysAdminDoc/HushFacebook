@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -89,7 +90,7 @@ internal const val MAP_LOAD_REACH = 4
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val dontSaveSearchHistoryPatch = bytecodePatch(
+val dontSaveSearchHistoryPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Don't save search history",
     description = "Stops Facebook from adding what you search for, and the pages and profiles you open from a " +
@@ -100,7 +101,7 @@ val dontSaveSearchHistoryPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch, analyticsEventsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         requireStatusMethod("searchHistory")
         val holders = classDefByStrings(ADD_RECENT_SEARCH, StringComparisonType.EQUALS)

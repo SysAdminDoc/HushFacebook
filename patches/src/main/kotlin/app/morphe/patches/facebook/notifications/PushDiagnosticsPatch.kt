@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.notifications
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.settings.MAIN_TAB_ACTIVITY
 import app.morphe.patches.facebook.misc.settings.compressedCodeRefusal
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.namedRegisters
 import app.morphe.util.returnEarly
@@ -217,10 +218,10 @@ internal fun BytecodePatchContext.findFcmReceipt(): Method = classDefByOrNull(FC
 } ?: refuse("no kept FCM receive callback")
 
 /** Always included by settings, with no visible patch or toggle. A missing observer group stays unavailable. */
-internal val pushDiagnosticsPatch = bytecodePatch {
+internal val pushDiagnosticsPatch = patch {
     dependsOn(facebookExtensionPatch)
-    execute {
-        if (compressedCodeRefusal(classDefByOrNull(FACEBOOK_APPLICATION) != null, classDefByOrNull(MAIN_TAB_ACTIVITY)) != null) return@execute
+    executeBytecode {
+        if (compressedCodeRefusal(classDefByOrNull(FACEBOOK_APPLICATION) != null, classDefByOrNull(MAIN_TAB_ACTIVITY)) != null) return@executeBytecode
         fun <T> observe(status: String, find: () -> T, apply: (T) -> Unit) {
             val enabled = mutableClassDefBy(PUSH_DIAGNOSTICS).methods.singleOrNull {
                 it.name == status && it.returnType == "Z" && it.parameterTypes.isEmpty()

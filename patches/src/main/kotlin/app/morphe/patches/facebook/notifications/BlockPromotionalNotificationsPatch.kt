@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Field
 import com.android.tools.smali.dexlib2.iface.Method
@@ -30,7 +31,7 @@ internal const val BLOCK = "$EXTENSION_PACKAGE/notifications/NotificationKinds;-
  * a switch that's on posts as Facebook posts it.
  */
 @Suppress("unused")
-val blockPromotionalNotificationsPatch = bytecodePatch(
+val blockPromotionalNotificationsPatch = patch(
     name = "Block promotional notifications",
     description = "Blocks the kinds of notification you pick, such as trending videos, memories and birthdays, " +
         "so you get fewer pings you don't care about. Messages, friend requests, comments and login alerts " +
@@ -41,7 +42,7 @@ val blockPromotionalNotificationsPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val post = trayPost(PATCH)
         mutableClassDefBy(TRAY_MANAGER).findMutableMethodOf(post.method).postNothingWhenBlocked(post.notification)
         enableStatus("promoNotifications")

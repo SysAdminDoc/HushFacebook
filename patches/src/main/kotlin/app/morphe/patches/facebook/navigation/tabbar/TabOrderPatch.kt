@@ -6,8 +6,9 @@ package app.morphe.patches.facebook.navigation.tabbar
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.Method
@@ -21,10 +22,10 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
  * back the same list. The list goes back through ImmutableList.copyOf, which keeps an ImmutableList
  * as it is, since the field and its readers want an ImmutableList.
  */
-internal val tabOrderPatch = bytecodePatch {
+internal val tabOrderPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val stores = mutableListOf<Pair<Method, Int>>()
         classDefForEach { classDef ->
             if (classDef.fields.none { it.type == NAVIGATION_CONFIG }) return@classDefForEach

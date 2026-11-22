@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.fillStoryModelStub
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -47,7 +48,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * and routes, never a person, group, page or post, and off or paused Facebook answers for itself.
  */
 @Suppress("unused")
-val hideMetaAiInSearchPatch = bytecodePatch(
+val hideMetaAiInSearchPatch = patch(
     name = "Hide Meta AI in search",
     description = "Removes the Meta AI answer and Ask Meta AI prompts from search results, and stops suggestions " +
         "from sending your search to Meta AI. You get plain results for people, groups, Pages and posts. On by " +
@@ -58,7 +59,7 @@ val hideMetaAiInSearchPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val answerBuilder = answerPageBuilder()
         val role = resultRoleEnum()
 

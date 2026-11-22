@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.literalReads
 import com.android.tools.smali.dexlib2.Opcode
@@ -66,7 +67,7 @@ internal const val OVERRIDE = "$BOTTOM_TAB_BAR->override(I)I"
  * Hide the tab bar on the Reels tab takes the bar off that tab alone (ReelsTabBarHidden.kt).
  */
 @Suppress("unused")
-val bottomTabBarPatch = bytecodePatch(
+val bottomTabBarPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Tab bar at the bottom",
     description = "Moves Facebook's tab bar to the bottom of the screen on accounts that have it at the top, " +
@@ -88,7 +89,7 @@ val bottomTabBarPatch = bytecodePatch(
     dependsOn(settingsPatch, tabBarScrollAwayPatch, topBarButtonsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val key = overrideKeyField(
             classDefByStrings(OVERRIDE_KEY, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         )

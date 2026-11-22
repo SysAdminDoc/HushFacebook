@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -51,7 +52,7 @@ private const val NODE_STRING = "getString(I)Ljava/lang/String;"
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val localProfileCountsPatch = bytecodePatch(
+val localProfileCountsPatch = patch(
     name = "Local profile counts",
     description = "Shows friends, followers and following counts you type yourself on your own profile, " +
         "on this phone only. Other profiles and Facebook's real numbers aren't touched. Starts off. " +
@@ -61,7 +62,7 @@ val localProfileCountsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("localProfileCounts")
         val nodes = bloksNodes()
         val getters = stringGetters(nodes)

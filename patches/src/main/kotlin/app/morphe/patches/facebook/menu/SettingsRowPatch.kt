@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -28,6 +28,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -55,7 +56,7 @@ private const val COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMM
  * the settings, and the row's loggers leave it out. See SettingsRowAnchors.kt for the shapes.
  */
 @Suppress("unused")
-val hushfacebookInTheMenuPatch = bytecodePatch(
+val hushfacebookInTheMenuPatch = patch(
     name = "Hushfacebook in the Menu",
     description = "Adds a Hushfacebook settings row to Facebook's Menu, at the end of Settings and privacy, so " +
         "the settings are easy to find. A Saved row joins it while the Saved shortcut switch is on, a Watch " +
@@ -69,7 +70,7 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val natives = classDefByStrings(NATIVE_SECTION_KEY, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .flatMap { classDef -> classDef.methods.filter(::isNativeSectionChildren) }
@@ -140,7 +141,7 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
                 ?: throw PatchException("$ROW_PATCH: ${lambda.definingClass}->invoke changed before its tap could be hooked")
             lambda.skipInlinedRow(found)
             enableStatus("menuSettingsRow")
-            return@execute
+            return@executeBytecode
         }
         val owner = mutableClassDefBy(tap.definingClass)
         // 582's 32-bit build has dropped both loggers, so there may be none to hook. 588 folds them

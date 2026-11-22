@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.navigation.sellerprofile
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.cloneMutableAndPreserveParameters
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -75,7 +76,7 @@ internal fun isByIdBooleanRead(method: Method): Boolean {
  * and a seller's regular profile is how people check who they're buying from (#68).
  */
 @Suppress("unused")
-val showSellerViewProfilePatch = bytecodePatch(
+val showSellerViewProfilePatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Show View profile on Marketplace sellers",
     description = "Adds View profile to every seller's Marketplace page. It opens their regular Facebook " +
@@ -87,7 +88,7 @@ val showSellerViewProfilePatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val module = mutableClassDefByOrNull(CONFIG_MODULE)
             ?: throw PatchException("$PATCH: this build has no $CONFIG_MODULE")
         val reads = module.methods.filter(::isNamedBooleanRead)

@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.holdsString
@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.argumentRegister
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.literalReads
@@ -1121,8 +1122,8 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
     }
 }
 
-internal val topBarButtonsPatch = bytecodePatch {
+internal val topBarButtonsPatch = patch {
     dependsOn(settingsPatch, facebookExtensionPatch)
 
-    execute { hideTopBarButtons() }
+    executeBytecode { hideTopBarButtons() }
 }

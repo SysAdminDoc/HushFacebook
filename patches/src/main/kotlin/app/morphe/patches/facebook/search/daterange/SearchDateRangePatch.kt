@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -29,6 +29,7 @@ import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -140,7 +141,7 @@ internal const val FLAG_REACH = 12
  * becomes the label.
  */
 @Suppress("unused")
-val searchDateRangePatch = bytecodePatch(
+val searchDateRangePatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Search date range",
     description = "Adds a from and to date picker to the Date posted filter in post search, in place of the list of " +
@@ -151,7 +152,7 @@ val searchDateRangePatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         requireStatusMethod("searchDateRange")
         val holders = classDefByStrings(TAP_FILTER, StringComparisonType.EQUALS)

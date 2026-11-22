@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.profile
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -57,7 +58,7 @@ internal val NODE_ACCESSORS = setOf(
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val hideProfileNotesPatch = bytecodePatch(
+val hideProfileNotesPatch = patch(
     name = "Hide profile notes",
     description = "Hides the note bubble on profile pictures, the Drop a thought prompt on your own profile " +
         "included. Starts off. Turn it on in Hushfacebook settings > News feed.",
@@ -66,7 +67,7 @@ val hideProfileNotesPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("profileNotes")
         val getters = childGetters(bloksNodes())
         getters.forEach { getter ->

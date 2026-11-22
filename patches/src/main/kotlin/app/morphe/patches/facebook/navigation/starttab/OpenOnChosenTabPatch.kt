@@ -12,7 +12,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.feedsheader.FEED_FILTERS_FRAGMENT
@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.settings.declaredInHierarchy
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.Method
@@ -50,7 +51,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * Facebook opens, which is a choice to make.
  */
 @Suppress("unused")
-val openOnChosenTabPatch = bytecodePatch(
+val openOnChosenTabPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Open on a chosen tab",
     description = "Opens Facebook on the tab you pick when you start it from its icon, so you can skip the feed. " +
@@ -61,7 +62,7 @@ val openOnChosenTabPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // The route the extension asks by has to be there to be taken. A build whose start tab
         // picker no longer reads the extra would apply this patch and never open the chosen tab.
         val pickers = classDefByStrings(TARGET_TAB_ID, StringComparisonType.EQUALS)

@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.search.poststab
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableClass
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.comments.summaries.descriptor
@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -68,7 +69,7 @@ internal const val TAB_LABELS_STUB = "tabLabels"
  * results.
  */
 @Suppress("unused")
-val searchPostsTabPatch = bytecodePatch(
+val searchPostsTabPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Search posts tab",
     description = "Puts the Posts chip back in the row over search results, after Reels, so you can see only posts " +
@@ -78,7 +79,7 @@ val searchPostsTabPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("searchPostsTab")
         val holders = classDefByStrings(CHIP_TAB_NAME, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }

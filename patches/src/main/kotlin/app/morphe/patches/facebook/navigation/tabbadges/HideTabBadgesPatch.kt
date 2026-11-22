@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.navigation.reelstabdot.FB_USER_SESSION
 import app.morphe.patches.facebook.navigation.reelstabdot.jewelCountHookPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -54,7 +55,7 @@ internal const val BADGER_SUFFIX = "LauncherBadgesInterface"
  * Notifications themselves, and the in-app Notifications list, aren't touched.
  */
 @Suppress("unused")
-val hideTabBadgesPatch = bytecodePatch(
+val hideTabBadgesPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide tab badges",
     description = "Takes the dot and count off the tabs you pick, and Facebook's count off its app icon, so the " +
@@ -66,7 +67,7 @@ val hideTabBadgesPatch = bytecodePatch(
     dependsOn(jewelCountHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("tabBadges")
         findBadgeWriters().forEach { applyIconCount(it) }
         enableStatus("tabBadges")

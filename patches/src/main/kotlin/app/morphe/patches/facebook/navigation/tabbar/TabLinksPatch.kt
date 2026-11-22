@@ -6,12 +6,13 @@ package app.morphe.patches.facebook.navigation.tabbar
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.navigation.starttab.TAB_TAG
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -23,10 +24,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * and Hide the Reels tab depend on it; Marketplace only doesn't, and the extension keeps the tabs
  * it drops switched to.
  */
-internal val tabLinksPatch = bytecodePatch {
+internal val tabLinksPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val lookups = mutableListOf<Pair<Method, TabHook>>()
         // A lookup answers a TabTag.
         classDefForEachReferencing(types = listOf(TAB_TAG)) { classDef ->
