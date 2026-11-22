@@ -150,6 +150,44 @@ public class BackgroundPlayTest {
     }
 
     @Test
+    public void aReelSwipedToInReelsIsCarriedOnAndAFeedOrStoryReelIsNot() {
+        Player swiped = new Player();
+        Player inFeed = new Player();
+        Player story = new Player();
+        TapToPlay.origins = player -> player == swiped ? "fb_shorts_tab::reels_tab"
+                : player == inFeed ? "fb_shorts_native_in_feed_unit" : "fb_shorts_story";
+        try {
+            TapToPlayForTests.tapEnded(5000);
+            BackgroundPlay.started(inFeed, Trigger.BY_FB_SHORTS_IN_FEED_UNIT_VISIBLE);
+            BackgroundPlay.started(story, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE);
+            SystemClock.sleep(3000);
+            BackgroundPlay.pausing(inFeed, Trigger.BY_PLAYER);
+            assertTrue("a reel playing in the feed", asked(inFeed));
+            BackgroundPlay.answered(false);
+            BackgroundPlay.pausing(story, Trigger.BY_PLAYER);
+            assertTrue("a reel in a story", asked(story));
+            BackgroundPlay.answered(false);
+
+            BackgroundPlay.started(swiped, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE);
+            SystemClock.sleep(3000);
+            BackgroundPlay.pausing(swiped, Trigger.BY_PLAYER);
+            assertFalse("a reel you swiped to in Reels stopped when you left", asked(swiped));
+            BackgroundPlay.answered(true);
+            BackgroundPlay.returning(handler);
+            BackgroundPlay.returned();
+
+            // Back in Reels, Facebook starts it again as the screen resumes, and it's still yours.
+            SystemClock.sleep(BackgroundPlay.HANDLED_MS);
+            BackgroundPlay.started(swiped, Trigger.BY_SHORT_FORM_VIDEO_ONRESUME);
+            SystemClock.sleep(3000);
+            BackgroundPlay.pausing(swiped, Trigger.BY_PLAYER);
+            assertFalse("the same reel, left again", asked(swiped));
+        } finally {
+            TapToPlayForTests.forget();
+        }
+    }
+
+    @Test
     public void facebookStartingItAgainOnItsOwnAfterAPauseEndsIt() {
         Player player = playThenLeave(Trigger.BY_USER, 3000);
         BackgroundPlay.started(player, Trigger.BY_AUTOPLAY);

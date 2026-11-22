@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +55,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       player when its flags are on.</li>
  *   <li>A video counts as yours when its start came within {@link #TAP_WINDOW_MS} of a tap and wasn't
  *       one Facebook sends because something came into view ({@link #started}), the rule Tap to play
- *       uses. It stops counting when Facebook starts it again on its own after a pause.</li>
+ *       uses. It stops counting when Facebook starts it again on its own after a pause. In Facebook's
+ *       Reels viewer every start counts ({@link #inReels}): a swipe there is how you pick the reel,
+ *       and only the one on screen plays (D#524).</li>
  *   <li>When that handler is asked ({@link #deciding}), it goes on only for the video whose pause
  *       Facebook just recorded, when that pause found it playing, came no more than
  *       {@link #LEAVE_WINDOW_MS} before Facebook asked, and didn't follow a tap within
@@ -711,7 +714,8 @@ public final class BackgroundPlay {
     /** Records a start. Answers whether it was yours. */
     static boolean start(Object player, @Nullable String trigger, long now) {
         long sinceTap = TapClock.msSinceTap(now);
-        boolean yours = sinceTap >= 0 && sinceTap <= TAP_WINDOW_MS && !TapToPlay.visibilityDriven(trigger);
+        boolean yours = sinceTap >= 0 && sinceTap <= TAP_WINDOW_MS && !TapToPlay.visibilityDriven(trigger)
+                || inReels(player);
         synchronized (FOLLOWING) {
             Followed followed = find(player);
             if (yours) {
@@ -724,6 +728,24 @@ public final class BackgroundPlay {
             if (followed != null) followed.startedAt = now;
         }
         return yours;
+    }
+
+    /**
+     * Whether [player] plays in Facebook's Reels viewer, by its origin ("fb_shorts_tab::reels_tab",
+     * "newsfeed::fb_shorts_viewer", "profile::fb_shorts_profile_viewer"): there the reel playing is the
+     * one on screen, the one you swiped to. A reel in a feed ("fb_shorts_native_in_feed_unit") or a
+     * story isn't. False when the origin can't be read.
+     */
+    static boolean inReels(Object player) {
+        Object origin;
+        try {
+            origin = TapToPlay.origins.of(player);
+        } catch (Throwable unreadable) {
+            return false;
+        }
+        if (origin == null) return false;
+        String name = origin.toString().toLowerCase(Locale.ROOT);
+        return name.contains("fb_shorts") && !name.contains("in_feed") && !name.contains("story");
     }
 
     /** Whether Facebook sends [trigger] on its own: autoplay, or something coming into view or back. */

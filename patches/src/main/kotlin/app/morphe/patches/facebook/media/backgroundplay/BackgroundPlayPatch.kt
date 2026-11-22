@@ -49,8 +49,8 @@ internal const val PATCH = "Keep playing in the background"
 @Suppress("unused")
 val backgroundPlayPatch = bytecodePatch(
     name = "Keep playing in the background",
-    description = "A video you started with a tap keeps its sound when you leave Facebook, with Facebook's own " +
-        "notification to pause it. A headphones button in the picture-in-picture window does the same for the video " +
+    description = "A video you started with a tap, or a reel you swiped to in Reels, keeps its sound when you " +
+        "leave Facebook, with Facebook's own notification to pause it. A headphones button in the picture-in-picture window does the same for the video " +
         "in it. Both start off. Turn them on in Hushfacebook settings > Video and audio.",
 ) {
     category("Playback")
