@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.methodsNaming
@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -45,7 +46,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
  * purpose, so taking it away is a choice to make, as with Tap to play.
  */
 @Suppress("unused")
-val turnOffDoubleTapLikePatch = bytecodePatch(
+val turnOffDoubleTapLikePatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Turn off double tap to like",
     description = "Stops a double tap on a reel, a video or a photo in the feed from liking it, so you don't like " +
@@ -56,7 +57,7 @@ val turnOffDoubleTapLikePatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Every anchor of every hook is found, every reader that would refuse the gesture-view hook
         // is checked, and SettingsStatus is confirmed to carry the switch's own method, before either
         // hook changes a single instruction. A build that fails anywhere in the find phase is refused

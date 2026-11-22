@@ -7,11 +7,12 @@ package app.morphe.patches.facebook.reels.watchhistory
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.analytics.analyticsEventsPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.iface.Method
 
 /**
@@ -39,7 +40,7 @@ private fun BytecodePatchContext.holdSender(literal: String, isSender: (Method) 
 }
 
 @Suppress("unused")
-val dontSendReelWatchHistoryPatch = bytecodePatch(
+val dontSendReelWatchHistoryPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Don't send reel watch history",
     description = "Stops sending Facebook the reels and videos you've watched, where you stopped in a video and how " +
@@ -51,7 +52,7 @@ val dontSendReelWatchHistoryPatch = bytecodePatch(
     dependsOn(settingsPatch, analyticsEventsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val points = classDefByStrings(SEEN_STATE_MUTATION, StringComparisonType.EQUALS).flatMap { owner ->
             owner.methods.mapNotNull { method -> sendPoint(method) { classDefByOrNull(it) }?.let { method to it } }
         }

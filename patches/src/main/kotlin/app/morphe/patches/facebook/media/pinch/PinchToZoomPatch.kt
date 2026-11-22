@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -49,7 +50,7 @@ internal fun profileViewCreated(fragment: ClassDef): List<Method> = fragment.met
  * whose player Tap to play knows, and on a photo in Photo carousel's row.
  */
 @Suppress("unused")
-val pinchToZoomPatch = bytecodePatch(
+val pinchToZoomPatch = patch(
     name = "Pinch to zoom",
     description = "Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom " +
         "in, like you can on other photos in the feed. It goes back when you let go, unless you turn on Stay zoomed " +
@@ -62,7 +63,7 @@ val pinchToZoomPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val activity = classDefByOrNull(FRAGMENT_ACTIVITY)
             ?: throw PatchException("$PATCH: this build has no $FRAGMENT_ACTIVITY")
         val dispatches = touchDispatches(activity)

@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.reels
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.ads.sponsoredreels.dropItemFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.filterPageFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.filterSectionsFirst
@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
 
@@ -207,10 +208,10 @@ internal class MidCardScan {
  * mid-card's type through the stub this fills. What comes off is the extension's call, by which of
  * the two patches the build carries and their switches.
  */
-internal val reelMidCardsPatch = bytecodePatch {
+internal val reelMidCardsPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         val scan = MidCardScan()
         classDefForEach { classDef -> if (!classDef.type.startsWith(EXTENSION_PACKAGE)) scan.visit(classDef) }
         val resolved = scan.resolve()

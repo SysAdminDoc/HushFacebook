@@ -8,7 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.layout.theme.branchTargets
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.Opcode
@@ -134,7 +135,7 @@ internal fun MutableMethod.askBeforeQualityPut(put: QualityPut) {
  * In Morphe Manager's default selection with the switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val uploadStoriesInHdPatch = bytecodePatch(
+val uploadStoriesInHdPatch = patch(
     name = "Upload Stories in HD",
     description = "Videos you post to your Story ask Facebook for its high upload quality instead of standard, so " +
         "they can come out sharper. Starts off. Turn it on in Hushfacebook settings > Stories.",
@@ -143,7 +144,7 @@ val uploadStoriesInHdPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("storyUploadHd")
         val put = findQualityPut()
         mutableClassDefBy(put.method.definingClass).findMutableMethodOf(put.method).askBeforeQualityPut(put)

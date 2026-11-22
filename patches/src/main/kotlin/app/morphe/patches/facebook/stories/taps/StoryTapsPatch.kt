@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -26,6 +26,7 @@ import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -86,7 +87,7 @@ private const val SIMPLE_GESTURE_LISTENER = "Landroid/view/GestureDetector\$Simp
  * In the default selection with both switches off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
-val storyTapsPatch = bytecodePatch(
+val storyTapsPatch = patch(
     name = "Story viewer taps",
     description = "A tap in the middle of a story shows a play and pause button, like Reels, and a second switch " +
         "makes stories change only on a double tap, so a single tap pauses or plays instead. Both start off. Turn them on in " +
@@ -96,7 +97,7 @@ val storyTapsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("storyTaps")
         val tap = storyTapMethod()
         val route = storyTapRoute(tap)

@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.media.hdr
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.MAIN_TAB_ACTIVITY
 import app.morphe.patches.facebook.misc.settings.compressedCodeRefusal
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -124,14 +125,14 @@ internal fun BytecodePatchContext.applyPlaybackEvidenceAnchors(anchors: List<Pla
  * reads the formats and changes nothing about them. A build missing one of its anchors goes on
  * without it, with a warning: a throw here would stop Hushfacebook settings, and every patch with it.
  */
-internal val playbackFormatEvidencePatch = bytecodePatch {
+internal val playbackFormatEvidencePatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         // Dependencies run before Settings. Its refusal still has to be what explains why an
         // opaque Android 9 build can't be patched, so nothing is looked up in one.
         if (compressedCodeRefusal(classDefByOrNull(FACEBOOK_APPLICATION) != null, classDefByOrNull(MAIN_TAB_ACTIVITY)) != null) {
-            return@execute
+            return@executeBytecode
         }
         val anchors = try {
             findPlaybackEvidenceAnchors()
@@ -139,7 +140,7 @@ internal val playbackFormatEvidencePatch = bytecodePatch {
             // A missing anchor is a PatchException with its reason; anything else is a bug, named as one.
             val why = if (missing is PatchException) missing.message else "$EVIDENCE: ${missing::class.java.name}: ${missing.message}"
             patchLog.warning("$why. Debug reports go on without the video formats.")
-            return@execute
+            return@executeBytecode
         }
         applyPlaybackEvidenceAnchors(anchors)
     }

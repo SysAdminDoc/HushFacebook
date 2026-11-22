@@ -12,7 +12,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.downloads.reel.moreSheet
@@ -42,6 +42,7 @@ import app.morphe.patches.facebook.reels.playerRead
 import app.morphe.patches.facebook.reels.videoCompletes
 import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -234,7 +235,7 @@ internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
  * In the default selection with its switch off: it changes what leaving Facebook does.
  */
 @Suppress("unused")
-val pictureInPicturePatch = bytecodePatch(
+val pictureInPicturePatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Picture-in-picture",
     description = "Keeps reels and videos from the Reels and Video tabs, or full screen, playing in a small " +
@@ -245,7 +246,7 @@ val pictureInPicturePatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val check = findPipCheck()
         val step = findArmingStep(check)
         val gate = findSurfaceGate(step)

@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.postmenu.postMenuSheetHookPatch
@@ -33,6 +33,7 @@ import app.morphe.patches.facebook.reels.hold.SPEED_SET as GUARD_SPEED_SET
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -78,7 +79,7 @@ internal const val PATCH = "Keep the reel speed"
  * speed row (#238). Videos that are still live and ads keep Facebook's menu.
  */
 @Suppress("unused")
-val keepReelSpeedPatch = bytecodePatch(
+val keepReelSpeedPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep the reel speed",
     description = "A speed you pick in a reel's menu stays for the next reels, even after Facebook restarts, " +
@@ -94,7 +95,7 @@ val keepReelSpeedPatch = bytecodePatch(
     dependsOn(settingsPatch, reelLiftGuardPatch, postMenuSheetHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val anchors = findReelSpeedAnchors()
         applyReelSpeedAnchors(anchors)
         // The slower speeds are the extension's third switch; a build where the menus moved keeps the rest.

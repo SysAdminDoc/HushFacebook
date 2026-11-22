@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -33,6 +33,7 @@ import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -369,7 +370,7 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * In the default selection with its switch off: it only acts once the switch is turned on.
  */
 @Suppress("unused")
-val keepProgressBarPatch = bytecodePatch(
+val keepProgressBarPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep the progress bar",
     description = "Keeps every reel's progress bar full size and moving smoothly, with the time above it, so you can " +
@@ -382,7 +383,7 @@ val keepProgressBarPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         val scrubber = vddScrubber(
             classDefByStrings(SCRUBBER_PASSIVE, StringComparisonType.EQUALS)

@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -88,7 +89,7 @@ internal const val RESTART_HELPER = "hushfacebookRestartStory"
  * last-card branch, and there a tap's reason becomes the completion's while the switch is on.
  */
 @Suppress("unused")
-val blockStoryAutoAdvancePatch = bytecodePatch(
+val blockStoryAutoAdvancePatch = patch(
     name = "Stop Story auto-advance",
     description = "Keeps each story on screen until you tap or swipe, so you can take your time with it. A " +
         "second switch replays a finished story from the start. Starts off. Turn it on in Hushfacebook settings " +
@@ -98,7 +99,7 @@ val blockStoryAutoAdvancePatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val hooks = classDefByStrings(AUTO_NAVIGATION, StringComparisonType.EQUALS)
             .mapNotNull(::autoAdvanceHook)
         val hook = hooks.singleOrNull() ?: throw PatchException(

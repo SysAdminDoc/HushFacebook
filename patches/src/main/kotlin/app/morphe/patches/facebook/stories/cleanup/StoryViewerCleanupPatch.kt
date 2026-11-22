@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
@@ -26,6 +26,7 @@ import app.morphe.patches.facebook.misc.upsells.definesImmutableCopy
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -231,7 +232,7 @@ internal const val HIDE_REPLY_BAR = "$STORY_VIEWER_CLEANUP->hideReplyBar()Z"
  * In the default selection with every switch off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
-val storyViewerCleanupPatch = bytecodePatch(
+val storyViewerCleanupPatch = patch(
     name = "Clean up the story viewer",
     description = "Switches that take the song and effect credits and the Subscribe and Follow buttons off a " +
         "story, the suggested replies or the whole reply bar off the bottom, the Up next card off the next " +
@@ -243,7 +244,7 @@ val storyViewerCleanupPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("storyViewerCleanup")
         cleanUpStoryViewer()
         dropCreditPills()

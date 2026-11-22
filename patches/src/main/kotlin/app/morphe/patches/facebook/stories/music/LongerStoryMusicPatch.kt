@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.stories.music
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -161,7 +162,7 @@ internal fun MutableMethod.askBeforeClipReturns(returns: ClipReturns) {
  * In Morphe Manager's default selection with the switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val longerStoryMusicPatch = bytecodePatch(
+val longerStoryMusicPatch = patch(
     name = "Longer music on photo stories",
     description = "A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Starts off. " +
         "Turn it on in Hushfacebook settings > Stories.",
@@ -170,7 +171,7 @@ val longerStoryMusicPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("storyMusicLength")
         val returns = findClipReturns()
         mutableClassDefBy(returns.method.definingClass).findMutableMethodOf(returns.method).askBeforeClipReturns(returns)

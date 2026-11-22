@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -39,7 +40,7 @@ internal const val PATCH = "Default playback quality"
  * changes until the switch is turned on and a quality is chosen.
  */
 @Suppress("unused")
-val defaultPlaybackQualityPatch = bytecodePatch(
+val defaultPlaybackQualityPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Default playback quality",
     description = "Plays videos, reels and video stories at the quality you choose, such as Data saver or up to " +
@@ -50,7 +51,7 @@ val defaultPlaybackQualityPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         applyQualityAnchors(findQualityAnchors())
         keepQualityRow(findQualityListStore().getOrElse { refuse(it.message.orEmpty()) })
         enableStatus("defaultPlaybackQuality")

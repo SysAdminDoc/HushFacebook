@@ -12,7 +12,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -31,6 +31,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
@@ -48,7 +49,7 @@ internal const val PATCH = "Keep playing in the background"
  * left, and has the notification's server flag read on for that video alone.
  */
 @Suppress("unused")
-val backgroundPlayPatch = bytecodePatch(
+val backgroundPlayPatch = patch(
     name = "Keep playing in the background",
     description = "A video you started with a tap, or a reel you swiped to in Reels, keeps its sound when you " +
         "leave Facebook, with Facebook's own notification to pause it. A reel can go on to the next one " +
@@ -59,7 +60,7 @@ val backgroundPlayPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val player = findPlayer()
         val handler = findHandler(player.trigger)
         fillStubs(player, handler.classDef.type)

@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -22,6 +22,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -100,7 +101,7 @@ internal const val RING_KINDS_AT_MOST = 8
  * In the default selection with every switch off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
-val hideStoryRingsPatch = bytecodePatch(
+val hideStoryRingsPatch = patch(
     name = "Hide story rings",
     description = "Switches that take the story and LIVE rings off profile pictures at the top of posts, next to " +
         "comments and on profiles, one for each. All start off. Turn them on in Hushfacebook settings > Stories.",
@@ -109,7 +110,7 @@ val hideStoryRingsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("storyRings")
         hideStoryRings()
         enableStatus("storyRings")

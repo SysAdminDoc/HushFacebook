@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.media.buffer
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -22,6 +22,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -71,7 +72,7 @@ private val WIDE_CONSTANTS = setOf(Opcode.CONST_WIDE_16, Opcode.CONST_WIDE_32, O
  * Starts at Facebook's choice, which hands every number back as it came.
  */
 @Suppress("unused")
-val videoBufferPatch = bytecodePatch(
+val videoBufferPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Video buffer",
     description = "Picks how much of a video loads before it starts and while it plays. Low starts videos sooner " +
@@ -82,7 +83,7 @@ val videoBufferPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Every check is found and checked before any is changed. The fixture tests hold all four on
         // every declared build; on another one, a check of a new shape keeps Facebook's numbers and
         // the rest still take the choice, so a miss is a warning until nothing at all is found.

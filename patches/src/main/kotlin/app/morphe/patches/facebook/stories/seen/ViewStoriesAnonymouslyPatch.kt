@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.stories.seen
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.resolveStatic
@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -59,7 +60,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * people see.
  */
 @Suppress("unused")
-val viewStoriesAnonymouslyPatch = bytecodePatch(
+val viewStoriesAnonymouslyPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "View stories anonymously",
     description = "Keeps you off the viewer list of stories you watch, because Facebook isn't told which ones " +
@@ -70,7 +71,7 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Everything is found before anything changes, so a build missing one part is left as it was.
         // Up to 585 a query class of its own names the mutation; 586 has none, and the builder makes
         // the query itself (a null mutation below).

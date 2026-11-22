@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -42,6 +42,7 @@ import app.morphe.patches.facebook.reels.hold.holdReelFor2xPatch
 import app.morphe.patches.facebook.reels.hold.isLongPressHandler
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -74,7 +75,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * instruction, which moves nothing that one recorded.
  */
 @Suppress("unused")
-val openCommentsWithGesturePatch = bytecodePatch(
+val openCommentsWithGesturePatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Open comments with a gesture",
     description = "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, " +
@@ -87,7 +88,7 @@ val openCommentsWithGesturePatch = bytecodePatch(
     dependsOn(settingsPatch, turnOffDoubleTapLikePatch, holdReelFor2xPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Every anchor is found, and every register this patch borrows is checked, before one
         // instruction changes. A build that fails anywhere in the find phase is refused untouched.
         requireStatusMethod("reelGestures")

@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -34,6 +34,7 @@ import app.morphe.patches.facebook.reels.doubletap.GESTURE_REACTION
 import app.morphe.patches.facebook.reels.doubletap.isGestureReactionComponent
 import app.morphe.patches.facebook.reels.doubletap.mountedView
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -51,7 +52,7 @@ internal const val STEP_TRIGGER = "BY_INITIAL_FRAME_PERFECT_SEEK"
  * FrameStep for the rule.
  */
 @Suppress("unused")
-val frameStepPatch = bytecodePatch(
+val frameStepPatch = patch(
     name = "Frame step",
     description = "With a reel or video paused, a tap on its right side steps one frame forward and a tap on its " +
         "left side one frame back, so you can stop on the exact moment you want. Starts off. Turn it on in " +
@@ -62,7 +63,7 @@ val frameStepPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val anchors = frameStepAnchors()
         hookPlayer(anchors)
         mutableClassDefBy(anchors.onTouch.definingClass).findMutableMethodOf(anchors.onTouch)

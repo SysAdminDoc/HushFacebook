@@ -5,12 +5,13 @@
 package app.morphe.patches.facebook.reels.order
 
 import app.morphe.patcher.StringComparisonType
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -27,7 +28,7 @@ import com.android.tools.smali.dexlib2.iface.Method
  * is a choice to make, not a fix, and only reels already loaded can move.
  */
 @Suppress("unused")
-val newestReelsFirstPatch = bytecodePatch(
+val newestReelsFirstPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Newest reels first",
     description = "Plays the newest posted of the reels Facebook has loaded for you first in the Reels tab, " +
@@ -38,7 +39,7 @@ val newestReelsFirstPatch = bytecodePatch(
     dependsOn(settingsPatch, profileReelsSortPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("newestReelsFirst")
 
         val reranks = classDefByStrings(RANKER_TAG, StringComparisonType.EQUALS).flatMap { owner ->

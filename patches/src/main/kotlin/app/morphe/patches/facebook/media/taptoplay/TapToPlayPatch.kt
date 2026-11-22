@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -31,6 +31,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.reels.feedVideoOpeningPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -49,7 +50,7 @@ internal const val PATCH = "Tap to play"
  * coming into view.
  */
 @Suppress("unused")
-val tapToPlayPatch = bytecodePatch(
+val tapToPlayPatch = patch(
     name = "Tap to play",
     description = "Videos, reels, stories and music wait for your tap instead of starting by themselves, so " +
         "nothing plays until you want it to. A separate switch adds a play/pause button to feed videos. " +
@@ -60,7 +61,7 @@ val tapToPlayPatch = bytecodePatch(
     dependsOn(settingsPatch, feedVideoOpeningPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val play = hookGrootPlayer()
         installFeedVideoControls(play)
         hookLegacyPlayer(play.parameterTypes.single().toString())

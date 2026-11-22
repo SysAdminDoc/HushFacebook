@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.reels.tapcontrols
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -292,7 +293,7 @@ internal fun BytecodePatchContext.askAtTapSites(sites: TapSites) {
  * In Morphe Manager's default selection with the switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val tapShowsControlsPatch = bytecodePatch(
+val tapShowsControlsPatch = patch(
     name = "Tap shows the controls",
     description = "A tap on a playing reel shows its controls and lets it keep playing, so you can skip or mute " +
         "without stopping it. The button in the middle still pauses. Starts off. Turn it on in Hushfacebook settings > " +
@@ -302,7 +303,7 @@ val tapShowsControlsPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         val sites = findTapSites()
         requireStatusMethod("tapShowsControls")
         askAtTapSites(sites)

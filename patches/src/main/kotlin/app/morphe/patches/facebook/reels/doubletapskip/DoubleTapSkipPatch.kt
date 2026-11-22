@@ -8,7 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -20,6 +20,7 @@ import app.morphe.patches.facebook.shared.MOBILE_CONFIG
 import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -301,7 +302,7 @@ internal fun BytecodePatchContext.askBeforeShowingSkipLabel(shows: List<LabelSho
  * In Morphe Manager's default selection with the switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
-val doubleTapSkipPatch = bytecodePatch(
+val doubleTapSkipPatch = patch(
     name = "Double tap to skip",
     description = "A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 " +
         "on one under 30 seconds. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. Hide the skip " +
@@ -311,7 +312,7 @@ val doubleTapSkipPatch = bytecodePatch(
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         requireStatusMethod("doubleTapSkip")
         val reads = findSkipFlagReads()
         val labelShows = try {

@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.media.feedsound
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -66,7 +67,7 @@ internal const val NEW_SESSION = "startNewSession"
  * its sound on would be a surprise nobody asked for.
  */
 @Suppress("unused")
-val keepFeedVideosMutedPatch = bytecodePatch(
+val keepFeedVideosMutedPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep feed videos muted",
     description = "Feed videos start with the sound off every time you open Facebook, and only a tap on a " +
@@ -77,7 +78,7 @@ val keepFeedVideosMutedPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         askFeedSound(feedSoundState())
         // Mute stories (#261) asks in the story viewer's volume setter. A moved story viewer
         // costs that switch, not the feed's.

@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.reelspeed.originGetters
@@ -30,6 +30,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -59,10 +60,10 @@ private val foundAnchors = WeakHashMap<BytecodePatchContext, ReelHoldAnchors>()
  * Declared before Hold a reel for 2x, whose dependsOn would otherwise read it as null while this
  * file initializes.
  */
-internal val reelLiftGuardPatch = bytecodePatch {
+internal val reelLiftGuardPatch = patch {
     dependsOn(settingsPatch)
 
-    execute {
+    executeBytecode {
         val anchors = findReelHoldAnchors()
         synchronized(foundAnchors) { foundAnchors[this] = anchors }
         applyReelLiftGuard(anchors)
@@ -95,7 +96,7 @@ internal val reelLiftGuardPatch = bytecodePatch {
  * a feed video has no long press: see [applyFeedVideoHold].
  */
 @Suppress("unused")
-val holdReelFor2xPatch = bytecodePatch(
+val holdReelFor2xPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hold a reel for 2x",
     description = "Hold a reel to play it at double speed, and let go to go back to normal. Handy for skimming. " +
@@ -107,7 +108,7 @@ val holdReelFor2xPatch = bytecodePatch(
     dependsOn(settingsPatch, reelLiftGuardPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // The guard found every anchor, and checked every flag call's answer, before anything changed.
         val anchors = synchronized(foundAnchors) { foundAnchors[this] }
             ?: refuse("the release guard it depends on didn't run first")

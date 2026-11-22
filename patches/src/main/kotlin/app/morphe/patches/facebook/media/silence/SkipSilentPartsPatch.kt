@@ -9,7 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.downloads.reel.moreSheet
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -23,6 +23,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -67,7 +68,7 @@ internal const val SILENCE_CHANGED = "onSkipSilenceEnabledChanged"
  * nobody expects that from Facebook.
  */
 @Suppress("unused")
-val skipSilentPartsPatch = bytecodePatch(
+val skipSilentPartsPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Skip silent parts",
     description = "Plays videos, reels and stories past the silent stretches in their sound, so talks and how-tos " +
@@ -78,7 +79,7 @@ val skipSilentPartsPatch = bytecodePatch(
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
-    execute {
+    executeBytecode {
         // Every sink is found and checked before any is changed, so a build with a sink of a new
         // shape stops instead of skipping silence in only some players.
         val applies = silenceApplies()

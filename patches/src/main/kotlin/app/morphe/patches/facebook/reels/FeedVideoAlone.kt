@@ -11,7 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.ControlFlow
+import app.morphe.util.executeBytecode
 import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -765,10 +766,10 @@ internal fun BytecodePatchContext.hookFeedVideoOpening() {
  * carry it. A build missing an anchor goes on without it, with a warning, so Tap to play's other
  * parts still apply; Clean up Reels refuses then.
  */
-internal val feedVideoOpeningPatch = bytecodePatch {
+internal val feedVideoOpeningPatch = patch {
     dependsOn(facebookExtensionPatch)
 
-    execute {
+    executeBytecode {
         try {
             hookFeedVideoOpening()
         } catch (missing: Exception) {

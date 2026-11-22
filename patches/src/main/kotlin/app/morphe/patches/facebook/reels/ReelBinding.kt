@@ -8,13 +8,14 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
-import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -193,17 +194,17 @@ internal fun applyReelBindingAnchors(anchors: ReelBindingAnchors) {
  * end-of-video step. It only watches. A build missing one of its anchors goes on without it, with
  * a warning, so Clean up Reels' own switches still apply.
  */
-internal val reelBindingPatch = bytecodePatch {
+internal val reelBindingPatch = patch {
     dependsOn(facebookExtensionPatch, reelLoopPatch)
 
-    execute {
+    executeBytecode {
         val anchors = try {
             findReelBindingAnchors()
         } catch (missing: Exception) {
             // A missing anchor is a PatchException with its reason; anything else is a bug, named as one.
             val why = if (missing is PatchException) missing.message else "$BINDING: ${missing::class.java.name}: ${missing.message}"
             patchLog.warning("$why. Debug reports go on without the reel binding lines.")
-            return@execute
+            return@executeBytecode
         }
         applyReelBindingAnchors(anchors)
     }
