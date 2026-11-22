@@ -1,13 +1,13 @@
 {
   "schema": 2,
-  "facebook": "587.0.0.39.55",
-  "written": "2026-11-17",
-  "patchBuild": "sha256=323bfd6158689de5dbd369389f2160221e77626c2f2e3562ec64afceae4ebd63; source=clean:7c0e085e4e8c63c2868c7f6aa89978ee8c43295e; tree=24cd4bf6ae8b8c8818d073c97bbd98f89c693432; inputs=a83f8f023196d37fcdb865c7d8595a07624fce038211da3f4a9bb18075ba2b7d",
-  "installedApkSha256": "711598a35016e6132c62b029ea9b2a6b9e020b82565b56cbd7b21a27cc61cc02",
+  "facebook": "588.0.0.42.55",
+  "written": "2026-11-22",
+  "patchBuild": "sha256=6333f5fec2ade67d6f703585335d62dfea590de26baac900360f62f7781215b3; source=clean:e82b05bbc7a0f663785cddd5fcaedeae642998f2; tree=1df99ce452ab8bd66c78feec8bd6e9b198ec4958; inputs=c6e5706e72a4e6fde02ac84dc0e32946af5a2bbfd3ee26f66b5c017b0db45263",
+  "installedApkSha256": "439b9cb1059c9c3fd7c0c62d9eed319f5110b6bba6e315bf24a7cf55e8f15d67",
   "abi": "arm64-v8a",
   "sdk": 36,
   "device": "SM-S908U1",
-  "settingsSha256": "1805fdc46f3656c8344ce7855eebcb3849900cd35bc5d287f85d6e60139c40f6",
+  "settingsSha256": "cbcd79745535d445ee2433eacc35f27807a47fbebc9fbd06fb32e1df1231048d",
   "profile": {
     "name": "all-on",
     "on": [],
@@ -76,6 +76,7 @@
     "Don't save search history",
     "Don't send reel watch history",
     "Double tap to skip",
+    "Download any photo",
     "Download any story (player sources)",
     "Download any video (copied links)",
     "Download any video (player sources)",
@@ -128,8 +129,11 @@
     "Open comments with a gesture",
     "Open Messenger from the top bar",
     "Open on a chosen tab",
+    "Photo carousel",
     "Picture-in-picture",
+    "Pinch to zoom",
     "Post action buttons",
+    "Remove the gap above Marketplace listings",
     "Restore screens on re-signed builds",
     "Resume long videos",
     "Round stories tray",
@@ -146,7 +150,8 @@
     "Turn off screen transitions",
     "Unlock app icons",
     "Use the phone's emoji",
-    "Use the system font"
+    "Use the system font",
+    "Video buffer"
   ],
   "notOnWalk": [
     "Allow screenshots",
@@ -159,7 +164,6 @@
     "Clean up the story viewer",
     "Clone install under another package name",
     "Disable Play Store updates",
-    "Download any photo",
     "Download any reel",
     "Download any story",
     "Download any video",
@@ -194,9 +198,6 @@
   ],
   "mayIdle": [
     "Hide sponsored profile posts",
-    "Hide the Reels tab dot",
-    "Photo carousel",
-    "Pinch to zoom",
-    "Remove the gap above Marketplace listings"
+    "Hide the Reels tab dot"
   ]
 }
