@@ -194,17 +194,19 @@ public final class CaptionBackdrop {
     }
 
     /**
-     * The hook, right before a reel caption's text component is built, handed its line limit. Answers
-     * the box for an open caption while Dark box behind open captions is on, and for a folded one
-     * while Dark box behind folded captions is, otherwise null, which keeps Facebook's look.
+     * The hook, right before a reel caption's text component is built, handed its line limit and its
+     * text. Answers the box for an open caption while Dark box behind open captions is on, and for a
+     * folded one while Dark box behind folded captions is, otherwise null, which keeps Facebook's look.
+     * A reel with no caption still builds an empty one, and a box behind it drew as a thin dark line
+     * under the reel's name (#490), so a caption with nothing to show gets null too.
      */
-    public static Drawable forCaption(int maxLines) {
+    public static Drawable forCaption(int maxLines, @Nullable CharSequence text) {
         try {
             HookStatus.bound(FAMILY, BACKDROP);
             boolean open = maxLines == Integer.MAX_VALUE;
             // A folded caption shows a few lines; a limit of none shows no text to put a box behind.
             boolean folded = !open && maxLines > 0;
-            if (!(open || folded) || !Utils.settingsReady()) return null;
+            if (!(open || folded) || !shows(text) || !Utils.settingsReady()) return null;
             if (open ? !Settings.DIM_OPEN_REEL_CAPTIONS.get() : !Settings.DIM_FOLDED_REEL_CAPTIONS.get()) return null;
             HookStatus.invoked(FAMILY);
             if (open) {
@@ -226,6 +228,17 @@ public final class CaptionBackdrop {
             HookStatus.threw(FAMILY, BACKDROP, failure);
             return null;
         }
+    }
+
+    /** Whether [text] has a character that draws: not null, and more than spaces, line breaks and zero-width marks. */
+    static boolean shows(@Nullable CharSequence text) {
+        if (text == null) return false;
+        for (int at = 0; at < text.length(); ) {
+            int c = Character.codePointAt(text, at);
+            if (!Character.isWhitespace(c) && !Character.isSpaceChar(c) && Character.getType(c) != Character.FORMAT) return true;
+            at += Character.charCount(c);
+        }
+        return false;
     }
 
     /**

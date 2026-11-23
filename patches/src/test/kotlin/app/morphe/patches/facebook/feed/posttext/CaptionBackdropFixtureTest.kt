@@ -15,10 +15,12 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -36,13 +38,14 @@ import java.io.File
  */
 class CaptionBackdropFixtureTest {
     /** Where one build keeps the caption's builder method, its text builder, the style type and the background style. */
-    private data class Place(val host: String, val builder: String, val style: String, val background: String)
+    private data class Place(val host: String, val builder: String, val style: String, val background: String, val text: String)
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
     private val expected = mapOf(
         // 588, read 2026-11-18: the builder method is `A02` on its class, its line limit `LX/0458;->A01:I`.
+        // Its caption's text goes into `A0A` right after the builder is made (read 2026-11-23, #490).
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to Place("LX/09GM;", "LX/0458;", "LX/01SY;", "LX/02FS;"),
+            "arm64-v8a" to Place("LX/09GM;", "LX/0458;", "LX/01SY;", "LX/02FS;", "LX/0458;->A0A:Ljava/lang/CharSequence;"),
         ),
     )
 
@@ -61,6 +64,12 @@ class CaptionBackdropFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
+
+    /** The CharSequence field [method] first puts into v[register]: where the caption's text goes, read straight from the dex. */
+    private fun textPut(method: Method, register: Int) = method.code().first {
+        it.opcode == Opcode.IPUT_OBJECT && (it as TwoRegisterInstruction).registerB == register &&
+            ((it as ReferenceInstruction).reference as FieldReference).type == "Ljava/lang/CharSequence;"
+    }.let { ((it as ReferenceInstruction).reference as FieldReference).let { field -> "${field.definingClass}->${field.name}:${field.type}" } }
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -120,7 +129,7 @@ class CaptionBackdropFixtureTest {
                 val style = backdrop.emptyStyle.substringBefore("->")
                 expected[version]?.get(abi)?.let { place ->
                     assertEquals("$name: where the caption's text and its background style are built", place,
-                        Place(backdrop.builder.definingClass, backdrop.builderType, style, background))
+                        Place(backdrop.builder.definingClass, backdrop.builderType, style, background, backdrop.text))
                 }
                 assertEquals("$name: the caption's builder method", host, backdrop.builder.definingClass)
                 assertEquals("$name: the text builder", builderType, backdrop.builderType)
@@ -144,11 +153,17 @@ class CaptionBackdropFixtureTest {
                 val helperCode = helper.code()
                 assertEquals("$name: the helper reads the line limit first", backdrop.maxLines,
                     (helperCode[0] as ReferenceInstruction).reference.toString())
-                assertTrue("$name: the helper asks the extension", helperCode[1].names(FOR_CAPTION))
-                assertEquals("$name: a null answer leaves the caption alone", Opcode.IF_EQZ, helperCode[3].opcode)
-                assertTrue("$name: the empty style under the background", helperCode[4].names(backdrop.emptyStyle))
-                assertTrue("$name: the background style is made", helperCode[5].names(backdrop.background))
-                assertTrue("$name: the style goes on the builder", helperCode[7].names(backdrop.setter))
+                // An empty caption gets no box, so the extension sees the text the builder was handed (#490).
+                assertEquals("$name: then the caption's text", backdrop.text,
+                    (helperCode[1] as? ReferenceInstruction)?.reference?.toString())
+                assertEquals("$name: the text field the caption is put into", textPut(backdrop.builder, backdrop.register), backdrop.text)
+                assertTrue("$name: the helper asks the extension with both", helperCode[2].names(FOR_CAPTION))
+                assertEquals("$name: the line limit and the text handed over", listOf(1, 0),
+                    (helperCode[2] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD) })
+                assertEquals("$name: a null answer leaves the caption alone", Opcode.IF_EQZ, helperCode[4].opcode)
+                assertTrue("$name: the empty style under the background", helperCode[5].names(backdrop.emptyStyle))
+                assertTrue("$name: the background style is made", helperCode[6].names(backdrop.background))
+                assertTrue("$name: the style goes on the builder", helperCode[8].names(backdrop.setter))
                 assertEquals(Opcode.RETURN_VOID, helperCode.last().opcode)
 
                 // The builder goes through the helper right before it's built, and nothing else moves.

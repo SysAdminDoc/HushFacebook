@@ -844,19 +844,22 @@ internal const val CAPTION_DESCRIPTION = "description"
 internal const val CALLER_CONTEXT = "Lcom/facebook/common/callercontext/CallerContext;"
 internal const val DRAWABLE = "Landroid/graphics/drawable/Drawable;"
 private const val RECT = "Landroid/graphics/Rect;"
-internal const val FOR_CAPTION = "$CAPTION_BACKDROP->forCaption(I)$DRAWABLE"
+private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+internal const val FOR_CAPTION = "$CAPTION_BACKDROP->forCaption(I$CHAR_SEQUENCE)$DRAWABLE"
 
 /**
  * Where an open reel caption gets its dark box (#419). [builder] makes the caption's Litho text
- * builder (a [builderType]) in v[register], sets its line limit [maxLines], and builds it at
- * [buildIndex] by handing it a [CALLER_CONTEXT]. Litho takes a background as a style: [background]
- * makes one from a drawable on top of [emptyStyle], and [setter] hands a style to the builder.
+ * builder (a [builderType]) in v[register], puts the caption into its [text] field, sets its line limit
+ * [maxLines], and builds it at [buildIndex] by handing it a [CALLER_CONTEXT]. Litho takes a background
+ * as a style: [background] makes one from a drawable on top of [emptyStyle], and [setter] hands a style
+ * to the builder.
  */
 internal class Backdrop(
     val builder: Method,
     val buildIndex: Int,
     val register: Int,
     val builderType: String,
+    val text: String,
     val maxLines: String,
     val setter: String,
     val background: String,
@@ -922,6 +925,14 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     ) {
         refuse("$where doesn't keep one new $builderType in v$register from its line limit to its build")
     }
+    // The caption goes into the builder's text field between making it and setting its line limit (588
+    // `LX/0458;->A0A`); a reel with no caption builds an empty one, which gets no box (#490).
+    val texts = (creation + 1 until limit).filter { index ->
+        code[index].opcode == Opcode.IPUT_OBJECT && (code[index] as TwoRegisterInstruction).registerB == register &&
+            ((code[index] as ReferenceInstruction).reference as FieldReference).type == CHAR_SEQUENCE
+    }
+    val text = texts.singleOrNull()?.let { (code[it] as ReferenceInstruction).reference as FieldReference }
+        ?: refuse("expected $where to put one text into v$register before its line limit, found ${texts.size}")
     val flow = Flow(code, where)
     if (build in flow.targets) refuse("$where jumps straight to where it builds its caption")
     // Dex can lay a block out after the build and jump back from it (the Android 9 build's 09VI does), so
@@ -941,6 +952,7 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     if (classDefByOrNull(host)!!.methods.any { it.name == BACKDROP_HELPER }) refuse("$host already has $BACKDROP_HELPER")
     return Backdrop(
         builder, build, register, builderType,
+        "${text.definingClass}->${text.name}:$CHAR_SEQUENCE",
         "$builderType->${maxLines.name}:I",
         style.setter,
         style.background,
@@ -1022,9 +1034,9 @@ internal fun BytecodePatchContext.findBoxStyle(builderType: String): BoxStyle {
 
 /**
  * Gives an open reel caption its dark box: right before [Backdrop.builder] builds the caption, a
- * helper on its class reads the builder's line limit and asks [CAPTION_BACKDROP] for a drawable. An
- * open caption is the one built with no line limit. A drawable comes back as a background style on
- * the builder, and null leaves Facebook's caption as it is.
+ * helper on its class reads the builder's line limit and text and asks [CAPTION_BACKDROP] for a
+ * drawable. An open caption is the one built with no line limit. A drawable comes back as a background
+ * style on the builder, and null leaves Facebook's caption as it is.
  */
 internal fun BytecodePatchContext.addCaptionBackdrop(backdrop: Backdrop) {
     val host = backdrop.builder.definingClass
@@ -1042,7 +1054,8 @@ internal fun BytecodePatchContext.addCaptionBackdrop(backdrop: Backdrop) {
             0,
             """
                 iget v1, p0, ${backdrop.maxLines}
-                invoke-static { v1 }, $FOR_CAPTION
+                iget-object v0, p0, ${backdrop.text}
+                invoke-static { v1, v0 }, $FOR_CAPTION
                 move-result-object v0
                 if-eqz v0, :facebook
                 sget-object v1, ${backdrop.emptyStyle}

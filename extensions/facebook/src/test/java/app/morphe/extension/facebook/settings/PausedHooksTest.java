@@ -599,7 +599,7 @@ public class PausedHooksTest {
                 () -> FullPostText.cut(new SpannableString("x"), "a story") == null,
                 () -> !FullPostText.allowTruncation(true),
                 () -> FullPostText.reelCaptionExpanded(false),
-                () -> app.morphe.extension.facebook.feed.CaptionBackdrop.forCaption(Integer.MAX_VALUE) != null));
+                () -> app.morphe.extension.facebook.feed.CaptionBackdrop.forCaption(Integer.MAX_VALUE, "Sunset at the lake") != null));
         probes.put(PatchFamily.TRANSLATE_POSTS, Collections.singletonList(() -> {
             PostTranslationForTests.noNetwork();
             Spannable post = new SpannableString("Una frase en otro idioma");
