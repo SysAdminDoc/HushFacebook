@@ -2648,6 +2648,8 @@ After %1$d seconds	%1$d 秒后
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	点按时保持淡化
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	防烧屏保护淡化按钮后，无论在 Reels 点按或滑动什么，按钮都会保持淡化，下一个 Reel 也一样。按钮仍可使用，离开 Reels 后会恢复显示。
+Tap the video to bring them back	点按视频即可恢复
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	防烧屏保护淡化按钮后，点按视频即可恢复显示，且不会暂停视频。再次点按会照常暂停。
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	淡化程度
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	按钮、说明文字和栏淡化后仍显示的程度，按百分比计，范围 %1$s 到 %2$s。留空则使用 %3$s。

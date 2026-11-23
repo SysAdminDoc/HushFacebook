@@ -14,6 +14,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * The Hush settings now go light or dark with your phone's theme, like HushGram's do. Without the `Material You theme` patch they used to stay dark on every phone. `Force dark mode` still keeps them dark. (#559)
 * The Hush settings now come in Italian and Korean too. They follow your phone's language, like the other translations. (#558)
 * `Show Comment on posts with comments off` under News feed keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the comments already there. It's off until you turn it on. (#299)
+* `Tap the video to bring them back` sits under Burn-in guard. Once the buttons on a reel fade, a tap on the video brings them back without pausing it. The next tap pauses like always, and holding for 2x still works. It's off until you turn it on. (#523)
 
 ### Fixed
 

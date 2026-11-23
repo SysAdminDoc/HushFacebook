@@ -20,6 +20,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -90,6 +91,7 @@ public class BurnInGuardTest {
         Settings.BURN_IN_STAY_DIM.resetToDefault();
         Settings.BURN_IN_LEVEL.resetToDefault();
         Settings.BURN_IN_FADE.resetToDefault();
+        Settings.BURN_IN_TAP_BACK.resetToDefault();
         PauseForTests.resume();
         BurnInGuard.resetForTests();
         HookStatus.clear();
@@ -133,6 +135,7 @@ public class BurnInGuardTest {
         Settings.BURN_IN_STAY_DIM.resetToDefault();
         Settings.BURN_IN_LEVEL.resetToDefault();
         Settings.BURN_IN_FADE.resetToDefault();
+        Settings.BURN_IN_TAP_BACK.resetToDefault();
         animationScale(1f);
         PauseForTests.resume();
         HookStatus.clear();
@@ -433,6 +436,58 @@ public class BurnInGuardTest {
         assertUp("still waiting");
         after(1_100);
         assertDimmed("the wait the tap didn't start over ran out");
+    }
+
+    /**
+     * Tap the video to bring them back (#523): while dimmed, a tap on the video brings the controls
+     * back and the layer that pauses the video never sees it. Before the dim, after it, with the
+     * switch off and with Stay dim when I tap on, a tap goes to the video as always, and a hold
+     * (Facebook's 2x) isn't a tap.
+     */
+    @Test
+    public void tapTheVideoBringsThemBackWithoutPausingIt() {
+        int[] pauses = new int[1];
+        tapLayer.setOnClickListener(view -> pauses[0]++);
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        Settings.BURN_IN_TAP_BACK.save(true);
+        BurnInGuard.resumed(activity);
+        after(IDLE - 1_000);
+        tapOn(video);
+        assertEquals("a tap before the dim pauses the video", 1, pauses[0]);
+        after(1_100);
+        assertDimmed("the wait that tap didn't start over ran out");
+
+        tapOn(video);
+        assertUp("a tap on the video while dimmed");
+        assertEquals("the video didn't get that tap", 1, pauses[0]);
+        assertTrue(reported(BurnInGuard.COUNT_TAP_BACK));
+        tapOn(video);
+        assertEquals("the next tap pauses it", 2, pauses[0]);
+        after(IDLE - 100);
+        assertUp("the wait runs from the tap that brought them back");
+        after(IDLE);
+        assertDimmed("idle again");
+
+        float[] at = middleOf(video);
+        long down = SystemClock.uptimeMillis();
+        sendAt(MotionEvent.ACTION_DOWN, at[0], at[1], down);
+        after(ViewConfiguration.getLongPressTimeout() + 100);
+        sendAt(MotionEvent.ACTION_UP, at[0], at[1], down);
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertDimmed("a hold on the video");
+        // The hold reached the video whole. This stand-in has no 2x, so its lift reads as a click.
+        assertEquals("the hold went to the video", 3, pauses[0]);
+
+        Settings.BURN_IN_TAP_BACK.save(false);
+        tapOn(video);
+        assertDimmed("switch off");
+        assertEquals("and the tap paused the video", 4, pauses[0]);
+
+        Settings.BURN_IN_TAP_BACK.save(true);
+        Settings.BURN_IN_STAY_DIM.save(true);
+        tapOn(video);
+        assertDimmed("Stay dim when I tap wins");
+        assertEquals(5, pauses[0]);
     }
 
     /** A swipe to the next reel counts from the moment it moves farther than a tap does. */
@@ -879,8 +934,13 @@ public class BurnInGuardTest {
 
     /** A finger event at [x, y] in the window, delivered to the decor view, which hands it to the window's callback. */
     private void sendAt(int action, float x, float y) {
+        sendAt(action, x, y, SystemClock.uptimeMillis());
+    }
+
+    /** The same, for a finger that went down at [downTime]. */
+    private void sendAt(int action, float x, float y, long downTime) {
         long now = SystemClock.uptimeMillis();
-        MotionEvent event = MotionEvent.obtain(now, now, action, x, y, 0);
+        MotionEvent event = MotionEvent.obtain(downTime, now, action, x, y, 0);
         try {
             activity.getWindow().getDecorView().dispatchTouchEvent(event);
         } finally {

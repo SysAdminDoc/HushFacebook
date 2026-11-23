@@ -487,7 +487,7 @@ public class PatchFamilyTest {
                         + "hushfacebook_hide_viewer_top_buttons=off, hushfacebook_hide_reels_tab_title=off, "
                         + "hushfacebook_hide_viewer_back_button=off, hushfacebook_burn_in_guard=OFF, "
                         + "hushfacebook_burn_in_wait=FIVE_SECONDS, hushfacebook_burn_in_level=25, "
-                        + "hushfacebook_burn_in_stay_dim=off, hushfacebook_burn_in_fade=off, "
+                        + "hushfacebook_burn_in_stay_dim=off, hushfacebook_burn_in_tap_back=off, hushfacebook_burn_in_fade=off, "
                         + "hushfacebook_gray_reels=off, hushfacebook_reels_minutes=off, hushfacebook_hide_reel_counts=off, hushfacebook_hide_reel_save_button=off, "
                         + "hushfacebook_hide_reel_whatsapp_button=off, hushfacebook_hide_reel_like_button=off, "
                         + "hushfacebook_hide_reel_comment_button=off, hushfacebook_hide_reel_repost_button=off, "

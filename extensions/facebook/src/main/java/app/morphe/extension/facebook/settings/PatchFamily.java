@@ -154,7 +154,7 @@ public enum PatchFamily {
             Settings.FOLLOWED_REELS_ONLY,
             Settings.REEL_CLEAN_MODE, Settings.REEL_CLEAN_BUTTON, Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO, Settings.HIDE_REEL_SEARCH_PILL, Settings.HIDE_VIEWER_TOP_BUTTONS, Settings.HIDE_REELS_TAB_TITLE,
-            Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM, Settings.BURN_IN_FADE,
+            Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM, Settings.BURN_IN_TAP_BACK, Settings.BURN_IN_FADE,
             Settings.GRAY_REELS, Settings.REELS_MINUTES, Settings.HIDE_REEL_COUNTS,
             Settings.HIDE_REEL_SAVE_BUTTON, Settings.HIDE_REEL_WHATSAPP_BUTTON, Settings.HIDE_REEL_LIKE_BUTTON,
             Settings.HIDE_REEL_COMMENT_BUTTON, Settings.HIDE_REEL_REPOST_BUTTON, Settings.HIDE_REEL_SHARE_BUTTON,
@@ -639,11 +639,13 @@ public enum PatchFamily {
                 if (setting != Settings.NOTIFICATION_QUIET_HOURS) anyOn |= setting.savedValue();
             }
         }
-        // Burn-in guard runs by its list; Stay dim when I tap and Smooth fade do nothing with the guard off (#288, #523).
+        // Burn-in guard runs by its list; Stay dim when I tap, Tap the video to bring them back and Smooth fade
+        // do nothing with the guard off (#288, #523).
         if (this == REEL_DECLUTTER) {
             anyOn = Settings.BURN_IN_GUARD.savedValue() != BurnInMode.OFF;
             for (BooleanSetting setting : switches) {
-                if (setting != Settings.BURN_IN_STAY_DIM && setting != Settings.BURN_IN_FADE) {
+                if (setting != Settings.BURN_IN_STAY_DIM && setting != Settings.BURN_IN_TAP_BACK
+                        && setting != Settings.BURN_IN_FADE) {
                     anyOn |= setting.savedValue();
                 }
             }

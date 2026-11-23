@@ -229,6 +229,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REELS_TAB_TITLE) return L10n.t("Hide the Reels title");
         if (setting == Settings.HIDE_VIEWER_BACK_BUTTON) return L10n.t("Hide Back on opened videos");
         if (setting == Settings.BURN_IN_STAY_DIM) return L10n.t("Stay dim when I tap");
+        if (setting == Settings.BURN_IN_TAP_BACK) return L10n.t("Tap the video to bring them back");
         if (setting == Settings.BURN_IN_FADE) return L10n.t("Smooth fade");
         if (setting == Settings.GRAY_REELS) return L10n.t("Show Reels in gray");
         if (setting == Settings.REELS_MINUTES) return L10n.t("Show time in Reels");

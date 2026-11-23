@@ -956,6 +956,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_burn_in_stay_dim", FALSE);
 
     /**
+     * Tap the video to bring them back (#523): once Burn-in guard has dimmed the controls, a tap on the
+     * video brings them back and isn't handed to Facebook, so the video doesn't pause or play. A hold
+     * and a swipe stay Facebook's. {@link #BURN_IN_STAY_DIM} wins over it. Off by default, read on each tap.
+     */
+    public static final BooleanSetting BURN_IN_TAP_BACK =
+            new BooleanSetting("hushfacebook_burn_in_tap_back", FALSE, Setting.parentNot(BURN_IN_STAY_DIM));
+
+    /**
      * Dim to (#523): how much of the buttons, caption and bars still shows once Burn-in guard dims
      * them, a percent from 0 to 100, digits only, blank for 25, the level from before it could be
      * picked ({@link app.morphe.extension.facebook.reels.BurnInGuard#levelPercent}). Not a switch.

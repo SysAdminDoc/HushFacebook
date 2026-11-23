@@ -2653,6 +2653,8 @@ After %1$d seconds	หลังจาก %1$d วินาที
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	คงความหรี่แสงไว้เมื่อฉันแตะ
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	เมื่อการป้องกันหน้าจอเบิร์นทำให้ปุ่มจางลงแล้ว ปุ่มจะยังคงจางอยู่บน Reels ไม่ว่าคุณจะแตะหรือปัด รวมถึงใน Reel ถัดไปด้วย ปุ่มยังคงทำงานได้ตามปกติ การออกจาก Reels จะเรียกปุ่มกลับมา
+Tap the video to bring them back	แตะวิดีโอเพื่อเรียกปุ่มกลับมา
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	เมื่อการป้องกันหน้าจอเบิร์นทำให้ปุ่มจางลงแล้ว การแตะที่วิดีโอจะเรียกปุ่มกลับมาโดยไม่หยุดวิดีโอชั่วคราว การแตะครั้งถัดไปจะหยุดชั่วคราวตามปกติ
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	หรี่แสงเหลือ
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	ปุ่ม คำบรรยาย และแถบต่างๆ ยังมองเห็นได้มากแค่ไหนหลังหรี่แสง เป็นเปอร์เซ็นต์ ตั้งแต่ %1$s ถึง %2$s เว้นว่างไว้เพื่อใช้ %3$s

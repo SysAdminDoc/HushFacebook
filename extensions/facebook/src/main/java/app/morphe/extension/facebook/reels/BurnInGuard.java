@@ -81,7 +81,9 @@ import app.morphe.extension.shared.settings.Setting;
  *
  * <p>What a touch is: a finger going down on something that takes taps other than the video itself
  * ({@link #quietAt}), or moving as a swipe does. A tap on the video (to pause or play, a double tap
- * to like) leaves the controls dimmed and the wait running. With Stay dim when I tap on ({@link
+ * to like) leaves the controls dimmed and the wait running, unless Tap the video to bring them back is
+ * on ({@link #tapBrings}, #523): then a tap on the video while dimmed brings them back and Facebook gets
+ * a cancel in place of its lift, so the video doesn't pause. With Stay dim when I tap on ({@link
  * #stayDim}), no finger on the Reels screen is a touch, swipes to the next reel included: the wait
  * runs from arriving on Reels, and once dimmed the controls stay dimmed until you leave it.
  *
@@ -157,6 +159,7 @@ public final class BurnInGuard {
     static final String COUNT_SHIFTED = "Reels screen moved a step";
     static final String COUNT_QUIET = "Reels tap on the video left the controls dimmed";
     static final String COUNT_STAY_DIM = "Reels touch left the controls dimmed (Stay dim when I tap)";
+    static final String COUNT_TAP_BACK = "Reels tap on the video brought the controls back (Tap the video to bring them back)";
 
     /** The application this process's callbacks went on, so a second start adds none. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
@@ -203,6 +206,8 @@ public final class BurnInGuard {
     private static boolean quiet;
     /** Where on the screen that finger went down. */
     private static float quietX, quietY;
+    /** That finger went down while the controls were dimmed, with Tap the video to bring them back on. */
+    private static boolean tapBack;
     /** When the next timed pass is due, or -1 when none is. */
     private static long tickAt = -1L;
     /** When a look made while guarding first didn't find the Reels screen, or -1 while none has. */
@@ -249,6 +254,11 @@ public final class BurnInGuard {
     /** Stay dim when I tap: no finger on the Reels screen brings the controls back. Off while paused. */
     static boolean stayDim() {
         return Settings.BURN_IN_STAY_DIM.get();
+    }
+
+    /** Tap the video to bring them back: a tap on the video while dimmed is a touch, kept from Facebook (#523). */
+    static boolean tapBrings() {
+        return Settings.BURN_IN_TAP_BACK.get();
     }
 
     /** The Dim to percent typed as [saved], held to 0 to 100: 25 when it's blank or not a number. */
@@ -829,35 +839,48 @@ public final class BurnInGuard {
      * A finger event on the window. While the guard is on, one that goes down on the video itself
      * isn't a touch ({@link #quietAt}) until it lifts, unless it moves farther than a tap does or a
      * second finger joins: a swipe to the next reel or a pinch counts from then. With Stay dim when I
-     * tap on, no finger on the Reels screen is a touch at all.
+     * tap on, no finger on the Reels screen is a touch at all. With Tap the video to bring them back on
+     * (#523), a tap on the video that went down while the controls were dimmed is a touch when it lifts,
+     * shorter than a long press, and answers true: the window hands Facebook a cancel for that lift, so
+     * the video neither pauses nor plays. Anything else answers false and goes to Facebook as it came.
      */
-    static void seen(MotionEvent event) {
+    static boolean seen(MotionEvent event) {
         int action = event.getActionMasked();
         if (guarding && stayDim()) {
             quiet = false;
+            tapBack = false;
             fingerDown = false;
             if (action == MotionEvent.ACTION_DOWN) HookStatus.counted(FAMILY, COUNT_STAY_DIM);
-            return;
+            return false;
         }
         if (action == MotionEvent.ACTION_DOWN) {
             quiet = guarding && quietAt(event.getRawX(), event.getRawY());
+            tapBack = quiet && dimming && tapBrings();
             if (quiet) {
                 quietX = event.getRawX();
                 quietY = event.getRawY();
                 HookStatus.counted(FAMILY, COUNT_QUIET);
-                return;
+                return false;
             }
         } else if (quiet) {
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 quiet = false;
-                return;
+                boolean back = tapBack && action == MotionEvent.ACTION_UP
+                        && event.getEventTime() - event.getDownTime() < ViewConfiguration.getLongPressTimeout();
+                tapBack = false;
+                if (!back) return false;
+                HookStatus.counted(FAMILY, COUNT_TAP_BACK);
+                touched(MotionEvent.ACTION_UP);
+                return true;
             }
-            if (action == MotionEvent.ACTION_MOVE && !swiped(event)) return;
+            if (action == MotionEvent.ACTION_MOVE && !swiped(event)) return false;
             quiet = false;
+            tapBack = false;
             touched(MotionEvent.ACTION_DOWN);
-            return;
+            return false;
         }
         touched(action);
+        return false;
     }
 
     /** The quiet finger moved farther from where it went down than a tap does. */
@@ -982,23 +1005,31 @@ public final class BurnInGuard {
         }
 
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            MotionEvent kept = null;
             if (args != null && args.length == 1 && args[0] instanceof MotionEvent
                     && "dispatchTouchEvent".equals(method.getName())) {
+                MotionEvent event = (MotionEvent) args[0];
                 try {
-                    seen((MotionEvent) args[0]);
+                    // A tap that brought the dimmed controls back reaches Facebook as a cancel (#523).
+                    if (seen(event)) {
+                        kept = MotionEvent.obtain(event);
+                        kept.setAction(MotionEvent.ACTION_CANCEL);
+                    }
                 } catch (Throwable failure) {
                     HookStatus.threw(FAMILY, "burn-in guard touch", failure);
                 }
                 try {
-                    ReelCleanReturn.touched(((MotionEvent) args[0]).getActionMasked());
+                    ReelCleanReturn.touched(event.getActionMasked());
                 } catch (Throwable failure) {
                     HookStatus.threw(FAMILY, "Back to Clean mode touch", failure);
                 }
             }
             try {
-                return method.invoke(inner, args);
+                return method.invoke(inner, kept == null ? args : new Object[]{kept});
             } catch (InvocationTargetException failure) {
                 throw failure.getCause() == null ? failure : failure.getCause();
+            } finally {
+                if (kept != null) kept.recycle();
             }
         }
     }
@@ -1093,6 +1124,8 @@ public final class BurnInGuard {
         tickAt = -1L;
         touchedAt = 0L;
         doubtSince = -1L;
+        quiet = false;
+        tapBack = false;
         LAYOUT.lastLook = Long.MIN_VALUE / 2;
         DIMMED.clear();
         MOVED.clear();

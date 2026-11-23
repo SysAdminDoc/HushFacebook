@@ -2653,6 +2653,8 @@ After %1$d seconds	%1$d saniye sonra
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Dokununca soluk kalsın
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Ekran yanığı koruması düğmeleri soldurduktan sonra, Reels'te neye dokunur ya da kaydırırsan kaydır soluk kalırlar, sonraki reel'de de. Yine çalışırlar. Reels'ten çıkınca geri gelirler.
+Tap the video to bring them back	Videoya dokununca geri gelsin
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	Ekran yanığı koruması düğmeleri soldurduktan sonra, videoya dokunmak onları duraklatmadan geri getirir. Sonraki dokunuş her zamanki gibi duraklatır.
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	Soluklaştırma düzeyi
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Soluklaştıktan sonra düğmelerin, açıklamanın ve çubukların ne kadarının görüneceği, yüzde olarak, %1$s ile %2$s arası. %3$s için boş bırak.

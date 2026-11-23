@@ -211,6 +211,9 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.BURN_IN_STAY_DIM,
                     L10n.t("Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, "
                             + "the next reel too. They still work. Leaving Reels brings them back.")));
+            reels.addPreference(toggle(context, Settings.BURN_IN_TAP_BACK,
+                    L10n.t("Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing "
+                            + "it. The next tap pauses as usual.")));
             reels.addPreference(toggle(context, Settings.BURN_IN_FADE,
                     L10n.t("The buttons, caption and bars fade out slowly as they dim and fade back in when they "
                             + "return, rather than changing at once.")));
