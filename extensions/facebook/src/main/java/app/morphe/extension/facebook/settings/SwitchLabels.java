@@ -239,6 +239,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REEL_REPOST_BUTTON) return L10n.t("Hide Repost on reels");
         if (setting == Settings.HIDE_REEL_SHARE_BUTTON) return L10n.t("Hide Share on reels");
         if (setting == Settings.SHOW_REEL_COMMENT_BUTTON) return L10n.t("Show Comment when comments are off");
+        if (setting == Settings.LONG_VIDEO_BUTTONS) return L10n.t("Side buttons on long videos");
         if (setting == Settings.SHOW_REEL_POST_DATE) return L10n.t("Show the post date on reels");
         if (setting == Settings.HIDE_REEL_NEW_FOR_YOU) return L10n.t("Hide New for you on reels");
         if (setting == Settings.HIDE_REEL_SOUND_BUTTON) return L10n.t("Hide the speaker button on reels");

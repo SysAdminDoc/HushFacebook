@@ -1036,6 +1036,10 @@ Keep watched entries for	الاحتفاظ بالسجلات المشاهدة لم
 Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	يُبقي قائمة على هاتفك بالريلز والفيديوهات والقصص التي تشاهدها، حتى تتمكن من العثور على واحدة منها مرة أخرى بعد تحديث الخلاصة. لا شيء يغادر هاتفك.
 Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.	يُبقي فيسبوك داكنًا مهما كان إعداده الخاص. مخصص للأجهزة اللوحية حيث لا يوجد زر الوضع الداكن في فيسبوك. أعد تشغيل فيسبوك لترى التغيير.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	يُبقي زر التعليق على الريل التي تم إيقاف تعليقاتها، حتى تتمكن من قراءة الموجود بالفعل. يظهر التغيير من الريل التالي.
+# context: switch title under Reels; on, a long video in the Reels viewer (a film or a live replay) gets Facebook's Like, Comment, Share and Save buttons down its right side, which Facebook leaves off
+Side buttons on long videos	أزرار جانبية للفيديوهات الطويلة
+# context: summary of that switch; Like, Comment, Share and Save are Facebook's own button names
+Brings back Like, Comment, Share and Save down the side of a long video in the Reels viewer, where Facebook leaves them off. A change shows from the next video.	يعيد أزرار الإعجاب والتعليق والمشاركة والحفظ على جانب الفيديو الطويل في عارض Reels، حيث يحذفها فيسبوك. يظهر التغيير من الفيديو التالي.
 Keeps the Messenger button but drops the unread count on it.	يُبقي زر Messenger ولكنه يزيل العدّاد غير المقروء عليه.
 Kept: %s	محفوظ: %s
 Languages to keep	اللغات المطلوب الاحتفاظ بها

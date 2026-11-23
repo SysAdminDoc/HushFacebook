@@ -2427,6 +2427,10 @@ Show Comment when comments are off	Tampilkan Komentari saat komentar dimatikan
 Show the post date on reels	Tampilkan tanggal posting di reel
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Menampilkan kapan reel atau video yang kamu buka layar penuh diposting, di bawah nama orang yang mempostingnya. Perubahan terlihat mulai reel berikutnya.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Tetap menampilkan tombol Komentari di reel yang komentarnya dimatikan, jadi kamu masih bisa membaca komentar yang sudah ada. Perubahan terlihat mulai reel berikutnya.
+# context: switch title under Reels; on, a long video in the Reels viewer (a film or a live replay) gets Facebook's Like, Comment, Share and Save buttons down its right side, which Facebook leaves off
+Side buttons on long videos	Tombol samping di video panjang
+# context: summary of that switch; Like, Comment, Share and Save are Facebook's own button names
+Brings back Like, Comment, Share and Save down the side of a long video in the Reels viewer, where Facebook leaves them off. A change shows from the next video.	Mengembalikan Suka, Komentari, Bagikan, dan Simpan di samping video panjang dalam penampil Reels, tempat Facebook menghilangkannya. Perubahan berlaku mulai video berikutnya.
 Select part of a post's text	Pilih sebagian teks postingan
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Menahan teks postingan membukanya di kotak tempat kamu bisa memilih bagian yang kamu mau lalu menyalinnya, atau menyalin semuanya. Menahan saja tidak menyalin apa pun.
 Hold a feed photo to react	Tahan foto feed untuk bereaksi

@@ -306,6 +306,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_REPOST_BUTTON,
             Settings.HIDE_REEL_SHARE_BUTTON,
             Settings.SHOW_REEL_COMMENT_BUTTON,
+            Settings.LONG_VIDEO_BUTTONS,
             Settings.SHOW_REEL_POST_DATE,
             Settings.HIDE_REEL_NEW_FOR_YOU,
             Settings.HIDE_REEL_SOUND_BUTTON,

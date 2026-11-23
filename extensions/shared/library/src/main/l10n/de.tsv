@@ -2427,6 +2427,10 @@ Show Comment when comments are off	„Kommentieren“ anzeigen, wenn Kommentare 
 Show the post date on reels	Veröffentlichungsdatum bei Reels anzeigen
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Zeigt unter dem Namen der Person, die es gepostet hat, wann ein Reel oder ein im Vollbild geöffnetes Video veröffentlicht wurde. Die Änderung gilt ab dem nächsten Reel.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Behält den Button „Kommentieren“ bei Reels, deren Kommentare ausgeschaltet sind, damit du die vorhandenen Kommentare weiter lesen kannst. Die Änderung gilt ab dem nächsten Reel.
+# context: switch title under Reels; on, a long video in the Reels viewer (a film or a live replay) gets Facebook's Like, Comment, Share and Save buttons down its right side, which Facebook leaves off
+Side buttons on long videos	Seitenbuttons bei langen Videos
+# context: summary of that switch; Like, Comment, Share and Save are Facebook's own button names
+Brings back Like, Comment, Share and Save down the side of a long video in the Reels viewer, where Facebook leaves them off. A change shows from the next video.	Bringt Gefällt mir, Kommentieren, Teilen und Speichern an der Seite eines langen Videos im Reels-Player zurück, wo Facebook sie weglässt. Die Änderung gilt ab dem nächsten Video.
 Select part of a post's text	Teil eines Beitragstexts auswählen
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Wenn du den Text eines Beitrags gedrückt hältst, öffnet er sich in einem Feld, in dem du nur den gewünschten Teil auswählen und kopieren oder alles kopieren kannst. Das Gedrückthalten selbst kopiert nichts.
 Hold a feed photo to react	Feed-Foto halten zum Reagieren

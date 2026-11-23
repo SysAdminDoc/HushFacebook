@@ -881,6 +881,39 @@ public final class ReelDeclutter {
         }
     }
 
+    /** Hook status: a long video's preset side column (three dots only) set aside for Facebook's usual list. */
+    static final String PRESET_SET_ASIDE = "Long video side buttons";
+
+    /**
+     * Injection point, in the side column's list builder, handed the button list a viewer's config
+     * presets. Facebook presets a long video's column to the three dots alone, so its builder never
+     * makes Like, Comment, Share or Save (#525). While the switch is on, a preset holding none of the
+     * four answers null, and the builder makes its usual list as for a short reel. Anything else, and
+     * the switch off, keeps the preset. Never throws.
+     */
+    @Nullable
+    public static Object presetButtons(@Nullable Object preset) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!(preset instanceof Iterable) || !Utils.settingsReady() || !Settings.LONG_VIDEO_BUTTONS.get()) {
+                return preset;
+            }
+            for (Object type : (Iterable<?>) preset) {
+                if (type instanceof Enum && isSideButton(((Enum<?>) type).name())) return preset;
+            }
+            HookStatus.counted(FamilyNames.REEL_DECLUTTER, PRESET_SET_ASIDE);
+            logOnce(PRESET_SET_ASIDE, () -> "Long video side buttons: the three-dots-only preset set aside for Facebook's usual list");
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, PRESET_SET_ASIDE, failure);
+            return preset;
+        }
+    }
+
+    private static boolean isSideButton(String type) {
+        return LIKE_TYPE.equals(type) || COMMENT_TYPE.equals(type) || SHARE_TYPE.equals(type) || SAVE_TYPE.equals(type);
+    }
+
     /**
      * Injection point, in a reel caption's render, handed the server switch's answer to whether the
      * caption gets a date row of its own after it (#503). Accounts in that test saw the date twice

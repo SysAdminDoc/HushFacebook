@@ -246,6 +246,9 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHOW_REEL_COMMENT_BUTTON,
                     L10n.t("Keeps the Comment button on reels whose comments are turned off, so you can still read "
                             + "the ones already there. A change shows from the next reel.")));
+            reels.addPreference(toggle(context, Settings.LONG_VIDEO_BUTTONS,
+                    L10n.t("Brings back Like, Comment, Share and Save down the side of a long video in the Reels "
+                            + "viewer, where Facebook leaves them off. A change shows from the next video.")));
             reels.addPreference(toggle(context, Settings.SHOW_REEL_POST_DATE,
                     L10n.t("Shows when a reel or a video you open full screen was posted, under the name of "
                             + "who posted it. A change shows from the next reel.")));

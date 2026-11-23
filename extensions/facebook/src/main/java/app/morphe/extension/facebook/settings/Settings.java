@@ -1043,6 +1043,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_reel_comment_button", FALSE);
 
     /**
+     * A long video in the Reels viewer gets Like, Comment, Share and Save down its right side, which
+     * Facebook leaves off it by presetting its side column to the three dots alone
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#presetButtons}, #525). Off by
+     * default. A change shows from the next video.
+     */
+    public static final BooleanSetting LONG_VIDEO_BUTTONS =
+            new BooleanSetting("hushfacebook_long_video_buttons", FALSE);
+
+    /**
      * The date a reel or full-screen video was posted shows under its author, a line Facebook
      * builds behind a server switch that's off for most accounts
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#showsPostDate}, #296). Off by
