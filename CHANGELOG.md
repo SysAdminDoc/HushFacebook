@@ -19,6 +19,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * With `See-through bars` on, the tab bar is frosted again while the feed moves under it. Since 0.24.0 the blur only flashed for a moment and then left the bar plainly see-through, most of all over a playing video. (#553)
 * Facebook stops draining the battery in the background when you leave it with a paused video that was still loading. Facebook's player checks on a loading video a hundred times a second, playing or not, and stops loading once you leave, so a preview it hadn't finished (most often the Reels row on Home) kept waking the phone until Android closed Facebook. Now that check runs once a second while no Facebook screen is open. A video playing in the background with `Keep playing in the background` plays on as before. (#548)
 * With `Always use Clean mode` on, a reel you take out of Clean mode no longer gets a second Clean mode button stacked on More options and the button above it, where it took their taps. The way back in is the Clean mode button down the side of the reel now, which shows whenever `Always use Clean mode` is on, even with `Clean mode button on reels` off. (#554)
+* `Fold long posts` now reaches the posts Facebook cuts after a single line, which is most photo posts and shared posts. With 3 lines picked they still showed one line and a "more". Comments Facebook cuts that short get your count too. (#506)
 
 ## 0.24.0 (2026-11-22)
 

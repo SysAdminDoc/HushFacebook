@@ -33,9 +33,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>With a line count picked, the line limit becomes that count and the characters become about
  * that many lines' worth ({@link #POST_CHARS_PER_LINE} and {@link #COMMENT_CHARS_PER_LINE} a line,
- * less room for See more). A post Facebook doesn't fold (-1), or folds to one line on purpose,
- * keeps Facebook's numbers. Show full post text, while on, wins for posts: their numbers stay
- * Facebook's, and that switch shows them whole.
+ * less room for See more). A post Facebook doesn't fold (-1 or 0) keeps Facebook's numbers. One it
+ * folds to a single line, as it does a photo's or a shared post's text, takes the count like the
+ * rest: that cut is the fold the reader picked a count to change (#506). Show full post text, while
+ * on, wins for posts: their numbers stay Facebook's, and that switch shows them whole.
  *
  * <p>Those numbers alone missed many posts and comments (#506). A post can come with a fixed place
  * to cut, which beats the line limit, so with a count picked that place is dropped ({@link #postCut}).
@@ -131,7 +132,7 @@ public final class FoldLongText {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, POST_LINES);
             int picked = postPick();
-            if (picked <= 0 || lines <= 1) return lines;
+            if (picked <= 0 || lines < 1) return lines;
             HookStatus.counted(FAMILY, POST_FOLDED);
             if (!postLogged) {
                 postLogged = true;
@@ -153,7 +154,7 @@ public final class FoldLongText {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, POST_CHARS);
             int picked = postPick();
-            if (picked <= 0 || !folds(lines, picked) || chars <= 0) return chars;
+            if (picked <= 0 || !folds(lines) || chars <= 0) return chars;
             return budget(picked, POST_CHARS_PER_LINE);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, POST_CHARS, failure);
@@ -167,7 +168,7 @@ public final class FoldLongText {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, COMMENT_LINES);
             int picked = commentPick();
-            if (picked <= 0 || lines <= 1) return lines;
+            if (picked <= 0 || lines < 1) return lines;
             HookStatus.counted(FAMILY, COMMENT_FOLDED);
             if (!commentLogged) {
                 commentLogged = true;
@@ -191,7 +192,7 @@ public final class FoldLongText {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, COMMENT_CHARS);
             int picked = commentPick();
-            if (picked <= 0 || !folds(lines, picked) || chars <= 0) return chars;
+            if (picked <= 0 || !folds(lines) || chars <= 0) return chars;
             return commentBudget(picked, text);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, COMMENT_CHARS, failure);
@@ -288,13 +289,12 @@ public final class FoldLongText {
     }
 
     /**
-     * Whether a fold handed [lines] beside its characters takes the picked count's: Facebook's own
-     * fold (more than one line), or one already at [picked], as it is when the line limit went
-     * through here before the two were put together. Not a post Facebook never folds (-1), nor one it
-     * folds to a single line on purpose.
+     * Whether a fold handed [lines] beside its characters takes the picked count's: any of
+     * Facebook's own folds, a single line included, as it is when the line limit went through here
+     * before the two were put together. Not a post Facebook never folds (-1 or 0).
      */
-    private static boolean folds(int lines, int picked) {
-        return lines > 1 || lines == picked;
+    private static boolean folds(int lines) {
+        return lines >= 1;
     }
 
     /** About [lines] lines' worth of characters at [perLine] a line, with room for See more. */

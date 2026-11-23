@@ -36,10 +36,10 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Fold long text (#497): with a line count picked, a post's line limit and a comment's become it, and
  * the characters beside them about that many lines' worth. Facebook's choice, paused, before the
- * settings are ready, a post Facebook never folds (-1) or folds to one line, and posts while Show full
- * post text is on all keep Facebook's numbers. The rest of #506: a post's fixed cut and Facebook's
- * choice to show a post whole give way to the count, a comment's characters are measured so it really
- * ends at the count, and a video's caption takes the count picked for posts.
+ * settings are ready, a post Facebook never folds (-1 or 0), and posts while Show full post text is on
+ * all keep Facebook's numbers. The rest of #506: a post's fixed cut and Facebook's choice to show a
+ * post whole give way to the count, so does a fold to one line, a comment's characters are measured so
+ * it really ends at the count, and a video's caption takes the count picked for posts.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -289,10 +289,10 @@ public class FoldLongTextTest {
     }
 
     @Test
-    public void aPostFacebookNeverFoldsOrFoldsToOneLineKeepsItsNumbers() {
+    public void aPostFacebookNeverFoldsKeepsItsNumbers() {
         Settings.FOLD_POST_TEXT.save(FoldLines.THREE);
         Settings.FOLD_COMMENTS.save(FoldLines.THREE);
-        for (int lines : new int[] {-1, 0, 1}) {
+        for (int lines : new int[] {-1, 0}) {
             assertEquals(lines, FoldLongText.postLines(lines));
             assertEquals(POST_CHARS, FoldLongText.postChars(POST_CHARS, lines));
             assertEquals(lines, FoldLongText.commentLines(lines));
@@ -301,6 +301,32 @@ public class FoldLongTextTest {
         // No character budget stays none.
         assertEquals(0, FoldLongText.postChars(0, POST_LINES));
         assertEquals(-1, FoldLongText.commentChars(-1, COMMENT_LINES, repeat("W", 300)));
+    }
+
+    /**
+     * #506: Facebook folds a photo's or a shared post's text after one line, and with 3 lines picked
+     * those posts still showed one on 0.24.0. A one-line fold takes the count like any other.
+     */
+    @Test
+    public void aOneLineFoldTakesThePickedCount() {
+        Settings.FOLD_POST_TEXT.save(FoldLines.THREE);
+        Settings.FOLD_COMMENTS.save(FoldLines.EIGHT);
+        assertEquals(3, FoldLongText.postLines(1));
+        assertEquals(3 * 45 - 10, FoldLongText.postChars(POST_CHARS, 1));
+        assertEquals(8, FoldLongText.commentLines(1));
+        assertEquals(8 * 40 - 10, FoldLongText.commentChars(COMMENT_CHARS, 1, null));
+
+        // Picking one line on a one-line fold is the same fold.
+        Settings.FOLD_POST_TEXT.save(FoldLines.ONE);
+        assertEquals(1, FoldLongText.postLines(1));
+        assertEquals(45 - 10, FoldLongText.postChars(POST_CHARS, 1));
+
+        // Facebook's choice leaves it at one line.
+        Settings.FOLD_POST_TEXT.resetToDefault();
+        Settings.FOLD_COMMENTS.resetToDefault();
+        assertEquals(1, FoldLongText.postLines(1));
+        assertEquals(POST_CHARS, FoldLongText.postChars(POST_CHARS, 1));
+        assertEquals(1, FoldLongText.commentLines(1));
     }
 
     @Test
