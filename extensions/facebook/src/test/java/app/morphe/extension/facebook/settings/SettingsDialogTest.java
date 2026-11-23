@@ -66,7 +66,9 @@ public class SettingsDialogTest {
         controller.close();
     }
 
+    /** On a dark phone, whose page is the black one; a light phone gets the light page (#559). */
     @Test
+    @Config(qualifiers = "night")
     public void aFailedInitializationShowsATitledReadableRecoveryPage() {
         HushfacebookPreferenceFragment.failNextInitialization = new IllegalStateException("injected");
         HushfacebookPreferenceFragment page = pageOf(show(controller.get()));

@@ -267,8 +267,12 @@ public class ScreenColorsTest {
         assertSame(ScreenColors.DEFAULT, ScreenColors.black());
     }
 
-    /** The settings screen over navy: its page, its bars, the card under each row and a dialog. */
+    /**
+     * The settings screen over navy: its page, its bars, the card under each row and a dialog. A
+     * dark phone, since a light one gets the light page (#559).
+     */
     @Test
+    @Config(qualifiers = "night")
     public void theScreenTakesTheBackgroundColour() {
         PatchFamily.inBuildForTests = EnumSet.complementOf(EnumSet.of(PatchFamily.MATERIAL_YOU_THEME));
         AmoledForTests.useBackground(NAVY);
@@ -432,7 +436,8 @@ public class ScreenColorsTest {
 
     /** Without the theme in the build the screen stays what it was: black, with the dark Material theme. */
     @Test
-    public void withoutTheThemeTheScreenStaysBlack() {
+    @Config(qualifiers = "night")
+    public void withoutTheThemeADarkPhoneKeepsTheBlackScreen() {
         PatchFamily.inBuildForTests = EnumSet.complementOf(EnumSet.of(PatchFamily.MATERIAL_YOU_THEME));
         Context context = RuntimeEnvironment.getApplication();
         assertNull(ScreenColors.forScreen(context));
@@ -453,17 +458,34 @@ public class ScreenColorsTest {
 
     @Test
     public void withTheThemeALightPhoneGetsALightScreen() {
-        assertScreenPainted(true);
+        assertScreenPainted(true, EnumSet.allOf(PatchFamily.class));
     }
 
     @Test
     @Config(qualifiers = "night")
     public void withTheThemeADarkPhoneGetsADarkScreen() {
-        assertScreenPainted(false);
+        assertScreenPainted(false, EnumSet.allOf(PatchFamily.class));
     }
 
-    private void assertScreenPainted(boolean light) {
-        PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
+    /**
+     * Without the theme in the build a light phone gets the light page too (#559), in the fixed
+     * palette's light tones and painted row by row like the themed one. Force dark mode keeps it
+     * black, as it does the themed page.
+     */
+    @Test
+    public void withoutTheThemeALightPhoneGetsTheFixedLightScreen() {
+        assertScreenPainted(true, EnumSet.complementOf(EnumSet.of(PatchFamily.MATERIAL_YOU_THEME)));
+        Context context = RuntimeEnvironment.getApplication();
+        assertSame(ScreenColors.fixedLight(), ScreenColors.forScreen(context));
+        assertEquals(android.R.style.Theme_Material_Light_NoActionBar, ScreenColors.themeFor(context));
+        ForceDarkModeForTests.inBuild(true);
+        Settings.FORCE_DARK_MODE.save(true);
+        assertNull("Force dark mode left the page light", ScreenColors.forScreen(context));
+        assertEquals(android.R.style.Theme_Material_NoActionBar, ScreenColors.themeFor(context));
+    }
+
+    private void assertScreenPainted(boolean light, EnumSet<PatchFamily> build) {
+        PatchFamily.inBuildForTests = build;
         // A picked font puts the way back to the phone's font on the page, so its row is painted too.
         Settings.FONT_SOURCE.save("Inter.ttf");
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {

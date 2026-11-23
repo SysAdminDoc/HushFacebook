@@ -11,6 +11,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Show saved posts in the row` under `Play saved videos in a row` stops on a saved post instead of skipping it, so you can read it. Swipe up once you're past its end and the next saved video opens, or swipe down at its top to go back to the one before. While there's more of the post to scroll, your swipe just scrolls it. It's off until you turn it on. (#404)
 * `Mark all notifications as read` sits at the top of Notifications in the Hush settings. One tap clears every unread dot in the Notifications tab. Facebook only puts its own Mark all as read in the three-dot menu there, and some accounts never get that menu. (Discussion #338)
 * `Side buttons on long videos` under Reels and Watch puts Like, Comment, Share and Save back down the side of long videos in the Reels viewer, like a live replay or a film you open from Saved or the Reels library. Facebook only gives those the three dots. It starts off. (#525)
+* The Hush settings now go light or dark with your phone's theme, like HushGram's do. Without the `Material You theme` patch they used to stay dark on every phone. `Force dark mode` still keeps them dark. (#559)
 
 ### Fixed
 

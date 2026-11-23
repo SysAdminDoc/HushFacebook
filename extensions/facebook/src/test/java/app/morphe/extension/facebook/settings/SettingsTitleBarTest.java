@@ -77,7 +77,9 @@ public class SettingsTitleBarTest {
         PauseForTests.resume();
     }
 
-    @Test public void theMainPageOpensOnTheIconTheNameAndTheVersionLine() {
+    /** On a dark phone, whose page is the black one; a light phone gets the light page (#559). */
+    @Test @Config(qualifiers = "night")
+    public void theMainPageOpensOnTheIconTheNameAndTheVersionLine() {
         HeaderColumn root = root();
         ImageView icon = root.findViewWithTag(SettingsHeader.ICON);
         TextView name = root.findViewWithTag(SettingsHeader.NAME);
@@ -266,7 +268,7 @@ public class SettingsTitleBarTest {
         throw new AssertionError("neither the search nor the view toggle is under the bar here, so this proves nothing");
     }
 
-    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE) @Config(qualifiers = "night")
     public void nothingThatSlidesUnderTheBarShowsThroughIt() {
         HeaderColumn root = root();
         root.collapse();
