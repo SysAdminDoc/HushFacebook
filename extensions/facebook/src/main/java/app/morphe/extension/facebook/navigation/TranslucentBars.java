@@ -182,8 +182,14 @@ public final class TranslucentBars {
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
     private static boolean watching;
-    /** Whether a frost is copying a view now, so no frost draws itself into the copy. */
-    static boolean copying;
+    /**
+     * The canvas a frost is copying a view into now, or null, so no frost draws itself into the
+     * copy. Only that canvas: a view whose own drawing is rebuilt while the copy draws it rebuilds
+     * on a canvas of its own, and a frost in its overlay has to stay in it, or the frame after
+     * draws that view with its frost left out (#553).
+     */
+    @Nullable
+    static Canvas copy;
 
     /** Each main screen's window and its bars. */
     static final Map<View, Bars> WINDOWS = new WeakHashMap<>();
@@ -1446,7 +1452,7 @@ public final class TranslucentBars {
     /**
      * A bar's frost, in the overlay of the view under it: the part of that view the bar covers,
      * recorded before each frame and drawn blurred, so it lands over the feed and under the bar.
-     * The recording draws the view, overlay included, and every frost skips itself while it does.
+     * The recording draws the view, overlay included, and every frost skips itself on its canvas.
      * The blur sits inside [node], which clips it and fades it: a blurred node drawn at less than
      * full alpha spreads its clamped edge a blur's reach past its own box, the strip left above a
      * tab bar sliding away (#250).
@@ -1504,14 +1510,14 @@ public final class TranslucentBars {
             int smallHeight = small(height);
             blur.setPosition(0, 0, smallWidth, smallHeight);
             RecordingCanvas canvas = blur.beginRecording(smallWidth, smallHeight);
-            copying = true;
+            copy = canvas;
             try {
                 canvas.scale(1f / FROST_SCALE, 1f / FROST_SCALE);
                 canvas.translate(-left, -top);
                 inside.set(left, top, left + width, top + height);
                 record(host, canvas, inside, box);
             } finally {
-                copying = false;
+                copy = null;
                 blur.endRecording();
             }
             RecordingCanvas whole = node.beginRecording(width, height);
@@ -1542,7 +1548,7 @@ public final class TranslucentBars {
 
         @Override
         public void draw(Canvas canvas) {
-            if (copying || !canvas.isHardwareAccelerated()) return;
+            if (canvas == copy || !canvas.isHardwareAccelerated()) return;
             // An overlay draws in its host's scrolled content (View translates by -scroll first), so
             // a scrolled host would put the frost off by its scroll. [node] sits where the host
             // shows, the way record() copies it.
@@ -1620,13 +1626,13 @@ public final class TranslucentBars {
             int smallHeight = Frost.small(height);
             blur.setPosition(0, 0, smallWidth, smallHeight);
             RecordingCanvas canvas = blur.beginRecording(smallWidth, smallHeight);
-            copying = true;
+            copy = canvas;
             try {
                 canvas.scale(1f / FROST_SCALE, 1f / FROST_SCALE);
                 canvas.translate(-band.left, -band.top);
                 record(host, canvas, band, box);
             } finally {
-                copying = false;
+                copy = null;
                 blur.endRecording();
             }
             turnOver(node.beginRecording(width, height), blur, height, tint);
@@ -1654,7 +1660,7 @@ public final class TranslucentBars {
 
         @Override
         public void draw(Canvas canvas) {
-            if (copying || !canvas.isHardwareAccelerated()) return;
+            if (canvas == copy || !canvas.isHardwareAccelerated()) return;
             canvas.drawRenderNode(node);
         }
 

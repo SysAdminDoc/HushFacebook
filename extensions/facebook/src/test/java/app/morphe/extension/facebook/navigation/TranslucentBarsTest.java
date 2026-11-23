@@ -989,13 +989,21 @@ public class TranslucentBarsTest {
         stripFrost.update(0x80242526, 1);
         Tracking canvas = new Tracking();
         canvas.hardware = true;
-        TranslucentBars.copying = true;
+        // #553: a view the copy draws rebuilds its own drawing on a canvas of its own, and a frost
+        // in its overlay, the tab bar's under the top bar's host, has to stay in that drawing, or the
+        // frame after shows the tab bar with no frost.
+        Tracking rebuilt = new Tracking();
+        rebuilt.hardware = true;
+        TranslucentBars.copy = canvas;
         try {
             frost.draw(canvas);
             stripFrost.draw(canvas);
-            assertTrue(canvas.nodes.isEmpty());
+            assertTrue("a frost drew itself into a copy", canvas.nodes.isEmpty());
+            frost.draw(rebuilt);
+            stripFrost.draw(rebuilt);
+            assertEquals("a frost left itself out of a view's drawing rebuilt during a copy", 2, rebuilt.nodes.size());
         } finally {
-            TranslucentBars.copying = false;
+            TranslucentBars.copy = null;
         }
         frost.draw(canvas);
         stripFrost.draw(canvas);
