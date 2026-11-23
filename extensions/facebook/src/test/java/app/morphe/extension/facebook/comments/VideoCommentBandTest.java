@@ -71,6 +71,8 @@ public class VideoCommentBandTest {
         Settings.LIKE_ONLY.resetToDefault();
         Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
+        Settings.KEEP_PROGRESS_BAR.resetToDefault();
+        Settings.KEEP_PROGRESS_BAR_TIME.resetToDefault();
         CommentSheetOptions.pickingShortsBar();
         CommentSheetOptions.inFront(null);
         HookStatus.clear();
@@ -227,6 +229,31 @@ public class VideoCommentBandTest {
         assertEquals("with Up next hidden the video kept the band", 0, video(viewer));
         assertEquals("with Up next hidden the seek bar stayed over the caption",
                 CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+    }
+
+    @Test
+    public void aReelsTimeKeepsPartOfTheBandForTheCaption() {
+        Settings.HIDE_VIDEO_COMMENT_COMPOSER.save(true);
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        assertTrue(render(viewer));
+        int kept = BAND - CommentSheetOptions.TIME_ROOM_BAND_TAKEN_DP;
+        assertEquals("the video stopped short of the seek bar's band by the gap", kept + CommentSheetOptions.TIME_ROOM_GAP_DP,
+                video(viewer));
+        assertEquals("the seek bar kept 32 dp, off the gesture handle", 32, seekBar());
+        assertEquals("the video never kept more than Facebook's band", 10, CommentSheetOptions.timeRoomVideoBand(10));
+        assertTrue(statusLine().contains(CommentSheetOptions.TIME_ROOM));
+        assertEquals("a band too small to share went down to the no-bar seek bar",
+                CommentSheetOptions.NO_BAR_SEEK_BAR_DP, CommentSheetOptions.timeRoomBand(20));
+
+        Settings.KEEP_PROGRESS_BAR_TIME.save(false);
+        assertEquals("with the time shown only in a drag the video took the band", 0, video(viewer));
+        assertEquals(CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+        Settings.KEEP_PROGRESS_BAR_TIME.save(true);
+        CommentSheetOptions.inFront(MAIN_SCREEN);
+        assertEquals("the scroller's caption stays put, so its video took the band", 0, video(viewer));
+        CommentSheetOptions.inFront(SHORTS_SCREEN);
+        Settings.HIDE_UP_NEXT.save(false);
+        assertEquals("Up next kept its band", BAND, video(viewer));
     }
 
     /** The full-screen video viewer's own comment bar hook doesn't move the Shorts viewer's seek bar. */

@@ -251,6 +251,31 @@ public final class CommentSheetOptions {
     /** Counted each time that video keeps the height the comment bar's band took off it. */
     static final String FULL_HEIGHT = "Video kept its full height";
 
+    /** Counted each time that video and its seek bar take only part of the band, leaving room for a reel's time. */
+    static final String TIME_ROOM = "Video left room for the reel's time";
+
+    /**
+     * How much of the band, in dp, a Shorts viewer video and its seek bar both take while a reel's
+     * time stays up (Keep the progress bar with Show a reel's time). Facebook rests the caption on
+     * the video's bottom edge less 34 px or on the seek bar's bottom, whichever is higher, and lifts
+     * it 35 dp from there while the seek bar shows. The seek bar goes up by its band, and by the nav
+     * bar's inset too while the video runs to the bottom edge (S22 588, 2026-11-23). At the full
+     * height the seek bar held the caption, and the time row, which Facebook shows only during a drag
+     * when the caption is cleared, sat 63 px into the caption's last line. The video alone at 32 dp
+     * cleared the caption but dropped the seek bar onto the gesture handle. The band is the nav bar's
+     * inset plus 44 dp, so taking 28 dp of it keeps the seek bar 16 dp higher than at the full height
+     * on any phone, where it was before.
+     */
+    static final int TIME_ROOM_BAND_TAKEN_DP = 28;
+
+    /**
+     * How much more of the band, in dp, the video keeps than its seek bar while a reel's time stays
+     * up. At the same band the time came 13 px into the caption's box, Facebook's spacing under the
+     * comment bar, where its featured-comment line pads the gap, but a plain caption's last line
+     * touched the time's digits (S22 588, 2026-11-23). The caption moves with the video's edge alone.
+     */
+    static final int TIME_ROOM_GAP_DP = 8;
+
     /** The member the report names once the Shorts viewer has placed its seek bar through the hook (#375). */
     static final String SEEK_BAR = "Shorts viewer seek bar";
 
@@ -783,6 +808,25 @@ public final class CommentSheetOptions {
         return shortsScreenInFront() && !Settings.HIDE_UP_NEXT.get();
     }
 
+    /**
+     * Whether a reel's time stays up over the seek bar in the Shorts viewer, which needs part of the
+     * band ({@link #TIME_ROOM_BAND_TAKEN_DP}). The scroller a video tapped in Home opens keeps its
+     * caption where it was whatever the video's height, so there the video takes the whole band.
+     */
+    private static boolean timeRowKept() {
+        return shortsScreenInFront() && Settings.KEEP_PROGRESS_BAR.get() && Settings.KEEP_PROGRESS_BAR_TIME.get();
+    }
+
+    /** The band, in dp, the seek bar keeps while {@link #timeRowKept}. */
+    static int timeRoomBand(int band) {
+        return Math.max(NO_BAR_SEEK_BAR_DP, band - TIME_ROOM_BAND_TAKEN_DP);
+    }
+
+    /** The band, in dp, the video keeps while {@link #timeRowKept}: its seek bar's and the gap, at most Facebook's. */
+    static int timeRoomVideoBand(int band) {
+        return Math.min(band, timeRoomBand(band) + TIME_ROOM_GAP_DP);
+    }
+
     /** Keeps the screen in front up to date. */
     static final class Screens implements Application.ActivityLifecycleCallbacks {
         @Override
@@ -820,7 +864,8 @@ public final class CommentSheetOptions {
      * The hook on each band height, in dp, the Shorts viewer's root places its seek bar and time
      * above (#375). Once this render dropped the comment bar while the switch is on and a full-screen
      * player is in front they go down with the video to {@link #NO_BAR_SEEK_BAR_DP}, where Facebook
-     * puts them with no bar, instead of staying over the caption. Otherwise the band is Facebook's: a
+     * puts them with no bar, instead of staying over the caption, or to the band the video keeps while
+     * a reel's time stays up ({@link #timeRoomBand}). Otherwise the band is Facebook's: a
      * pick with no bar of its own, the scroller a video tapped in Home opens, whose caption stays put
      * with the bar gone or not, and a viewer whose band the UP NEXT pill keeps (#552).
      */
@@ -831,7 +876,7 @@ public final class CommentSheetOptions {
             if (!Boolean.TRUE.equals(shortsBarDropped.get()) || !shortsScreenInFront() || !Utils.settingsReady()
                     || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get() || bandKeptForUpNext()) return band;
             HookStatus.counted(FAMILY, SEEK_BAR_LOWERED);
-            return NO_BAR_SEEK_BAR_DP;
+            return timeRowKept() ? timeRoomBand(band) : NO_BAR_SEEK_BAR_DP;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, SEEK_BAR, failure);
             return band;
@@ -843,7 +888,8 @@ public final class CommentSheetOptions {
      * (#375), with the viewer's config. It sizes the videos before any of their roots has picked a
      * bar, so while Hide the video comment box is on the video keeps its full height and 0 comes back,
      * unless the config's root kept a bar ({@link #keptShortsBar}) or the UP NEXT pill keeps the band
-     * ({@link #bandKeptForUpNext}). A list handed no config keeps Facebook's band.
+     * ({@link #bandKeptForUpNext}). While a reel's time stays up the video takes only part of it
+     * ({@link #timeRowKept}). A list handed no config keeps Facebook's band.
      */
     public static int shortsVideoBand(int band, @Nullable Object config) {
         try {
@@ -851,6 +897,10 @@ public final class CommentSheetOptions {
             HookStatus.bound(FAMILY, VIDEO_HEIGHT);
             if (config == null || !Utils.settingsReady() || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()
                     || keepsBar(config) || bandKeptForUpNext()) return band;
+            if (timeRowKept()) {
+                HookStatus.counted(FAMILY, TIME_ROOM);
+                return timeRoomVideoBand(band);
+            }
             HookStatus.counted(FAMILY, FULL_HEIGHT);
             return 0;
         } catch (Throwable failure) {
