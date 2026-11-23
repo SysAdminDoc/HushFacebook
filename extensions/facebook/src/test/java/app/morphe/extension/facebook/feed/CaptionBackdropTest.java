@@ -136,6 +136,30 @@ public class CaptionBackdropTest {
                 + CaptionBackdrop.FOLDED_DIMMED + " 1, " + CaptionBackdrop.DIMMED + " 1", statusLine());
     }
 
+    /**
+     * The date under a video's caption in the full-screen player gets the box the caption above it has,
+     * from either caption switch, and keeps Facebook's look with both off or Hushfacebook paused (#490).
+     */
+    @Test
+    public void aFullScreenVideosDateFollowsTheCaptionSwitches() {
+        assertNull("the date got a box with both caption switches off", CaptionBackdrop.forViewerDate());
+        Settings.DIM_OPEN_REEL_CAPTIONS.save(true);
+        Drawable box = CaptionBackdrop.forViewerDate();
+        assertNotNull("the date got no box with Dark box behind open captions on", box);
+        assertEquals("the date's box isn't the caption's black", CaptionBackdrop.COLOR,
+                ((GradientDrawable) box).getColor().getDefaultColor());
+        assertFalse("the date's box carries padding", box.getPadding(new Rect()));
+        assertNotSame("two dates share one drawable", box, CaptionBackdrop.forViewerDate());
+        Settings.DIM_OPEN_REEL_CAPTIONS.save(false);
+        Settings.DIM_FOLDED_REEL_CAPTIONS.save(true);
+        assertNotNull("the date got no box with Dark box behind folded captions on", CaptionBackdrop.forViewerDate());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("a paused Hushfacebook still gave the date its box", CaptionBackdrop.forViewerDate());
+        PauseForTests.resume();
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 3, 1 found, 0 missing. Counted: "
+                + CaptionBackdrop.VIEWER_DATED + " 3", statusLine());
+    }
+
     @Test
     public void pausedNoCaptionGetsABox() {
         Settings.DIM_OPEN_REEL_CAPTIONS.save(true);

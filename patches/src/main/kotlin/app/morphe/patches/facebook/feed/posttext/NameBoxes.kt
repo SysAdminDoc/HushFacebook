@@ -132,12 +132,12 @@ internal class NameBlock(val list: Place, val column: Place) {
 private fun isVirtualCall(instruction: Instruction) =
     instruction.opcode == Opcode.INVOKE_VIRTUAL || instruction.opcode == Opcode.INVOKE_VIRTUAL_RANGE
 
-private fun isConstructorCall(instruction: Instruction) =
+internal fun isConstructorCall(instruction: Instruction) =
     (instruction.opcode == Opcode.INVOKE_DIRECT || instruction.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
         ((instruction as ReferenceInstruction).reference as MethodReference).name == "<init>"
 
 /** The register [instruction] hands its call in [position] (0 is the receiver of a virtual call), or null. */
-private fun argument(instruction: Instruction, position: Int): Int? = when (instruction) {
+internal fun argument(instruction: Instruction, position: Int): Int? = when (instruction) {
     is RegisterRangeInstruction -> (instruction.startRegister + position).takeIf { position < instruction.registerCount }
     is FiveRegisterInstruction -> listOf(instruction.registerC, instruction.registerD, instruction.registerE,
         instruction.registerF, instruction.registerG).take(instruction.registerCount).getOrNull(position)

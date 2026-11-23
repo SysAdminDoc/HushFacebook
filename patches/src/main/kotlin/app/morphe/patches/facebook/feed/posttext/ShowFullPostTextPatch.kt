@@ -161,10 +161,11 @@ val showFullPostTextPatch = patch(
             """,
         )
         // The dark box is its own switch's; a build missing one of its anchors keeps the rest.
-        try {
-            addCaptionBackdrop(findCaptionBackdrop())
+        val captionBuilder = try {
+            findCaptionBackdrop().also { addCaptionBackdrop(it) }.builder
         } catch (missing: PatchException) {
             patchLog.warning("${missing.message}, so the dark box behind open reel captions isn't in this build")
+            null
         }
         // The name boxes are their own switches' too (#490): each place found before any is changed.
         try {
@@ -181,10 +182,27 @@ val showFullPostTextPatch = patch(
                 patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
                 null
             }
+            // The date under a full-screen video's caption gets the caption's box, laid out the way an open
+            // story's title is (#490), found before the story names change.
+            val viewerDates = if (captionBuilder == null || openStory.isEmpty()) null else try {
+                val style = findBoxStyle(tray.text.definingClass)
+                val wrap = findStyleWrap(openStory, style.background.substringAfterLast(')'))
+                Triple(findViewerDates(captionBuilder, wrap), wrap, style)
+            } catch (missing: PatchException) {
+                patchLog.warning("${missing.message}, so the date under a full-screen video's caption keeps Facebook's look")
+                null
+            }
             try {
                 addStoryNameBoxes(tray.text, tray.places, openStory)
             } catch (missing: PatchException) {
                 patchLog.warning("${missing.message}, so the dark box behind story names isn't in this build")
+            }
+            viewerDates?.let { (dates, wrap, style) ->
+                try {
+                    addViewerDateBoxes(dates, wrap, style)
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so the date under a full-screen video's caption keeps Facebook's look")
+                }
             }
             if (reel != null) {
                 // A long post name and a feed video's name ride on the reel name's hooks (#533).

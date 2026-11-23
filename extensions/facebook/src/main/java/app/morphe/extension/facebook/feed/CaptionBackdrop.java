@@ -87,6 +87,12 @@ public final class CaptionBackdrop {
     /** The member the report names once a header's name and the line under it have asked for one box (#490). */
     static final String NAME_BLOCK = "post name block backdrop";
 
+    /** The member the report names once a full-screen video's date has asked for its box (#490). */
+    static final String VIEWER_DATE = "full-screen video date backdrop";
+
+    /** Counted each time the date under a full-screen video's caption gets the box. */
+    static final String VIEWER_DATED = "full-screen video date dimmed";
+
     /** The member the report names once a post header has read its name's line limit (#533). */
     static final String NAME_LINES = "post name lines";
 
@@ -140,6 +146,7 @@ public final class CaptionBackdrop {
     private static volatile boolean loggedReel;
     private static volatile boolean loggedMedia;
     private static volatile boolean loggedLines;
+    private static volatile boolean loggedViewerDate;
 
     private CaptionBackdrop() {
     }
@@ -376,6 +383,31 @@ public final class CaptionBackdrop {
         } catch (Throwable failure) {
             NAME_BLOCK_STARTED.set(false);
             HookStatus.threw(FAMILY, NAME_BLOCK, failure);
+            return null;
+        }
+    }
+
+    /**
+     * The hook, right before the details of a video open in the full-screen player (a feed video, a Page's
+     * reel) take the post's date, the line under the caption (#490). Answers the box while Dark box behind
+     * open captions or Dark box behind folded captions is on, so the date gets the box the caption above it
+     * has, otherwise null, which keeps Facebook's look. The date goes into its own Litho style, so the box
+     * covers it alone and never doubles up on the caption's.
+     */
+    public static Drawable forViewerDate() {
+        try {
+            HookStatus.bound(FAMILY, VIEWER_DATE);
+            if (!Utils.settingsReady()) return null;
+            if (!Settings.DIM_OPEN_REEL_CAPTIONS.get() && !Settings.DIM_FOLDED_REEL_CAPTIONS.get()) return null;
+            HookStatus.invoked(FAMILY);
+            HookStatus.counted(FAMILY, VIEWER_DATED);
+            if (!loggedViewerDate) {
+                loggedViewerDate = true;
+                Logger.printDebug(() -> "Full post text: a full-screen video's date got its dark box");
+            }
+            return box();
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, VIEWER_DATE, failure);
             return null;
         }
     }
