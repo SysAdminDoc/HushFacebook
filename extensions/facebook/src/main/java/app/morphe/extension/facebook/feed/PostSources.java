@@ -36,6 +36,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Booking.com or Mr.Beast, is a site and a name at once. A post goes when one of its authors or
  * one of its links matches, and so does a share of such a post: the post a share wraps is read too.
  *
+ * <p>The group a post was posted in counts like an author, by its id or its name (#550): Facebook
+ * keeps putting posts from groups you're in but have unfollowed in Home, and nothing in a story
+ * says which groups those are (the group's notification level, {@code viewer_subscription_level},
+ * isn't the same thing), so the list names them. The group is the story's {@code to} when that's a
+ * group, else its {@code target_group}, read through Hide suggested and promoted posts' stubs, so
+ * a build without that patch reads authors and links alone. A link to /groups/id gives the id.
+ *
  * <p>The authors are the story's {@code actors}, a list GraphQLStory reads with a Redex-renamed
  * accessor and a renamed model class, so the patch fills in {@link #actors} for it. The links are
  * the {@code url} of each of the story's {@code attachments}, through {@link #attachments}, and a
@@ -81,6 +88,10 @@ public final class PostSources {
 
     static final StoryFlag.Accessor ACTORS = PostSources::actors;
     static final StoryFlag.Accessor ATTACHMENTS = PostSources::attachments;
+    /** The group a story was posted in, through Hide suggested and promoted posts' stubs ({@link #postedIn}). */
+    static final StoryFlag.Accessor GROUP = PostSources::postedIn;
+    /** For a read that looks at no group. */
+    static final StoryFlag.Accessor NO_GROUP = story -> null;
 
     private static final Pattern DIGITS = Pattern.compile("[0-9]{3,20}");
     private static final Pattern HOST = Pattern.compile("[a-z0-9-]+(\\.[a-z0-9-]+)+");
@@ -177,6 +188,23 @@ public final class PostSources {
         return StoryFlag.NOT_PATCHED;
     }
 
+    /**
+     * The group [story] was posted in: its {@code to} when that answers Group, else its
+     * {@code target_group}, both read through {@link GroupPosts}' stubs, which Hide suggested and
+     * promoted posts fills in. Null when it names no group, and {@link StoryFlag#NOT_PATCHED} on a
+     * build without that patch. Only a GraphQLStory may be passed.
+     */
+    @Nullable
+    static Object postedIn(Object story) {
+        Object target = GroupPosts.storyTarget(story);
+        if (target == StoryFlag.NOT_PATCHED) return StoryFlag.NOT_PATCHED;
+        if (target != null && !FeedFilter.released(target) && GroupPosts.GROUP_TYPE.equals(FeedFilter.typeName(target))) {
+            return target;
+        }
+        Object group = GroupPosts.storyTargetGroup(story);
+        return group == StoryFlag.NOT_PATCHED ? null : group;
+    }
+
     // The list.
 
     /** {@link #rules} of [stored], read again only when the list has changed since the last post. */
@@ -242,8 +270,8 @@ public final class PostSources {
     }
 
     /**
-     * The profile or Page id a link to Facebook carries, or null: profile.php?id=, the last part of
-     * /people/name/id, or an id as the whole path.
+     * The profile, Page or group id a link to Facebook carries, or null: profile.php?id=, the last
+     * part of /people/name/id, the id after /groups/, or an id as the whole path.
      */
     @Nullable
     static String facebookId(String typed) {
@@ -268,6 +296,10 @@ public final class PostSources {
         if (parts.size() == 1 && DIGITS.matcher(parts.get(0)).matches()) return parts.get(0);
         if (parts.size() == 3 && parts.get(0).equals("people") && DIGITS.matcher(parts.get(2)).matches()) {
             return parts.get(2);
+        }
+        // A group's own page or one of its posts (/groups/id/posts/...) names the group.
+        if (parts.size() >= 2 && parts.get(0).equals("groups") && DIGITS.matcher(parts.get(1)).matches()) {
+            return parts.get(1);
         }
         return null;
     }
@@ -461,6 +493,16 @@ public final class PostSources {
      */
     static Found read(@Nullable Object feedUnit, StoryFlag.Accessor actors, StoryFlag.Accessor attachments,
             StoryFlag.Accessor attached) {
+        return read(feedUnit, actors, attachments, attached, NO_GROUP);
+    }
+
+    /**
+     * {@link #read}, with the id and name of the group each story was posted in, through [group],
+     * counted among its authors' (#550). Facebook keeps putting posts from groups you've unfollowed
+     * in Home, and nothing in the feed says which groups those are, so the list can name them.
+     */
+    static Found read(@Nullable Object feedUnit, StoryFlag.Accessor actors, StoryFlag.Accessor attachments,
+            StoryFlag.Accessor attached, StoryFlag.Accessor group) {
         if (feedUnit == null) return new Found(Outcome.NO_UNIT);
         PostText.Members members = PostText.members();
         PostText.report();
@@ -470,7 +512,7 @@ public final class PostSources {
         if (!members.story.isInstance(feedUnit)) return new Found(Outcome.NOT_A_STORY);
 
         Found found = new Found(Outcome.READ);
-        Outcome own = readStory(feedUnit, actors, attachments, members, found);
+        Outcome own = readStory(feedUnit, actors, attachments, group, members, found);
         if (own != Outcome.READ) return new Found(own);
 
         Object wrapped;
@@ -483,7 +525,7 @@ public final class PostSources {
         if (wrapped != null && wrapped != StoryFlag.NOT_PATCHED && members.story.isInstance(wrapped)) {
             // A failure here is in the hook status already; the share's own sources still count.
             Found shared = new Found(Outcome.READ);
-            if (readStory(wrapped, actors, attachments, members, shared) == Outcome.READ) {
+            if (readStory(wrapped, actors, attachments, group, members, shared) == Outcome.READ) {
                 found.ids.addAll(shared.ids);
                 found.names.addAll(shared.names);
                 found.hosts.addAll(shared.hosts);
@@ -660,9 +702,12 @@ public final class PostSources {
         }
     }
 
-    /** Adds [story]'s author ids and names and its link hosts to [found]. */
+    /**
+     * Adds [story]'s author ids and names, the id and name of the group [group] answers for it, and
+     * its link hosts to [found]. A group that can't be read leaves the authors and links counting.
+     */
     private static Outcome readStory(Object story, StoryFlag.Accessor actors, StoryFlag.Accessor attachments,
-            PostText.Members members, Found found) {
+            StoryFlag.Accessor group, PostText.Members members, Found found) {
         Object authors;
         Object links;
         try {
@@ -685,14 +730,10 @@ public final class PostSources {
         try {
             for (Object author : items(authors)) {
                 if (!members.treeModel.isInstance(author)) continue;
-                String id = string(members, author, ID_KEY);
-                if (id != null && !id.isEmpty()) found.ids.add(id);
-                String name = string(members, author, NAME_KEY);
-                if (name != null) {
-                    String normalized = normalize(name).toLowerCase(Locale.ROOT);
-                    if (!normalized.isEmpty()) found.names.add(normalized);
-                }
+                addProfile(members, author, found);
             }
+            Object place = groupOf(story, group);
+            if (place != null && members.treeModel.isInstance(place)) addProfile(members, place, found);
             for (Object link : items(links)) {
                 if (!members.treeModel.isInstance(link)) continue;
                 String host = host(string(members, link, URL_KEY));
@@ -705,6 +746,34 @@ public final class PostSources {
         } catch (ReflectiveOperationException | RuntimeException failure) {
             HookStatus.threw(FamilyNames.POST_WORDS, "author or link reader", failure);
             return Outcome.READ_FAILED;
+        }
+    }
+
+    /** Adds a person's, Page's or group's id and name to [found]. Throws what the reader throws. */
+    private static void addProfile(PostText.Members members, Object profile, Found found)
+            throws ReflectiveOperationException {
+        String id = string(members, profile, ID_KEY);
+        if (id != null && !id.isEmpty()) found.ids.add(id);
+        String name = string(members, profile, NAME_KEY);
+        if (name != null) {
+            String normalized = normalize(name).toLowerCase(Locale.ROOT);
+            if (!normalized.isEmpty()) found.names.add(normalized);
+        }
+    }
+
+    /**
+     * The group [via] answers for [story], or null for none, a build without the accessor, one
+     * whose tree is gone, or one that throws, which Hook status records.
+     */
+    @Nullable
+    private static Object groupOf(Object story, StoryFlag.Accessor via) {
+        try {
+            Object group = via.model(story);
+            if (group == null || group == StoryFlag.NOT_PATCHED || FeedFilter.released(group)) return null;
+            return GroupPosts.GROUP_TYPE.equals(FeedFilter.typeName(group)) ? group : null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.POST_WORDS, "group accessor", failure);
+            return null;
         }
     }
 

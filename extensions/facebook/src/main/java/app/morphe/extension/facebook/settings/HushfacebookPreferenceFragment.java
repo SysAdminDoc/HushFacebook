@@ -3704,9 +3704,9 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         String title = L10n.t("People, Pages and sites to hide");
         row.setTitle(title);
         row.setDialogTitle(title);
-        row.setDialogMessage(L10n.f("One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like "
-                + "example.com, which also covers addresses like m.example.com. Capital letters don't matter. A "
-                + "Facebook link works when it has the ID in it.",
+        row.setDialogMessage(L10n.f("One per line, up to %1$d: a name as Facebook shows it (a person, Page or group), a "
+                + "profile, Page or group ID, or a site like example.com, which also covers addresses like m.example.com. "
+                + "Capital letters don't matter. A Facebook link works when it has the ID in it.",
                 PostSources.MAX_RULES));
         row.setPositiveButtonText(L10n.t("Save"));
         row.setNegativeButtonText(L10n.t("Cancel"));

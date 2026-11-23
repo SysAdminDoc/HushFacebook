@@ -499,8 +499,8 @@ final class FeedPages {
                         Settings.POST_WORDS_ON_REELS, Settings.POST_WORDS_IN_GROUPS, Settings.POST_WORDS_ON_TIMELINES,
                         Settings.POST_WORDS_IN_SEARCH);
                 feed.addPreference(toggle(context, Settings.HIDE_POSTS_FROM_SOURCES,
-                        L10n.t("Hides posts by people or Pages on your list below, or linking to sites on it, including shares. "
-                                + "Your list stays on this phone unless you export it.")));
+                        L10n.t("Hides posts by people or Pages on your list below, posted in a group on it, or linking to sites "
+                                + "on it, including shares. Your list stays on this phone unless you export it.")));
                 feed.addPreference(page.sourcesRow(context));
                 feed.addPreference(toggle(context, Settings.HIDE_PHOTO_POSTS,
                         L10n.t("Hides posts with a photo or album, including shares.")));

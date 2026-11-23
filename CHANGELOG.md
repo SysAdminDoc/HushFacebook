@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 ### Added
 
 * The Hush settings now come in Arabic, translated by hamedhani1998. (#549)
+* `Hide posts from people, Pages and sites` takes groups now. Put a group's name or ID on the list, or a link to the group, and posts in that group leave Home, along with friends' shares of them. Handy for a group you're still in but don't want in your feed, since Facebook keeps showing those after you unfollow. A link only works when it has the group's number in it, like facebook.com/groups/1234567890. (#550)
 
 ### Fixed
 

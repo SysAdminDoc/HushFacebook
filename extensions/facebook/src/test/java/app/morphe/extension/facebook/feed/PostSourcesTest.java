@@ -325,6 +325,61 @@ public class PostSourcesTest {
     }
 
     @Test
+    public void aGroupOnTheListHidesItsPostsAndSharesOfThem() {
+        // #550: Home kept showing posts from a group the reporter was in but had unfollowed. A
+        // post's author is whoever wrote it, so the group itself goes on the list, by name or id.
+        Map<Object, Object> groups = new HashMap<>();
+        StoryFlag.Accessor postedIn = groups::get;
+        StoryFlag.Accessor wrapped = story -> ((GraphQLStory) story).A04();
+        BaseModelWithTree group = typed(GroupPosts.GROUP_TYPE).with("id", "1234567890")
+                .with("name", "POCO Phone Users Philippines");
+        GraphQLStory post = story(null, Arrays.asList(author("4242", "Anonymous participant")), Collections.emptyList());
+        groups.put(post, group);
+
+        PostSources.Found found = PostSources.read(post, actors, attachments, wrapped, postedIn);
+        assertEquals(1, PostSources.match(PostSources.rules("poco phone users   PHILIPPINES"), found));
+        assertEquals(1, PostSources.match(PostSources.rules("1234567890"), found));
+        assertEquals("a link to the group", 1,
+                PostSources.match(PostSources.rules("https://www.facebook.com/groups/1234567890/"), found));
+        assertEquals("a link to one of its posts", 1,
+                PostSources.match(PostSources.rules("https://m.facebook.com/groups/1234567890/posts/555/"), found));
+        assertNull("a group's username can't be matched", PostSources.rule("https://www.facebook.com/groups/pocophoneph", 1));
+        assertEquals("the author still counts", 1, PostSources.match(PostSources.rules("Anonymous participant"), found));
+        assertEquals("a read that looks at no group", 0, PostSources.match(PostSources.rules("1234567890"),
+                PostSources.read(post, actors, attachments, wrapped)));
+
+        GraphQLStory share = story(post, Arrays.asList(author("777", "A Friend")), Collections.emptyList());
+        assertEquals("a friend's share of the group's post", 1, PostSources.match(PostSources.rules("1234567890"),
+                PostSources.read(share, actors, attachments, wrapped, postedIn)));
+
+        GraphQLStory onAPage = story(null, Arrays.asList(author("4243", "A Friend")), Collections.emptyList());
+        groups.put(onAPage, typed(PostSources.PAGE).with("id", "1234567890").with("name", "POCO Phone Users Philippines"));
+        assertEquals("a post to a profile that isn't a group", 0, PostSources.match(PostSources.rules("1234567890"),
+                PostSources.read(onAPage, actors, attachments, wrapped, postedIn)));
+
+        PostSources.Found throwing = PostSources.read(post, actors, attachments, wrapped, story -> {
+            throw new IllegalStateException("renamed");
+        });
+        assertEquals("a group that can't be read leaves the authors", PostSources.Outcome.READ, throwing.outcome);
+        assertEquals(1, PostSources.match(PostSources.rules("Anonymous participant"), throwing));
+        assertEquals(0, PostSources.match(PostSources.rules("1234567890"), throwing));
+
+        Settings.HIDE_POSTS_FROM_SOURCES.save(true);
+        Settings.HIDDEN_SOURCES.save("other.com\nPOCO Phone Users Philippines");
+        assertEquals(FeedFilter.SOURCES_REASON + " 2",
+                FeedFilter.sourcesReason(post, actors, attachments, wrapped, postedIn));
+    }
+
+    @Test
+    public void aBuildWithoutTheGroupStubsStillReadsTheAuthors() {
+        GraphQLStory post = story(null, Arrays.asList(author("4242", "Daily Bugle")), Collections.emptyList());
+        assertSame(StoryFlag.NOT_PATCHED, PostSources.postedIn(post));
+        PostSources.Found found = PostSources.read(post, actors, attachments, s -> null, PostSources.GROUP);
+        assertEquals(PostSources.Outcome.READ, found.outcome);
+        assertEquals(1, PostSources.match(PostSources.rules("daily bugle"), found));
+    }
+
+    @Test
     public void theFeedReadsAListOnceUntilItChanges() {
         List<PostSources.Rule> first = PostSources.cachedRules("example.com\nDaily Bugle");
         assertEquals(2, first.size());

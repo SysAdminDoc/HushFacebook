@@ -687,9 +687,9 @@ Hides ads and boosted listings in Marketplace's feed and search results. Regular
 # context: switch title under News feed; hides posts whose text holds a word or phrase the person listed
 Hide posts with words you choose	隐藏含你所选字词的帖子
 Hide posts from people, Pages and sites	隐藏来自用户、公共主页和网站的帖子
-Hides posts by people or Pages on your list below, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	隐藏你在下方列表中的用户或公共主页发布的帖子，或链接到列表中网站的帖子，包括转发的帖子。除非你导出，否则你的列表只保存在这部手机上。
+Hides posts by people or Pages on your list below, posted in a group on it, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	隐藏你在下方列表中的用户或公共主页发布的帖子、发在列表中小组里的帖子，或链接到列表中网站的帖子，包括转发的帖子。除非你导出，否则你的列表只保存在这部手机上。
 People, Pages and sites to hide	要隐藏的用户、公共主页和网站
-One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	每行一个，最多 %1$d 个：Facebook 上显示的名称、个人主页或公共主页 ID，或像 example.com 这样的网站（也涵盖 m.example.com 这样的地址）。不区分大小写。包含 ID 的 Facebook 链接也可以使用。
+One per line, up to %1$d: a name as Facebook shows it (a person, Page or group), a profile, Page or group ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	每行一个，最多 %1$d 个：Facebook 上显示的名称（用户、公共主页或小组）、个人主页、公共主页或小组 ID，或像 example.com 这样的网站（也涵盖 m.example.com 这样的地址）。不区分大小写。包含 ID 的 Facebook 链接也可以使用。
 One name, ID or site per line	每行一个名称、ID 或网站
 Nobody listed yet, so no post is hidden.	还没有列出任何内容，因此不会隐藏任何帖子。
 %1$d person, Page or site.	%1$d 个用户、公共主页或网站。

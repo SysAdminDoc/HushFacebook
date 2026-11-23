@@ -691,9 +691,9 @@ Hides ads and boosted listings in Marketplace's feed and search results. Regular
 # context: switch title under News feed; hides posts whose text holds a word or phrase the person listed
 Hide posts with words you choose	隱藏包含指定字詞的貼文
 Hide posts from people, Pages and sites	隱藏指定人物、粉絲專頁與網站的貼文
-Hides posts by people or Pages on your list below, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	隱藏下方清單中人物或粉絲專頁的貼文，以及連至清單內網站的貼文，包含分享的內容。除非匯出，否則清單只儲存在這支手機上。
+Hides posts by people or Pages on your list below, posted in a group on it, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	隱藏下方清單中人物或粉絲專頁的貼文、發在清單內社團的貼文，以及連至清單內網站的貼文，包含分享的內容。除非匯出，否則清單只儲存在這支手機上。
 People, Pages and sites to hide	要隱藏的人物、粉絲專頁與網站
-One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	每行一項，最多 %1$d 項：可輸入 Facebook 顯示的名稱、個人檔案或粉絲專頁 ID，或 example.com 等網站，也會涵蓋 m.example.com 等網址。不區分大小寫。Facebook 連結須包含 ID 才能使用。
+One per line, up to %1$d: a name as Facebook shows it (a person, Page or group), a profile, Page or group ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	每行一項，最多 %1$d 項：可輸入 Facebook 顯示的名稱（人物、粉絲專頁或社團）、個人檔案、粉絲專頁或社團 ID，或 example.com 等網站，也會涵蓋 m.example.com 等網址。不區分大小寫。Facebook 連結須包含 ID 才能使用。
 One name, ID or site per line	每行一個名稱、ID 或網站
 Nobody listed yet, so no post is hidden.	尚未列出任何項目，因此不會隱藏貼文。
 %1$d person, Page or site.	%1$d 個人物、粉絲專頁或網站。

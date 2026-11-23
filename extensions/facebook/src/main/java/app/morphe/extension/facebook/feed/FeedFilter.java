@@ -576,7 +576,8 @@ public final class FeedFilter {
                         PostText.ACTION_LINKS);
             }
             if (reason == null && wordsPatched) {
-                reason = sourcesReason(feedUnit, PostSources.ACTORS, PostSources.ATTACHMENTS, attachedAccessor);
+                reason = sourcesReason(feedUnit, PostSources.ACTORS, PostSources.ATTACHMENTS, attachedAccessor,
+                        PostSources.GROUP);
             }
             if (reason == null && wordsPatched && withFriendsOnly(Settings.HIDE_PAGE_POSTS)) {
                 reason = pagesReason(feedUnit, PostSources.ACTORS, groupReaders);
@@ -807,14 +808,20 @@ public final class FeedFilter {
         }
     }
 
-    /**
-     * The people, Pages and sites rule: {@link #SOURCES_REASON} and the matching line's number when
-     * one of the post's authors or links, or those of the post it shares, is on the list, otherwise
-     * null. Nothing is read while the switch is off or the list is empty, and a post whose authors
-     * and links can't be read is kept. Each story it reads is counted on its route by outcome.
-     */
     static String sourcesReason(Object feedUnit, StoryFlag.Accessor actors, StoryFlag.Accessor attachments,
             StoryFlag.Accessor attached) {
+        return sourcesReason(feedUnit, actors, attachments, attached, PostSources.NO_GROUP);
+    }
+
+    /**
+     * The people, Pages and sites rule: {@link #SOURCES_REASON} and the matching line's number when
+     * one of the post's authors, the group it was posted in ([group], #550) or one of its links, or
+     * those of the post it shares, is on the list, otherwise null. Nothing is read while the switch
+     * is off or the list is empty, and a post whose authors and links can't be read is kept. Each
+     * story it reads is counted on its route by outcome.
+     */
+    static String sourcesReason(Object feedUnit, StoryFlag.Accessor actors, StoryFlag.Accessor attachments,
+            StoryFlag.Accessor attached, StoryFlag.Accessor group) {
         if (!Settings.HIDE_POSTS_FROM_SOURCES.get()) return null;
         FeedFilterCounters.sawList(SOURCES_ROUTE, 1);
         java.util.List<PostSources.Rule> rules = PostSources.cachedRules(Settings.HIDDEN_SOURCES.get());
@@ -822,7 +829,7 @@ public final class FeedFilter {
             FeedFilterCounters.sawKind(SOURCES_ROUTE, NO_SOURCES);
             return null;
         }
-        PostSources.Found found = PostSources.read(feedUnit, actors, attachments, attached);
+        PostSources.Found found = PostSources.read(feedUnit, actors, attachments, attached, group);
         if (found.outcome != PostSources.Outcome.READ) {
             FeedFilterCounters.sawKind(SOURCES_ROUTE, found.outcome.reason);
             return null;

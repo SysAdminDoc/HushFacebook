@@ -687,9 +687,9 @@ Hides ads and boosted listings in Marketplace's feed and search results. Regular
 # context: switch title under News feed; hides posts whose text holds a word or phrase the person listed
 Hide posts with words you choose	Ẩn bài viết chứa từ bạn chọn
 Hide posts from people, Pages and sites	Ẩn bài viết từ người, Trang và trang web
-Hides posts by people or Pages on your list below, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	Ẩn bài viết của người hoặc Trang trong danh sách bên dưới, hoặc có liên kết đến trang web trong đó, kể cả bài chia sẻ lại. Danh sách chỉ ở trên điện thoại này trừ khi bạn xuất nó.
+Hides posts by people or Pages on your list below, posted in a group on it, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	Ẩn bài viết của người hoặc Trang trong danh sách bên dưới, bài đăng trong nhóm có trong danh sách, hoặc có liên kết đến trang web trong đó, kể cả bài chia sẻ lại. Danh sách chỉ ở trên điện thoại này trừ khi bạn xuất nó.
 People, Pages and sites to hide	Người, Trang và trang web cần ẩn
-One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	Mỗi dòng một mục, tối đa %1$d: tên như Facebook hiển thị, ID trang cá nhân hoặc Trang, hoặc trang web như example.com (cũng bao gồm địa chỉ như m.example.com). Không phân biệt chữ hoa, chữ thường. Liên kết Facebook dùng được nếu có chứa ID.
+One per line, up to %1$d: a name as Facebook shows it (a person, Page or group), a profile, Page or group ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	Mỗi dòng một mục, tối đa %1$d: tên như Facebook hiển thị (người, Trang hoặc nhóm), ID trang cá nhân, Trang hoặc nhóm, hoặc trang web như example.com (cũng bao gồm địa chỉ như m.example.com). Không phân biệt chữ hoa, chữ thường. Liên kết Facebook dùng được nếu có chứa ID.
 One name, ID or site per line	Mỗi dòng một tên, ID hoặc trang web
 Nobody listed yet, so no post is hidden.	Chưa có ai trong danh sách nên không bài viết nào bị ẩn.
 %1$d person, Page or site.	%1$d người, Trang hoặc trang web.
