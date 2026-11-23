@@ -722,6 +722,36 @@ public class TabBarScrollAwayTest {
     }
 
     @Test
+    public void choosingStaysOnScreenKeepsTheListSeenWhilePagesRunUnderTheTabBar() {
+        // #552: tabs at the bottom and See-through bars, the tab bar sliding away while scrolling.
+        // The list runs the whole page, seen once. Then Stays on screen: the list still runs the
+        // whole page under the bar, yet the next start's rows came out Facebook's short 2071, with
+        // the next reel showing under the bar, until the Reels list was laid out again.
+        Settings.BOTTOM_TAB_BAR.save(true);
+        Settings.TAB_BAR_SCROLL_AWAY.save(true);
+        Settings.TRANSLUCENT_BARS.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("seen sliding away", 2287, TabBarScrollAway.rowFor(2071, -1, 2287));
+
+        TabBarScrollAway.forgetBuilt();
+        TabBarScrollAway.topBarsTakenBack();
+        onTabOf(new FeedTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        Settings.TAB_BAR_SCROLL_AWAY.save(false);
+        Settings.KEEP_TAB_BAR.save(true);
+        assertEquals("the next start under Stays on screen, made ahead on Home", 2287,
+                TabBarScrollAway.rowFor(2071, -1, 0));
+
+        Settings.TRANSLUCENT_BARS.save(false);
+        assertEquals("a solid tab bar keeps the list above it, so the height seen without it stays behind", 2071,
+                TabBarScrollAway.rowFor(2071, -1, 0));
+        Settings.TRANSLUCENT_BARS.save(true);
+        Settings.HIDE_STATUS_BAR.save(true);
+        assertEquals("another switch flipped as well still waits for the list", 2071,
+                TabBarScrollAway.rowFor(2071, -1, 0));
+    }
+
+    @Test
     public void aReelsRowFillsTheWholeListUnderATabBarAlongTheBottom() throws Exception {
         // #466 on 588 (S22, 2026-11-19): tabs at the bottom with See-through bars, Rounded tab bar
         // and the status bar hidden run the Reels list the whole screen down under the bar. Rows

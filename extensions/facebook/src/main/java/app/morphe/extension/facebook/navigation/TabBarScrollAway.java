@@ -362,7 +362,8 @@ public final class TabBarScrollAway {
             if (rowMade.get() != height) rowMade.save(height);
             if (listSeen.get() != list) listSeen.save(list);
             if (setupSeen.get() != setup) setupSeen.save(setup);
-        } else if (rowMade.get() == height && setupSeen.get() == setup && listSeen.get() > height) {
+        } else if (rowMade.get() == height && listSeen.get() > height
+                && (setupSeen.get() == setup || sameListUnderTabBar(setupSeen.get(), setup))) {
             wanted = listSeen.get();
         } else if (under) {
             wanted = height + (tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0);
@@ -459,6 +460,20 @@ public final class TabBarScrollAway {
         Activity screen = mainScreen.get();
         return screen != null
                 && screen.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+    }
+
+    /** The {@link #barSetup} bits that only say whether the tab bar slides away or stays on screen. */
+    static final int TAB_BAR_SHOWING = (1 << 2) | (1 << 4);
+
+    /**
+     * Whether a list height seen under {@code seen} fits rows made under {@code setup}: the two
+     * differ only in whether the tab bar slides away or stays, and pages run under the tab bar
+     * ({@link TranslucentBars#stretchesPages}), so the Reels list is the whole page either way.
+     * Choosing Stays on screen used to leave the rows made ahead at the next start short, with the
+     * next reel showing under the bar, until a start after the list was seen again (#552).
+     */
+    static boolean sameListUnderTabBar(int seen, int setup) {
+        return seen >= 0 && ((seen ^ setup) & ~TAB_BAR_SHOWING) == 0 && TranslucentBars.stretchesPages();
     }
 
     /**
