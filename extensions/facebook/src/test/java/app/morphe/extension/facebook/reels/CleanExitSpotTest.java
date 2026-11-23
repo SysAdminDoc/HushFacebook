@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.reels;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -12,6 +13,7 @@ import static org.robolectric.Shadows.shadowOf;
 import android.app.Activity;
 import android.os.Looper;
 import android.view.Gravity;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -26,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.time.Duration;
@@ -48,6 +51,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class CleanExitSpotTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
+    private ActivityController<Activity> controller;
     private Activity activity;
     private FrameLayout list;
     private LithoView page;
@@ -63,7 +67,8 @@ public class CleanExitSpotTest {
         HookStatus.clear();
         ReelCleanMode.keepStore(store);
         Settings.REEL_CLEAN_BUTTON.save(true);
-        activity = Robolectric.buildActivity(Activity.class).setup().get();
+        controller = Robolectric.buildActivity(Activity.class).setup();
+        activity = controller.get();
         FrameLayout root = new FrameLayout(activity);
         list = new FrameLayout(activity);
         place(root, list, 0, 0, 1080, 2241);
@@ -93,9 +98,11 @@ public class CleanExitSpotTest {
 
     @After
     public void tearDown() {
+        BurnInGuard.resetForTests();
         PauseForTests.resume();
         Settings.REEL_CLEAN_BUTTON.resetToDefault();
         Settings.REEL_CLEAN_EXIT_FAINT.resetToDefault();
+        Settings.BURN_IN_GUARD.resetToDefault();
         ReelCleanMode.store = null;
         CleanExitSpot.reset();
         HookStatus.clear();
@@ -258,6 +265,29 @@ public class CleanExitSpotTest {
         layOut();
         assertEquals("taken off the page", 0.5f, exit.getAlpha(), 0.001f);
         assertNull(CleanExitSpot.fainted.get(exit));
+    }
+
+    /**
+     * 588's Reels tab on the S22 (2026-11-23): the scrubber's mount hook never ran there, so nothing
+     * handed the page over and the way out stayed solid. Burn-in guard's look runs with its own choice
+     * off too, finds the reel playing and hands its page over.
+     */
+    @Test
+    public void theReelPlayingOnTheReelsScreenFadesItsWayOut() {
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        Settings.REEL_CLEAN_EXIT_FAINT.save(true);
+        Settings.BURN_IN_GUARD.save(BurnInMode.OFF);
+        controller.windowFocusChanged(true);
+        BurnInGuard.resetForTests();
+        BurnInGuard.resumed(activity);
+        assertTrue("nothing plays yet", CleanExitSpot.watched.isEmpty());
+
+        place(top, new TextureView(activity), 0, 0, 1080, 2041);
+        layOut();
+        assertFalse("the reel's list is watched", CleanExitSpot.watched.isEmpty());
+        View exit = goClean(page, top);
+        assertEquals(CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+        assertTrue(exit.isClickable());
     }
 
     @Test

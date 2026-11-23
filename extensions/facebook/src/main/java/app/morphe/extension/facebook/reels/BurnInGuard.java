@@ -345,11 +345,15 @@ public final class BurnInGuard {
             Window window = activity.getWindow();
             View decor = window == null ? null : window.peekDecorView();
             BurnInMode mode = mode();
-            watchLayouts(mode != BurnInMode.OFF);
+            // Faint Clean mode button (#519) looks for the Reels screen this way too, whatever the guard's choice.
+            boolean faint = CleanExitSpot.faintOn();
+            watchLayouts(mode != BurnInMode.OFF || faint);
             long now = SystemClock.uptimeMillis();
-            List<View> surfaces = mode == BurnInMode.OFF || decor == null || camera(activity)
+            List<View> surfaces = (mode == BurnInMode.OFF && !faint) || decor == null || camera(activity)
                     ? Collections.<View>emptyList() : playing(decor);
-            boolean on = decor != null && reelOf(decor, surfaces) != null;
+            View reel = decor == null ? null : reelOf(decor, surfaces);
+            if (faint && reel != null && !frontStory) CleanExitSpot.sawReel(reel);
+            boolean on = mode != BurnInMode.OFF && reel != null;
             if (!on && guarding && mode != BurnInMode.OFF && decor != null) {
                 // Mid-swipe, or a moment without focus: what's dimmed stays so, and a second look decides.
                 if (doubtSince < 0L) doubtSince = now;

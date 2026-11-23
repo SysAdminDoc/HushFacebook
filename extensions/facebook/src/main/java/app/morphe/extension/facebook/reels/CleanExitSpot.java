@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.reels;
 
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 
 import androidx.annotation.Nullable;
@@ -43,7 +44,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Faint Clean mode button (#519): the way out sits over the reel's lower right, where a video's
  * own text often runs, and covered it. With the switch on, the list of every reel page the scrubber
- * mounts in ({@link #sawPage}, from {@link CaptionRoom}) is watched the same way, and each way out
+ * mounts in ({@link #sawPage}, from {@link CaptionRoom}) or Burn-in guard finds playing on the Reels
+ * screen ({@link #sawReel}) is watched the same way, and each way out
  * found draws at {@link #FAINT} of Facebook's opacity. It still takes taps. An alpha Facebook sets
  * since is its own again, faded from there, and off, paused or gone it goes back.
  */
@@ -90,6 +92,31 @@ final class CleanExitSpot {
         try {
             if (page == null || !faintOn() || !(page.getParent() instanceof ViewGroup)) return;
             watch((ViewGroup) page.getParent());
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+        }
+    }
+
+    /**
+     * From Burn-in guard's look, with [surface] the video filling the Reels screen: its reel page goes
+     * to {@link #sawPage}. The scrubber's mount hook never ran on 588's Reels tab (S22, 2026-11-23), so
+     * this is what finds the page there. The page is the LithoView over [surface] that sits right in a
+     * RecyclerView, or with none, the nearest one. Never throws.
+     */
+    static void sawReel(@Nullable View surface) {
+        try {
+            if (surface == null || !faintOn()) return;
+            View nearest = null;
+            for (ViewParent up = surface.getParent(); up instanceof View; up = up.getParent()) {
+                View view = (View) up;
+                if (!CaptionRoom.PAGE.equals(view.getClass().getName())) continue;
+                if (nearest == null) nearest = view;
+                if (view.getParent() instanceof View && PostLongPress.isNamed((View) view.getParent(), PostLongPress.LIST)) {
+                    sawPage(view);
+                    return;
+                }
+            }
+            sawPage(nearest);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
         }
