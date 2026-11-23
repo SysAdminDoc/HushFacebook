@@ -12,6 +12,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Mark all notifications as read` sits at the top of Notifications in the Hush settings. One tap clears every unread dot in the Notifications tab. Facebook only puts its own Mark all as read in the three-dot menu there, and some accounts never get that menu. (Discussion #338)
 * `Side buttons on long videos` under Reels and Watch puts Like, Comment, Share and Save back down the side of long videos in the Reels viewer, like a live replay or a film you open from Saved or the Reels library. Facebook only gives those the three dots. It starts off. (#525)
 * The Hush settings now go light or dark with your phone's theme, like HushGram's do. Without the `Material You theme` patch they used to stay dark on every phone. `Force dark mode` still keeps them dark. (#559)
+* The Hush settings now come in Italian and Korean too. They follow your phone's language, like the other translations. (#558)
 
 ### Fixed
 
