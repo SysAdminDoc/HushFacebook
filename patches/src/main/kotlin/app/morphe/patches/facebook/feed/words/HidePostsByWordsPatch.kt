@@ -86,7 +86,7 @@ internal const val PATCH = "Hide posts by words"
 @Suppress("unused")
 val hidePostsByWordsPatch = patch(
     name = "Hide posts by words",
-    description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
+    description = "Hides feed posts with words you list, or from people, Pages, groups or sites you list, so you skip " +
         "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
         "posts in languages you don't read can go too. Your words and link posts also work on profiles, Pages and " +
         "in groups, and in search results once you turn that on. " +
