@@ -488,7 +488,18 @@
     },
     {
       "paths": [
+        "extensions/shared/library/src/main/l10n/ar.tsv"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/hamedhani1998/HushFacebook",
+      "commit": "0d9d7b41ac7455d80ea0a5012171fb71840e15eb",
+      "license": "GPL-3.0-only",
+      "changes": "Arabic translation contributed by hamedhani1998 in pull request 549. The submitted translations are preserved with contributor credit. The two rows for a switch added after the pull request were translated to match, and the file got the header the other tables carry."
+    },
+    {
+      "paths": [
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableAr.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableDe.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableEs.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIn.java",
