@@ -4790,7 +4790,7 @@
     },
     {
       "name": "Video buffer",
-      "description": "Picks how much of a video loads before it starts and while it plays. Low starts videos sooner and uses less data. Medium and Maximum wait a little longer to start and keep more loaded ahead, which can help on a slow connection. Starts at Facebook's choice. Pick a size in Hushfacebook settings > Video and audio.",
+      "description": "Picks how much of a video loads before it starts and while it plays. Low starts videos sooner and uses less data. Medium and Maximum wait a little longer to start and keep more loaded ahead, which can help on a slow connection. Starts at Facebook's choice. Pick a size in Hushfacebook settings > Video and audio. Whatever the size, a paused video that's still loading when you leave Facebook stops waking your phone a hundred times a second.",
       "category": "Playback",
       "use": true,
       "dependencies": [

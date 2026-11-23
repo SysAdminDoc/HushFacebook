@@ -8,6 +8,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -15,6 +19,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSystemClock;
+
+import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -50,6 +57,7 @@ public class VideoBufferTest {
         PauseForTests.resume();
         Settings.VIDEO_BUFFER.resetToDefault();
         HookStatus.clear();
+        VideoBuffer.resetForTests();
     }
 
     private static String statusLine() {
@@ -161,5 +169,56 @@ public class VideoBufferTest {
         assertEquals(null, BufferSize.fromFile("LOW"));
         assertEquals(null, BufferSize.fromFile(1));
         assertEquals(null, BufferSize.fromFile(null));
+    }
+
+    /** A run of a player's work on [handler], as its playback thread gets it. */
+    private static Message work(Handler handler) {
+        return Message.obtain(handler, VideoBuffer.DO_SOME_WORK);
+    }
+
+    @Test
+    public void aPausedVideosWorkRunsOnceASecondWhileFacebookIsLeft() {
+        VideoBuffer.watchingForTests();
+        Handler handler = new Handler(Looper.getMainLooper());
+        assertFalse("the first run waited", VideoBuffer.rest(work(handler), false));
+        ShadowSystemClock.advanceBy(10, TimeUnit.MILLISECONDS);
+        assertTrue("a run 10 ms later didn't wait", VideoBuffer.rest(work(handler), false));
+        assertTrue("the run that waited wasn't sent again", handler.hasMessages(VideoBuffer.DO_SOME_WORK));
+        ShadowSystemClock.advanceBy(10, TimeUnit.MILLISECONDS);
+        assertTrue(VideoBuffer.rest(work(handler), false));
+        ShadowSystemClock.advanceBy(VideoBuffer.REST_MS, TimeUnit.MILLISECONDS);
+        assertFalse("a run a second later waited", VideoBuffer.rest(work(handler), false));
+        assertTrue("a run counted as held back: " + statusLine(),
+                statusLine().contains(VideoBuffer.RESTED + " 2"));
+    }
+
+    @Test
+    public void aPlayerMeantToPlayOtherMessagesAndAStartedScreenRunAsFacebookWroteThem() {
+        VideoBuffer.watchingForTests();
+        Handler handler = new Handler(Looper.getMainLooper());
+        assertFalse(VideoBuffer.rest(work(handler), false));
+        assertFalse("a video meant to play waited", VideoBuffer.rest(work(handler), true));
+        assertFalse("another message waited", VideoBuffer.rest(Message.obtain(handler, 1), false));
+        VideoBuffer.screenStarted();
+        assertFalse("a run with a Facebook screen started waited", VideoBuffer.rest(work(handler), false));
+        VideoBuffer.screenStopped();
+        assertTrue("left again, the run didn't wait", VideoBuffer.rest(work(handler), false));
+        assertFalse(VideoBuffer.rest(null, false));
+    }
+
+    @Test
+    public void withNoScreenCountPausedOrColdNothingWaits() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        assertFalse(VideoBuffer.rest(work(handler), false));
+        assertFalse("a run waited with no screen count kept", VideoBuffer.rest(work(handler), false));
+        VideoBuffer.watchingForTests();
+        assertFalse(VideoBuffer.rest(work(handler), false));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a run waited while paused", VideoBuffer.rest(work(handler), false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("a run waited before the settings were ready", VideoBuffer.rest(work(handler), false)));
+        String line = statusLine();
+        assertFalse("a run that went ahead was counted: " + line, line != null && line.contains(VideoBuffer.RESTED));
     }
 }

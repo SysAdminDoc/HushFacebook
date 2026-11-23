@@ -4,11 +4,26 @@
  */
 package app.morphe.extension.facebook.media;
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.os.SystemClock;
+
+import androidx.annotation.Nullable;
+
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.Setting;
 
 /**
  * Video buffer (#526). Facebook's players decide two things over and over while a video plays:
@@ -24,6 +39,16 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * process, so a change shows from the next check, which comes within a moment. Nothing here may
  * throw into Facebook's player: paused, before the settings are ready or when anything here fails,
  * the player gets its own number back.
+ *
+ * <p>Whatever the choice, a paused video that's still loading rests while Facebook is in the
+ * background (#548). ExoPlayer runs a player's work every 10 ms while it loads, playing or not, and
+ * only a paused player that has loaded enough drops to once a second. Facebook stops loading when
+ * you leave it, so a paused video it hadn't finished, like the Reels row's preview on Home, never
+ * gets there: its playback thread woke a hundred times a second in the background until Android
+ * ended Facebook, about 3% of a core on an S22. Each playback thread asks {@link #rest} before a run
+ * of that work, and with no Facebook screen started and the player not meant to play, the run
+ * waits until a second after the last one. A player told to play, the one Keep playing in the
+ * background carries on included, runs as Facebook wrote it.
  */
 public final class VideoBuffer {
     /** Counted each time a start check gets a number other than its own. */
@@ -32,11 +57,35 @@ public final class VideoBuffer {
     /** Counted each time a loading check gets other numbers than its own. */
     static final String AHEAD_CHANGED = "Loading check given another span";
 
+    /** Counted each time a paused video's work in the background waits for its second. */
+    static final String RESTED = "Paused video's work held back in the background";
+
+    /** ExoPlayer's message for a run of a player's work (MSG_DO_SOME_WORK). */
+    static final int DO_SOME_WORK = 2;
+
+    /** The shortest time between two runs of a paused video's work in the background. */
+    static final long REST_MS = 1000;
+
     private static final String FAMILY = FamilyNames.VIDEO_BUFFER;
 
     /** The choices the last start and loading changes were logged for, so each is logged once. */
     private static volatile BufferSize loggedStart = BufferSize.FACEBOOK;
     private static volatile BufferSize loggedAhead = BufferSize.FACEBOOK;
+
+    /** Facebook screens between their start and their stop. Written on the main thread, read on playback threads. */
+    private static volatile int started;
+
+    /** Whether {@link #started} is being kept, so a count nobody keeps never reads as left. */
+    private static volatile boolean watching;
+
+    /** The application the screen count's callbacks went on, so a second start adds none. */
+    private static WeakReference<Application> watched = new WeakReference<>(null);
+
+    /** When each player's work last ran while it rested, by its playback handler. */
+    private static final Map<Handler, Long> lastRun = new WeakHashMap<>();
+
+    /** Whether resting was logged since Facebook was last left, so each stay in the background logs once. */
+    private static volatile boolean loggedRest;
 
     private VideoBuffer() {
     }
@@ -105,6 +154,87 @@ public final class VideoBuffer {
             HookStatus.threw(FAMILY, "loading check", failure);
             return highUs;
         }
+    }
+
+    /**
+     * Injection point, first thing in each ExoPlayer playback thread's message handler, with whether
+     * the player is meant to be playing (it's set to play and nothing holds it back). True when this
+     * run of a paused video's work waits: it's sent again for a second after the last run, and the
+     * handler takes this one as done. Never throws.
+     */
+    public static boolean rest(@Nullable Message message, boolean playing) {
+        try {
+            if (playing || message == null || message.what != DO_SOME_WORK || !watching || started > 0) return false;
+            if (!Utils.settingsReady() || Setting.isPaused()) return false;
+            Handler handler = message.getTarget();
+            if (handler == null) return false;
+            long now = SystemClock.uptimeMillis();
+            long last;
+            synchronized (lastRun) {
+                Long before = lastRun.get(handler);
+                if (before == null || now - before >= REST_MS || now < before) {
+                    lastRun.put(handler, now);
+                    return false;
+                }
+                last = before;
+            }
+            if (!handler.hasMessages(DO_SOME_WORK)) handler.sendEmptyMessageAtTime(DO_SOME_WORK, last + REST_MS);
+            HookStatus.bound(FAMILY, "background rest");
+            HookStatus.counted(FAMILY, RESTED);
+            if (!loggedRest) {
+                loggedRest = true;
+                Logger.printDebug(() -> "Video buffer: a paused video still loading in the background runs its work once a second");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "background rest", failure);
+            return false;
+        }
+    }
+
+    /** From the settings entry's application hook, in the main process: keeps the count of started screens. */
+    public static synchronized void watch(Context context) {
+        if (!(context instanceof Application)) return;
+        Application application = (Application) context;
+        if (watched.get() == application) return;
+        application.registerActivityLifecycleCallbacks(new Watcher());
+        watched = new WeakReference<>(application);
+        watching = true;
+    }
+
+    static final class Watcher implements Application.ActivityLifecycleCallbacks {
+        @Override public void onActivityCreated(Activity activity, @Nullable Bundle state) { }
+        @Override public void onActivityStarted(Activity activity) { screenStarted(); }
+        @Override public void onActivityResumed(Activity activity) { }
+        @Override public void onActivityPaused(Activity activity) { }
+        @Override public void onActivityStopped(Activity activity) { screenStopped(); }
+        @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
+        @Override public void onActivityDestroyed(Activity activity) { }
+    }
+
+    static void screenStarted() {
+        started++;
+        loggedRest = false;
+    }
+
+    static void screenStopped() {
+        if (started > 0) started--;
+    }
+
+    static void resetForTests() {
+        started = 0;
+        watching = false;
+        watched = new WeakReference<>(null);
+        loggedRest = false;
+        synchronized (lastRun) {
+            lastRun.clear();
+        }
+    }
+
+    /** For tests: the screen count is kept, with nothing started. */
+    static void watchingForTests() {
+        started = 0;
+        watching = true;
     }
 
     /** The saved choice, or Facebook's while paused or before the settings are ready. */

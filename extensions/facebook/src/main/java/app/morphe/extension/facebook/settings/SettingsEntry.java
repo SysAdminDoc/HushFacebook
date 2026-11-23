@@ -60,6 +60,7 @@ import app.morphe.extension.facebook.media.FeedSound;
 import app.morphe.extension.facebook.media.ResumePlayback;
 import app.morphe.extension.facebook.menu.MenuLayoutDump;
 import app.morphe.extension.facebook.media.TapToPlay;
+import app.morphe.extension.facebook.media.VideoBuffer;
 import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
@@ -194,6 +195,8 @@ public final class SettingsEntry {
             if (SettingsStatus.returnRefresh()) HomeBack.watch(context);
             // Keep feed videos muted: a sound left on goes off again when Facebook comes back (#465).
             if (SettingsStatus.keepFeedVideosMuted()) FeedSound.watch(context);
+            // Video buffer: a paused video still loading rests while no Facebook screen is started (#548).
+            if (SettingsStatus.videoBuffer()) VideoBuffer.watch(context);
             // Hide the video comment box: the seek bar goes down only in the Shorts viewer's screen (#552).
             if (SettingsStatus.commentSheetOptions()) CommentSheetOptions.watch(context);
             watchLauncherChanges(context);

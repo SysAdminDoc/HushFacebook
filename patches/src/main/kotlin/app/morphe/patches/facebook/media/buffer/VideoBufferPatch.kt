@@ -5,15 +5,19 @@
 package app.morphe.patches.facebook.media.buffer
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireParameterIntact
@@ -24,7 +28,9 @@ import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.executeBytecode
 import app.morphe.util.writersReaching
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -36,12 +42,23 @@ import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 internal const val PATCH = "Video buffer"
 internal const val VIDEO_BUFFER = "$EXTENSION_PACKAGE/media/VideoBuffer;"
 internal const val START_AT = "$VIDEO_BUFFER->startAt(JZ)J"
 internal const val AHEAD_LOW = "$VIDEO_BUFFER->aheadLow(J)J"
 internal const val AHEAD_HIGH = "$VIDEO_BUFFER->aheadHigh(JJ)J"
+internal const val REST = "$VIDEO_BUFFER->rest(Landroid/os/Message;Z)Z"
+
+/** The tag ExoPlayer's playback thread logs under, which the class holding its message handler loads. */
+internal const val PLAYBACK_TAG = "ExoPlayerImplInternal"
+
+/** The trace ExoPlayer's playback thread opens each run of a player's work with. */
+internal const val DO_SOME_WORK = "doSomeWork"
+
+/** The call ExoPlayer's work scheduler queues the next run with. */
+private const val SEND_AT = "Landroid/os/Handler;->sendEmptyMessageAtTime(IJ)Z"
 
 /** The trace HeroPlayer's own load control opens its keep-loading check with. */
 internal const val HERO_LOADING = "shouldContinueLoading"
@@ -70,6 +87,12 @@ private val WIDE_CONSTANTS = setOf(Opcode.CONST_WIDE_16, Opcode.CONST_WIDE_32, O
  * Facebook's memory cap on what a player may hold still applies on top of all of it.
  *
  * Starts at Facebook's choice, which hands every number back as it came.
+ *
+ * Whatever the choice, each ExoPlayer playback thread asks VideoBuffer before a run of a player's
+ * work ([askRest], #548). ExoPlayer runs that work every 10 ms while a video loads, playing or not,
+ * and Facebook stops loading in the background, so a paused video it hadn't finished woke its
+ * thread a hundred times a second after you left. With no Facebook screen started and the player
+ * not meant to play, VideoBuffer has the run wait until a second after the last one.
  */
 @Suppress("unused")
 val videoBufferPatch = patch(
@@ -77,7 +100,9 @@ val videoBufferPatch = patch(
     name = "Video buffer",
     description = "Picks how much of a video loads before it starts and while it plays. Low starts videos sooner " +
         "and uses less data. Medium and Maximum wait a little longer to start and keep more loaded ahead, which can " +
-        "help on a slow connection. Starts at Facebook's choice. Pick a size in Hushfacebook settings > Video and audio.",
+        "help on a slow connection. Starts at Facebook's choice. Pick a size in Hushfacebook settings > Video and audio. " +
+        "Whatever the size, a paused video that's still loading when you leave Facebook stops waking your phone " +
+        "a hundred times a second.",
 ) {
     category("Playback")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -111,6 +136,14 @@ val videoBufferPatch = patch(
         }
         if (hooks.isEmpty()) throw PatchException(missed.joinToString("; "))
         missed.forEach { patchLog.warning("$it, so that check keeps Facebook's numbers.") }
+        val rests = try {
+            restHooks()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so paused videos in the background keep Facebook's timing.")
+            emptyList()
+        }
+        if (rests.isEmpty()) patchLog.warning("$PATCH: no ExoPlayer playback thread found, so paused videos in the background keep Facebook's timing.")
+        rests.forEach { rest -> hooks += rest.handler to { askRest(rest) } }
         hooks.forEach { (method, apply) ->
             mutableClassDefBy(method.definingClass).methods.single { sameMethod(it, method) }.apply()
         }
@@ -375,4 +408,100 @@ internal fun MutableMethod.askAhead(hook: AheadHook) {
         addInstructions(hook.highAt, high)
     }
     addInstructions(hook.lowAt, low)
+}
+
+/**
+ * One ExoPlayer playback thread: its message handler [handler], and [playing], the private check of
+ * its own class that its work scheduler asks whether the player is meant to be playing (set to play,
+ * with nothing holding it back).
+ */
+internal class RestHook(val handler: Method, val playing: MethodReference)
+
+/** Whether [method] is ExoPlayer's work scheduler: takes the run's start time, queues the next run at a time, and picks 10 ms or 1 s. */
+internal fun isWorkScheduler(method: Method): Boolean {
+    if (method.returnType != "V" || method.parameterTypes.map(CharSequence::toString) != listOf("J")) return false
+    val code = method.implementation?.instructions?.toList() ?: return false
+    val sends = code.any { it.opcode == Opcode.INVOKE_VIRTUAL && ((it as ReferenceInstruction).reference as MethodReference).toString() == SEND_AT }
+    val wides = code.filter { it.opcode in WIDE_CONSTANTS }.map { (it as WideLiteralInstruction).wideLiteral }.toSet()
+    return sends && 10L in wides && 1000L in wides
+}
+
+/**
+ * Whether [method] has the playing check's shape: private, no parameters, a boolean answer, reading
+ * one boolean (set to play) and one int (what holds it back) of the playback state.
+ */
+private fun isPlayingCheck(method: Method): Boolean {
+    if (method.returnType != "Z" || method.parameterTypes.isNotEmpty()) return false
+    if (!AccessFlags.PRIVATE.isSet(method.accessFlags)) return false
+    val code = method.implementation?.instructions?.toList() ?: return false
+    return code.size <= 12 && code.count { it.opcode == Opcode.IGET_BOOLEAN } == 1 && code.count { it.opcode == Opcode.IGET } == 1
+}
+
+/**
+ * Every ExoPlayer playback thread the patch can rest: each class outside the extension that loads
+ * [PLAYBACK_TAG] and that [restHook] takes.
+ */
+internal fun BytecodePatchContext.restHooks(): List<RestHook> {
+    val found = mutableListOf<RestHook>()
+    classDefForEachReferencing(strings = listOf(PLAYBACK_TAG)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        restHook(classDef)?.let(found::add)
+    }
+    return found
+}
+
+/**
+ * [classDef]'s rest hook, when it's an ExoPlayer playback thread with a work scheduler: its
+ * handleMessage(Message) opens [DO_SOME_WORK], and its work scheduler ([isWorkScheduler]) makes one
+ * direct call of a playing check ([isPlayingCheck]) of the same class. Null for a class without that
+ * handler or a scheduler, like Facebook's older V101 copy. Throws when the schedulers call no such
+ * check or more than one, or when something jumps to the handler's first instruction.
+ */
+internal fun restHook(classDef: ClassDef): RestHook? {
+    val handler = classDef.methods.singleOrNull {
+        it.name == "handleMessage" && it.returnType == "Z" &&
+            it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/os/Message;") && loadsString(it, DO_SOME_WORK)
+    } ?: return null
+    val schedulers = classDef.methods.filter(::isWorkScheduler)
+    if (schedulers.isEmpty()) return null
+    val checks = schedulers.flatMap { scheduler ->
+        scheduler.implementation!!.instructions.mapNotNull { instruction ->
+            if (instruction.opcode != Opcode.INVOKE_DIRECT) return@mapNotNull null
+            val called = (instruction as ReferenceInstruction).reference as MethodReference
+            if (called.definingClass != classDef.type) return@mapNotNull null
+            val target = classDef.methods.firstOrNull { MethodUtil.methodSignaturesMatch(it, called) } ?: return@mapNotNull null
+            if (isPlayingCheck(target)) called else null
+        }
+    }.distinctBy { it.toString() }
+    val playing = checks.singleOrNull()
+        ?: throw PatchException("$PATCH: ${classDef.type}'s work scheduler calls ${checks.size} playing checks")
+    if (0 in jumpTargets(handler)) throw PatchException("${where(handler)} can be jumped to at its start")
+    return RestHook(handler, playing)
+}
+
+/**
+ * Asks VideoBuffer, first thing in the playback thread's message handler, whether this message is a
+ * run of a paused video's work that should wait, with the playing check's answer, and takes the
+ * message as handled when it should. Uses two locals, which nothing has written yet; `this` and the
+ * message are still in their registers, which a range call and a 16-bit move reach wherever they are.
+ */
+internal fun MutableMethod.askRest(hook: RestHook) {
+    val locals = localRegisterCount()
+    if (locals < 2) throw PatchException("${where(this)} has $locals locals, the hook needs 2")
+    val self = locals
+    val message = locals + 1
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-direct/range { v$self .. v$self }, ${hook.playing}
+            move-result v0
+            move-object/from16 v1, v$message
+            invoke-static { v1, v0 }, $REST
+            move-result v0
+            if-eqz v0, :work
+            const/4 v0, 0x1
+            return v0
+        """,
+        ExternalLabel("work", getInstruction(0)),
+    )
 }

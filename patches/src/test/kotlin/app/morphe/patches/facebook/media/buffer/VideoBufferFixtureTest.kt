@@ -8,8 +8,13 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.removeInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -21,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -270,6 +276,87 @@ class VideoBufferFixtureTest {
             method.addInstructions(hook.lowAt, "iput-wide v${hook.high}, v${hook.self}, ${hook.kept}")
             val again = heroAhead(method)
             assertEquals("${bundle.name}: the low mark stays the compared one", listOf(hook.low, hook.high), listOf(again.low, again.high))
+        }
+    }
+
+    /** The classes loading ExoPlayer's playback tag, with the load controls and SettingsStatus. */
+    private fun playbackOwners(bundle: File): List<ClassDef> =
+        (owners(bundle) + FixtureDex.classesHolding(bundle, PLAYBACK_TAG)).distinctBy { it.type }
+
+    @Test
+    fun `each declared build's playback threads ask before a run of a player's work (#548)`() = bundles { bundle ->
+        val context = PatchContexts.of(playbackOwners(bundle))
+        val hooks = context.restHooks()
+        // 588 has two media3 playback threads with a work scheduler; its older V101 copy has none and is passed over.
+        assertEquals("${bundle.name}: playback threads found", 2, hooks.size)
+        for (hook in hooks) {
+            val handler = hook.handler
+            val where = "${bundle.name}: ${handler.definingClass}->${handler.name}"
+            assertEquals("$where: the playing check is the thread's own", handler.definingClass, hook.playing.definingClass)
+            assertEquals("$where: the playing check answers yes or no", "Z", hook.playing.returnType)
+            assertTrue("$where: the playing check takes nothing", hook.playing.parameterTypes.isEmpty())
+            val scheduler = context.mutableClassDefBy(handler.definingClass).methods.single(::isWorkScheduler)
+            assertTrue("$where: the scheduler asks the playing check", scheduler.implementation!!.instructions.any {
+                it.opcode == Opcode.INVOKE_DIRECT && calls(it).toString() == hook.playing.toString()
+            })
+
+            val code = handler.implementation!!.instructions.toList()
+            val method = context.mutable(handler)
+            method.askRest(hook)
+            val body = method.implementation!!.instructions.toList()
+            assertRestUnchanged(where, code, body, mapOf(0 to 8))
+            val self = method.implementation!!.registerCount - 2
+            assertEquals("$where: the playing check's call", Opcode.INVOKE_DIRECT_RANGE, body[0].opcode)
+            assertEquals("$where: on this", hook.playing.toString(), calls(body[0]).toString())
+            assertEquals("$where: from this", self, (body[0] as RegisterRangeInstruction).startRegister)
+            assertEquals("$where: its answer", Opcode.MOVE_RESULT, body[1].opcode)
+            assertEquals("$where: the message's copy", Opcode.MOVE_OBJECT_FROM16, body[2].opcode)
+            assertEquals("$where: of the message", self + 1, (body[2] as TwoRegisterInstruction).registerB)
+            assertAsk(where, body[3], REST, listOf(1, 0))
+            assertEquals("$where: the ask's answer", Opcode.MOVE_RESULT, body[4].opcode)
+            assertEquals("$where: work goes on with a no", Opcode.IF_EQZ, body[5].opcode)
+            assertEquals("$where: a yes is handled", Opcode.RETURN, body[7].opcode)
+            assertTrue("$where: the no lands on Facebook's first instruction", 8 in jumpTargets(method))
+        }
+    }
+
+    @Test
+    fun `the patch rests each playback thread once`() = bundles { bundle ->
+        val context = PatchContexts.of(playbackOwners(bundle))
+        val handlers = context.restHooks().map { it.handler }
+        videoBufferPatch.execute(context)
+        for (handler in handlers) {
+            val body = context.mutable(handler).implementation!!.instructions.toList()
+            val asks = body.mapNotNull { calls(it)?.toString() }.filter { it == REST }
+            assertEquals("${bundle.name}: ${handler.definingClass} asks once", 1, asks.size)
+        }
+    }
+
+    @Test
+    fun `a playback thread of another shape is refused`() = bundles { bundle ->
+        // Something jumping back to the handler's first instruction, where the ask goes.
+        PatchContexts.of(playbackOwners(bundle)).let { context ->
+            val hook = context.restHooks().first()
+            val owner = context.mutableClassDefBy(hook.handler.definingClass)
+            val method = context.mutable(hook.handler)
+            val last = method.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN }
+            method.addInstructionsWithLabels(last, "goto :start", ExternalLabel("start", method.getInstruction(0)))
+            refuses("${bundle.name}: a jump to the start", "jumped to at its start") { restHook(owner) }
+        }
+        // A scheduler that no longer asks whether the player is meant to play.
+        PatchContexts.of(playbackOwners(bundle)).let { context ->
+            val hook = context.restHooks().first()
+            val owner = context.mutableClassDefBy(hook.handler.definingClass)
+            val scheduler = owner.methods.single(::isWorkScheduler)
+            val code = scheduler.implementation!!.instructions.toList()
+            code.indices.reversed().filter {
+                code[it].opcode == Opcode.INVOKE_DIRECT && calls(code[it]).toString() == hook.playing.toString()
+            }.forEach { index ->
+                val result = (code[index + 1] as OneRegisterInstruction).registerA
+                scheduler.replaceInstruction(index, "const/4 v$result, 0x0")
+                scheduler.removeInstruction(index + 1)
+            }
+            refuses("${bundle.name}: no playing check", "calls 0 playing checks") { restHook(owner) }
         }
     }
 }
