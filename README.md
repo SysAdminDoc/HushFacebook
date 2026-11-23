@@ -71,7 +71,7 @@ Turn on **Queue reel saves** there too, and Download on a reel adds it to a queu
 
 **Cast button on reels**, on the same page, adds a cast button under Download on a reel's sidebar. Like the feed one below, it hands the reel to a casting app you have, and it works with Download off too. It starts off.
 
-**Clean mode button on reels** puts a Clean mode button on that sidebar as well. Tap it and the buttons down the side go away, and they stay away on the next reels until you tap Facebook's own Clean mode button. It starts off.
+**Clean mode button on reels** puts a Clean mode button on that sidebar as well. Tap it and the buttons down the side go away, and they stay away on the next reels until you tap Facebook's own Clean mode button. It starts off, and it shows anyway while **Always use Clean mode** is on, since that's how a reel you took out of Clean mode goes back in.
 
 **Hide WhatsApp on reels**, also under **Reels and Watch**, removes the direct WhatsApp button beside a reel or video. It starts off. WhatsApp stays available in the Share menu.
 

@@ -42,6 +42,7 @@ public class ReelCleanModeTest {
     public void start() {
         HookStatus.clear();
         ReelCleanMode.store = null;
+        ReelCleanMode.sidebarInBuild = Boolean.FALSE;
     }
 
     @After
@@ -50,7 +51,37 @@ public class ReelCleanModeTest {
         Settings.REEL_CLEAN_MODE.resetToDefault();
         Settings.REEL_CLEAN_BUTTON.resetToDefault();
         ReelCleanMode.store = null;
+        ReelCleanMode.sidebarInBuild = null;
         HookStatus.clear();
+    }
+
+    @Test
+    public void aReelTakenOutGoesBackThroughTheSidebarButtonWhenTheBuildHasIt() {
+        Settings.REEL_CLEAN_MODE.save(true);
+        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.sidebarInBuild = Boolean.TRUE;
+        assertFalse("the button's own switch doesn't start off", Settings.REEL_CLEAN_BUTTON.get());
+        assertTrue("Always use Clean mode left the sidebar without its way back", ReelCleanMode.cleanButton());
+
+        Object[] left = {Boolean.FALSE};
+        ReelCleanMode.markLeftClean(left);
+        assertSame("Facebook's button was kept over the sidebar's last buttons",
+                ReelCleanMode.LEFT_CLEAN, ReelCleanMode.cleanButtonState(left[0]));
+        assertTrue("the hand-over wasn't counted", statusLine().contains(ReelCleanMode.WAY_BACK_IN_SIDEBAR + " 1"));
+        assertSame("a clean reel's button changed", Boolean.TRUE, ReelCleanMode.cleanButtonState(Boolean.TRUE));
+
+        // A build without the sidebar's button, or without the store it goes through, keeps Facebook's.
+        ReelCleanMode.sidebarInBuild = Boolean.FALSE;
+        assertSame("a build without the sidebar button lost the way back",
+                Boolean.TRUE, ReelCleanMode.cleanButtonState(left[0]));
+        ReelCleanMode.sidebarInBuild = Boolean.TRUE;
+        ReelCleanMode.store = null;
+        assertSame("without a store the way back went", Boolean.TRUE, ReelCleanMode.cleanButtonState(left[0]));
+        assertFalse("without a store the sidebar got a button that does nothing", ReelCleanMode.cleanButton());
+
+        Settings.REEL_CLEAN_MODE.save(false);
+        ReelCleanMode.keepStore(new Object());
+        assertFalse("with both switches off the sidebar got the button", ReelCleanMode.cleanButton());
     }
 
     private static String statusLine() {

@@ -132,7 +132,7 @@ final class CleanExitSpot {
                     stop();
                     return true;
                 }
-                place(list, ReelCleanMode.buttonOn());
+                place(list, ReelCleanMode.sidebarButtonOn());
             } catch (Throwable failure) {
                 HookStatus.threw(FAMILY, HOOK, failure);
             }

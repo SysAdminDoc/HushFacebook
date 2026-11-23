@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import java.lang.ref.WeakReference;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
@@ -69,6 +70,29 @@ public final class ReelCleanMode {
         return Utils.settingsReady() && Settings.REEL_CLEAN_BUTTON.get();
     }
 
+    /**
+     * Whether reels get the sidebar's Clean mode button, store or not: its own switch, or Always use
+     * Clean mode (#554), whose reels the person takes out go back in through it.
+     */
+    static boolean sidebarButtonOn() {
+        return buttonOn() || on();
+    }
+
+    /** Counted each time a reel taken out of Clean mode leaves the way back to the sidebar's button. */
+    static final String WAY_BACK_IN_SIDEBAR = "Reel taken out of Clean mode goes back through the sidebar button";
+
+    /**
+     * Whether this build's reel sidebar carries the Clean mode button: the reel Download patch builds
+     * it. Asked once, null until then. Package-private so a test can answer.
+     */
+    static volatile Boolean sidebarInBuild;
+
+    static boolean sidebarInBuild() {
+        Boolean known = sidebarInBuild;
+        if (known == null) sidebarInBuild = known = PatchFamily.REEL_DOWNLOAD.inBuild();
+        return known;
+    }
+
     /** Counted each time the sidebar's Clean mode button puts the viewer in Clean mode. */
     static final String ENTERED_FROM_SIDEBAR = "Clean mode turned on from the sidebar button";
 
@@ -97,12 +121,13 @@ public final class ReelCleanMode {
     }
 
     /**
-     * Whether a reel's sidebar gets the Clean mode button: its switch is on and the store it goes
-     * through was kept, which only a build with Clean up Reels does. Never throws.
+     * Whether a reel's sidebar gets the Clean mode button: its switch or Always use Clean mode is on
+     * ({@link #sidebarButtonOn}) and the store it goes through was kept, which only a build with
+     * Clean up Reels does. Never throws.
      */
     public static boolean cleanButton() {
         try {
-            return buttonOn() && keptStore() != null;
+            return sidebarButtonOn() && keptStore() != null;
         } catch (Throwable failure) {
             return false;
         }
@@ -128,7 +153,7 @@ public final class ReelCleanMode {
         try {
             HookStatus.invoked(FAMILY);
             Object kept = keptStore();
-            if (kept == null || !buttonOn()) {
+            if (kept == null || !sidebarButtonOn()) {
                 Logger.printInfo(() -> "Reel Clean mode: no store to switch from the sidebar button");
                 return;
             }
@@ -231,6 +256,10 @@ public final class ReelCleanMode {
      * still clean here, so the button stays. Its label comes from Facebook's own read of the same
      * value, so it offers to turn Clean mode back on. Never throws.
      *
+     * <p>Not when this build's sidebar carries the Clean mode button (#554): that button is the way
+     * back in, and Facebook's, which has no row of its own out of Clean mode, could only be laid over
+     * the sidebar's last buttons, More options and the one above it, and took their taps.
+     *
      * @param facebook the overlay's value.
      */
     @SuppressWarnings("NumberEquality")
@@ -238,6 +267,10 @@ public final class ReelCleanMode {
         KEPT_BUTTON.remove();
         try {
             if (facebook != LEFT_CLEAN || !on()) return facebook;
+            if (keptStore() != null && sidebarInBuild()) {
+                HookStatus.counted(FAMILY, WAY_BACK_IN_SIDEBAR);
+                return facebook;
+            }
             KEPT_BUTTON.set(Boolean.TRUE);
             return Boolean.TRUE;
         } catch (Throwable failure) {
