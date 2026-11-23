@@ -3847,8 +3847,8 @@ final class L10nTableIt {
                 "L'elenco \u00e8 pieno, quindi non \u00e8 stato aggiunto nulla.");
         table.put("The list is full, so the rest weren't added.",
                 "L'elenco \u00e8 pieno, quindi le altre non sono state aggiunte.");
-        table.put("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.",
-                "Il nome in fondo a un reel ha dietro lo stesso riquadro scuro, cos\u00ec si legge facilmente su un video luminoso. La modifica si vede dal reel successivo.");
+        table.put("The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.",
+                "Il nome in fondo a un reel, con la data e i dettagli sotto, ha dietro lo stesso riquadro scuro, cos\u00ec si legge facilmente su un video luminoso. La modifica si vede dal reel successivo.");
         table.put("The newest Hushfacebook release is %1$s.",
                 "La versione pi\u00f9 recente di Hushfacebook \u00e8 la %1$s.");
         table.put("The phone's font at its regular weight.",
@@ -4212,8 +4212,8 @@ final class L10nTableIt {
                 "Quando Facebook si apre su Feed, la scheda Feed si apre sul filtro scelto da Facebook.");
         table.put("When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.",
                 "Quando finisce un reel in riproduzione in background, parte il reel successivo invece dello stesso. Scorre i reel che Reels aveva caricato quando sei uscito. Funziona con Continua la riproduzione in background attivo.");
-        table.put("When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.",
-                "Quando un video nel feed ha il nome di chi l'ha pubblicato sopra il video, quel nome ha dietro lo stesso riquadro scuro. La modifica si vede sui post mostrati dopo.");
+        table.put("When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.",
+                "Quando un video nel feed ha il nome di chi l'ha pubblicato sopra il video, quel nome e la data sotto hanno dietro lo stesso riquadro scuro. La modifica si vede sui post mostrati dopo.");
         table.put("When the comments or a menu close",
                 "Quando i commenti o un menu si chiudono");
         table.put("When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.",

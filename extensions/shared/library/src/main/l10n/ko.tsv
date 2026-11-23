@@ -1100,7 +1100,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	릴스 이름 뒤 어두운 상자
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	릴스 하단의 이름이 같은 어두운 상자 위에 표시되어 밝은 동영상에서도 읽기 쉬워요. 변경 사항은 다음 릴스부터 적용돼요.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	릴스 하단의 이름과 그 아래의 날짜와 세부 정보가 같은 어두운 상자 위에 표시되어 밝은 동영상에서도 읽기 쉬워요. 변경 사항은 다음 릴스부터 적용돼요.
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	상자 어둡기
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -3150,7 +3150,7 @@ The time or date under the poster's name is bold, like the name.	게시자 이�
 Show full names	전체 이름 표시
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	게시물 상단의 긴 이름이 "..."로 끝나지 않고 다음 줄로 넘어가요. 한 줄에 들어가는 이름은 그대로 한 줄을 차지해요.
 Dark box behind feed video names	피드 동영상 이름 뒤 어두운 상자
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	피드 동영상 위에 게시자 이름이 표시되면 그 이름도 같은 어두운 상자 위에 표시돼요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	피드 동영상 위에 게시자 이름이 표시되면 그 이름과 아래의 날짜도 같은 어두운 상자 위에 표시돼요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
 Quality settings	화질 설정
 Request community note	커뮤니티 노트 요청
 Something went wrong	문제가 발생했어요

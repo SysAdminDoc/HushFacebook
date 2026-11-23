@@ -65,6 +65,7 @@ public class CaptionBackdropTest {
         Settings.TEXT_BOX_DARKNESS.resetToDefault();
         Settings.SOFT_TEXT_BOXES.resetToDefault();
         CaptionBackdrop.header(null, null);
+        CaptionBackdrop.forNameBlock();
         HookStatus.clear();
     }
 
@@ -322,6 +323,50 @@ public class CaptionBackdropTest {
         Settings.DIM_FEED_VIDEO_NAMES.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertNull("paused, a feed video's name keeps Facebook's look", CaptionBackdrop.forReelName());
+    }
+
+    /**
+     * A name the header puts into a column with the line under it (the date, "AI content", a song) leaves
+     * its box to that column, so one box covers both and no edge runs through the date (#490). A reel's
+     * and a feed video's names do this under their own switches; a name with no column keeps its own box,
+     * and a column nobody started gets none.
+     */
+    @Test
+    public void aNameAndTheLineUnderItShareOneBox() {
+        Object reelAuthor = new Object();
+        Settings.DIM_REEL_NAMES.save(true);
+        CaptionBackdrop.reelAuthor(reelAuthor);
+        CaptionBackdrop.nameBlock();
+        CaptionBackdrop.header(reelAuthor, null);
+        assertNull("a reel's name in a column got a box of its own", CaptionBackdrop.forReelName());
+        Drawable box = CaptionBackdrop.forNameBlock();
+        assertNotNull("a reel's name and date line got no box", box);
+        assertEquals(CaptionBackdrop.COLOR, ((GradientDrawable) box).getColor().getDefaultColor());
+        assertNull("a column nobody started got a box", CaptionBackdrop.forNameBlock());
+        assertNotNull("after its column, the next name alone got no box", CaptionBackdrop.forReelName());
+        assertTrue(statusLine(), statusLine().contains(CaptionBackdrop.REEL_NAMED + " 2"));
+
+        Object feedPost = new Object();
+        CaptionBackdrop.nameBlock();
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        assertNull("a feed video's name and date got a box with their switch off", CaptionBackdrop.forNameBlock());
+        Settings.DIM_FEED_VIDEO_NAMES.save(true);
+        CaptionBackdrop.nameBlock();
+        CaptionBackdrop.header(feedPost, Look.ON_MEDIA);
+        assertNull(CaptionBackdrop.forReelName());
+        assertNotNull("a feed video's name and date line got no box", CaptionBackdrop.forNameBlock());
+        CaptionBackdrop.nameBlock();
+        CaptionBackdrop.header(feedPost, Look.DEFAULT);
+        assertNull("a feed post's everyday header got the box", CaptionBackdrop.forNameBlock());
+
+        CaptionBackdrop.nameBlock();
+        CaptionBackdrop.header(reelAuthor, null);
+        Settings.DIM_REEL_NAMES.save(false);
+        assertNull("turned off, a reel's name and date keep Facebook's look", CaptionBackdrop.forNameBlock());
+        Settings.DIM_REEL_NAMES.save(true);
+        CaptionBackdrop.nameBlock();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("paused, a reel's name and date keep Facebook's look", CaptionBackdrop.forNameBlock());
     }
 
     /**

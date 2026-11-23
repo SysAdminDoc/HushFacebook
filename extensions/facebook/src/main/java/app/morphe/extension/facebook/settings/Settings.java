@@ -3741,17 +3741,18 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_dim_folded_reel_captions", FALSE);
 
     /**
-     * The name at the bottom of a reel sits on the caption's dark box (#490,
-     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}). Feed posts' names keep
+     * The name at the bottom of a reel, with the date line under it, sits on the caption's dark box (#490,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName} and
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forNameBlock}). Feed posts' names keep
      * Facebook's look. A change shows from the next reel.
      */
     public static final BooleanSetting DIM_REEL_NAMES =
             new BooleanSetting("hushfacebook_dim_reel_names", FALSE);
 
     /**
-     * A name Facebook draws over a feed video, rather than above it, sits on the same dark box (#533,
-     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}). A change shows on the
-     * headers drawn after it.
+     * A name Facebook draws over a feed video, rather than above it, sits on the same dark box with the
+     * date under it (#533, #490, {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}).
+     * A change shows on the headers drawn after it.
      */
     public static final BooleanSetting DIM_FEED_VIDEO_NAMES =
             new BooleanSetting("hushfacebook_dim_feed_video_names", FALSE);

@@ -1097,7 +1097,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	短视频名字加深色底框
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	短视频底部的名字也会显示在同样的深色底框上，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	短视频底部的名字及其下方的日期和详情也会显示在同样的深色底框上，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	底框深浅
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -3145,7 +3145,7 @@ The time or date under the poster's name is bold, like the name.	发布者姓名
 Show full names	显示完整名字
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	帖子顶部的长名字会换到下一行，而不是以“...”结尾。放得下的名字仍只占一行。
 Dark box behind feed video names	动态消息视频名字的深色底框
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	当动态消息中的视频把发布者姓名显示在视频上时，这个名字也会显示在同样的深色底框上。更改在之后加载的帖子上生效。
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	当动态消息中的视频把发布者姓名显示在视频上时，这个名字和下方的日期也会显示在同样的深色底框上。更改在之后加载的帖子上生效。
 Quality settings	画质设置
 Request community note	申请社区笔记
 Something went wrong	出了点问题

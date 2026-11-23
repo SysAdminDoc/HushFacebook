@@ -19,6 +19,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* `Dark box behind reel names` now covers the date and details under a reel's name too ("AI content", the song), all in one box. Before, the box sat behind the name alone and its bottom edge ran through the date, which looked like a dark line under the name. `Dark box behind feed video names` does the same for the date under a name on a feed video. (#490)
 * Facebook no longer closes the moment it opens when `Disable Play Store updates` is picked twice, once in Hushfacebook and once in Morphe's own patches. Morphe's newer test builds of that patch and ours kept handing the version check back and forth until Facebook crashed. Either one alone was always fine, and now both together are too. (#561)
 * `Load whole reply threads` loads long reply threads all the way again. On Facebook 588 a thread stopped after its first page or so, and the View more replies button was gone too, so there was no way to read the rest. Now each page comes in by itself as you scroll down to it. (#536)
 * Switching `Tab bar while scrolling` between hiding and staying on screen no longer leaves short reels on the next start. With see-through bars or the rounded tab bar, the first reels after the switch stopped short and the next one peeked in under the tab bar until Reels was opened again. (#552)

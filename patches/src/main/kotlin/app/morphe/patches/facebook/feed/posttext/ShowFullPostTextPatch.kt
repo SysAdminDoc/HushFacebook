@@ -106,7 +106,8 @@ private val SWITCHES = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH)
  * An open reel caption can also sit on a dark box (#419): right before the caption's text is built,
  * [CAPTION_BACKDROP] gets the builder's line limit and hands back a background for the one built with
  * no limit. See [findCaptionBackdrop]. The names in the stories row, on an open story and on a reel can
- * get the same box (#490): see [findTrayNames], [findOpenStoryNames] and [findReelNames].
+ * get the same box (#490): see [findTrayNames], [findOpenStoryNames] and [findReelNames]. Where a header
+ * puts its name and the line under it into one column, the box goes on the column ([findNameBlocks]).
  */
 @Suppress("unused")
 val showFullPostTextPatch = patch(
@@ -206,16 +207,35 @@ val showFullPostTextPatch = patch(
                     patchLog.warning("${missing.message}, so a feed post's name keeps Facebook's look and line limit")
                     null
                 }
+                // A name and the line under it (the date, a song) share one box where Facebook puts them in a column (#490).
+                val blocks = if (feed == null) emptyList() else try {
+                    findNameBlocks(reel, feed, findBoxStyle(tray.text.definingClass).background.substringAfterLast(')'))
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so a boxed name's date line keeps Facebook's look")
+                    emptyList()
+                }
+                // Each header's column is boxed only where its name hooks went in: they say whose name it is.
+                val named = mutableSetOf<String>()
                 try {
                     addReelNameBoxes(tray.text, reel, lines, look)
+                    named += reel.names.map { it.method.definingClass }
                 } catch (missing: PatchException) {
                     patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
                 }
                 if (feed != null) {
                     try {
                         addFeedNameBoxes(tray.text, feed)
+                        named += feed.build.definingClass
                     } catch (missing: PatchException) {
                         patchLog.warning("${missing.message}, so a feed post's name keeps Facebook's look and line limit")
+                    }
+                }
+                val hooked = blocks.filter { it.column.method.definingClass in named }
+                if (hooked.isNotEmpty()) {
+                    try {
+                        addNameBlockBoxes(tray.text, hooked)
+                    } catch (missing: PatchException) {
+                        patchLog.warning("${missing.message}, so a boxed name's date line keeps Facebook's look")
                     }
                 }
             }

@@ -364,14 +364,14 @@ final class VideoPages {
             // Asked as each reel's name is built (#490).
             if (reelNamesInBuild()) {
                 reels.addPreference(toggle(context, Settings.DIM_REEL_NAMES,
-                        L10n.t("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a "
-                                + "bright video. A change shows from the next reel.")));
+                        L10n.t("The name at the bottom of a reel, with the date and details under it, sits on the same "
+                                + "dark box, so it's easy to read over a bright video. A change shows from the next reel.")));
             }
             // The same hook, for a feed post's header drawn over its video (#533).
             if (feedVideoNamesInBuild()) {
                 reels.addPreference(toggle(context, Settings.DIM_FEED_VIDEO_NAMES,
-                        L10n.t("When a video in your feed has the poster's name on top of the video, that name sits on "
-                                + "the same dark box. A change shows on the posts drawn after it.")));
+                        L10n.t("When a video in your feed has the poster's name on top of the video, that name and the "
+                                + "date under it sit on the same dark box. A change shows on the posts drawn after it.")));
             }
             // Every box's look, story names' included, read as each box is made (#490).
             if (captionBackdropInBuild() || reelNamesInBuild() || storyNamesInBuild() || feedVideoNamesInBuild()) {

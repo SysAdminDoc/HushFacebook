@@ -3847,8 +3847,8 @@ final class L10nTableKo {
                 "\ubaa9\ub85d\uc774 \uac00\ub4dd \ucc28\uc11c \uc544\ubb34\uac83\ub3c4 \ucd94\uac00\ud558\uc9c0 \ubabb\ud588\uc5b4\uc694.");
         table.put("The list is full, so the rest weren't added.",
                 "\ubaa9\ub85d\uc774 \uac00\ub4dd \ucc28\uc11c \ub098\uba38\uc9c0\ub294 \ucd94\uac00\ud558\uc9c0 \ubabb\ud588\uc5b4\uc694.");
-        table.put("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.",
-                "\ub9b4\uc2a4 \ud558\ub2e8\uc758 \uc774\ub984\uc774 \uac19\uc740 \uc5b4\ub450\uc6b4 \uc0c1\uc790 \uc704\uc5d0 \ud45c\uc2dc\ub418\uc5b4 \ubc1d\uc740 \ub3d9\uc601\uc0c1\uc5d0\uc11c\ub3c4 \uc77d\uae30 \uc26c\uc6cc\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \ub2e4\uc74c \ub9b4\uc2a4\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
+        table.put("The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.",
+                "\ub9b4\uc2a4 \ud558\ub2e8\uc758 \uc774\ub984\uacfc \uadf8 \uc544\ub798\uc758 \ub0a0\uc9dc\uc640 \uc138\ubd80 \uc815\ubcf4\uac00 \uac19\uc740 \uc5b4\ub450\uc6b4 \uc0c1\uc790 \uc704\uc5d0 \ud45c\uc2dc\ub418\uc5b4 \ubc1d\uc740 \ub3d9\uc601\uc0c1\uc5d0\uc11c\ub3c4 \uc77d\uae30 \uc26c\uc6cc\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \ub2e4\uc74c \ub9b4\uc2a4\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("The newest Hushfacebook release is %1$s.",
                 "\ucd5c\uc2e0 Hushfacebook\uc740 %1$s \ubc84\uc804\uc774\uc5d0\uc694.");
         table.put("The phone's font at its regular weight.",
@@ -4212,8 +4212,8 @@ final class L10nTableKo {
                 "Facebook\uc774 \ud53c\ub4dc\uc5d0\uc11c \uc5f4\ub9ac\uba74 \ud53c\ub4dc \ud0ed\uc774 Facebook\uc774 \uc815\ud55c \ud544\ud130\ub85c \uc5f4\ub824\uc694.");
         table.put("When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.",
                 "\ubc31\uadf8\ub77c\uc6b4\ub4dc\uc5d0\uc11c \uc7ac\uc0dd \uc911\uc778 \ub9b4\uc2a4\uac00 \ub05d\ub098\uba74 \uac19\uc740 \ub9b4\uc2a4\ub97c \ubc18\ubcf5\ud558\uc9c0 \uc54a\uace0 \ub2e4\uc74c \ub9b4\uc2a4\ub97c \uc7ac\uc0dd\ud574\uc694. \ub098\uac08 \ub54c \ub9b4\uc2a4\uc5d0 \ubd88\ub7ec\uc640 \uc788\ub358 \ub9b4\uc2a4\ub97c \ucc28\ub840\ub85c \uc7ac\uc0dd\ud574\uc694. \"\ubc31\uadf8\ub77c\uc6b4\ub4dc\uc5d0\uc11c \uacc4\uc18d \uc7ac\uc0dd\"\uc774 \ucf1c\uc838 \uc788\uc744 \ub54c \uc791\ub3d9\ud574\uc694.");
-        table.put("When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.",
-                "\ud53c\ub4dc \ub3d9\uc601\uc0c1 \uc704\uc5d0 \uac8c\uc2dc\uc790 \uc774\ub984\uc774 \ud45c\uc2dc\ub418\uba74 \uadf8 \uc774\ub984\ub3c4 \uac19\uc740 \uc5b4\ub450\uc6b4 \uc0c1\uc790 \uc704\uc5d0 \ud45c\uc2dc\ub3fc\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \uc774\ud6c4\uc5d0 \ud45c\uc2dc\ub418\ub294 \uac8c\uc2dc\ubb3c\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
+        table.put("When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.",
+                "\ud53c\ub4dc \ub3d9\uc601\uc0c1 \uc704\uc5d0 \uac8c\uc2dc\uc790 \uc774\ub984\uc774 \ud45c\uc2dc\ub418\uba74 \uadf8 \uc774\ub984\uacfc \uc544\ub798\uc758 \ub0a0\uc9dc\ub3c4 \uac19\uc740 \uc5b4\ub450\uc6b4 \uc0c1\uc790 \uc704\uc5d0 \ud45c\uc2dc\ub3fc\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \uc774\ud6c4\uc5d0 \ud45c\uc2dc\ub418\ub294 \uac8c\uc2dc\ubb3c\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("When the comments or a menu close",
                 "\ub313\uae00\uc774\ub098 \uba54\ub274\uac00 \ub2eb\ud790 \ub54c");
         table.put("When the comments or a menu close. A reel you took out of Clean mode goes back into it once whatever you opened over it closes.",

@@ -1100,7 +1100,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	Nền tối sau tên trên thước phim
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Tên ở cuối thước phim nằm trên cùng khung tối đó, nên dễ đọc trên video sáng. Thay đổi áp dụng từ thước phim tiếp theo.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Tên ở cuối thước phim, cùng ngày đăng và chi tiết bên dưới, nằm trên cùng khung tối đó, nên dễ đọc trên video sáng. Thay đổi áp dụng từ thước phim tiếp theo.
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	Độ tối của khung
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -3150,7 +3150,7 @@ The time or date under the poster's name is bold, like the name.	Thời gian ho�
 Show full names	Hiện tên đầy đủ
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Tên dài ở đầu bài viết sẽ xuống dòng thay vì kết thúc bằng "...". Tên vừa một dòng vẫn chỉ chiếm một dòng.
 Dark box behind feed video names	Khung tối sau tên trên video ở Bảng tin
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Khi một video trong Bảng tin hiện tên người đăng đè lên video, tên đó nằm trên cùng khung tối. Thay đổi hiện ở các bài viết tải sau đó.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	Khi một video trong Bảng tin hiện tên người đăng đè lên video, tên đó và ngày đăng bên dưới nằm trên cùng khung tối. Thay đổi hiện ở các bài viết tải sau đó.
 Quality settings	Cài đặt chất lượng
 Request community note	Yêu cầu ghi chú cộng đồng
 Something went wrong	Đã xảy ra lỗi

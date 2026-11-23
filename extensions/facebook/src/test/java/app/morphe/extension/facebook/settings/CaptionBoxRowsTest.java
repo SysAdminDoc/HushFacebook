@@ -86,15 +86,15 @@ public class CaptionBoxRowsTest {
 
             SwitchPreference names = (SwitchPreference) rows.get(folded + 1);
             assertEquals("Dark box behind reel names", String.valueOf(names.getTitle()));
-            assertEquals("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright "
-                    + "video. A change shows from the next reel.", String.valueOf(names.getSummary()));
+            assertEquals("The name at the bottom of a reel, with the date and details under it, sits on the same dark box, "
+                    + "so it's easy to read over a bright video. A change shows from the next reel.", String.valueOf(names.getSummary()));
             assertFalse(names.isChecked());
             assertFalse(Settings.DIM_REEL_NAMES.defaultValue);
 
             SwitchPreference feedNames = (SwitchPreference) rows.get(folded + 2);
             assertEquals("Dark box behind feed video names", String.valueOf(feedNames.getTitle()));
-            assertEquals("When a video in your feed has the poster's name on top of the video, that name sits on the "
-                    + "same dark box. A change shows on the posts drawn after it.", String.valueOf(feedNames.getSummary()));
+            assertEquals("When a video in your feed has the poster's name on top of the video, that name and the date "
+                    + "under it sit on the same dark box. A change shows on the posts drawn after it.", String.valueOf(feedNames.getSummary()));
             assertFalse(feedNames.isChecked());
             assertFalse(Settings.DIM_FEED_VIDEO_NAMES.defaultValue);
 

@@ -1100,7 +1100,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	Riquadro scuro dietro i nomi dei reel
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Il nome in fondo a un reel ha dietro lo stesso riquadro scuro, così si legge facilmente su un video luminoso. La modifica si vede dal reel successivo.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Il nome in fondo a un reel, con la data e i dettagli sotto, ha dietro lo stesso riquadro scuro, così si legge facilmente su un video luminoso. La modifica si vede dal reel successivo.
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	Intensità dei riquadri
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -3150,7 +3150,7 @@ The time or date under the poster's name is bold, like the name.	L'ora o la data
 Show full names	Mostra i nomi completi
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Un nome lungo in cima a un post va a capo invece di finire con "...". Un nome che ci sta occupa comunque una sola riga.
 Dark box behind feed video names	Riquadro scuro dietro i nomi nei video del feed
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Quando un video nel feed ha il nome di chi l'ha pubblicato sopra il video, quel nome ha dietro lo stesso riquadro scuro. La modifica si vede sui post mostrati dopo.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	Quando un video nel feed ha il nome di chi l'ha pubblicato sopra il video, quel nome e la data sotto hanno dietro lo stesso riquadro scuro. La modifica si vede sui post mostrati dopo.
 Quality settings	Impostazioni della qualità
 Request community note	Richiedi una nota della community
 Something went wrong	Qualcosa è andato storto

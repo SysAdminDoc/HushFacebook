@@ -1100,7 +1100,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	กล่องสีเข้มด้านหลังชื่อใน Reels
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	ชื่อที่ด้านล่างของ Reels จะอยู่บนกล่องสีเข้มเดียวกัน จึงอ่านง่ายบนวิดีโอที่สว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reels ถัดไป
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	ชื่อที่ด้านล่างของ Reels พร้อมวันที่และรายละเอียดด้านล่างชื่อ จะอยู่บนกล่องสีเข้มเดียวกัน จึงอ่านง่ายบนวิดีโอที่สว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reels ถัดไป
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	ความเข้มของกล่อง
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -3150,7 +3150,7 @@ The time or date under the poster's name is bold, like the name.	เวลาห
 Show full names	แสดงชื่อเต็ม
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	ชื่อยาวที่ด้านบนของโพสต์จะขึ้นบรรทัดใหม่แทนการลงท้ายด้วย "..." ส่วนชื่อที่พอดีจะยังอยู่ในบรรทัดเดียว
 Dark box behind feed video names	กล่องสีเข้มหลังชื่อบนวิดีโอในฟีด
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	เมื่อวิดีโอในฟีดข่าวแสดงชื่อของผู้โพสต์ทับอยู่บนวิดีโอ ชื่อนั้นจะอยู่บนกล่องสีเข้มเดียวกัน การเปลี่ยนแปลงจะเห็นในโพสต์ที่โหลดหลังจากนั้น
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	เมื่อวิดีโอในฟีดข่าวแสดงชื่อของผู้โพสต์ทับอยู่บนวิดีโอ ชื่อนั้นและวันที่ด้านล่างจะอยู่บนกล่องสีเข้มเดียวกัน การเปลี่ยนแปลงจะเห็นในโพสต์ที่โหลดหลังจากนั้น
 Quality settings	การตั้งค่าคุณภาพ
 Request community note	ขอบันทึกจากชุมชน
 Something went wrong	เกิดข้อผิดพลาดบางอย่าง
