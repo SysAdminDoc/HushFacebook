@@ -13,6 +13,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Side buttons on long videos` under Reels and Watch puts Like, Comment, Share and Save back down the side of long videos in the Reels viewer, like a live replay or a film you open from Saved or the Reels library. Facebook only gives those the three dots. It starts off. (#525)
 * The Hush settings now go light or dark with your phone's theme, like HushGram's do. Without the `Material You theme` patch they used to stay dark on every phone. `Force dark mode` still keeps them dark. (#559)
 * The Hush settings now come in Italian and Korean too. They follow your phone's language, like the other translations. (#558)
+* `Show Comment on posts with comments off` under News feed keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the comments already there. It's off until you turn it on. (#299)
 
 ### Fixed
 
@@ -26,6 +27,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Fold long posts` now reaches the posts Facebook cuts after a single line, which is most photo posts and shared posts. With 3 lines picked they still showed one line and a "more". Comments Facebook cuts that short get your count too. (#506)
 * A shared post now stops at the lines you picked. Its text sits in a narrower box than the feed's, so with 3 lines picked it ran on to a 4th before the "more". (#506)
 * Reel captions have a list of their own now, `Fold reel captions` under Reels and Watch, so the count you pick in `Fold long posts` stays on posts. Since 0.24.0 a reel's caption took the posts' count. The new list starts at Facebook's choice. (#506)
+* `Show Comment when comments are off` works on Facebook 588 again. The Comment button down the side of a reel stayed hidden on reels whose author limited who can comment, even with the switch on. (#299)
 
 ## 0.24.0 (2026-11-22)
 

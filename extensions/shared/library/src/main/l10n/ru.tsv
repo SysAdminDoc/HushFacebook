@@ -2794,6 +2794,10 @@ Hide friends' reactions on photos and videos	Скрывать реакции д�
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	Убирает фото друга с его реакцией, которое Facebook показывает поверх фото или видео, когда друг отреагировал. Изменение видно в публикациях, загруженных после него.
 Hide who reacted under posts	Скрывать, кто отреагировал на публикации
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	Убирает строку под публикацией с именами тех, кто отреагировал, например «Имя и другие отреагировали». Изменение видно в публикациях, загруженных после него.
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	Показывать «Комментировать» в публикациях с отключёнными комментариями
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	Оставляет кнопку «Комментировать» в публикациях, автор которых отключил комментарии или ограничил, кто может комментировать, чтобы вы могли читать уже существующие комментарии. Изменение видно в публикациях, загруженных после него.
 Hide the Reels title	Скрывать заголовок Reels
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Убирает слово Reels в верхней части вкладки Reels. Кнопки рядом остаются.
 Hide Back on opened videos	Скрывать «Назад» у открытых видео

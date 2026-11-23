@@ -2738,6 +2738,10 @@ Hide friends' reactions on photos and videos	사진과 동영상의 친구 감�
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	친구가 감정 표현을 남겼을 때 Facebook이 사진이나 동영상 위에 표시하는, 감정 표현이 붙은 친구 사진을 없애요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
 Hide who reacted under posts	게시물 아래 감정 표현을 남긴 사람 숨기기
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	"이름 님 외 여러 명이 감정 표현을 남겼습니다"처럼 감정 표현을 남긴 사람을 알려 주는 게시물 아래 줄을 없애요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	댓글이 꺼진 게시물에 댓글 달기 표시
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	작성자가 댓글을 끄거나 댓글을 달 수 있는 사람을 제한한 게시물에도 댓글 달기 버튼을 유지해서 이미 있는 댓글을 읽을 수 있어요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
 Hide the Reels title	릴스 제목 숨기기
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	릴스 탭 상단의 "릴스" 글자를 없애요. 옆의 버튼은 그대로 남아요.
 Hide Back on opened videos	연 동영상의 뒤로 버튼 숨기기

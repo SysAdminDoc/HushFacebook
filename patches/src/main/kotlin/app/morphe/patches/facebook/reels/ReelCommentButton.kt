@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.reels.gesture.isCommentClick
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
@@ -24,6 +25,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 /*
  * The Comment button down a reel's right side, on a reel whose comments are turned off (#299). Read
@@ -43,6 +45,10 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * - Every read of either key in the two methods gets its answer handed to the extension right after
  *   the move-result. A branch landing past a read (the builder's own "yes" path) keeps landing past
  *   the hook. The comment sheet makes its own check before it offers the composer.
+ * - 588 (arm64, read 2026-11-23) has both methods ask one static helper first (LX/09HZ;->A08, called
+ *   from nowhere else). It reads the same two keys and also says yes when a server flag shows the
+ *   button on a reel that already has comments. A no from it sends both callers past the button
+ *   whatever their own read said, so its reads get the same hook ([sharedCommentChecks]).
  */
 
 internal const val SHOW_COMMENT_BUTTON = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->showsCommentButton(Z)Z"
@@ -95,9 +101,28 @@ internal fun buildsCommentButton(method: Method, button: String): Boolean =
 internal fun commentGateReads(method: Method, alternate: Int): List<BooleanRead> =
     treeBooleanReads(method).filter { read -> read.keys.all { it == CAN_VIEWER_COMMENT || it == alternate } }
 
+/** The static boolean methods [method] calls. */
+private fun staticChecks(method: Method): Set<MethodReference> =
+    method.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
+        ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf {
+            instruction.opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) && it.returnType == "Z"
+        }
+    }.toSet()
+
 /**
- * Hands each of the two sidebar builders' comment checks to the extension, which answers yes while
- * the switch is on. Refuses unless the comment button's builder and the shared factory are each
+ * The static yes/no helpers that [builder] and [factory] both call and that read either comment key
+ * themselves, resolved through [classOf]. None before 588; there, the one that decides the button.
+ */
+internal fun sharedCommentChecks(builder: Method, factory: Method, alternate: Int, classOf: (String) -> ClassDef?): List<Method> {
+    val shared = staticChecks(builder).map(MethodReference::toString).toSet()
+    return staticChecks(factory).filter { it.toString() in shared }.mapNotNull { call ->
+        classOf(call.definingClass)?.methods?.firstOrNull { MethodUtil.methodSignaturesMatch(it, call) }
+    }.filter { helper -> commentGateReads(helper, alternate).any { CAN_VIEWER_COMMENT in it.keys } }
+}
+
+/**
+ * Hands each of the two sidebar builders' comment checks, and those of any helper both of them ask
+ * ([sharedCommentChecks]), to the extension, which answers yes while the switch is on. Refuses unless the comment button's builder and the shared factory are each
  * found once, the second key is learned, and each method reads both keys.
  */
 internal fun BytecodePatchContext.showReelCommentButton() {
@@ -120,8 +145,9 @@ internal fun BytecodePatchContext.showReelCommentButton() {
         ?: throw PatchException("$PATCH: expected one shared sidebar factory naming $WHATSAPP_BUTTON_ID, found ${factories.size}")
     val alternate = alternateCommentKey(builder)
         ?: throw PatchException("$PATCH: ${builder.definingClass}->${builder.name} doesn't read one other key where it reads can_viewer_comment")
+    val helpers = sharedCommentChecks(builder, factory, alternate) { classDefByOrNull(it) }
 
-    for (found in listOf(builder, factory)) {
+    for (found in listOf(builder, factory) + helpers) {
         val method = mutableClassDefBy(found.definingClass).methods.single {
             it.name == found.name && it.parameterTypes.map(CharSequence::toString) == found.parameterTypes.map(CharSequence::toString)
         }

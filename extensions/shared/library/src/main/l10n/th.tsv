@@ -2738,6 +2738,10 @@ Hide friends' reactions on photos and videos	ซ่อนความรู้�
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	ซ่อนรูปเพื่อนพร้อมความรู้สึกที่ Facebook แสดงบนรูปภาพหรือวิดีโอเมื่อเพื่อนแสดงความรู้สึก การเปลี่ยนแปลงจะมีผลกับโพสต์ที่แสดงหลังจากนั้น
 Hide who reacted under posts	ซ่อนชื่อคนที่แสดงความรู้สึกใต้โพสต์
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	ซ่อนบรรทัดใต้โพสต์ที่บอกว่าใครแสดงความรู้สึก เช่น "ชื่อ และคนอื่นๆ แสดงความรู้สึก" การเปลี่ยนแปลงจะมีผลกับโพสต์ที่แสดงหลังจากนั้น
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	แสดงปุ่ม "แสดงความคิดเห็น" ในโพสต์ที่ปิดความคิดเห็น
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	คงปุ่มความคิดเห็นไว้ในโพสต์ที่เจ้าของปิดความคิดเห็นหรือจำกัดว่าใครแสดงความคิดเห็นได้ เพื่อให้คุณยังคงสามารถอ่านความคิดเห็นที่มีอยู่แล้วได้ การเปลี่ยนแปลงจะมีผลกับโพสต์ที่แสดงหลังจากนั้น
 Hide the Reels title	ซ่อนชื่อ Reels
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	นำคำว่า Reels ออกจากด้านบนของแท็บ Reels ปุ่มต่างๆ ข้างเคียงจะยังคงอยู่
 Hide Back on opened videos	ซ่อนปุ่มย้อนกลับในวิดีโอที่เปิด

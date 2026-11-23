@@ -2738,6 +2738,10 @@ Hide friends' reactions on photos and videos	Ẩn biểu cảm của bạn bè t
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	Bỏ ảnh đại diện của bạn bè kèm biểu cảm mà Facebook đặt trên ảnh hoặc video khi một người bạn bày tỏ cảm xúc. Thay đổi hiện ở các bài viết được tải sau đó.
 Hide who reacted under posts	Ẩn người đã bày tỏ cảm xúc dưới bài viết
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	Bỏ dòng dưới bài viết cho biết ai đã bày tỏ cảm xúc, như "Tên và những người khác đã bày tỏ cảm xúc". Thay đổi hiện ở các bài viết được tải sau đó.
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	Hiện nút Bình luận trên bài viết đã tắt bình luận
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	Giữ nút Bình luận trên các bài viết mà người đăng đã tắt bình luận hoặc giới hạn người được bình luận, để bạn vẫn đọc được các bình luận đã có. Thay đổi hiện ở các bài viết được tải sau đó.
 Hide the Reels title	Ẩn tiêu đề Reels
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Bỏ chữ Reels ở đầu tab Reels. Các nút bên cạnh vẫn giữ nguyên.
 Hide Back on opened videos	Ẩn nút Quay lại trên video đã mở

@@ -71,7 +71,9 @@ internal const val STORY_MODEL = "Lcom/facebook/graphql/model/GraphQLStory;"
  * render answer null (ReactionBubbles.kt, #483). The seventh, also off, leaves out the line under a
  * post that names who reacted. The server writes that sentence, so the config check its row asks
  * answers no; where the app builds it instead, its builder answers nothing and the row's gate and
- * the bling bar's two checks for those names answer no (ReactorNames.kt, #483).
+ * the bling bar's two checks for those names answer no (ReactorNames.kt, #483). The eighth, also off,
+ * keeps the Comment button under a post whose author turned comments off or limited who can
+ * comment, by having the footer's check answer yes for it (PostCommentButton.kt, #299).
  */
 @Suppress("unused")
 val hidePostPromptsPatch = patch(
@@ -79,10 +81,10 @@ val hidePostPromptsPatch = patch(
     name = "Hide post prompts",
     description = "Removes the strip Facebook adds to some posts, like \"Are you interested in this post?\", " +
         "\"Show less\" or follow suggestions, so posts look less cluttered. No gap is left. On by default. Turn " +
-        "it off in Hushfacebook settings > News feed. Nine more switches there, Hide the Follow link on posts, " +
+        "it off in Hushfacebook settings > News feed. Ten more switches there, Hide the Follow link on posts, " +
         "Hide the Subscribe link on posts, Hide the Join button on posts, Hide the X on posts, Hide counts on posts, " +
-        "Hide the reaction preview on posts, Show reactions on the Like button, Hide friends' reactions on photos and videos and Hide who reacted " +
-        "under posts, start off.",
+        "Hide the reaction preview on posts, Show reactions on the Like button, Hide friends' reactions on photos and videos, Hide who reacted " +
+        "under posts and Show Comment on posts with comments off, start off.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -98,6 +100,7 @@ val hidePostPromptsPatch = patch(
         hideReactionCount()
         hideReactionBubbles()
         hideReactorNames()
+        showPostCommentButton()
         enableStatus("postPrompts")
     }
 }

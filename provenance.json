@@ -960,6 +960,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostCommentButton.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the Comment button under a post you can't comment on. In Facebook 588 one static check picks a post's footer buttons through a switch on the item, and its Comment case loads a field of CommentButtonFeedUFIFooterItemPlugin (a kept class name) and asks a static check that reads can_viewer_comment from the post's feedback. The patch finds the footer check by that field load and the call by what the called method reads, and hands the call's answer to the extension, which answers yes while the switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostFollowText.kt"
       ],
       "origin": "original",

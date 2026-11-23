@@ -64,6 +64,7 @@ final class SwitchLabels {
         if (setting == Settings.REACTIONS_ON_LIKE_BUTTON) return L10n.t("Show reactions on the Like button");
         if (setting == Settings.HIDE_REACTION_BUBBLES) return L10n.t("Hide friends' reactions on photos and videos");
         if (setting == Settings.HIDE_REACTOR_NAMES) return L10n.t("Hide who reacted under posts");
+        if (setting == Settings.SHOW_POST_COMMENT_BUTTON) return L10n.t("Show Comment on posts with comments off");
         if (setting == Settings.HIDE_FEED_PROFILE_PICTURES) return L10n.t("Hide profile pictures on posts");
         if (setting == Settings.HIDE_COMMENT_PROFILE_PICTURES) return L10n.t("Hide profile pictures in comments");
         if (setting == Settings.HIDE_SEEN_POSTS) return L10n.t("Hide posts you've already seen");

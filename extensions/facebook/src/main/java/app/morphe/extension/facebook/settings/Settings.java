@@ -3587,6 +3587,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reactor_names", FALSE);
 
     /**
+     * A post whose author turned comments off or limited who can comment keeps its Comment button,
+     * so the comments already there can be read
+     * ({@link app.morphe.extension.facebook.feed.PostPrompts#showsCommentButton}, #299). Off by
+     * default. A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting SHOW_POST_COMMENT_BUTTON =
+            new BooleanSetting("hushfacebook_show_post_comment_button", FALSE);
+
+    /**
      * The profile picture leaves the top of posts, and the name moves over into its space
      * ({@link app.morphe.extension.facebook.feed.ProfilePictures}, #400). Off by default. Read as each
      * post's header draws.

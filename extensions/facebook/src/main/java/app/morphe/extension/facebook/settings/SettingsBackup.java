@@ -196,6 +196,7 @@ public final class SettingsBackup {
             Settings.REACTIONS_ON_LIKE_BUTTON,
             Settings.HIDE_REACTION_BUBBLES,
             Settings.HIDE_REACTOR_NAMES,
+            Settings.SHOW_POST_COMMENT_BUTTON,
             Settings.HIDE_FEED_PROFILE_PICTURES,
             Settings.HIDE_COMMENT_PROFILE_PICTURES,
             Settings.HIDE_SEEN_POSTS,

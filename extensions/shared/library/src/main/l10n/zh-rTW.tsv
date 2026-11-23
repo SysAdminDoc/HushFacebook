@@ -2742,6 +2742,10 @@ Hide friends' reactions on photos and videos	隱藏相片和影片上的朋友�
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	移除朋友表達心情後 Facebook 放在相片或影片上的朋友大頭貼和心情圖示。變更會在之後載入的貼文上生效。
 Hide who reacted under posts	隱藏貼文下方的心情表達者
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	移除貼文下方顯示誰表達了心情的那一行，例如「某人和其他人表達了心情」。變更會在之後載入的貼文上生效。
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	在關閉留言的貼文上顯示留言按鈕
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	在作者關閉留言或限制誰能留言的貼文上保留留言按鈕，讓你仍能閱讀已有的留言。變更會在之後載入的貼文上生效。
 Hide the Reels title	隱藏 Reels 標題
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	移除 Reels 分頁頂部的 Reels 字樣。旁邊的按鈕會保留。
 Hide Back on opened videos	隱藏已開啟影片的返回按鈕

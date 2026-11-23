@@ -2738,6 +2738,10 @@ Hide friends' reactions on photos and videos	Arkadaşların fotoğraf ve videola
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	Bir arkadaşın tepki verdiğinde Facebook'un fotoğrafın ya da videonun üstüne koyduğu, üzerinde tepkisi olan arkadaş resmini kaldırır. Değişiklik, sonradan yüklenen gönderilerde görünür.
 Hide who reacted under posts	Gönderilerin altında kimin tepki verdiğini gizle
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	Bir gönderinin altında kimin tepki verdiğini söyleyen satırı kaldırır, örneğin "Ad ve diğerleri tepki verdi". Değişiklik, sonradan yüklenen gönderilerde görünür.
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	Yorumları kapalı gönderilerde Yorum Yap'ı göster
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	Sahibi yorumları kapatmış ya da kimlerin yorum yapabileceğini sınırlamış gönderilerde Yorum Yap düğmesini tutar, böylece mevcut yorumları okumaya devam edebilirsin. Değişiklik, sonradan yüklenen gönderilerde görünür.
 Hide the Reels title	Reels başlığını gizle
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Reels sekmesinin üstündeki Reels sözcüğünü kaldırır. Yanındaki düğmeler kalır.
 Hide Back on opened videos	Açılan videolarda Geri'yi gizle

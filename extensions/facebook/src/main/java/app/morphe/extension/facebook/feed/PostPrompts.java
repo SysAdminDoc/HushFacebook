@@ -314,6 +314,28 @@ public final class PostPrompts {
      * switch is off, paused, before the settings are ready or when anything here fails, lets the
      * builder write the number as Facebook does.
      */
+    /** Counted under the patch's name each time a post you can't comment on keeps its Comment button. */
+    static final String COMMENT_KEPT = "Comment button kept on a post with comments off";
+
+    /**
+     * Injection point, in the check that picks a post's footer buttons, handed Facebook's answer to
+     * whether you may comment on the post. A post whose author turned comments off or limited who
+     * can comment gets no Comment button, even when it has comments to read (#299). While the switch
+     * is on, a no becomes a yes, so the button shows and opens the comments. Off, paused, before the
+     * settings are ready, or when anything here fails, the answer is Facebook's own. Never throws.
+     */
+    public static boolean showsCommentButton(boolean canComment) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (canComment || !Utils.settingsReady() || !Settings.SHOW_POST_COMMENT_BUTTON.get()) return canComment;
+            HookStatus.counted(FAMILY, COMMENT_KEPT);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, COMMENT_KEPT, failure);
+            return canComment;
+        }
+    }
+
     public static boolean hidePostCounts() {
         try {
             HookStatus.invoked(FAMILY);

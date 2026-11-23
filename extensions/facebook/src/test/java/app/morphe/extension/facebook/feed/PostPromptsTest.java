@@ -52,7 +52,36 @@ public class PostPromptsTest {
         Settings.HIDE_COMMENT_REACTIONS.resetToDefault();
         Settings.HIDE_REACTION_BUBBLES.resetToDefault();
         Settings.HIDE_REACTOR_NAMES.resetToDefault();
+        Settings.SHOW_POST_COMMENT_BUTTON.resetToDefault();
         HookStatus.clear();
+    }
+
+    /**
+     * A post whose author turned comments off or limited who can comment answers no to "can you
+     * comment", which leaves its Comment button out (#299). With the switch on, that no becomes a
+     * yes and the status line counts it. A post you can comment on keeps its yes either way, and
+     * off, paused or before the settings are ready the no stays.
+     */
+    @Test
+    public void aPostYouCantCommentOnKeepsItsCommentButtonOnlyWithTheSwitchOn() {
+        assertFalse(Settings.SHOW_POST_COMMENT_BUTTON.defaultValue);
+        assertFalse("asked as each footer is built, so no restart", Settings.SHOW_POST_COMMENT_BUTTON.rebootApp);
+        assertFalse("off, a post you can't comment on got the button", PostPrompts.showsCommentButton(false));
+        assertTrue("off, a post you can comment on lost the button", PostPrompts.showsCommentButton(true));
+
+        Settings.SHOW_POST_COMMENT_BUTTON.save(true);
+        assertTrue("on, a post you can't comment on has no button", PostPrompts.showsCommentButton(false));
+        assertTrue("on, a post you can comment on lost the button", PostPrompts.showsCommentButton(true));
+        assertTrue(String.valueOf(statusLine()), statusLine().contains(PostPrompts.COMMENT_KEPT + " 1"));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, a post you can't comment on got the button", PostPrompts.showsCommentButton(false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse(
+                "before the settings were ready, a post you can't comment on got the button",
+                PostPrompts.showsCommentButton(false)));
+        Settings.SHOW_POST_COMMENT_BUTTON.save(false);
+        assertFalse(PostPrompts.showsCommentButton(false));
     }
 
     private static String statusLine() {

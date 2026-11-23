@@ -308,6 +308,10 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_POST_COUNTS,
                         L10n.t("Takes the numbers off the Like, Comment and Share buttons under posts, so each shows "
                                 + "just its word. The buttons stay where they are. A change shows on the posts drawn after it.")));
+                feed.addPreference(toggle(context, Settings.SHOW_POST_COMMENT_BUTTON,
+                        L10n.t("Keeps the Comment button on posts whose author turned comments off or limited who can "
+                                + "comment, so you can still read the ones already there. A change shows on the posts "
+                                + "drawn after it.")));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_REACTIONS,
                         L10n.t("Hides the stacked reaction icons and the reactions count under posts. The space stays, "
                                 + "so a tap where they were still opens the list of reactions. To take the number off the Like "

@@ -2738,6 +2738,10 @@ Hide friends' reactions on photos and videos	Ocultar las reacciones de amigos en
 Takes away the friend's picture with a reaction on it that Facebook puts on a photo or video when a friend reacted. A change shows on the posts drawn after it.	Quita la foto de un amigo con su reacción que Facebook pone sobre una foto o un video cuando un amigo reaccionó. Un cambio se ve en las publicaciones que se carguen después.
 Hide who reacted under posts	Ocultar quién reaccionó en las publicaciones
 Takes away the line under a post that names who reacted, like "Name and others reacted". A change shows on the posts drawn after it.	Quita la línea debajo de una publicación que dice quién reaccionó, como "Nombre y otras personas reaccionaron". Un cambio se ve en las publicaciones que se carguen después.
+# context: switch title under News feed; on, a post whose author turned comments off or limited who can comment keeps Facebook's Comment button, so its comments can still be read
+Show Comment on posts with comments off	Mostrar Comentar en publicaciones con los comentarios desactivados
+# context: summary of that switch; Comment is Facebook's own button name
+Keeps the Comment button on posts whose author turned comments off or limited who can comment, so you can still read the ones already there. A change shows on the posts drawn after it.	Mantiene el botón Comentar en las publicaciones cuyo autor desactivó los comentarios o limitó quién puede comentar, para que puedas seguir leyendo los que ya hay. Un cambio se ve en las publicaciones que se carguen después.
 Hide the Reels title	Ocultar el título Reels
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Quita la palabra Reels de la parte de arriba de la pestaña Reels. Los botones de al lado se quedan.
 Hide Back on opened videos	Ocultar Atrás en los videos abiertos

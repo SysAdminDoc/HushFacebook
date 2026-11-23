@@ -73,7 +73,12 @@ class ReelCommentButtonFixtureTest {
                 // 584 read the two keys in different branches of the factory; 585 reads them into one register as the builder does.
                 alternateCommentKey(factory)?.let { assertEquals("$name: the factory's second key matches the builder's", alternate, it) }
 
-                val owners = FixtureDex.classes(bundle, setOf(builder.definingClass))
+                // 588 has both ask one static helper (LX/09HZ;->A08) that reads the keys itself and decides the button.
+                val helpers = sharedCommentChecks(builder, factory, alternate!!) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
+                if (version.substringBefore('.').toInt() >= 588) {
+                    assertEquals("$name: helpers both builders ask about comments", 1, helpers.size)
+                }
+                val owners = FixtureDex.classes(bundle, setOf(builder.definingClass) + helpers.map { it.definingClass })
                 val classes = (owners.values + button + factoryClass).distinctBy { it.type }
                 assertThrows("$name: no factory must refuse the patch", PatchException::class.java) {
                     PatchContexts.of(classes.filter { it.type != factoryClass.type }).showReelCommentButton()
@@ -81,7 +86,7 @@ class ReelCommentButtonFixtureTest {
                 val context = PatchContexts.of(classes)
                 context.showReelCommentButton()
                 var hooks = 0
-                for (original in listOf(builder, factory)) {
+                for (original in listOf(builder, factory) + helpers) {
                     val reads = commentGateReads(original, alternate!!)
                     assertTrue("$name: ${original.definingClass} reads can_viewer_comment", reads.any { CAN_VIEWER_COMMENT in it.keys })
                     assertTrue("$name: ${original.definingClass} reads the second key", reads.any { alternate in it.keys })
