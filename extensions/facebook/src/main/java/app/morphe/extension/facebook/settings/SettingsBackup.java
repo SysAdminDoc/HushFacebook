@@ -322,6 +322,7 @@ public final class SettingsBackup {
             Settings.SAVED_VIDEOS_IN_PLAYER,
             Settings.SAVED_VIDEOS_IN_ORDER,
             Settings.SAVED_VIDEOS_STAY_ON_END,
+            Settings.SAVED_POSTS_IN_ROW,
             Settings.SKIP_STILL_WATCHING,
             Settings.FILL_REELS,
             Settings.PLAY_FEED_REELS_WHOLE,

@@ -2098,6 +2098,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Stay on a saved video when it ends	收藏的视频播完后停留
 # context: summary of that switch
 A saved video that ends stays on screen instead of opening the next one. Swipe up when you want the next.	收藏的视频播完后停留在屏幕上，不会打开下一个。想看下一个时向上滑动。
+# context: switch title under Play saved videos in a row; on, a saved post the row reaches stays on screen instead of being skipped, and a swipe past its end moves on
+Show saved posts in the row	在连播中显示已保存的帖子
+# context: summary of that switch
+A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	连播中的已保存帖子会留在屏幕上，而不是被跳过。到帖子末尾时上滑可播放下一个已保存视频，在顶部时下滑可回到上一个。
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	跳过“你还在看吗？”
 # context: summary of that switch; reels and videos go on to the next one by themselves

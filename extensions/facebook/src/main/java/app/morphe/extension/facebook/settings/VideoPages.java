@@ -311,6 +311,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SAVED_VIDEOS_STAY_ON_END,
                     L10n.t("A saved video that ends stays on screen instead of opening the next one. Swipe up when "
                             + "you want the next.")));
+            // Asked as the row reaches each saved post (#404).
+            reels.addPreference(toggle(context, Settings.SAVED_POSTS_IN_ROW,
+                    L10n.t("A saved post in the row stays on screen instead of being skipped. Swipe up past its end "
+                            + "for the next saved video, or down past its top for the one before.")));
             // Asked before each next video, so a change shows from the next one (#427).
             reels.addPreference(toggle(context, Settings.SKIP_STILL_WATCHING,
                     L10n.t("Reels and videos keep going to the next one without pausing to ask if you're still "

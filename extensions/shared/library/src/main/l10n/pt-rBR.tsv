@@ -1989,6 +1989,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Stay on a saved video when it ends	Ficar no vídeo salvo quando ele terminar
 # context: summary of that switch
 A saved video that ends stays on screen instead of opening the next one. Swipe up when you want the next.	Um vídeo salvo que termina fica na tela em vez de abrir o próximo. Deslize para cima quando quiser o próximo.
+# context: switch title under Play saved videos in a row; on, a saved post the row reaches stays on screen instead of being skipped, and a swipe past its end moves on
+Show saved posts in the row	Mostrar publicações salvas na sequência
+# context: summary of that switch
+A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	Uma publicação salva na sequência fica na tela em vez de ser pulada. Deslize para cima no fim dela para o próximo vídeo salvo, ou para baixo no topo para o anterior.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	Pular "Você ainda está assistindo?"
 # context: summary of that switch; reels and videos go on to the next one by themselves

@@ -30,6 +30,9 @@ import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -83,6 +86,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the new video up under the status bar nor a post being skipped shows between two videos. With
  * Stay on a saved video when it ends on, an end leaves the video where Facebook does and only a
  * swipe moves on.
+ *
+ * <p>With Show saved posts in the row on, a saved post the chain's tap opens as a window over Saved
+ * stays open instead ({@link #stopOnPost}, #404: the reporter wanted posts in the row too). Its
+ * window's touches are watched ({@link #postTouched}): while the post can still scroll the way the
+ * finger goes they're Facebook's, and past its end an up or down swipe slides it off and plays the
+ * next saved item, or the one before, the way a swipe on a saved video does.
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, Facebook's viewer
  * goes on as it was. Cards' labels are only compared, never written anywhere.
@@ -174,6 +183,9 @@ public final class SavedChain {
 
     /** Counted each time a card the chain tapped opened a post, which it closed for the card after it. */
     static final String POST_SKIPPED = "Saved post skipped";
+
+    /** Counted each time a saved post the chain's tap opened stays open, with Show saved posts in the row on. */
+    static final String POST_SHOWN = "Saved post kept in the row";
 
     /** The clock for tests, or null for the uptime clock. */
     @Nullable static LongSupplier clockForTests;
@@ -295,10 +307,82 @@ public final class SavedChain {
         }
     }
 
+    /**
+     * A saved post the chain's tap opened and left open (#404): its window over the Saved page, the
+     * card it came from, and a finger on it. Main thread only.
+     */
+    static final class PostStop {
+        final Card card;
+        final WeakReference<Activity> page;
+        final WeakReference<View> window;
+        final WeakReference<Dialog> dialog;
+        boolean pressed;
+        boolean taken;
+        boolean dropped;
+        /** Sliding off to the next saved item, so no new finger is taken. */
+        boolean leaving;
+        /** Whether the post could still scroll down, and up, when the finger went down. */
+        boolean scrollsDown;
+        boolean scrollsUp;
+        float downX;
+        float downY;
+        int slop;
+        @Nullable private VelocityTracker tracker;
+
+        PostStop(Card card, Activity page, View window, @Nullable Dialog dialog) {
+            this.card = card;
+            this.page = new WeakReference<>(page);
+            this.window = new WeakReference<>(window);
+            this.dialog = new WeakReference<>(dialog);
+        }
+
+        void press(MotionEvent down, View root) {
+            forget();
+            pressed = true;
+            downX = down.getX();
+            downY = down.getY();
+            slop = ViewConfiguration.get(root.getContext()).getScaledTouchSlop();
+            scrollsDown = postScrolls(root, root, 1);
+            scrollsUp = postScrolls(root, root, -1);
+            tracker = VelocityTracker.obtain();
+            track(down);
+        }
+
+        void track(MotionEvent event) {
+            if (tracker != null) tracker.addMovement(event);
+        }
+
+        /** The finger's speed up or down in pixels a second, down positive. */
+        float speed() {
+            if (tracker == null) return 0;
+            tracker.computeCurrentVelocity(1000);
+            return tracker.getYVelocity();
+        }
+
+        void forget() {
+            pressed = false;
+            taken = false;
+            dropped = false;
+            if (tracker != null) tracker.recycle();
+            tracker = null;
+        }
+
+        /** What follows the finger: the post window's content, else the whole window. */
+        @Nullable
+        View moved() {
+            View root = window.get();
+            if (root == null) return null;
+            View content = root.findViewById(android.R.id.content);
+            return content != null ? content : root;
+        }
+    }
+
     @Nullable private static Card lastCard;
     @Nullable private static Chain chain;
     @Nullable private static Tapped tapped;
     @Nullable private static Drag drag;
+    /** The saved post the chain stopped on, with Show saved posts in the row on (#404). Written holding the lock. */
+    @Nullable private static volatile PostStop postStop;
     /**
      * The event {@link #touched} read last, with its times and its action as left after the read, and
      * the answer it got. Facebook reuses event objects, so the times and action tell a second read of
@@ -496,8 +580,13 @@ public final class SavedChain {
 
     /** Whether Saved may hold a card before the chain's: one is shown above it, or the list scrolls up. */
     static boolean hasPrevious(Chain current) {
-        ViewGroup list = current.card.list.get();
-        return list != null && (previousTile(list, current.card) != null || list.canScrollVertically(-1));
+        return hasPrevious(current.card);
+    }
+
+    /** The same, for the chain's [card]. */
+    static boolean hasPrevious(Card card) {
+        ViewGroup list = card.list.get();
+        return list != null && (previousTile(list, card) != null || list.canScrollVertically(-1));
     }
 
     /**
@@ -701,6 +790,7 @@ public final class SavedChain {
                 }
                 return;
             }
+            if (Settings.SAVED_POSTS_IN_ROW.get() && stopOnPost(opened, page, post)) return;
             Chain skipped = skip(opened, page, page);
             if (skipped == null) return;
             opened.closing = new WeakReference<>(post);
@@ -753,6 +843,240 @@ public final class SavedChain {
             disarm();
             HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
         }
+    }
+
+    /**
+     * With Show saved posts in the row on, keeps the post [opened]'s tap brought up over [page] open
+     * instead of closing it (#404): its black comes off, so does Saved's, and its window's touches go
+     * to {@link #postTouched} first. False when the post isn't the chain's or its window can't be
+     * watched, and then it's closed as before.
+     */
+    private static boolean stopOnPost(Tapped opened, Activity page, View post) {
+        Window window;
+        try {
+            window = readWindows ? windowField(post) : null;
+        } catch (Throwable unreadable) {
+            window = null;
+        }
+        Window.Callback facebooks = window == null ? null : window.getCallback();
+        if (facebooks == null) {
+            Logger.printDebug(() -> "Saved videos in a row: the post's window can't be watched for a swipe, so it's skipped");
+            return false;
+        }
+        Dialog dialog = dialogOf(post);
+        PostStop stop;
+        synchronized (SavedChain.class) {
+            if (tapped != opened || chain != null) return false;
+            Card card = lastCard;
+            if (card == null || card.page.get() != page || card.at < opened.at) return false;
+            tapped = null;
+            lastCard = null;
+            stop = new PostStop(card, page, post, dialog);
+            postStop = stop;
+        }
+        if (!Proxy.isProxyClass(facebooks.getClass()) || !(Proxy.getInvocationHandler(facebooks) instanceof PostWatcher)) {
+            window.setCallback((Window.Callback) Proxy.newProxyInstance(Window.Callback.class.getClassLoader(),
+                    new Class<?>[]{Window.Callback.class}, new PostWatcher(facebooks)));
+        }
+        uncover();
+        SettleCover.lift(post);
+        HookStatus.bound(FAMILY, CHAIN_HOOK);
+        HookStatus.counted(FAMILY, POST_SHOWN);
+        Logger.printDebug(() -> "Saved videos in a row: the card opened a post, which stays until a swipe past its end");
+        return true;
+    }
+
+    /** Hands a saved post window's touches to {@link #postTouched} first, and every call on to Facebook's callback. */
+    static final class PostWatcher implements InvocationHandler {
+        final Window.Callback facebooks;
+
+        PostWatcher(Window.Callback facebooks) {
+            this.facebooks = facebooks;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (args != null && args.length == 1 && args[0] instanceof MotionEvent
+                    && "dispatchTouchEvent".equals(method.getName()) && postTouched((MotionEvent) args[0])) {
+                return true;
+            }
+            try {
+                return method.invoke(facebooks, args);
+            } catch (InvocationTargetException thrown) {
+                throw thrown.getCause();
+            }
+        }
+    }
+
+    /**
+     * A finger on the saved post the chain stopped on (#404). While the post can still scroll the way
+     * the finger goes, it's Facebook's. Past the post's end, an up or down drag is taken once it passes
+     * the touch slop: Facebook gets a cancel, the post follows the finger, and a long or quick enough
+     * swipe slides it off to the next saved item, or the one before, while anything shorter slides
+     * back. True keeps the event from Facebook. Never throws.
+     */
+    static boolean postTouched(MotionEvent event) {
+        PostStop stop = postStop;
+        if (stop == null) return false;
+        try {
+            View root = stop.window.get();
+            if (root == null || !root.isShown() || stop.leaving) return false;
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                stop.forget();
+                if (!on() || !Settings.SAVED_POSTS_IN_ROW.get()) return false;
+                stop.press(event, root);
+                return false;
+            }
+            if (!stop.pressed) return false;
+            boolean ends = action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL;
+            if (stop.dropped) {
+                if (ends) stop.forget();
+                return false;
+            }
+            stop.track(event);
+            float dx = event.getX() - stop.downX;
+            float dy = event.getY() - stop.downY;
+            if (!stop.taken) {
+                if (ends) {
+                    stop.forget();
+                    return false;
+                }
+                if (action == MotionEvent.ACTION_POINTER_DOWN) {
+                    stop.dropped = true;
+                    return false;
+                }
+                if (action != MotionEvent.ACTION_MOVE) return false;
+                if (Math.abs(dx) > stop.slop && Math.abs(dx) >= Math.abs(dy)) {
+                    stop.dropped = true;
+                    return false;
+                }
+                if (Math.abs(dy) <= stop.slop || Math.abs(dy) <= Math.abs(dx)) return false;
+                if (dy < 0 ? stop.scrollsDown : stop.scrollsUp) {
+                    stop.dropped = true; // The post still scrolls that way: Facebook's.
+                    return false;
+                }
+                stop.taken = true;
+                HookStatus.bound(FAMILY, SWIPE_HOOK);
+                followPost(stop, dy);
+                event.setAction(MotionEvent.ACTION_CANCEL);
+                return false;
+            }
+            if (action == MotionEvent.ACTION_MOVE) {
+                followPost(stop, dy);
+            } else if (action == MotionEvent.ACTION_UP) {
+                followPost(stop, dy);
+                releasePost(stop, dy);
+            } else if (action == MotionEvent.ACTION_CANCEL) {
+                stop.forget();
+                slidePostBack(stop);
+            }
+            return true;
+        } catch (Throwable failure) {
+            stop.forget();
+            slidePostBack(stop);
+            HookStatus.threw(FAMILY, SWIPE_HOOK, failure);
+            return false;
+        }
+    }
+
+    /** Whether a view in [root] that's a third of [window]'s height or more can still scroll [direction] (1 down, -1 up). */
+    static boolean postScrolls(View root, View window, int direction) {
+        if (!root.isShown()) return false;
+        if (root.getHeight() * 3 >= window.getHeight() && root.canScrollVertically(direction)) return true;
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (postScrolls(group.getChildAt(i), window, direction)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Moves the post with the finger. */
+    private static void followPost(PostStop stop, float dy) {
+        View moved = stop.moved();
+        if (moved != null) moved.setTranslationY(dy);
+    }
+
+    /** Puts the post back where Facebook had it. */
+    private static void slidePostBack(PostStop stop) {
+        View moved = stop.moved();
+        if (moved != null) moved.animate().translationY(0).setDuration(SLIDE_MS);
+    }
+
+    /** The finger lifted after a taken drag on the post: slide off to the next or previous saved item, or back. */
+    private static void releasePost(PostStop stop, float dy) {
+        float speed = stop.speed();
+        stop.forget();
+        View moved = stop.moved();
+        View root = stop.window.get();
+        if (moved == null || root == null) return;
+        float height = Math.max(1, moved.getHeight());
+        float fling = FLING_DP_PER_SECOND * root.getResources().getDisplayMetrics().density;
+        int direction = 0;
+        if (dy < 0 && (-dy > height * SWIPE_SHARE || -speed > fling)) direction = 1;
+        else if (dy > 0 && (dy > height * SWIPE_SHARE || speed > fling)) direction = -1;
+        if (direction == -1 && !hasPrevious(stop.card)) {
+            Logger.printDebug(() -> "Saved videos in a row: a swipe down on a post with nothing saved before it, so it stays");
+            direction = 0;
+        }
+        if (direction == 0) {
+            slidePostBack(stop);
+            return;
+        }
+        int way = direction;
+        stop.leaving = true;
+        moved.animate().translationY(-way * height).setDuration(SLIDE_MS);
+        Utils.runOnMainThreadDelayed(() -> {
+            try {
+                if (!leavePost(stop, way)) {
+                    stop.leaving = false;
+                    slidePostBack(stop);
+                }
+            } catch (Throwable failure) {
+                stop.leaving = false;
+                slidePostBack(stop);
+                disarm();
+                HookStatus.threw(FAMILY, SWIPE_HOOK, failure);
+            }
+        }, SLIDE_MS);
+    }
+
+    /**
+     * Closes the saved post [stop] and, once it's gone, taps the card [direction] away from it: Saved
+     * is covered, the post keeps black as it goes, and its dialog gets the Back the phone's Back would
+     * give it. False when the post isn't the chain's any more.
+     */
+    private static boolean leavePost(PostStop stop, int direction) {
+        Activity page = stop.page.get();
+        View root = stop.window.get();
+        if (page == null || page.isFinishing() || root == null || !root.isShown() || !on()) return false;
+        Chain next = new Chain(stop.card, now());
+        next.viewer = new WeakReference<>(page);
+        next.moving = true;
+        next.returned = true; // Saved never left: the post was a window over it.
+        next.direction = direction;
+        synchronized (SavedChain.class) {
+            if (postStop != stop || chain != null) return false;
+            postStop = null;
+            chain = next;
+        }
+        Logger.printDebug(() -> "Saved videos in a row: a swipe " + (direction > 0 ? "up" : "down")
+                + " past the post, back to Saved for the " + (direction > 0 ? "next" : "previous") + " one");
+        coverPage(page);
+        SettleCover.blackOut(root);
+        Dialog dialog = stop.dialog.get();
+        if (dialog != null) {
+            pressBack(dialog);
+        } else {
+            pressEscape(root);
+        }
+        long since = now();
+        WeakReference<View> window = new WeakReference<>(root);
+        WeakReference<Dialog> closing = new WeakReference<>(dialog);
+        Utils.runOnMainThreadDelayed(() -> afterPostWindow(next, window, closing, since, false), SETTLE_MS);
+        return true;
     }
 
     /**
@@ -1362,6 +1686,7 @@ public final class SavedChain {
         synchronized (SavedChain.class) {
             chain = null;
             tapped = null;
+            postStop = null;
         }
         if (cover.get() != null) uncoverAfter(0);
     }
@@ -1486,6 +1811,7 @@ public final class SavedChain {
         lastCard = null;
         chain = null;
         tapped = null;
+        postStop = null;
         asyncMain = null;
         if (drag != null) drag.forget();
         drag = null;

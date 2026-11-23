@@ -265,6 +265,7 @@ public class SavedChainTest {
         PauseForTests.resume();
         Settings.SAVED_VIDEOS_IN_ORDER.resetToDefault();
         Settings.SAVED_VIDEOS_STAY_ON_END.resetToDefault();
+        Settings.SAVED_POSTS_IN_ROW.resetToDefault();
         SavedChain.resetForTests();
         HookStatus.clear();
     }
@@ -1126,6 +1127,177 @@ public class SavedChainTest {
         idle(SavedChain.POST_CHECK_MS + 100);
         assertTrue("the chain closed a post past its limit", last.isShowing());
         assertFalse("the post the chain left open stayed black", black(last));
+    }
+
+    /** A saved post's content: what Facebook's views get of each touch, and whether it can still scroll down. */
+    static final class PostContent extends FrameLayout {
+        final List<Integer> touches = new ArrayList<>();
+        boolean scrollsDown;
+
+        PostContent(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            touches.add(event.getActionMasked());
+            return true;
+        }
+
+        @Override
+        public boolean canScrollVertically(int direction) {
+            return direction > 0 && scrollsDown;
+        }
+    }
+
+    /** A saved post window filling the screen, its content a {@link PostContent}. */
+    private PostWindow openFullPostWindow() {
+        PostWindow post = openPostWindow();
+        post.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        post.setContentView(new PostContent(page));
+        idle(0);
+        return post;
+    }
+
+    private static PostContent contentOf(PostWindow post) {
+        return (PostContent) ((ViewGroup) post.findViewById(android.R.id.content)).getChildAt(0);
+    }
+
+    /** A finger on [post]'s window from [fromY] to [toY], in ten moves 16 ms apart, as Android hands it to the window. */
+    private static void swipe(PostWindow post, float fromY, float toY) {
+        View decor = post.getWindow().getDecorView();
+        float x = decor.getWidth() / 2f;
+        long down = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, x, fromY, 0);
+        decor.dispatchTouchEvent(event);
+        event.recycle();
+        for (int i = 1; i <= 10; i++) {
+            event = MotionEvent.obtain(down, down + i * 16L, MotionEvent.ACTION_MOVE, x, fromY + (toY - fromY) * i / 10, 0);
+            decor.dispatchTouchEvent(event);
+            event.recycle();
+        }
+        event = MotionEvent.obtain(down, down + 164, MotionEvent.ACTION_UP, x, toY, 0);
+        decor.dispatchTouchEvent(event);
+        event.recycle();
+    }
+
+    /** With Show saved posts in the row on, the chain on card 0 tapped card 1, and card 1's post stopped the row. */
+    private PostWindow postInTheRow() {
+        Settings.SAVED_POSTS_IN_ROW.save(true);
+        chainTappedCardOne();
+        PostWindow post = openFullPostWindow();
+        idle(SavedChain.POST_CHECK_MS + 100);
+        assertTrue("the post was closed", post.isShowing());
+        return post;
+    }
+
+    @Test
+    public void aSavedPostInTheRowStaysOnScreen() {
+        assertFalse("posts in the row start on", Settings.SAVED_POSTS_IN_ROW.defaultValue);
+        PostWindow post = postInTheRow();
+        idle(SavedChain.TOUCH_WINDOW_MS + 500);
+        assertTrue("a post in the row was closed", post.isShowing());
+        assertEquals("the post got a Back", 0, post.backs);
+        assertEquals(0, post.escapes);
+        assertFalse("the post stayed black", black(post));
+        assertFalse("Saved stayed covered", savedCovered());
+        assertNull("the chain didn't stop on the post", SavedChain.chainForTests());
+        for (int other = 0; other < 6; other++) assertTrue("card " + other + " was tapped", touchesOf(other).isEmpty());
+        assertTrue(statusLine(), statusLine().contains(SavedChain.POST_SHOWN + " 1"));
+        assertFalse(statusLine(), statusLine().contains(SavedChain.POST_SKIPPED));
+    }
+
+    @Test
+    public void aSwipeUpPastASavedPostSlidesItOffAndTheNextCardPlays() {
+        PostWindow post = postInTheRow();
+        View decor = post.getWindow().getDecorView();
+        assertTrue("the post window wasn't laid out", decor.getHeight() > 200);
+        swipe(post, decor.getHeight() * 0.7f, decor.getHeight() * 0.2f);
+        assertEquals("Facebook kept the swipe", TAKEN, contentOf(post).touches);
+        idle(SavedChain.SLIDE_MS + 50);
+        assertEquals("one Back closed the post", 1, post.backs);
+        assertFalse(post.isShowing());
+        assertTrue("Saved showed while the post closed", savedCovered());
+        SavedChain.Chain chain = SavedChain.chainForTests();
+        assertNotNull("the swipe started no chain", chain);
+        assertEquals("card 1", chain.card.label);
+
+        pageController.windowFocusChanged(true);
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("the card after the post wasn't tapped", TAP, touchesOf(2));
+        for (int other : new int[]{0, 1, 3, 4, 5}) assertTrue("card " + other + " was tapped", touchesOf(other).isEmpty());
+        ReelsViewer viewer = openViewer(SAVED);
+        idle(SavedChain.POST_CHECK_MS + 100);
+        assertFalse("the next saved video was closed", viewer.isFinishing());
+        assertEquals("card 2", SavedChain.chainForTests().card.label);
+    }
+
+    @Test
+    public void aSwipeDownPastASavedPostPlaysTheOneBefore() {
+        PostWindow post = postInTheRow();
+        View decor = post.getWindow().getDecorView();
+        swipe(post, decor.getHeight() * 0.2f, decor.getHeight() * 0.7f);
+        idle(SavedChain.SLIDE_MS + 50);
+        assertEquals(1, post.backs);
+        assertFalse(post.isShowing());
+        pageController.windowFocusChanged(true);
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("the card before the post wasn't tapped", TAP, touchesOf(0));
+        for (int other : new int[]{1, 2, 3, 4, 5}) assertTrue("card " + other + " was tapped", touchesOf(other).isEmpty());
+    }
+
+    @Test
+    public void aSavedPostThatStillScrollsKeepsTheSwipeAndAShortDragSlidesBack() {
+        PostWindow post = postInTheRow();
+        PostContent content = contentOf(post);
+        View decor = post.getWindow().getDecorView();
+        float height = decor.getHeight();
+        content.scrollsDown = true;
+        swipe(post, height * 0.7f, height * 0.2f);
+        assertEquals("the post's own scroll lost the swipe", MotionEvent.ACTION_UP,
+                (int) content.touches.get(content.touches.size() - 1));
+        assertFalse(content.touches.contains(MotionEvent.ACTION_CANCEL));
+        idle(SavedChain.SLIDE_MS + SavedChain.SETTLE_MS + 100);
+        assertTrue("a swipe the post could still scroll closed it", post.isShowing());
+        assertEquals(0, post.backs);
+
+        content.scrollsDown = false;
+        content.touches.clear();
+        // Under an eighth of the screen, slowly: not a swipe.
+        View moved = post.findViewById(android.R.id.content);
+        long down = SystemClock.uptimeMillis();
+        float x = decor.getWidth() / 2f;
+        float from = height * 0.6f;
+        float to = from - height * SavedChain.SWIPE_SHARE * 0.5f;
+        MotionEvent event = MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, x, from, 0);
+        decor.dispatchTouchEvent(event);
+        event.recycle();
+        for (int i = 1; i <= 10; i++) {
+            event = MotionEvent.obtain(down, down + i * 100L, MotionEvent.ACTION_MOVE, x, from + (to - from) * i / 10, 0);
+            decor.dispatchTouchEvent(event);
+            event.recycle();
+        }
+        assertTrue("the post didn't follow the finger", moved.getTranslationY() < 0);
+        event = MotionEvent.obtain(down, down + 1300, MotionEvent.ACTION_UP, x, to, 0);
+        decor.dispatchTouchEvent(event);
+        event.recycle();
+        idle(SavedChain.SLIDE_MS + SavedChain.SETTLE_MS + 100);
+        assertTrue("a short drag closed the post", post.isShowing());
+        assertEquals(0, post.backs);
+        assertEquals("the post didn't slide back", 0f, moved.getTranslationY(), 0.5f);
+        for (int other = 0; other < 6; other++) assertTrue("card " + other + " was tapped", touchesOf(other).isEmpty());
+    }
+
+    @Test
+    public void withPostsInTheRowOffASwipeOnAPostIsFacebooks() {
+        PostWindow post = postInTheRow();
+        Settings.SAVED_POSTS_IN_ROW.save(false);
+        View decor = post.getWindow().getDecorView();
+        swipe(post, decor.getHeight() * 0.7f, decor.getHeight() * 0.2f);
+        idle(SavedChain.SLIDE_MS + SavedChain.SETTLE_MS + 100);
+        assertTrue(post.isShowing());
+        assertEquals(0, post.backs);
+        assertFalse(contentOf(post).touches.contains(MotionEvent.ACTION_CANCEL));
     }
 
     @Test

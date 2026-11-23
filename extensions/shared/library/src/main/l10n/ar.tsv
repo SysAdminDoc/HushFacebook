@@ -126,6 +126,10 @@ A reel's Download button, the Download button under a post and a video's Downloa
 A reel's More menu gets Copy caption, which copies the whole caption, even the part behind See more.	قائمة المزيد في الريل تحصل على نسخ الوصف، الذي ينسخ الوصف كاملًا، حتى الجزء الذي وراء عرض المزيد.
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	شريط تقدم الريل يبقى بحجمه الكامل، جاهزًا للسحب. أدوات الفيديو بملء الشاشة تبقى حتى تنقر.
 A saved video that ends stays on screen instead of opening the next one. Swipe up when you want the next.	فيديو محفوظ ينتهي يبقى على الشاشة بدلًا من فتح التالي. اسحب لأعلى عندما تريد التالي.
+# context: switch title under Play saved videos in a row; on, a saved post the row reaches stays on screen instead of being skipped, and a swipe past its end moves on
+Show saved posts in the row	إظهار المنشورات المحفوظة في التتابع
+# context: summary of that switch
+A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	يبقى المنشور المحفوظ في التتابع على الشاشة بدلًا من تخطيه. اسحب لأعلى بعد نهايته للفيديو المحفوظ التالي، أو لأسفل بعد أعلاه للسابق.
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	ملصق صغير في أعلى ريلز يعرض الدقائق التي شاهدتها. الوقت في التبويبات الأخرى لا يُحسب، و15 دقيقة بعيدًا تبدأ العدّ من جديد.
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	أغنية تضيفها إلى صورة لقصتك تُعرض حتى 30 ثانية بدلًا من 15. تُطبَّق على الأغنية التالية التي تختارها.
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	قصة تجاوزتها في درج القصص تتركه في المرة التالية التي تفتح فيها فيسبوك، حتى لو لم تشاهدها. قصة جديدة تُعيد ذلك الشخص.

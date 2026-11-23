@@ -2103,6 +2103,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Stay on a saved video when it ends	Tetap di video tersimpan saat selesai
 # context: summary of that switch
 A saved video that ends stays on screen instead of opening the next one. Swipe up when you want the next.	Video tersimpan yang selesai tetap di layar, bukan membuka video berikutnya. Geser ke atas kalau kamu mau yang berikutnya.
+# context: switch title under Play saved videos in a row; on, a saved post the row reaches stays on screen instead of being skipped, and a swipe past its end moves on
+Show saved posts in the row	Tampilkan postingan tersimpan dalam urutan
+# context: summary of that switch
+A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	Postingan tersimpan dalam urutan tetap di layar alih-alih dilewati. Geser ke atas setelah akhirnya untuk video tersimpan berikutnya, atau ke bawah dari atasnya untuk yang sebelumnya.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	Lewati "Masih menonton?"
 # context: summary of that switch; reels and videos go on to the next one by themselves

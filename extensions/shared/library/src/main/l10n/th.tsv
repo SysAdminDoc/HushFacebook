@@ -2103,6 +2103,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Stay on a saved video when it ends	อยู่ที่วิดีโอที่บันทึกไว้เมื่อเล่นจบ
 # context: summary of that switch
 A saved video that ends stays on screen instead of opening the next one. Swipe up when you want the next.	วิดีโอที่บันทึกไว้ที่เล่นจบจะค้างอยู่บนหน้าจอแทนที่จะเปิดวิดีโอถัดไป ปัดขึ้นเมื่อต้องการดูวิดีโอถัดไป
+# context: switch title under Play saved videos in a row; on, a saved post the row reaches stays on screen instead of being skipped, and a swipe past its end moves on
+Show saved posts in the row	แสดงโพสต์ที่บันทึกไว้ในลำดับ
+# context: summary of that switch
+A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	โพสต์ที่บันทึกไว้ในลำดับจะอยู่บนหน้าจอแทนที่จะถูกข้าม ปัดขึ้นเมื่อถึงท้ายโพสต์เพื่อไปวิดีโอที่บันทึกไว้ถัดไป หรือปัดลงเมื่ออยู่บนสุดเพื่อกลับไปรายการก่อนหน้า
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	ข้าม "คุณยังดูอยู่หรือไม่"
 # context: summary of that switch; reels and videos go on to the next one by themselves
