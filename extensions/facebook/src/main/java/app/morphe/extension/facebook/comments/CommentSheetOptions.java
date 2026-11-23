@@ -262,11 +262,17 @@ public final class CommentSheetOptions {
     static final int NO_BAR_SEEK_BAR_DP = 3;
 
     /**
-     * Whether the Shorts viewer root rendering on this thread had its pick of a bottom bar hand back
-     * nothing while Hide the video comment box was on (#375): the comment bar it dropped, or no bar at
-     * all, where its list gives the video its full height just the same. Each root render starts it
-     * over. Its other bars, such as the reply bar under a reel shared in a chat, stay, and so does their
-     * band, so the seek bar follows this, not the switch alone.
+     * Whether the Shorts viewer root rendering on this thread dropped its comment bar while Hide the
+     * video comment box was on (#375). Each root render starts it over. Its other bars, such as the
+     * reply bar under a reel shared in a chat, stay, and so does their band, so the seek bar follows
+     * this, not the switch alone.
+     *
+     * <p>A pick with no bar to begin with leaves it unset. That's the scroller a video tapped in Home
+     * opens, whose list gives the video its full height all the same, but on 588 its caption stays
+     * where it was as the video grows (S22, 2026-11-23: "Suckers!" at 1937 to 1978 either way). Taken
+     * down to {@link #NO_BAR_SEEK_BAR_DP} there, the seek bar only went under the Up next bar and into
+     * the gesture strip (#552), so it keeps Facebook's band. In the viewer a reel from Home's shelf
+     * opens, where the comment bar is dropped, the caption does come down with the video.
      */
     private static final ThreadLocal<Boolean> shortsBarDropped = new ThreadLocal<>();
 
@@ -696,6 +702,7 @@ public final class CommentSheetOptions {
             HookStatus.bound(FAMILY, SHORTS_BAR);
             if (!Utils.settingsReady() || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()) return false;
             HookStatus.counted(FAMILY, COMPOSER_HIDDEN);
+            shortsBarDropped.set(Boolean.TRUE);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, SHORTS_BAR, failure);
@@ -707,17 +714,13 @@ public final class CommentSheetOptions {
      * The hook right after the Shorts viewer's root gets its bottom bar back from the pick (#375),
      * with that bar, null where it shows none or the comment bar was dropped, and the viewer's config.
      * A bar marks the config, so the viewer's videos keep Facebook's band from their next layout on;
-     * no bar clears the mark, and while Hide the video comment box is on this render's seek bar then
-     * goes down with the full-height video instead of staying where the caption now ends.
+     * no bar clears the mark. Whether the seek bar goes down is up to {@link #dropsShortsCommentBar}.
      */
     public static void keptShortsBar(@Nullable Object bar, @Nullable Object config) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, PICKED_BAR);
             if (config != null) markKeepsBar(config, bar != null);
-            if (bar == null && Utils.settingsReady() && Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()) {
-                shortsBarDropped.set(Boolean.TRUE);
-            }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, PICKED_BAR, failure);
         }
@@ -725,9 +728,10 @@ public final class CommentSheetOptions {
 
     /**
      * The hook on each band height, in dp, the Shorts viewer's root places its seek bar and time
-     * above (#375). Once this render's pick came back with no bar while the switch is on they go down
-     * with the video to {@link #NO_BAR_SEEK_BAR_DP}, where Facebook puts them with no bar, instead of
-     * staying over the caption; otherwise the band is Facebook's.
+     * above (#375). Once this render dropped the comment bar while the switch is on they go down with
+     * the video to {@link #NO_BAR_SEEK_BAR_DP}, where Facebook puts them with no bar, instead of
+     * staying over the caption; otherwise, a pick with no bar of its own included (#552), the band is
+     * Facebook's.
      */
     public static int shortsSeekBarBand(int band) {
         try {

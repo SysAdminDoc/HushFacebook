@@ -120,12 +120,12 @@ public class VideoCommentBandTest {
         CommentSheetOptions.keptShortsBar(BAR, viewer);
         assertEquals("the seek bar went under another bar", BAND, seekBar());
         assertEquals("another bar lost its band", BAND, video(viewer));
-        // A pick of no bar at all gives the video its full height too, so the seek bar goes down with
-        // it instead of staying where the caption now ends (the feed reel scroller's overlap).
+        // A pick of no bar at all gives the video its full height too, but the seek bar keeps
+        // Facebook's band: the scroller a video tapped in Home opens has no bar of its own, and on 588
+        // its caption stays put, so a lower seek bar went under Up next and the gesture strip (#552).
         CommentSheetOptions.pickingShortsBar();
         CommentSheetOptions.keptShortsBar(null, viewer);
-        assertEquals("a pick of no bar left the seek bar over the caption",
-                CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+        assertEquals("a pick of no bar of its own took the seek bar down", BAND, seekBar());
         assertEquals("a pick of no bar kept the video's band", 0, video(viewer));
         CommentSheetOptions.pickingShortsBar();
         assertEquals("the next render started with the seek bar down", BAND, seekBar());

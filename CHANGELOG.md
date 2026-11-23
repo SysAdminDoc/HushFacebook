@@ -14,6 +14,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 * `Load whole reply threads` loads long reply threads all the way again. On Facebook 588 a thread stopped after its first page or so, and the View more replies button was gone too, so there was no way to read the rest. Now each page comes in by itself as you scroll down to it. (#536)
 * Switching `Tab bar while scrolling` between hiding and staying on screen no longer leaves short reels on the next start. With see-through bars or the rounded tab bar, the first reels after the switch stopped short and the next one peeked in under the tab bar until Reels was opened again. (#552)
+* With `Hide the video comment box` on, the seek bar on a video you tap in Home sits where Facebook puts it again, above the Up next bar. It had dropped to the bottom edge, under Up next and into the swipe area, which made it hard to grab. (#552)
 
 ## 0.24.0 (2026-11-22)
 
