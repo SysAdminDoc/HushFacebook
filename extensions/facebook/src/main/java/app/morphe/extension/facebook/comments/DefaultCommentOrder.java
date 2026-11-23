@@ -251,7 +251,12 @@ public final class DefaultCommentOrder {
             if (named) rememberPick(token, feedbackId);
             if (isEmpty(feedbackId)) return token;
             HookStatus.bound(FamilyNames.DEFAULT_COMMENT_ORDER, "comment request");
-            if (named) return token;
+            if (named) {
+                // A request naming an order no pick kept for the post, as a sheet's own refresh to
+                // show hidden comments may (#546), says which, so a report shows what it asked for.
+                if (!token.equals(picks.get(feedbackId))) log("a request named " + describe(token) + " itself.");
+                return token;
+            }
             CommentOrder order = chosen();
             if (order == null) return token;
             if (!isEmpty(focusedCommentId)) {

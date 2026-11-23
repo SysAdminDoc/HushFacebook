@@ -722,4 +722,23 @@ public class DefaultCommentOrderTest {
         assertEquals(report, 1, occurrences(report, "Default comment order: 50 comment requests so far."));
         assertEquals(report, 1, occurrences(report, "Default comment order: 100 comment requests so far."));
     }
+
+    /**
+     * A request that names an order nobody picked for the post, as a sheet's refresh to show its
+     * hidden comments may (#546), gets a line naming it. The pages after a pick don't.
+     */
+    @Test
+    public void aRequestNamingItsOwnOrderSaysWhich() {
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        Settings.COMMENT_ORDER.save(CommentOrder.ALL_COMMENTS);
+        assertEquals(ALL_ROW, DefaultCommentOrder.requestedOrder(ALL_ROW, OTHER_POST, null));
+        pick(NEWEST, POST);
+        assertEquals(NEWEST, DefaultCommentOrder.requestedOrder(NEWEST, POST, null));
+        String report = LogBufferManager.buildExportText();
+        assertEquals(report, 1, occurrences(report, "Default comment order: a request named all_comments ("
+                + ALL_ROW + ") itself."));
+        assertEquals(report, 0, occurrences(report, "a request named newest"));
+        assertEquals(report, 0, occurrences(report, OTHER_POST));
+    }
 }
