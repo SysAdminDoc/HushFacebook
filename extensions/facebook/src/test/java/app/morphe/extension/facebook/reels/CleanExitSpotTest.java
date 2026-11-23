@@ -54,12 +54,14 @@ public class CleanExitSpotTest {
     private ComponentHost top;
     private ComponentHost sidebar;
     private ComponentHost button;
+    /** Facebook's Clean mode store, held here: ReelCleanMode keeps it weakly, and a GC lost a bare one. */
+    private final Object store = new Object();
 
     @Before
     public void setUp() {
         CleanExitSpot.reset();
         HookStatus.clear();
-        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.keepStore(store);
         Settings.REEL_CLEAN_BUTTON.save(true);
         activity = Robolectric.buildActivity(Activity.class).setup().get();
         FrameLayout root = new FrameLayout(activity);

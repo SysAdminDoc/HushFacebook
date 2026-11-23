@@ -38,6 +38,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class ReelCleanModeTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
+    /** Facebook's Clean mode store, held here: ReelCleanMode keeps it weakly, and a GC lost a bare one. */
+    private final Object store = new Object();
+
     @Before
     public void start() {
         HookStatus.clear();
@@ -58,7 +61,7 @@ public class ReelCleanModeTest {
     @Test
     public void aReelTakenOutGoesBackThroughTheSidebarButtonWhenTheBuildHasIt() {
         Settings.REEL_CLEAN_MODE.save(true);
-        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.keepStore(store);
         ReelCleanMode.sidebarInBuild = Boolean.TRUE;
         assertFalse("the button's own switch doesn't start off", Settings.REEL_CLEAN_BUTTON.get());
         assertTrue("Always use Clean mode left the sidebar without its way back", ReelCleanMode.cleanButton());
@@ -80,7 +83,7 @@ public class ReelCleanModeTest {
         assertFalse("without a store the sidebar got a button that does nothing", ReelCleanMode.cleanButton());
 
         Settings.REEL_CLEAN_MODE.save(false);
-        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.keepStore(store);
         assertFalse("with both switches off the sidebar got the button", ReelCleanMode.cleanButton());
     }
 
