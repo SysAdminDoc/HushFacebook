@@ -351,6 +351,8 @@ Choose where Facebook opens from its icon. Notifications and links still open th
 Choose which links open here	اختر أي الروابط تفتح هنا
 Clean mode	الوضع النظيف
 Clean mode button on reels	زر الوضع النظيف على ريلز
+Faint Clean mode button	زر الوضع النظيف باهت
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	يظهر زر فيسبوك للخروج من الوضع النظيف باهتًا، فيبقى النص الموجود في الفيديو تحته مقروءًا. ما زال يعمل عند النقر عليه.
 Cleaner reels and video controls	أدوات أنظف للريلز والفيديو
 Clear	مسح
 Clear all	مسح الكل

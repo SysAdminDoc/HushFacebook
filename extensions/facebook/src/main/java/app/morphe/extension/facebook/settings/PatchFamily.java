@@ -152,7 +152,7 @@ public enum PatchFamily {
             Settings.HIDE_REEL_CHIPS, Settings.HIDE_REEL_FOLLOW_BUTTON, Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON,
             Settings.HIDE_REEL_SOCIAL_FOOTER, Settings.HIDE_REEL_THREADS_CARDS, Settings.HIDE_REEL_POST_CARDS,
             Settings.FOLLOWED_REELS_ONLY,
-            Settings.REEL_CLEAN_MODE, Settings.REEL_CLEAN_BUTTON, Settings.PLAY_REELS_ONCE,
+            Settings.REEL_CLEAN_MODE, Settings.REEL_CLEAN_BUTTON, Settings.REEL_CLEAN_EXIT_FAINT, Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO, Settings.HIDE_REEL_SEARCH_PILL, Settings.HIDE_VIEWER_TOP_BUTTONS, Settings.HIDE_REELS_TAB_TITLE,
             Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM, Settings.BURN_IN_TAP_BACK, Settings.BURN_IN_FADE,
             Settings.GRAY_REELS, Settings.REELS_MINUTES, Settings.HIDE_REEL_COUNTS,

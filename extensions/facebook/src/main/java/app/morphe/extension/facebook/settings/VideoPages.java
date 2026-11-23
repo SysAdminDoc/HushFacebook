@@ -181,6 +181,10 @@ final class VideoPages {
             }
             // Back to Clean mode (#519): read as each reel leaves Clean mode, so a change shows from the next one.
             reels.addPreference(cleanReturnRow(context));
+            // Asked each frame of a reel's list, so a change shows right away (#519).
+            reels.addPreference(toggle(context, Settings.REEL_CLEAN_EXIT_FAINT,
+                    L10n.t("Facebook's button for leaving Clean mode shows faint, so the text in the video under it "
+                            + "stays readable. It still works when you tap it.")));
             reels.addPreference(toggle(context, Settings.PLAY_REELS_ONCE,
                     L10n.t("A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to "
                             + "the next one. Feed videos and stories aren't changed. Off by default, since it hasn't "

@@ -2827,6 +2827,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	"스토리 탐색 막대"가 켜져 있으면 스토리가 시작되거나 마지막으로 터치한 후 몇 초가 지나면 막대가 흐려져요. 터치하거나 일시 정지하면 다시 나타나요.
 Clean mode	클린 모드
 Clean mode button on reels	릴스 클린 모드 버튼
+Faint Clean mode button	흐린 클린 모드 버튼
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	클린 모드를 끄는 Facebook 버튼이 흐리게 표시되어 그 아래 동영상의 글자가 잘 보입니다. 탭하면 그대로 작동합니다.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	릴스 옆쪽 버튼에 클린 모드 버튼을 추가해요. 탭하면 옆쪽 버튼이 숨겨지고 스와이프해도 클린 모드가 유지돼요. Facebook 자체 클린 모드 버튼을 누르면 다시 나타나요.
 Open chats in Messenger	메신저에서 채팅 열기
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	메신저가 설치되어 있고 사용 중이면 프로필의 메시지 버튼을 포함해 채팅을 Facebook 안이 아닌 메신저 앱에서 열어요. 메신저가 없으면 채팅은 Facebook에서 열려요. 설정을 바꾼 후 Facebook을 다시 시작하세요.

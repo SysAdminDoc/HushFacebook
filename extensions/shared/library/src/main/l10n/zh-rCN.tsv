@@ -2822,6 +2822,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	开启“快拍上的进度条”后，进度条会在快拍开始或你最后一次触碰几秒后变淡。触碰或暂停就会恢复。
 Clean mode	简洁模式
 Clean mode button on reels	短视频上的简洁模式按钮
+Faint Clean mode button	淡化简洁模式按钮
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Facebook 用于退出简洁模式的按钮会淡化显示，下方视频里的文字依然清晰可读。点按它仍然有效。
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	在短视频侧边的按钮中添加简洁模式按钮。点按它即可隐藏这些按钮，滑动时简洁模式会保持开启。Facebook 自带的简洁模式按钮可让它们重新显示。
 Open chats in Messenger	在 Messenger 中打开聊天
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	在 Messenger 应用中打开聊天，而不是在 Facebook 内打开，包括个人主页上的“发消息”按钮，前提是 Messenger 已安装并启用。没有 Messenger 时，聊天仍在 Facebook 中打开。更改后请重新启动 Facebook。

@@ -2827,6 +2827,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	Dengan “Bilah geser di cerita” aktif, bilahnya meredup beberapa detik setelah cerita mulai atau setelah terakhir kali kamu menyentuhnya. Sentuhan atau jeda memunculkannya lagi.
 Clean mode	Mode bersih
 Clean mode button on reels	Tombol mode bersih di reel
+Faint Clean mode button	Tombol mode bersih samar
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Tombol Facebook untuk keluar dari mode bersih tampil samar, jadi teks di video di bawahnya tetap terbaca. Tombol tetap berfungsi saat diketuk.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Menambahkan tombol mode bersih ke tombol-tombol di sisi reel. Ketuk untuk menyembunyikannya, dan mode bersih tetap aktif saat kamu menggeser. Tombol mode bersih milik Facebook sendiri memunculkannya kembali.
 Open chats in Messenger	Buka chat di Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Membuka chat di aplikasi Messenger, bukan di dalam Facebook, termasuk dari tombol Kirim Pesan di profil, selama Messenger terpasang dan aktif. Tanpa Messenger, chat tetap di Facebook. Mulai ulang Facebook setelah mengubahnya.

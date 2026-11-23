@@ -868,6 +868,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_reel_clean_button", FALSE);
 
     /**
+     * Faint Clean mode button (#519): Facebook's button out of Clean mode, over a clean reel's lower
+     * right, draws at {@link app.morphe.extension.facebook.reels.CleanExitSpot#FAINT} of its opacity,
+     * so the video's own text under it shows through. It still takes taps. Off by default, read each frame.
+     */
+    public static final BooleanSetting REEL_CLEAN_EXIT_FAINT =
+            new BooleanSetting("hushfacebook_reel_clean_exit_faint", FALSE);
+
+    /**
      * Back to Clean mode (#519): once the buttons are brought back over a reel with Always use
      * Clean mode or the Clean mode button on, the reel goes back into Clean mode on its own, when a
      * sheet opened over it closes or after a few seconds with no touch ({@link

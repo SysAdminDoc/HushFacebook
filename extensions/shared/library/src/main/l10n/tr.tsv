@@ -2827,6 +2827,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	“Hikayelerde sarma çubuğu” açıkken çubuk, hikaye başladıktan ya da ona son dokunuşunuzdan birkaç saniye sonra solar. Bir dokunuş ya da duraklatma onu geri getirir.
 Clean mode	Temiz mod
 Clean mode button on reels	Reels'te temiz mod düğmesi
+Faint Clean mode button	Soluk temiz mod düğmesi
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Facebook'un temiz moddan çıkış düğmesi soluk görünür, böylece altındaki videodaki yazı okunur kalır. Dokununca yine çalışır.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Bir reel'in yanındaki düğmelere bir temiz mod düğmesi ekler. Onları gizlemek için dokun, kaydırırken temiz mod açık kalır. Facebook'un kendi temiz mod düğmesi onları geri getirir.
 Open chats in Messenger	Sohbetleri Messenger'da aç
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Messenger yüklü ve etkin olduğu sürece sohbetleri Facebook'un içinde değil Messenger uygulamasında açar, bir profildeki Mesaj düğmesi de dahil. Messenger yoksa sohbetler Facebook'ta kalır. Değiştirdikten sonra Facebook'u yeniden başlat.

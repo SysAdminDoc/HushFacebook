@@ -95,6 +95,7 @@ public class CleanExitSpotTest {
     public void tearDown() {
         PauseForTests.resume();
         Settings.REEL_CLEAN_BUTTON.resetToDefault();
+        Settings.REEL_CLEAN_EXIT_FAINT.resetToDefault();
         ReelCleanMode.store = null;
         CleanExitSpot.reset();
         HookStatus.clear();
@@ -219,6 +220,53 @@ public class CleanExitSpotTest {
         ((ViewGroup) list.getParent()).removeView(list);
         assertEquals(0f, exit.getTranslationY(), 0f);
         assertNull(CleanExitSpot.moved.get(exit));
+    }
+
+    /**
+     * Faint Clean mode button (#519): with no sidebar tap at all, as with Always use Clean mode, a
+     * page the scrubber mounts in gets its list watched and its way out fades, still clickable and
+     * where Facebook put it. Facebook's own alpha change is kept under the fade, and off, paused or
+     * taken off the page the way out goes back.
+     */
+    @Test
+    public void faintCleanModeButtonFadesTheWayOut() {
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        Settings.REEL_CLEAN_EXIT_FAINT.save(true);
+        CleanExitSpot.sawPage(page);
+        View exit = goClean(page, top);
+        assertEquals(CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+        assertTrue(exit.isClickable());
+        assertEquals("a faint way out stays where Facebook put it", 0f, exit.getTranslationY(), 0f);
+        assertTrue(reported(CleanExitSpot.FAINTED));
+
+        exit.setAlpha(0.5f);
+        layOut();
+        assertEquals("Facebook's own alpha, faded", 0.5f * CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+
+        Settings.REEL_CLEAN_EXIT_FAINT.save(false);
+        layOut();
+        assertEquals("off", 0.5f, exit.getAlpha(), 0.001f);
+        Settings.REEL_CLEAN_EXIT_FAINT.save(true);
+        layOut();
+        assertEquals(0.5f * CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        layOut();
+        assertEquals("paused", 0.5f, exit.getAlpha(), 0.001f);
+        PauseForTests.resume();
+        layOut();
+        top.removeView(exit);
+        layOut();
+        assertEquals("taken off the page", 0.5f, exit.getAlpha(), 0.001f);
+        assertNull(CleanExitSpot.fainted.get(exit));
+    }
+
+    @Test
+    public void withFaintOffAPageWatchesNothing() {
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        CleanExitSpot.sawPage(page);
+        assertTrue(CleanExitSpot.watched.isEmpty());
+        View exit = goClean(page, top);
+        assertEquals(1f, exit.getAlpha(), 0f);
     }
 
     /** Hides [into]'s sidebar and puts the way out under its top host, as Clean mode does. */

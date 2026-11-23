@@ -2827,6 +2827,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	Con “Barra de progreso en historias” activado, la barra se atenúa unos segundos después de que empieza la historia o de que la tocas por última vez. Un toque o una pausa la hacen volver.
 Clean mode	Modo limpio
 Clean mode button on reels	Botón de modo limpio en reels
+Faint Clean mode button	Botón de modo limpio tenue
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	El botón de Facebook para salir del modo limpio se ve tenue, así el texto del video que tiene debajo se sigue leyendo. Sigue funcionando al tocarlo.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Añade un botón de modo limpio a los botones del lateral de un reel. Tócalo para ocultarlos, y el modo limpio sigue activo mientras deslizas. El propio botón de modo limpio de Facebook los vuelve a mostrar.
 Open chats in Messenger	Abrir los chats en Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Abre los chats en la app Messenger en lugar de dentro de Facebook, también desde el botón Mensaje de un perfil, mientras Messenger esté instalado y activado. Sin Messenger, los chats siguen en Facebook. Reinicia Facebook después de cambiarlo.

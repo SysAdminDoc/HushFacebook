@@ -2827,6 +2827,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	Khi bật Thanh tua trên tin, thanh mờ đi vài giây sau khi tin bắt đầu hoặc sau lần chạm cuối của bạn. Chạm hoặc tạm dừng là thanh hiện lại.
 Clean mode	Chế độ gọn gàng
 Clean mode button on reels	Nút Chế độ gọn gàng trên reels
+Faint Clean mode button	Nút Chế độ gọn gàng mờ
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Nút của Facebook để thoát Chế độ gọn gàng hiện mờ, nên chữ trong video bên dưới vẫn đọc được. Nút vẫn hoạt động khi bạn chạm vào.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Thêm nút Chế độ gọn gàng vào các nút dọc bên cạnh reel. Chạm vào để ẩn chúng, và Chế độ gọn gàng vẫn bật khi bạn vuốt. Nút Chế độ gọn gàng của chính Facebook sẽ hiện chúng lại.
 Open chats in Messenger	Mở đoạn chat trong Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Mở đoạn chat trong ứng dụng Messenger thay vì trong Facebook, kể cả từ nút Nhắn tin trên trang cá nhân, khi Messenger đã được cài và bật. Nếu không có Messenger, đoạn chat vẫn ở trong Facebook. Hãy khởi động lại Facebook sau khi thay đổi.

@@ -2831,6 +2831,8 @@ Shows a bar along the bottom of a video story that you drag to move through it. 
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	開啟「限時動態上的進度列」後，進度列會在限時動態開始或你最後一次觸碰幾秒後變淡。觸碰或暫停就會恢復。
 Clean mode	簡潔模式
 Clean mode button on reels	Reels 上的簡潔模式按鈕
+Faint Clean mode button	淡化簡潔模式按鈕
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Facebook 用來退出簡潔模式的按鈕會淡化顯示，下方影片裡的文字依然清楚可讀。點擊它仍然有效。
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	在 Reels 側邊的按鈕中加入簡潔模式按鈕。點按它即可隱藏這些按鈕，滑動時簡潔模式會保持開啟。Facebook 內建的簡潔模式按鈕可讓它們重新顯示。
 Open chats in Messenger	在 Messenger 中開啟聊天
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	在 Messenger 應用程式中開啟聊天，而不是在 Facebook 內開啟，包括個人檔案上的「傳送訊息」按鈕，前提是已安裝並啟用 Messenger。未安裝 Messenger 時，聊天仍在 Facebook 中開啟。變更後請重新啟動 Facebook。
