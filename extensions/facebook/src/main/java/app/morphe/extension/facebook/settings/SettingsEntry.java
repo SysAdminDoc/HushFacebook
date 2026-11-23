@@ -49,6 +49,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.preference.ReopenSettingsAfterRestart;
 import app.morphe.extension.facebook.ads.AudienceNetwork;
+import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.download.ClipboardLink;
 import app.morphe.extension.facebook.download.SaveLeftovers;
 import app.morphe.extension.facebook.download.SavedFileActions;
@@ -193,6 +194,8 @@ public final class SettingsEntry {
             if (SettingsStatus.returnRefresh()) HomeBack.watch(context);
             // Keep feed videos muted: a sound left on goes off again when Facebook comes back (#465).
             if (SettingsStatus.keepFeedVideosMuted()) FeedSound.watch(context);
+            // Hide the video comment box: the seek bar goes down only in the Shorts viewer's screen (#552).
+            if (SettingsStatus.commentSheetOptions()) CommentSheetOptions.watch(context);
             watchLauncherChanges(context);
             TextSize.application(context);
             // Only with the theme in the build, so its class and palette aren't loaded otherwise.

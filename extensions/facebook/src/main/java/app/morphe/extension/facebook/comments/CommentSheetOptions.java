@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.comments;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
+import android.os.Bundle;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
@@ -275,6 +277,23 @@ public final class CommentSheetOptions {
      * opens, where the comment bar is dropped, the caption does come down with the video.
      */
     private static final ThreadLocal<Boolean> shortsBarDropped = new ThreadLocal<>();
+
+    /**
+     * Facebook's full-screen player screens, where the Shorts viewer a reel from Home's shelf opens
+     * runs. The scroller a video tapped in Home opens runs in the main screen, and on 588 its root
+     * drops the comment bar too when the video is a reel's (S22, 2026-11-23: "Reel by Elisha Elle",
+     * caption at 1663 to 1764 with the bar or without), so a drop alone doesn't say the caption came
+     * down (#552).
+     */
+    static final Set<String> SHORTS_SCREENS = Set.of(
+            "com.facebook.katana.immersiveactivity.ImmersiveActivity",
+            "com.facebook.katana.immersiveactivity.ImmersivePortraitActivity");
+
+    /** The class of the screen created or resumed last, or null before the first. */
+    @Nullable
+    private static volatile String screenInFront;
+
+    private static boolean watchingScreens;
 
     /**
      * The Shorts viewer configs whose root last got a bar back from its pick (#375): the reply bar
@@ -727,18 +746,90 @@ public final class CommentSheetOptions {
     }
 
     /**
+     * Called once per Facebook start, from the settings entry's onApplicationCreate, with Comment
+     * sheet options in the build: from then on each screen that's created or resumed is the one in
+     * front, for {@link #shortsSeekBarBand}.
+     */
+    public static synchronized void watch(Context context) {
+        try {
+            if (watchingScreens || !(context instanceof Application)) return;
+            ((Application) context).registerActivityLifecycleCallbacks(new Screens());
+            watchingScreens = true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, SEEK_BAR, failure);
+        }
+    }
+
+    /** Records the class of the screen in front. */
+    static void inFront(@Nullable String screen) {
+        screenInFront = screen;
+    }
+
+    /** Whether the screen in front is a full-screen player, where the Shorts viewer runs. */
+    static boolean shortsScreenInFront() {
+        String screen = screenInFront;
+        return screen != null && SHORTS_SCREENS.contains(screen);
+    }
+
+    /**
+     * Whether the band stays Facebook's for the UP NEXT pill: in the Shorts viewer, while Hide Up
+     * next is off. Facebook lays that pill over the comment bar, in its band (S22 588, 2026-11-23:
+     * "Add a comment" at 2105 to 2274 under "UP NEXT:" at 2147, the seek bar at 2048 to 2166 above
+     * both). Given to the video, the band took the caption down and the seek bar under the pill
+     * (#552), so the video, its caption and its seek bar stay where Facebook puts them, with the
+     * pill where the comment bar was.
+     */
+    private static boolean bandKeptForUpNext() {
+        return shortsScreenInFront() && !Settings.HIDE_UP_NEXT.get();
+    }
+
+    /** Keeps the screen in front up to date. */
+    static final class Screens implements Application.ActivityLifecycleCallbacks {
+        @Override
+        public void onActivityCreated(Activity activity, @Nullable Bundle state) {
+            inFront(activity.getClass().getName());
+        }
+
+        @Override
+        public void onActivityResumed(Activity activity) {
+            inFront(activity.getClass().getName());
+        }
+
+        @Override
+        public void onActivityStarted(Activity activity) {
+        }
+
+        @Override
+        public void onActivityPaused(Activity activity) {
+        }
+
+        @Override
+        public void onActivityStopped(Activity activity) {
+        }
+
+        @Override
+        public void onActivitySaveInstanceState(Activity activity, Bundle state) {
+        }
+
+        @Override
+        public void onActivityDestroyed(Activity activity) {
+        }
+    }
+
+    /**
      * The hook on each band height, in dp, the Shorts viewer's root places its seek bar and time
-     * above (#375). Once this render dropped the comment bar while the switch is on they go down with
-     * the video to {@link #NO_BAR_SEEK_BAR_DP}, where Facebook puts them with no bar, instead of
-     * staying over the caption; otherwise, a pick with no bar of its own included (#552), the band is
-     * Facebook's.
+     * above (#375). Once this render dropped the comment bar while the switch is on and a full-screen
+     * player is in front they go down with the video to {@link #NO_BAR_SEEK_BAR_DP}, where Facebook
+     * puts them with no bar, instead of staying over the caption. Otherwise the band is Facebook's: a
+     * pick with no bar of its own, the scroller a video tapped in Home opens, whose caption stays put
+     * with the bar gone or not, and a viewer whose band the UP NEXT pill keeps (#552).
      */
     public static int shortsSeekBarBand(int band) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, SEEK_BAR);
-            if (!Boolean.TRUE.equals(shortsBarDropped.get()) || !Utils.settingsReady()
-                    || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()) return band;
+            if (!Boolean.TRUE.equals(shortsBarDropped.get()) || !shortsScreenInFront() || !Utils.settingsReady()
+                    || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get() || bandKeptForUpNext()) return band;
             HookStatus.counted(FAMILY, SEEK_BAR_LOWERED);
             return NO_BAR_SEEK_BAR_DP;
         } catch (Throwable failure) {
@@ -751,15 +842,15 @@ public final class CommentSheetOptions {
      * The hook on the band height, in dp, the Shorts viewer's list takes off each video's full height
      * (#375), with the viewer's config. It sizes the videos before any of their roots has picked a
      * bar, so while Hide the video comment box is on the video keeps its full height and 0 comes back,
-     * unless the config's root kept a bar ({@link #keptShortsBar}). A list handed no config keeps
-     * Facebook's band.
+     * unless the config's root kept a bar ({@link #keptShortsBar}) or the UP NEXT pill keeps the band
+     * ({@link #bandKeptForUpNext}). A list handed no config keeps Facebook's band.
      */
     public static int shortsVideoBand(int band, @Nullable Object config) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, VIDEO_HEIGHT);
             if (config == null || !Utils.settingsReady() || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()
-                    || keepsBar(config)) return band;
+                    || keepsBar(config) || bandKeptForUpNext()) return band;
             HookStatus.counted(FAMILY, FULL_HEIGHT);
             return 0;
         } catch (Throwable failure) {

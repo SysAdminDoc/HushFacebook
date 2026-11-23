@@ -63,7 +63,11 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * two of them null), as in the scroller a video tapped in Home opens (VideoHomeRootFragment in
  * FbMainTabActivity), keeps Facebook's band: on 585 that scroller's caption came down with the
  * full-height video, but on 588 it stays put, and 3 dp put the seek bar under Up next and in the
- * gesture strip there (#552, S22 2026-11-23).
+ * gesture strip there (#552, S22 2026-11-23). On 588 that scroller also shows a reel with the
+ * comment bar, which goes as in the viewer, but its caption stays put all the same, so the
+ * extension takes the seek bar down only while a full-screen player screen (ImmersiveActivity) is
+ * in front. There 588 lays the UP NEXT pill over the comment bar, in its band, so while Hide Up
+ * next is off the band stays Facebook's, the video's and the seek bar's both, and the pill keeps it.
  *
  * The videos' height comes from the viewer's list root (`LX/0BXZ;->BJw`, which logs
  * onRenderVideoHomeRootComponent), the one caller of the kept Kotlin function [VDD_SLOT_HEIGHT],

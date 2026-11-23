@@ -8,12 +8,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -26,8 +30,8 @@ import app.morphe.extension.shared.settings.SettingReadsForTests;
 
 /**
  * The Shorts viewer a feed video opens in (#375): with Hide the video comment box on, the comment
- * bar its root renders is dropped, and only after a pick that came back with no bar does the seek bar
- * go down to the bottom, counted. Its list sizes the videos before any root has picked a bar, so with the switch on a video
+ * bar its root renders is dropped, and only after a pick that came back with no bar, with a full-screen
+ * player in front, does the seek bar go down to the bottom, counted. Its list sizes the videos before any root has picked a bar, so with the switch on a video
  * keeps its full height, counted, unless its viewer's root kept a bar, the reply bar under a reel
  * shared in a chat say, which keeps the band for that viewer alone. Off by default, under no other
  * switch, and Facebook's when paused, before the settings are ready, or when the switch can't be read.
@@ -46,10 +50,19 @@ public class VideoCommentBandTest {
     /** A viewer's config, the object its roots and its list are handed with each band height. */
     private final Object viewer = new Object();
 
+    /** The screen the Shorts viewer a reel from Home's shelf opens runs in. */
+    private static final String SHORTS_SCREEN = "com.facebook.katana.immersiveactivity.ImmersiveActivity";
+
+    /** The main screen, where the scroller a video tapped in Home opens runs. */
+    private static final String MAIN_SCREEN = "com.facebook.katana.LoginActivity";
+
     @Before
     public void start() {
         HookStatus.clear();
         CommentSheetOptions.pickingShortsBar();
+        CommentSheetOptions.inFront(SHORTS_SCREEN);
+        // With Up next showing, the band is the pill's (theUpNextPillKeepsTheBand).
+        Settings.HIDE_UP_NEXT.save(true);
     }
 
     @After
@@ -59,6 +72,7 @@ public class VideoCommentBandTest {
         Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         CommentSheetOptions.pickingShortsBar();
+        CommentSheetOptions.inFront(null);
         HookStatus.clear();
     }
 
@@ -164,6 +178,55 @@ public class VideoCommentBandTest {
         render.join();
         assertEquals("a drop on one thread moved another thread's seek bar", BAND, answer[0]);
         assertEquals(CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+    }
+
+    /**
+     * The scroller a video tapped in Home opens drops a reel's comment bar too, and its video takes
+     * the band, but its caption stays put, so its seek bar keeps Facebook's band (#552). Only with a
+     * full-screen player in front does a drop take the seek bar down, and the watcher keeps track of
+     * which screen that is.
+     */
+    @Test
+    public void theHomeScrollersSeekBarKeepsItsBandWhenItsBarGoes() {
+        Settings.HIDE_VIDEO_COMMENT_COMPOSER.save(true);
+        CommentSheetOptions.inFront(MAIN_SCREEN);
+        assertTrue("the scroller kept its comment bar", render(viewer));
+        assertEquals("the scroller's video kept the band", 0, video(viewer));
+        assertEquals("the scroller's seek bar went down under Up next", BAND, seekBar());
+        CommentSheetOptions.inFront(null);
+        assertEquals("the seek bar went down with no screen known", BAND, seekBar());
+        CommentSheetOptions.inFront("com.facebook.katana.immersiveactivity.ImmersivePortraitActivity");
+        assertEquals("the portrait player's seek bar stayed over the caption",
+                CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+
+        CommentSheetOptions.watch(RuntimeEnvironment.getApplication());
+        Robolectric.buildActivity(Activity.class).setup();
+        assertEquals("another screen coming to the front left the seek bar down", BAND, seekBar());
+        assertFalse("a plain screen in front was taken for a player", CommentSheetOptions.shortsScreenInFront());
+    }
+
+    /**
+     * In the Shorts viewer Facebook lays the UP NEXT pill over the comment bar, in its band, so while
+     * Hide Up next is off the band stays Facebook's when the bar goes: the video, its caption and its
+     * seek bar stay put, and the pill sits where the bar was, not over a lowered seek bar (#552). The
+     * scroller's caption never comes down, so its video takes the band there all the same.
+     */
+    @Test
+    public void theUpNextPillKeepsTheBand() {
+        Settings.HIDE_VIDEO_COMMENT_COMPOSER.save(true);
+        Settings.HIDE_UP_NEXT.save(false);
+        assertTrue("the bar stayed with Up next showing", render(viewer));
+        assertEquals("the video took Up next's band", BAND, video(viewer));
+        assertEquals("the seek bar went under Up next", BAND, seekBar());
+        CommentSheetOptions.inFront(MAIN_SCREEN);
+        assertEquals("the scroller's video kept the band", 0, video(viewer));
+        assertEquals(BAND, seekBar());
+
+        CommentSheetOptions.inFront(SHORTS_SCREEN);
+        Settings.HIDE_UP_NEXT.save(true);
+        assertEquals("with Up next hidden the video kept the band", 0, video(viewer));
+        assertEquals("with Up next hidden the seek bar stayed over the caption",
+                CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
     }
 
     /** The full-screen video viewer's own comment bar hook doesn't move the Shorts viewer's seek bar. */
