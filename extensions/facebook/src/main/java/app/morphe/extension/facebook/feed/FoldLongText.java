@@ -32,11 +32,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * says otherwise. The hooks hand each of those numbers through here just before Facebook uses them.
  *
  * <p>With a line count picked, the line limit becomes that count and the characters become about
- * that many lines' worth ({@link #POST_CHARS_PER_LINE} and {@link #COMMENT_CHARS_PER_LINE} a line,
- * less room for See more). A post Facebook doesn't fold (-1 or 0) keeps Facebook's numbers. One it
- * folds to a single line, as it does a photo's or a shared post's text, takes the count like the
- * rest: that cut is the fold the reader picked a count to change (#506). Show full post text, while
- * on, wins for posts: their numbers stay Facebook's, and that switch shows them whole.
+ * that many lines' worth (a line measured on this screen for posts, {@link #postBudget}, and
+ * {@link #COMMENT_CHARS_PER_LINE} a line for comments, less room for See more). A post Facebook
+ * doesn't fold (-1 or 0) keeps Facebook's numbers. One it folds to a single line, as it does a
+ * photo's or a shared post's text, takes the count like the rest: that cut is the fold the reader
+ * picked a count to change (#506). Show full post text, while on, wins for posts: their numbers
+ * stay Facebook's, and that switch shows them whole.
  *
  * <p>Those numbers alone missed many posts and comments (#506). A post can come with a fixed place
  * to cut, which beats the line limit, so with a count picked that place is dropped ({@link #postCut}).
@@ -104,6 +105,25 @@ public final class FoldLongText {
      */
     static final float COMMENT_MEASURED_WIDTH = 0.95f;
 
+    /**
+     * The screen's width a shared post's text doesn't get: the card's sides and the feed's. Measured
+     * on a Galaxy S22 on 588, where a shared post's text ran about 876 of 1080 pixels.
+     */
+    static final int SHARED_POST_SIDE_DP = 72;
+
+    /** The size of a post's text, the same as a comment's on 588. */
+    static final int POST_TEXT_SP = 16;
+
+    /**
+     * A line of words breaks before the word that doesn't fit, so it holds about this many characters
+     * fewer than its width, which over a few lines added up to a line more than picked (#506).
+     */
+    static final int WRAPPED_WORD_ROOM = 5;
+
+    /** Ordinary words, measured for how wide a character of a post's text runs on this screen. */
+    static final String ORDINARY_WORDS = "Do you have access to wild populations of milkweed plants? Consider donating "
+            + "some of their seeds to Monarch Watch, where they grow them for the spring.";
+
     /** How much of a long comment is measured for each line asked for, so its length costs nothing. */
     static final int COMMENT_MEASURED_CHARS_PER_LINE = 200;
 
@@ -155,10 +175,37 @@ public final class FoldLongText {
             HookStatus.bound(FAMILY, POST_CHARS);
             int picked = postPick();
             if (picked <= 0 || !folds(lines) || chars <= 0) return chars;
-            return budget(picked, POST_CHARS_PER_LINE);
+            return postBudget(picked);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, POST_CHARS, failure);
             return chars;
+        }
+    }
+
+    /**
+     * About [picked] lines' worth of a post's text where Facebook cuts it by characters, which it
+     * does when it doesn't know the text's width: a shared post's text, in a card narrower than the
+     * feed. A line there holds fewer characters than {@link #POST_CHARS_PER_LINE}, so with 3 lines
+     * picked a shared post showed 4 (#506, S22). The line is measured on this screen at this text
+     * size, as a comment's is, for ordinary words; about {@link #POST_CHARS_PER_LINE} a line when it
+     * can't be.
+     */
+    static int postBudget(int picked) {
+        int fallback = budget(picked, POST_CHARS_PER_LINE);
+        try {
+            DisplayMetrics metrics = Utils.getContext().getResources().getDisplayMetrics();
+            int side = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, SHARED_POST_SIDE_DP, metrics));
+            float width = (metrics.widthPixels - side) * COMMENT_MEASURED_WIDTH;
+            TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, POST_TEXT_SP, metrics));
+            float perCharacter = paint.measureText(ORDINARY_WORDS) / ORDINARY_WORDS.length();
+            if (width <= 0 || perCharacter <= 0) return fallback;
+            int perLine = (int) (width / perCharacter);
+            int words = perLine - WRAPPED_WORD_ROOM;
+            return words > 0 ? budget(picked, words) : fallback;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, POST_CHARS, failure);
+            return fallback;
         }
     }
 

@@ -62,6 +62,9 @@ public class FoldLongTextTest {
     /** Facebook ellipsis, then the words after it. */
     private static final String SEE_MORE = (char) 0x2026 + " See more";
 
+    /** What a post cut by characters ends in on 588: an ellipsis, then more (#506, a shared post on a Galaxy S22). */
+    private static final String POST_MORE = (char) 0x2026 + " more";
+
     @Before
     public void start() {
         HookStatus.clear();
@@ -125,10 +128,15 @@ public class FoldLongTextTest {
 
     /** The lines [text] takes at the size a comment is measured at, in [share] of its width. */
     private static int laidOutLines(String text, float share) {
+        return laidOutLines(text, FoldLongText.COMMENT_SIDE_DP, FoldLongText.COMMENT_TEXT_SP, share);
+    }
+
+    /** The lines [text] takes at [textSp], in [share] of the screen's width less [sideDp]. */
+    private static int laidOutLines(String text, int sideDp, int textSp, float share) {
         DisplayMetrics metrics = Utils.getContext().getResources().getDisplayMetrics();
-        int side = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, FoldLongText.COMMENT_SIDE_DP, metrics));
+        int side = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, sideDp, metrics));
         TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, FoldLongText.COMMENT_TEXT_SP, metrics));
+        paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, textSp, metrics));
         int width = Math.round((metrics.widthPixels - side) * share);
         return StaticLayout.Builder.obtain(text, 0, text.length(), paint, width)
                 .setIncludePad(false).build().getLineCount();
@@ -234,6 +242,37 @@ public class FoldLongTextTest {
         }
     }
 
+    /**
+     * #506: a shared post's text is cut by characters, in a card narrower than the feed. At 45
+     * characters a line, 3 lines picked showed 4 on a Galaxy S22. Its cut and the more after it fit
+     * the picked lines at that card's width, and the budget still grows with the count.
+     */
+    @Test
+    public void aFoldedSharedPostFitsThePickedLines() {
+        FoldLines[] counts = {FoldLines.ONE, FoldLines.TWO, FoldLines.THREE, FoldLines.FIVE, FoldLines.EIGHT, FoldLines.TEN};
+        int last = 0;
+        for (FoldLines picked : counts) {
+            Settings.FOLD_POST_TEXT.save(picked);
+            int budget = FoldLongText.postChars(POST_CHARS, POST_LINES);
+            assertTrue(picked.lines + " lines, budget " + budget + " after " + last, budget > last);
+            last = budget;
+            for (String text : WORDY_COMMENTS) {
+                assertTrue("this text has to run past " + picked.lines + " lines", sharedPostLines(text) > picked.lines);
+                String shown = text.substring(0, Math.min(budget, text.length())).trim() + POST_MORE;
+                int lines = sharedPostLines(shown);
+                assertTrue(picked.lines + " lines picked, but '" + shown + "' took " + lines, lines <= picked.lines);
+            }
+        }
+        // Three lines of a shared post hold fewer characters than three full feed lines.
+        Settings.FOLD_POST_TEXT.save(FoldLines.THREE);
+        assertTrue(FoldLongText.postChars(POST_CHARS, POST_LINES) < FoldLongText.budget(3, FoldLongText.POST_CHARS_PER_LINE));
+    }
+
+    /** The lines [text] takes in a shared post's card, in the share of it Facebook really fills. */
+    private static int sharedPostLines(String text) {
+        return laidOutLines(text, FoldLongText.SHARED_POST_SIDE_DP, FoldLongText.POST_TEXT_SP, FACEBOOKS_SHARE);
+    }
+
     @Test
     public void aCommentThatFitsIsLeftWhole() {
         Settings.FOLD_COMMENTS.save(FoldLines.EIGHT);
@@ -268,13 +307,13 @@ public class FoldLongTextTest {
             Settings.FOLD_POST_TEXT.save(picked);
             Settings.FOLD_COMMENTS.save(picked);
             assertEquals(picked + ": a post's lines", picked.lines, FoldLongText.postLines(POST_LINES));
-            assertEquals(picked + ": a post's characters", picked.lines * 45 - 10, FoldLongText.postChars(POST_CHARS, POST_LINES));
+            assertEquals(picked + ": a post's characters", FoldLongText.postBudget(picked.lines), FoldLongText.postChars(POST_CHARS, POST_LINES));
             assertEquals(picked + ": a comment's lines", picked.lines, FoldLongText.commentLines(COMMENT_LINES));
             // Without the comment's text there's nothing to measure.
             assertEquals(picked + ": a comment's characters", picked.lines * 40 - 10,
                     FoldLongText.commentChars(COMMENT_CHARS, COMMENT_LINES, null));
             // The characters beside a line limit that already went through here take the count too.
-            assertEquals(picked + ": characters beside a picked limit", picked.lines * 45 - 10,
+            assertEquals(picked + ": characters beside a picked limit", FoldLongText.postBudget(picked.lines),
                     FoldLongText.postChars(POST_CHARS, picked.lines));
         }
     }
@@ -317,14 +356,14 @@ public class FoldLongTextTest {
         Settings.FOLD_POST_TEXT.save(FoldLines.THREE);
         Settings.FOLD_COMMENTS.save(FoldLines.EIGHT);
         assertEquals(3, FoldLongText.postLines(1));
-        assertEquals(3 * 45 - 10, FoldLongText.postChars(POST_CHARS, 1));
+        assertEquals(FoldLongText.postBudget(3), FoldLongText.postChars(POST_CHARS, 1));
         assertEquals(8, FoldLongText.commentLines(1));
         assertEquals(8 * 40 - 10, FoldLongText.commentChars(COMMENT_CHARS, 1, null));
 
         // Picking one line on a one-line fold is the same fold.
         Settings.FOLD_POST_TEXT.save(FoldLines.ONE);
         assertEquals(1, FoldLongText.postLines(1));
-        assertEquals(45 - 10, FoldLongText.postChars(POST_CHARS, 1));
+        assertEquals(FoldLongText.postBudget(1), FoldLongText.postChars(POST_CHARS, 1));
 
         // Facebook's choice leaves it at one line.
         Settings.FOLD_POST_TEXT.resetToDefault();
