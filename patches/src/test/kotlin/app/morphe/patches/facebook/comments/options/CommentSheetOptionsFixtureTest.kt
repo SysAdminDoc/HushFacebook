@@ -108,6 +108,8 @@ class CommentSheetOptionsFixtureTest {
 
     private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
+    private val FUNCTION0 = "Lkotlin/jvm/functions/Function0;"
+
     /**
      * An opcode with a goto at any width. Added instructions can push a goto past its reach, and the
      * patcher then widens it (584's reply list build has gotos either side of the flag's write).
@@ -521,10 +523,12 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$buildWhere: the list and its context as a range", listOf(patched(build).implementation!!.registerCount - 2, 2),
             (buildCode[0] as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
 
-        // The prop for paging on by itself is the flag an open reply thread writes on its list, found from the thread.
+        // The prop for paging on by itself is the flag an open reply thread writes on the list it makes.
         val prop = "${filter.autoPaging.definingClass}->${filter.autoPaging.name}:${filter.autoPaging.type}"
-        val flag = replyList(holders(bundle, EXPANDED_REPLIES), holders(bundle, COMMENT_LIST)).flag
-        assertEquals("$buildWhere: the prop is the reply thread's paging flag", "${flag.definingClass}->${flag.name}:${flag.type}", prop)
+        assertTrue("$buildWhere: the prop is the flag an open reply thread writes on its list",
+            holders(bundle, "ExpandedReplySection").flatMap { it.methods }.any { method ->
+                method.implementation?.instructions?.any { it.opcode == Opcode.IPUT_BOOLEAN && it.reference() == prop } == true
+            })
         assertEquals("$name: on the list", build.definingClass, filter.autoPaging.definingClass)
         // Right after the build reads it, a true value asks the extension and reads false while paging is held.
         val read = buildCode.indexOfFirst { it.opcode == Opcode.IGET_BOOLEAN && it.reference() == prop }
@@ -601,60 +605,6 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$name: each side's props and comment are read, then the extension asked", listOf(
             drawn.props, drawn.comment, drawn.props, drawn.comment,
         ).map { "${it.definingClass}->${it.name}:${it.type}" } + REDRAWS, redrawsRefs.filter { "->" in it })
-    }
-
-    private fun replyLists(bundle: File) {
-        val found = replyList(holders(bundle, EXPANDED_REPLIES), holders(bundle, COMMENT_LIST))
-        val build = found.build
-        val flag = found.flag
-        val where = "${bundle.name}: ${build.descriptor()}"
-        assertEquals("$where: the flag is a boolean", "Z", flag.type)
-        assertNotEquals("$where: the flag sits on the list, not the thread's section", build.definingClass, flag.definingClass)
-
-        val thread = FixtureDex.classes(bundle, setOf(build.definingClass)).values.single()
-        val context = PatchContexts.of(listOf(thread))
-        val method = context.mutableClassDefBy(thread.type).methods.single { it.descriptor() == build.descriptor() }
-        val original = method.implementation!!.instructions.toList()
-        val write = found.write
-        val put = original[write] as TwoRegisterInstruction
-        assertEquals("$where: the flag is written", Opcode.IPUT_BOOLEAN, original[write].opcode)
-        // 585 copies the 0 out of a high register first (const/16 v17, then move/from16 v1, v17), so moves are followed back.
-        var register = put.registerA
-        var from = write
-        var literal: Instruction? = null
-        while (true) {
-            val at = (from - 1 downTo 0).firstOrNull {
-                original[it] is OneRegisterInstruction && (original[it] as OneRegisterInstruction).registerA == register &&
-                    original[it].opcode.setsRegister()
-            } ?: break
-            literal = original[at]
-            if (literal.opcode !in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)) break
-            register = (literal as TwoRegisterInstruction).registerB
-            from = at
-        }
-        assertTrue("$where: Facebook writes the flag false, from a literal 0",
-            literal?.opcode in setOf(Opcode.CONST_4, Opcode.CONST_16) &&
-                (literal as NarrowLiteralInstruction).narrowLiteral == 0)
-
-        method.loadWholeReplyThreads(found)
-        val patched = method.implementation!!.instructions.toList()
-        val field = "${flag.definingClass}->${flag.name}:${flag.type}"
-        assertEquals("$where gains two instructions", original.size + 2, patched.size)
-        assertEquals("$where: Facebook's code before the write stays", original.take(write).opcodes(),
-            patched.take(write).opcodes())
-        assertEquals("$where: the extension is asked with a range call", Opcode.INVOKE_STATIC_RANGE, patched[write].opcode)
-        assertEquals("$where: the extension is asked", LOAD_WHOLE_REPLY_THREADS, patched[write].reference())
-        val range = patched[write] as RegisterRangeInstruction
-        assertEquals("$where: with the value Facebook gives the flag", listOf(put.registerA, 1),
-            listOf(range.startRegister, range.registerCount))
-        assertEquals("$where: its answer replaces the value", Opcode.MOVE_RESULT, patched[write + 1].opcode)
-        assertEquals("$where: its answer replaces the value", put.registerA, (patched[write + 1] as OneRegisterInstruction).registerA)
-        assertEquals("$where: then Facebook writes the flag", field, patched[write + 2].reference())
-        assertEquals("$where: from the same registers", listOf(put.registerA, put.registerB),
-            (patched[write + 2] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
-        assertEquals("$where: Facebook's code after the write stays", original.drop(write).opcodes(),
-            patched.drop(write + 2).opcodes())
-        assertEquals("$where: the code before the hook runs into it", listOf(write), ControlFlow.of(method).normal[write - 1])
     }
 
     private fun replyRow(bundle: File, name: String): ReplyRowTap = hookedRow(bundle, replyRowTap(holders(bundle, name), name))
@@ -1232,9 +1182,50 @@ class CommentSheetOptionsFixtureTest {
         }
 
     @Test
-    fun `each declared build asks before an open reply thread's list decides whether it pages on by itself`() = bundles { bundle ->
-        replyLists(bundle)
-    }
+    fun `each declared build hands the extension the View more replies pager under an open thread first in its render`() =
+        bundles { bundle ->
+            val sheet = replyRowTap(holders(bundle, VIEW_MORE_REPLIES))
+            val found = threadPagerTap(holders(bundle, COMMENT_LIST), sheet) { types -> FixtureDex.classes(bundle, types) }
+            val render = found.render
+            val where = "${bundle.name}: ${render.descriptor()}"
+            assertTrue("$where: the render is the pager's own", !AccessFlags.STATIC.isSet(render.accessFlags))
+            val pager = FixtureDex.classes(bundle, setOf(render.definingClass)).values.single()
+            assertTrue("$where: the pager keeps a loader in a field", pager.fields.any { it.type == FUNCTION0 })
+
+            // The extension finds the loader by the captures it names, so the list must make exactly one such loader.
+            // 588's pager also keeps a lambda logging that it was seen, naming the list and depth but no model adapter.
+            val list = holders(bundle, COMMENT_LIST).single { holder ->
+                holder.methods.any { it.name == "<init>" && holdsString(it, COMMENT_LIST) }
+            }
+            val made = list.methods.flatMap { method ->
+                method.implementation?.instructions?.filter { it.opcode == Opcode.NEW_INSTANCE }?.mapNotNull { it.reference() }.orEmpty()
+            }.toSet()
+            val loaders = FixtureDex.classes(bundle, made).values.filter { type ->
+                FUNCTION0 in type.interfaces && type.fields.any { it.name == "\$paginableList" } &&
+                    type.fields.any { it.name == "\$depth" && it.type == "I" } && type.fields.any { it.name == "\$modelAdapter" }
+            }
+            assertEquals("${bundle.name}: the list makes one page loader naming its list, depth and model adapter", 1, loaders.size)
+            assertTrue("${bundle.name}: the loader runs as a no-argument invoke", loaders.single().methods.any {
+                it.name == "invoke" && it.parameterTypes.isEmpty()
+            })
+
+            val context = PatchContexts.of(listOf(pager))
+            val method = context.mutableClassDefBy(pager.type).methods.single { it.descriptor() == render.descriptor() }
+            val original = method.implementation!!.instructions.toList()
+            method.tapWholeReplyRow(found)
+            method.loadRestOfThread()
+            val patched = method.implementation!!.instructions.toList()
+            assertEquals("$where gains three instructions", original.size + 3, patched.size)
+            assertEquals("$where: the extension is asked first, with a range call", Opcode.INVOKE_STATIC_RANGE, patched[0].opcode)
+            assertEquals("$where: about the pager", LOAD_REST_OF_THREAD, patched[0].reference())
+            val words = render.parameterTypes.map { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }.sum()
+            assertEquals("$where: with the pager itself", listOf(method.implementation!!.registerCount - words - 1, 1),
+                (patched[0] as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
+            assertEquals("$where: the tap hook still follows Facebook's answer", VIEW_MORE_REPLIES_TEXT_ONLY,
+                patched[found.kept + 2].reference())
+            assertEquals("$where: Facebook's code stays", original.opcodes(),
+                (patched.drop(1).take(found.kept + 1) + patched.drop(found.kept + 4)).opcodes())
+        }
 
     @Test
     fun `each declared build asks about each comment before the comment section draws it`() = bundles { bundle ->

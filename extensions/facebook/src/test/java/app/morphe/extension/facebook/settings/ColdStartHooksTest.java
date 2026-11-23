@@ -74,6 +74,7 @@ import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.comments.DefaultCommentOrderForTests;
 import app.morphe.extension.facebook.comments.CommentSearchForTests;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
+import app.morphe.extension.facebook.comments.FakeReplyPager;
 import app.morphe.extension.facebook.comments.FullHeightComments;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
 import app.morphe.extension.facebook.media.HdrBrightnessForTests;
@@ -444,8 +445,8 @@ public class ColdStartHooksTest {
                 CommentSheetOptions.skipReactionPicker());
         assertFalse("a comment drawn before the context had its reply thread open",
                 CommentSheetOptions.openReplyThreads(false));
-        assertFalse("a reply thread opened before the context paged on by itself",
-                CommentSheetOptions.loadWholeReplyThreads(false));
+        assertEquals("a reply thread's page loaded before the context without a tap",
+                0, new FakeReplyPager(1).layOut());
         assertFalse("an open thread drawn before the context got a Hide replies row",
                 CommentSheetOptions.drawsHideRepliesRow(true, false, null, null));
         assertTrue("a View more replies row drawn before the context took a tap anywhere",

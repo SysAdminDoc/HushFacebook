@@ -64,9 +64,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * returns before anything opens. A comment keeps whether its reply thread is open in its state,
  * which starts closed until a tap on View replies opens it. The patch hands
  * {@link #openReplyThreads} that flag as the state is first set up and writes back the answer.
- * Once an open thread's replies are fetched, it builds a list over them that either pages on by
- * itself or draws View more replies; the patch asks {@link #loadWholeReplyThreads} which, just
- * before Facebook sets it. A View more replies row reads a flag that makes only its words take a
+ * An open thread's replies draw a View more replies pager while there's another page, and the
+ * patch hands {@link #loadRestOfThread} that pager as it's laid out, which may run the loader its
+ * tap runs. A View more replies row reads a flag that makes only its words take a
  * tap, and the patch hands {@link #viewMoreRepliesTextOnly} that flag right after. Each comment is drawn by a section that the patch asks {@link #hidesComment} first, with the
  * comment it draws; a yes draws nothing for it. Facebook has no way to close a thread once it's
  * open, so the patch asks {@link #drawsHideRepliesRow} as one is drawn and on a yes draws a row over
@@ -171,8 +171,8 @@ public final class CommentSheetOptions {
     /** Counted each time a comment starts with its reply thread open. */
     static final String THREAD_OPENED = "Reply thread opened";
 
-    /** Counted each time an open reply thread's list is set to load the rest of its replies as it's scrolled. */
-    static final String THREAD_LOADS_IN_FULL = "Reply thread loads in full";
+    /** Counted each time a reply thread's next page is loaded without a tap on View more replies. */
+    static final String THREAD_LOADS_IN_FULL = "Reply page loaded without a tap";
 
     /** Counted each time a View more replies row is built to take a tap anywhere on it. */
     static final String WHOLE_ROW_TAPS = "View more replies row takes a tap anywhere";
@@ -310,8 +310,8 @@ public final class CommentSheetOptions {
     /** The member the report names once a comment's state has been set up. */
     static final String REPLY_THREADS = "reply threads";
 
-    /** The member the report names once an open reply thread has built the list of its replies. */
-    static final String REPLY_LISTS = "reply lists";
+    /** The member the report names once a View more replies pager under an open thread has been laid out. */
+    static final String REPLY_PAGERS = "reply pagers";
 
     /** The member the report names once a View more replies row has been drawn through the hook. */
     static final String REPLY_ROWS = "View more replies rows";
@@ -961,24 +961,84 @@ public final class CommentSheetOptions {
     }
 
     /**
-     * The hook, as an open reply thread builds the list of its fetched replies, handed whether that
-     * list pages on by itself, which Facebook leaves false for replies: it draws View more replies
-     * under them, and each tap loads one more page. True, while Load whole reply threads is on,
-     * makes the list load its next page each time its end comes into view, the way Facebook's own
-     * comment lists do, so the rest of the thread follows as it's scrolled with no more taps. It
-     * goes a page at a time and only as far as the reader scrolls, so a huge thread can't hold the
-     * sheet up. Otherwise Facebook's own value comes back.
+     * The hook, first thing as the View more replies pager under an open reply thread is laid out,
+     * which Facebook does as the pager comes near the screen. The pager keeps the loader its tap
+     * runs. While Load whole reply threads is on, that loader runs on the main thread, the way a
+     * tap would, so the thread's next page comes in with no tap, and the next pager does the same
+     * as the reader scrolls on (#140). It runs once per page, however often the pager is laid out
+     * again before the page arrives, and never for a pager under a post's own comments, which
+     * stays a tap away. Off, paused or cold, the pager is left to Facebook.
+     *
+     * <p>Up to 0.24.0 this switch made the list page on by itself instead, but on Facebook 588 a
+     * reply list told to do that drops the pager and never loads its next page, so a long thread
+     * stopped after its first page with nothing to tap (#536).
      */
-    public static boolean loadWholeReplyThreads(boolean pagesOnScroll) {
+    public static void loadRestOfThread(Object pager) {
         try {
             HookStatus.invoked(FAMILY);
-            HookStatus.bound(FAMILY, REPLY_LISTS);
-            if (pagesOnScroll || !Utils.settingsReady() || !Settings.LOAD_WHOLE_REPLY_THREADS.get()) return pagesOnScroll;
+            HookStatus.bound(FAMILY, REPLY_PAGERS);
+            if (pager == null || !Utils.settingsReady() || !Settings.LOAD_WHOLE_REPLY_THREADS.get()) return;
+            Runnable nextPage = nextPage(pager);
+            if (nextPage == null) return;
             HookStatus.counted(FAMILY, THREAD_LOADS_IN_FULL);
-            return true;
+            Utils.runOnMainThread(nextPage);
         } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, "reply list", failure);
-            return pagesOnScroll;
+            HookStatus.threw(FAMILY, "reply pager", failure);
+        }
+    }
+
+    /** The pages whose loader already ran, each by the list it loads on from. */
+    private static final Set<Object> pagesAsked = Collections.newSetFromMap(new WeakHashMap<>());
+
+    /**
+     * The run of {@code pager}'s loader for a thread's next page, or null. The loader is the value
+     * of one of the pager's fields: a lambda whose captures keep their names, the list it pages on
+     * from in {@code $paginableList}, how deep it sits in {@code $depth} and what it loads the page
+     * through in {@code $modelAdapter}, with an {@code invoke()} that loads one page. The pager's
+     * other lambda, which logs that it was seen (588 {@code LX/0Vm6}), names the list and depth
+     * too but loads nothing, so it has no model adapter. Depth 0 is a post's own comments, which are left to
+     * the pager. Null too once that list's page was asked for, so a pager laid out again before
+     * its page arrives asks nothing more.
+     */
+    @Nullable
+    static Runnable nextPage(Object pager) throws ReflectiveOperationException {
+        for (Class<?> type = pager.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            for (java.lang.reflect.Field field : type.getDeclaredFields()) {
+                if (field.getType().isPrimitive() || java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+                field.setAccessible(true);
+                Object loader = field.get(pager);
+                if (loader == null) continue;
+                java.lang.reflect.Field list = capture(loader.getClass(), "$paginableList");
+                java.lang.reflect.Field depth = capture(loader.getClass(), "$depth");
+                if (list == null || depth == null || depth.getType() != int.class) continue;
+                if (capture(loader.getClass(), "$modelAdapter") == null) continue;
+                java.lang.reflect.Method invoke = loader.getClass().getMethod("invoke");
+                if (depth.getInt(loader) < 1) return null;
+                Object page = list.get(loader);
+                synchronized (pagesAsked) {
+                    if (!pagesAsked.add(page == null ? loader : page)) return null;
+                }
+                return () -> {
+                    try {
+                        invoke.invoke(loader);
+                    } catch (Throwable failure) {
+                        HookStatus.threw(FAMILY, "reply page", failure);
+                    }
+                };
+            }
+        }
+        return null;
+    }
+
+    /** The field {@code name} that {@code type} declares, opened for reading, or null. */
+    @Nullable
+    private static java.lang.reflect.Field capture(Class<?> type, String name) {
+        try {
+            java.lang.reflect.Field field = type.getDeclaredField(name);
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException absent) {
+            return null;
         }
     }
 

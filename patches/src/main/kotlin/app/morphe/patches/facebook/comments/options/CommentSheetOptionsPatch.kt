@@ -37,7 +37,6 @@ import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.executeBytecode
 import app.morphe.util.namedRegisters
-import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -156,12 +155,6 @@ internal const val COMMENT_SECTION = "CommentSection"
 /** The state update a tap on View replies sends the comment section, named where it's sent. */
 internal const val EXPAND_REPLIES = "updateState:CommentSection.expandReplySection"
 
-/**
- * The name an open reply thread's section gives itself in its constructor. Once its replies are
- * fetched, it builds a [COMMENT_LIST] over them.
- */
-internal const val EXPANDED_REPLIES = "ExpandedReplySection"
-
 /** The name the list of a post's comments, or of a thread's replies, gives itself in its constructor. */
 internal const val COMMENT_LIST = "CommentListSection"
 
@@ -194,7 +187,7 @@ internal const val HOLDS_COMMENT_REPLY = "$COMMENT_SHEET_OPTIONS->holdsCommentRe
 internal const val SKIP_PICKER = "$COMMENT_SHEET_OPTIONS->skipReactionPicker()Z"
 internal const val OPEN_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->openReplyThreads(Z)Z"
 internal const val HIDES_COMMENT = "$COMMENT_SHEET_OPTIONS->hidesComment(Ljava/lang/Object;)Z"
-internal const val LOAD_WHOLE_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->loadWholeReplyThreads(Z)Z"
+internal const val LOAD_REST_OF_THREAD = "$COMMENT_SHEET_OPTIONS->loadRestOfThread(Ljava/lang/Object;)V"
 internal const val VIEW_MORE_REPLIES_TEXT_ONLY = "$COMMENT_SHEET_OPTIONS->viewMoreRepliesTextOnly(Z)Z"
 internal const val DRAWS_HIDE_REPLIES_ROW =
     "$COMMENT_SHEET_OPTIONS->drawsHideRepliesRow(ZZLjava/util/Collection;Ljava/lang/Object;)Z"
@@ -335,17 +328,17 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * initial-state method returns, the extension is handed the flag and its answer is written back, so
  * with the switch on every comment starts the way a tap on View replies leaves it.
  *
- * Load whole reply threads (#140): once an open thread's replies are fetched, the section that
- * names itself [EXPANDED_REPLIES] (582 `LX/BEb;->A2G`) builds a [COMMENT_LIST] over them and writes
- * one boolean of it, false (582 `LX/A4r;->A0Q`). That flag is whether the list pages on by itself:
- * true, its paginated section loads the next page each time the end of the list comes into view,
- * the way Facebook's own comment lists do, and the View more replies pager isn't drawn; false, the
- * pager is drawn and each tap on it loads one more page. The extension is handed the flag just
- * before it's written, and while the switch is on its answer is true, so the rest of a thread loads
- * as it's scrolled with no further taps. It loads a page at a time, as far as the reader scrolls,
- * so a thread with thousands of replies can't hold the sheet up. 585 (`LX/0A8U;->A0p` writing
- * `LX/0A8C;->A0W` on arm64) still writes false, copied from a high register right before the write
- * (`const/16 v17, 0` near the top, `move/from16 v1, v17`), so the same finder and hook hold.
+ * Load whole reply threads (#140, #536): an open thread's replies sit in a [COMMENT_LIST] that
+ * draws the View more replies pager under them, the one with the down arrow (588 `LX/0Eay`), while
+ * there's another page. The pager keeps the page's loader in a field, a lambda that names its
+ * captures (588 `LX/0VmA`: `$paginableList`, `$depth`), and a tap on the pager runs it. The list
+ * also has a flag for paging on by itself as its end comes into view (588 `LX/0Do0;->A0W`), which
+ * the thread writes false. Up to 0.24.0 the switch turned that flag true, but on 588 a reply list
+ * with it true drops the pager and never loads its next page, so a thread stopped after its first
+ * page with nothing to tap (#536). Now the flag stays Facebook's and the extension is handed the
+ * pager first thing in its render, which Facebook runs as the pager is laid out near the screen.
+ * While the switch is on it runs the pager's loader once per page, the way a tap would, so the rest
+ * of a thread follows as it's scrolled, a page at a time and only as far as the reader goes.
  *
  * Tap anywhere on View more replies (#219): the row's render names [VIEW_MORE_REPLIES] (584
  * `LX/BbN;->render`). It reads one server-set boolean (584 `LX/4EB;->A09` into v16) and builds its
@@ -453,7 +446,6 @@ val commentSheetOptionsPatch = patch(
             holders(EXPAND_REPLIES).flatMap { methodsHolding(it, EXPAND_REPLIES) },
         ) { types -> types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type } }
         val drawn = commentDraw(holders(COMMENT_SECTION))
-        val replyList = replyList(holders(EXPANDED_REPLIES), holders(COMMENT_LIST))
         val replyRow = replyRowTap(holders(VIEW_MORE_REPLIES))
         val feedReplyRow = replyRowTap(holders(FEED_VIEW_MORE_REPLIES), FEED_VIEW_MORE_REPLIES)
         val threadPager = threadPagerTap(holders(COMMENT_LIST), replyRow) { types ->
@@ -475,7 +467,7 @@ val commentSheetOptionsPatch = patch(
         // The band's hooks go in at indices read from untouched code, so none of its methods may take another hook here.
         // The hooks found after dropVideoCommentBand below read their spots from the code as the band left it.
         val hooked = listOfNotNull(
-            buttons.check, bottom.check, post.check, ufi.check, dislike, like, dock, threads.initialState, drawn.render, replyList.build,
+            buttons.check, bottom.check, post.check, ufi.check, dislike, like, dock, threads.initialState, drawn.render,
             replyRow.render, feedReplyRow.render, threadPager.render, viewer.render, videoBar, inlineBar?.render,
             filter?.build, filter?.apply, filter?.listEqual, filter?.equal,
         ).map { it.descriptor() }.toSet()
@@ -502,8 +494,6 @@ val commentSheetOptionsPatch = patch(
             .openReplyThreads(threads)
         mutableClassDefBy(drawn.render.definingClass).methods.single { it.descriptor() == drawn.render.descriptor() }
             .hideComments(drawn)
-        mutableClassDefBy(replyList.build.definingClass).methods.single { it.descriptor() == replyList.build.descriptor() }
-            .loadWholeReplyThreads(replyList)
         mutableClassDefBy(replyRow.render.definingClass).methods.single { it.descriptor() == replyRow.render.descriptor() }
             .tapWholeReplyRow(replyRow)
         mutableClassDefBy(feedReplyRow.render.definingClass).methods
@@ -511,7 +501,10 @@ val commentSheetOptionsPatch = patch(
             .tapWholeReplyRow(feedReplyRow)
         mutableClassDefBy(threadPager.render.definingClass).methods
             .single { it.descriptor() == threadPager.render.descriptor() }
-            .tapWholeReplyRow(threadPager)
+            .apply {
+                tapWholeReplyRow(threadPager)
+                loadRestOfThread()
+            }
         mutableClassDefBy(viewer.render.definingClass).methods.single { it.descriptor() == viewer.render.descriptor() }
             .holdViewerButtons(viewer)
         videoBar?.let { bar ->
@@ -1231,75 +1224,13 @@ internal fun MutableMethod.openReplyThreads(threads: ReplyThreads) {
 }
 
 /**
- * Where an open reply thread builds the list of its replies: the method of the thread's section,
- * [build], and the instruction in it, [write], that writes [flag], the list's flag for paging on by
- * itself as it's scrolled.
+ * First thing in the View more replies pager's render, hand the extension the pager, which keeps
+ * the loader its tap runs. The render is the pager's own instance method, so the pager is `p0`,
+ * and the call takes it as a range, which reaches past v15. Refuses a static render.
  */
-internal class ReplyList(val build: Method, val write: Int, val flag: FieldReference)
-
-/**
- * The reply list's paging flag, from [threads], the classes loading [EXPANDED_REPLIES], and
- * [lists], the classes loading [COMMENT_LIST]. The thread's section and the list are each the one
- * class whose constructor names itself. The build is the one method of the section that makes a
- * list, and the flag is the one boolean of the list it writes there, which the list's own method
- * naming [COMMENT_LIST] reads. The hook replaces the value just before the write, so the write must
- * be reached only by the instruction before it, and nothing after it may read the register the
- * value sat in. Refuses unless each is exactly one and those hold.
- */
-internal fun replyList(threads: List<ClassDef>, lists: List<ClassDef>): ReplyList {
-    fun named(classes: List<ClassDef>, name: String): ClassDef {
-        val found = classes.filter { holder -> holder.methods.any { it.name == "<init>" && holdsString(it, name) } }
-            .distinctBy { it.type }
-        return found.singleOrNull() ?: refuse("expected one class naming itself \"$name\", found ${found.size}")
-    }
-    val thread = named(threads, EXPANDED_REPLIES)
-    val list = named(lists, COMMENT_LIST)
-
-    val builds = thread.methods.filter { method ->
-        method.implementation?.instructions?.any {
-            it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type == list.type
-        } == true
-    }
-    val build = builds.singleOrNull()
-        ?: refuse("expected one method of ${thread.type} making a ${list.type}, found ${builds.size}")
-    val where = build.descriptor()
-    val code = build.implementation!!.instructions.toList()
-    val writes = code.indices.filter { code[it].opcode == Opcode.IPUT_BOOLEAN && code[it].field()?.definingClass == list.type }
-    val write = writes.singleOrNull() ?: refuse("$where writes ${writes.size} booleans of ${list.type}, not one")
-    val flag = code[write].field()!!
-
-    val reads = list.methods.filter { it.name != "<init>" && holdsString(it, COMMENT_LIST) }.any { method ->
-        method.implementation?.instructions?.any { it.opcode == Opcode.IGET_BOOLEAN && it.field()?.sameAs(flag) == true } == true
-    }
-    if (!reads) refuse("${list.type} never reads the flag $where writes, ${flag.name}")
-
-    val flow = ControlFlow.of(build)
-    for (index in code.indices) {
-        for (next in flow.normal[index] + flow.exceptional[index]) {
-            if (next == write && index != write - 1) refuse("$where has a jump to the flag's write at $write")
-        }
-    }
-    if (flow.normal[write - 1] != listOf(write)) refuse("$where doesn't run straight into the flag's write")
-    val value = (code[write] as TwoRegisterInstruction).registerA
-    val later = build.readsAfter(write, value)
-    if (later.isNotEmpty()) refuse("$where reads v$value again after the flag's write, at $later")
-    return ReplyList(build, write, flag)
-}
-
-/**
- * Just before the reply list's paging flag is written, hand the extension the value Facebook
- * gives it and write its answer instead. The value's register is free after the write, so the
- * answer goes back into it, and the call takes it as a range.
- */
-internal fun MutableMethod.loadWholeReplyThreads(list: ReplyList) {
-    val value = getInstruction<TwoRegisterInstruction>(list.write).registerA
-    addInstructions(
-        list.write,
-        """
-            invoke-static/range { v$value .. v$value }, $LOAD_WHOLE_REPLY_THREADS
-            move-result v$value
-        """,
-    )
+internal fun MutableMethod.loadRestOfThread() {
+    if (AccessFlags.STATIC.isSet(accessFlags)) refuse("${descriptor()} is static, with no pager to hand on")
+    addInstructions(0, "invoke-static/range { p0 .. p0 }, $LOAD_REST_OF_THREAD")
 }
 
 /**

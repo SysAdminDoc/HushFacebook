@@ -115,6 +115,7 @@ import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.comments.DefaultCommentOrderForTests;
 import app.morphe.extension.facebook.comments.CommentBlock;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
+import app.morphe.extension.facebook.comments.FakeReplyPager;
 import app.morphe.extension.facebook.comments.FullHeightComments;
 import app.morphe.extension.facebook.comments.LiveCommentBar;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
@@ -1084,7 +1085,7 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.holdsButton(CommentSheetOptions.STICKER_BUTTON),
                 CommentSheetOptions::skipReactionPicker,
                 () -> CommentSheetOptions.openReplyThreads(false),
-                () -> CommentSheetOptions.loadWholeReplyThreads(false),
+                () -> new FakeReplyPager(1).layOut() > 0,
                 () -> CommentSheetOptions.drawsHideRepliesRow(true, false, null, null),
                 () -> !CommentSheetOptions.viewMoreRepliesTextOnly(true),
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),

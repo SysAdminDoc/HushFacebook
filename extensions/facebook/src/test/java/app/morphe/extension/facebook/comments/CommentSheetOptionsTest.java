@@ -362,25 +362,42 @@ public class CommentSheetOptionsTest {
     }
 
     @Test
-    public void onAnOpenThreadsRepliesPageOnByThemselvesAndAreCounted() {
+    public void onAReplyPagerLoadsItsPageOnceWithoutATapAndIsCounted() {
         Settings.LOAD_WHOLE_REPLY_THREADS.save(true);
-        assertTrue("a thread's replies kept View more replies", CommentSheetOptions.loadWholeReplyThreads(false));
-        assertTrue("a list Facebook pages on was stopped", CommentSheetOptions.loadWholeReplyThreads(true));
+        Object page = new Object();
+        FakeReplyPager pager = new FakeReplyPager(page, 1);
+        CommentSheetOptions.loadRestOfThread(pager);
+        assertEquals("the page was loaded off the main thread, where Facebook lays the pager out", 0, pager.runs());
+        assertEquals("a reply pager laid out left its page waiting for a tap", 1, pager.layOut());
+        assertEquals("a pager laid out again before its page came in asked for it again", 1, pager.layOut());
+        assertEquals("a pager drawn again over the same page asked for it again", 0, new FakeReplyPager(page, 1).layOut());
+        assertEquals("the thread's next pager left its page waiting for a tap", 1, new FakeReplyPager(2).layOut());
         assertFalse("loading whole threads opened every thread", CommentSheetOptions.openReplyThreads(false));
-        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 2 found, 0 missing. Counted: "
-                + CommentSheetOptions.THREAD_LOADS_IN_FULL + " 1", statusLine());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 6, 2 found, 0 missing. Counted: "
+                + CommentSheetOptions.THREAD_LOADS_IN_FULL + " 2", statusLine());
+    }
+
+    @Test
+    public void thePagerUnderAPostsOwnCommentsOrOneWithoutALoaderWaitsForATap() {
+        Settings.LOAD_WHOLE_REPLY_THREADS.save(true);
+        assertEquals("the pager under a post's own comments loaded without a tap", 0, new FakeReplyPager(0).layOut());
+        CommentSheetOptions.loadRestOfThread(new Object());
+        CommentSheetOptions.loadRestOfThread(null);
+        String line = statusLine();
+        assertFalse("a pager left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+        assertFalse("a pager without a loader threw: " + line, line != null && line.contains("threw"));
     }
 
     @Test
     public void bothReplySwitchesWorkTogetherAndApart() {
         Settings.OPEN_REPLY_THREADS.save(true);
-        assertFalse("Open every reply thread paged a thread's replies on", CommentSheetOptions.loadWholeReplyThreads(false));
+        assertEquals("Open every reply thread loaded a thread's page without a tap", 0, new FakeReplyPager(1).layOut());
         Settings.LOAD_WHOLE_REPLY_THREADS.save(true);
         assertTrue("with both on, a thread started closed", CommentSheetOptions.openReplyThreads(false));
-        assertTrue("with both on, a thread's replies kept View more replies", CommentSheetOptions.loadWholeReplyThreads(false));
+        assertEquals("with both on, a thread's page waited for a tap", 1, new FakeReplyPager(1).layOut());
         Settings.OPEN_REPLY_THREADS.save(false);
         assertFalse("Load whole reply threads alone opened a thread", CommentSheetOptions.openReplyThreads(false));
-        assertTrue("alone, a tapped thread's replies kept View more replies", CommentSheetOptions.loadWholeReplyThreads(false));
+        assertEquals("alone, a tapped thread's page waited for a tap", 1, new FakeReplyPager(1).layOut());
     }
 
     @Test
@@ -389,7 +406,7 @@ public class CommentSheetOptionsTest {
         assertFalse("a row Facebook gave words-only taps kept them", CommentSheetOptions.viewMoreRepliesTextOnly(true));
         assertFalse("a row Facebook already lets the whole row take was changed",
                 CommentSheetOptions.viewMoreRepliesTextOnly(false));
-        assertFalse("tapping anywhere on the row loaded whole threads", CommentSheetOptions.loadWholeReplyThreads(false));
+        assertEquals("tapping anywhere on the row loaded whole threads", 0, new FakeReplyPager(1).layOut());
         assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 2 found, 0 missing. Counted: "
                 + CommentSheetOptions.WHOLE_ROW_TAPS + " 1", statusLine());
     }
@@ -419,27 +436,25 @@ public class CommentSheetOptionsTest {
     }
 
     @Test
-    public void offPausedOrColdAThreadsRepliesKeepFacebooksPager() {
+    public void offPausedOrColdAThreadsPagerWaitsForATap() {
         assertFalse("Load whole reply threads doesn't start off", Settings.LOAD_WHOLE_REPLY_THREADS.get());
-        assertFalse("off, a thread's replies paged on", CommentSheetOptions.loadWholeReplyThreads(false));
-        assertTrue("off, a list Facebook pages on was stopped", CommentSheetOptions.loadWholeReplyThreads(true));
+        assertEquals("off, a thread's page loaded without a tap", 0, new FakeReplyPager(1).layOut());
 
         Settings.LOAD_WHOLE_REPLY_THREADS.save(true);
         for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
                 HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
                 HushfacebookPause.Reason.MARKER_FILE}) {
             PauseForTests.pause(reason);
-            assertFalse("a Hushfacebook paused by " + reason + " paged a thread's replies on",
-                    CommentSheetOptions.loadWholeReplyThreads(false));
+            assertEquals("a Hushfacebook paused by " + reason + " loaded a thread's page without a tap",
+                    0, new FakeReplyPager(1).layOut());
             PauseForTests.resume();
         }
-        SettingsContextRule.withoutContext(() -> assertFalse(
-                "a thread's replies paged on before the settings were ready", CommentSheetOptions.loadWholeReplyThreads(false)));
+        SettingsContextRule.withoutContext(() -> assertEquals(
+                "a thread's page loaded before the settings were ready", 0, new FakeReplyPager(1).layOut()));
 
         String line = statusLine();
-        assertFalse("a list left to Facebook was counted: " + line, line != null && line.contains("Counted"));
-        assertTrue("on again after the pause, a thread's replies kept View more replies",
-                CommentSheetOptions.loadWholeReplyThreads(false));
+        assertFalse("a pager left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+        assertEquals("on again after the pause, a thread's page waited for a tap", 1, new FakeReplyPager(1).layOut());
     }
 
     @Test
