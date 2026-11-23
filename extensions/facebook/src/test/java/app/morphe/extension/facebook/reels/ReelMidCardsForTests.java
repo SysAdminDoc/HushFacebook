@@ -29,6 +29,10 @@ public final class ReelMidCardsForTests {
         }
     }
 
+    /** Stands in for the Reels item of a Meta quick promotion (#85). */
+    public static final class Promotion {
+    }
+
     /** A section wrapper: the screen reads the list it holds. */
     public static final class Section {
         public List<Object> items;
@@ -40,6 +44,9 @@ public final class ReelMidCardsForTests {
 
     /** The mid-card item's binary name, as the patch passes it. */
     public static final String MID_CARD = MidCard.class.getName();
+
+    /** The promotion item's binary name, as the patch fills it into the stub. */
+    public static final String PROMOTION = Promotion.class.getName();
 
     /** Reads a stand-in's type the way the stub the patch fills reads Facebook's. */
     static final ReelMidCards.Types TYPES = item -> ((MidCard) item).type;

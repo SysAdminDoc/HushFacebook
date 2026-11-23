@@ -58,6 +58,7 @@ public class ReelMidCardsTest {
         ReelMidCards.threadsPatchForTests = null;
         ReelMidCards.promptsPatchForTests = null;
         ReelMidCards.groupsPatchForTests = null;
+        ReelMidCards.promotionClassForTests = null;
         Settings.HIDE_REEL_THREADS_CARDS.resetToDefault();
         Settings.HIDE_REEL_PROMPTS.resetToDefault();
         Settings.HIDE_SUGGESTED_GROUPS.resetToDefault();
@@ -377,6 +378,46 @@ public class ReelMidCardsTest {
         assertNotNull(FeedFilterCounters.report().toString(), announced);
         assertTrue(announced, announced.contains("1 removed"));
         assertNull("the section route saw none of it", line());
+    }
+
+    /**
+     * #85: since 587 the Threads card can come as a Meta quick promotion, a Reels item of its own
+     * class that's no mid-card. It goes with the Threads card switch on every route, counted as a
+     * promo card, and stays with the switch off, without Clean up Reels, or before the patch names
+     * its class.
+     */
+    @Test
+    public void aQuickPromotionBetweenReelsGoesWithTheThreadsCardSwitch() {
+        Object reel = new Object();
+        Object promo = new ReelMidCardsForTests.Promotion();
+
+        Section unnamed = section(reel, promo);
+        Settings.HIDE_REEL_THREADS_CARDS.save(true);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(unnamed));
+        assertTrue("its class not filled in, the promotion stays", unnamed.items.contains(promo));
+        assertTrue(line(), line().contains(ReelMidCards.NOT_A_MID_CARD + " ReelMidCardsForTests$Promotion 1"));
+        FeedFilterCounters.clear();
+
+        ReelMidCards.promotionClassForTests = ReelMidCardsForTests.PROMOTION;
+        Settings.HIDE_REEL_THREADS_CARDS.save(false);
+        Section off = section(reel, promo);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(off));
+        assertTrue("off, the promotion stays", off.items.contains(promo));
+        assertTrue(line(), line().contains(ReelMidCards.PROMOTION_CARD + " 1"));
+        FeedFilterCounters.clear();
+
+        Settings.HIDE_REEL_THREADS_CARDS.save(true);
+        Section on = section(reel, promo);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(on));
+        assertEquals(Collections.singletonList(reel), on.items);
+        assertTrue(line(), line().contains("Removed: " + ReelMidCards.PROMOTION_CARD + " 1"));
+        assertTrue(items(Collections.singletonList(promo), ReelMidCards.ITEMS_ROUTE).isEmpty());
+        assertTrue(items(Collections.singletonList(promo), ReelMidCards.ANNOUNCED_ROUTE).isEmpty());
+
+        ReelMidCards.threadsPatchForTests = Boolean.FALSE;
+        Section noCleanUp = section(reel, promo);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(noCleanUp));
+        assertTrue("no Clean up Reels, the promotion stays", noCleanUp.items.contains(promo));
     }
 
     /** Off, the item collection goes on as it came, the card in it. */

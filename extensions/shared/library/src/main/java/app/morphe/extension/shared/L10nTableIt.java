@@ -1875,8 +1875,8 @@ final class L10nTableIt {
                 "Nasconde l'elenco \"Post correlati\" che Facebook aggiunge sotto alcuni post, con i titoli scritti da Meta AI. Il post e i suoi commenti restano.");
         table.put("Hides the \"Subscribe\" link next to a creator's name on posts and videos. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
                 "Nasconde il link \"Iscriviti\" accanto al nome di un creator su post e video. Toccare il nome apre comunque il profilo. La modifica si vede sui post mostrati dopo.");
-        table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",
-                "Nasconde il riquadro \"Thread che potrebbero piacerti\" tra i reel. Disattivato per impostazione predefinita, perch\u00e9 non \u00e8 ancora stato provato su un account reale.");
+        table.put("Hides the \"Threads you might like\" card and other Meta promotions between reels. Off by default, since it hasn't been tried on a real account yet.",
+                "Nasconde il riquadro \"Thread che potrebbero piacerti\" e le altre promozioni di Meta tra i reel. Disattivato per impostazione predefinita, perch\u00e9 non \u00e8 ancora stato provato su un account reale.");
         table.put("Hides the \"Want to see more posts from friends?\" card with its Find friends button where your friends' posts run out.",
                 "Nasconde il riquadro \"Vuoi vedere pi\u00f9 post dei tuoi amici?\" con il pulsante Trova amici dove finiscono i post dei tuoi amici.");
         table.put("Hides the \"What's on your mind?\" row at the top of Home. The create button in the top bar still starts a post.",

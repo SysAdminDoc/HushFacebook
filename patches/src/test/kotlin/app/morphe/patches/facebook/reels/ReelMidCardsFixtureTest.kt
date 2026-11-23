@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.reels
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -19,8 +20,11 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -131,6 +135,29 @@ class ReelMidCardsFixtureTest {
                     (body[8] as OneRegisterInstruction).registerA,
                 )
                 assertEquals("$name: the stub's registers", List(registers.size) { self }, registers)
+
+                // #85: the quick promotion's Reels item, the one class each unit dispatcher makes after the
+                // promotion's typename, a sibling of the mid-card item. The patch's own finder agrees, and
+                // the second stub answers its binary name.
+                val holders = FixtureDex.classesHolding(bundle, PROMOTION_UNIT)
+                val named = holders.flatMap { it.methods }.filter(::isUnitDispatcher)
+                assertTrue("$name: no method names both $MID_CARD_UNIT and $PROMOTION_UNIT", named.isNotEmpty())
+                val made = promotionItemsMade(named)
+                assertTrue("$name: two unit dispatchers make the promotion item, found $made", made.size >= 2)
+                val promotion = made.distinct().singleOrNull()
+                assertNotNull("$name: the unit dispatchers make $made after $PROMOTION_UNIT", promotion)
+                assertNotEquals("$name: the promotion item is the mid-card item", card.item, promotion)
+                val siblings = FixtureDex.classes(bundle, setOf(card.item, promotion!!))
+                assertEquals("$name: the promotion item's base", item.superclass, siblings.getValue(promotion).superclass)
+                val promoContext = PatchContexts.of(holders + siblings.values + ExtensionDex.classDef(REEL_MID_CARDS))
+                assertEquals("$name: the patch's promotion item", promotion, with(promoContext) { promotionItemClass(card.item) })
+                with(promoContext) { fillPromotionClassStub(promotion.toBinaryName()) }
+                val promoStub = with(promoContext) { mutableClassDefBy(REEL_MID_CARDS) }.methods
+                    .single { it.name == PROMOTION_CLASS_STUB && AccessFlags.STATIC.isSet(it.accessFlags) }
+                val promoBody = promoStub.implementation!!.instructions.toList()
+                assertEquals("$name: the promotion stub", listOf(Opcode.CONST_STRING, Opcode.RETURN_OBJECT), promoBody.take(2).map { it.opcode })
+                assertEquals(promotion.toBinaryName(), ((promoBody[0] as ReferenceInstruction).reference as StringReference).string)
+                assertEquals((promoBody[0] as OneRegisterInstruction).registerA, (promoBody[1] as OneRegisterInstruction).registerA)
                 checked += version
             }
         }

@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.reels
 
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
@@ -16,9 +17,15 @@ import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /*
  * The "Threads you might like" card between reels (#85), found by kept names only (read from 577,
@@ -43,6 +50,12 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
  * - The "To what extent does this video match your interests?" survey between reels (#405) is a
  *   mid-card of the same enum, USER_SURVEY (585 LX/05VV; and LX/06Zc;, drawn by
  *   FbShortsSingleVideoUserSurveyMidcardComponent, LX/0cYi;).
+ * - Since 587 the Threads card can come as a Meta quick promotion instead (#85: a 587 report's
+ *   filter saw it as a class of its own with no story, LX/06Xe;). The Reels unit dispatchers
+ *   (588 LX/05yZ;->A06 and ->A0G) compare a unit's typename with FBShortsMidCardFeedUnit and
+ *   QuickPromotionNativeTemplateFeedUnit, both kept strings, and the first class each makes after
+ *   the promotion's name is its Reels item (588 LX/06bi;), which extends the mid-card item's base.
+ *   Nothing else makes it. The patch hands its name to the extension through a second stub.
  */
 
 /** The mid-card type of the Threads card. */
@@ -62,8 +75,17 @@ internal const val THREADS_CARD_ITEM_FILTER =
 internal const val ANNOUNCED_THREADS_CARD_FILTER =
     "$REEL_MID_CARDS->withoutAnnouncedThreadsCards(Ljava/util/Collection;Ljava/lang/String;)Ljava/util/Collection;"
 
+/** The Reels unit typename of a mid-card. */
+internal const val MID_CARD_UNIT = "FBShortsMidCardFeedUnit"
+
+/** The Reels unit typename of a Meta quick promotion between reels. */
+internal const val PROMOTION_UNIT = "QuickPromotionNativeTemplateFeedUnit"
+
+internal const val PROMOTION_CLASS_STUB = "promotionItemClass"
+
 private const val ENUM = "Ljava/lang/Enum;"
 private const val OBJECT = "Ljava/lang/Object;"
+private const val STRING = "Ljava/lang/String;"
 private const val STORY = "Lcom/facebook/graphql/model/GraphQLStory;"
 
 /** The reads from a Reels mid-card item to its type. */
@@ -217,6 +239,7 @@ internal val reelMidCardsPatch = patch {
         val resolved = scan.resolve()
         val card = resolved.found ?: throw PatchException("$MID_CARDS: ${resolved.problem}")
         fillMidCardTypeStub(card)
+        fillPromotionClassStub(promotionItemClass(card.item).toBinaryName())
         val pages = reelPages(MID_CARDS)
         val item = card.item.toBinaryName()
         pages.addPage.filterSectionsFirst(item, THREADS_CARD_SECTION_FILTER, MID_CARDS)
@@ -242,6 +265,62 @@ internal fun BytecodePatchContext.fillMidCardTypeStub(card: MidCardType) {
     } ?: throw PatchException("$REEL_MID_CARDS has no static Object $MID_CARD_TYPE_STUB(Object)")
 
     stub.addInstructionsWithLabels(0, midCardTypeReads(card))
+}
+
+/** Whether [method] is a Reels unit dispatcher: it names both the mid-card's and the promotion's unit typename. */
+internal fun isUnitDispatcher(method: Method): Boolean =
+    holdsString(method, PROMOTION_UNIT) && holdsString(method, MID_CARD_UNIT)
+
+/** The class [dispatcher] makes first after it loads [PROMOTION_UNIT], or null. */
+internal fun promotionItemMade(dispatcher: Method): String? {
+    val code = dispatcher.implementation?.instructions?.toList() ?: return null
+    val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == PROMOTION_UNIT }
+    if (named < 0) return null
+    val made = code.drop(named + 1).firstOrNull { it.opcode == Opcode.NEW_INSTANCE } ?: return null
+    return ((made as ReferenceInstruction).reference as TypeReference).type
+}
+
+/**
+ * The classes each unit dispatcher makes first after the promotion's typename. A method naming both
+ * typenames that makes nothing after it is no dispatcher: 588's typename table (LX/04eH;->A00(I)) is one.
+ */
+internal fun promotionItemsMade(methods: Iterable<Method>): List<String> =
+    methods.filter(::isUnitDispatcher).mapNotNull(::promotionItemMade)
+
+/**
+ * The Reels item class of a quick promotion: the one class every unit dispatcher makes first after
+ * the promotion's typename, extending the same base as [midCardItem]. Refuses otherwise.
+ */
+internal fun BytecodePatchContext.promotionItemClass(midCardItem: String): String {
+    val methods = mutableListOf<Method>()
+    classDefForEachReferencing(strings = listOf(PROMOTION_UNIT)) { classDef ->
+        if (!classDef.type.startsWith(EXTENSION_PACKAGE)) methods += classDef.methods
+    }
+    val made = promotionItemsMade(methods).distinct()
+    if (made.isEmpty()) throw PatchException("$MID_CARDS: no method naming $MID_CARD_UNIT makes a class after $PROMOTION_UNIT")
+    val item = made.singleOrNull()
+        ?: throw PatchException("$MID_CARDS: the unit dispatchers make ${made.joinToString()} after $PROMOTION_UNIT, expected one class")
+    val base = classDefByOrNull(midCardItem)?.superclass
+    val itemBase = classDefByOrNull(item)?.superclass
+    if (base == null || itemBase != base) {
+        throw PatchException("$MID_CARDS: the promotion item $item extends $itemBase, the mid-card item $midCardItem extends $base")
+    }
+    return item
+}
+
+/** Fills the extension's promotion class stub with [binaryName]. */
+internal fun BytecodePatchContext.fillPromotionClassStub(binaryName: String) {
+    val stub = mutableClassDefBy(REEL_MID_CARDS).methods.singleOrNull {
+        it.name == PROMOTION_CLASS_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == STRING &&
+            it.parameterTypes.isEmpty()
+    } ?: throw PatchException("$REEL_MID_CARDS has no static String $PROMOTION_CLASS_STUB()")
+    stub.addInstructions(
+        0,
+        """
+            const-string v0, "$binaryName"
+            return-object v0
+        """,
+    )
 }
 
 /** The stub's body, on its own so the shapes test can read it. */

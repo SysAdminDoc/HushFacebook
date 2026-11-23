@@ -84,6 +84,12 @@ public final class ReelMidCards {
     static final String SURVEY_CARD = MID_CARD + USER_SURVEY;
     static final String GROUPS_CARD = MID_CARD + GROUPS_YOU_SHOULD_JOIN;
     static final String POSTS_CARD = MID_CARD + FEED_POSTS;
+    /**
+     * A Meta quick promotion between reels. Facebook makes it a Reels item of its own class, not a
+     * mid-card, and since 587 the Threads card comes this way too (#85), so it goes with the
+     * Threads switch.
+     */
+    static final String PROMOTION_CARD = "promo card";
     static final String NOT_A_MID_CARD = "not a mid-card";
     static final String NO_TYPE = "mid-card without a type";
     static final String NOT_PATCHED = "type reader not patched";
@@ -109,6 +115,10 @@ public final class ReelMidCards {
 
     /** Whether a test says Hide suggested and promoted posts is in the build, or null to ask SettingsStatus. */
     static volatile Boolean groupsPatchForTests;
+
+    /** A test's stand-in for the promo item class the patch fills into {@link #promotionItemClass}, or null. */
+    @Nullable
+    static volatile String promotionClassForTests;
 
     private ReelMidCards() {
     }
@@ -208,8 +218,8 @@ public final class ReelMidCards {
         final boolean posts;
         /** The hook's own patch, which carries the type read's status whichever switch asked for the walk. */
         final String family;
-        /** Threads cards, surveys, groups cards and post carousels taken off so far. */
-        final int[] dropped = new int[4];
+        /** Threads cards, surveys, groups cards, post carousels and promo cards taken off so far. */
+        final int[] dropped = new int[5];
 
         private Plan(boolean threadsPatch, boolean promptsPatch, boolean groupsPatch) {
             threads = threadsPatch && switchedOn(() -> Settings.HIDE_REEL_THREADS_CARDS, FamilyNames.REEL_DECLUTTER);
@@ -242,6 +252,7 @@ public final class ReelMidCards {
                     : surveys && SURVEY_CARD.equals(kind) ? 1
                     : groups && GROUPS_CARD.equals(kind) ? 2
                     : posts && POSTS_CARD.equals(kind) ? 3
+                    : threads && PROMOTION_CARD.equals(kind) ? 4
                     : -1;
             if (card < 0) return false;
             dropped[card]++;
@@ -254,10 +265,12 @@ public final class ReelMidCards {
             FeedFilterCounters.removed(route, dropped[1], SURVEY_CARD);
             FeedFilterCounters.removed(route, dropped[2], GROUPS_CARD);
             FeedFilterCounters.removed(route, dropped[3], POSTS_CARD);
+            FeedFilterCounters.removed(route, dropped[4], PROMOTION_CARD);
             if (dropped[1] > 0) HookStatus.counted(FamilyNames.REEL_PROMPTS, SURVEY_CARD);
             Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
                     () -> route + ": dropped " + dropped[0] + " Threads card(s), " + dropped[1] + " survey(s), "
-                            + dropped[2] + " groups card(s) and " + dropped[3] + " post card(s) from " + from);
+                            + dropped[2] + " groups card(s), " + dropped[3] + " post card(s) and " + dropped[4]
+                            + " promo card(s) from " + from);
         }
     }
 
@@ -280,6 +293,7 @@ public final class ReelMidCards {
      */
     static String kindOf(@Nullable Object item, String midCardClass, Types types, String family) {
         if (item == null) return NOT_A_MID_CARD;
+        if (isOfClass(item, promotionClass())) return PROMOTION_CARD;
         if (!isOfClass(item, midCardClass)) return NOT_A_MID_CARD + " " + shortClassName(item);
 
         Object type;
@@ -323,5 +337,21 @@ public final class ReelMidCards {
      */
     public static Object midCardType(Object item) {
         return UNPATCHED;
+    }
+
+    /** The promo item class: a test's stand-in, or what the patch filled in. */
+    @Nullable
+    private static String promotionClass() {
+        String forTests = promotionClassForTests;
+        return forTests != null ? forTests : promotionItemClass();
+    }
+
+    /**
+     * Injection point, filled in by the patch: the binary name of the Reels item class Facebook
+     * makes for a quick promotion between reels (588 {@code X.06bi}), or null until it is.
+     */
+    @Nullable
+    public static String promotionItemClass() {
+        return null;
     }
 }

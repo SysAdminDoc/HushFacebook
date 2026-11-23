@@ -160,8 +160,8 @@ final class VideoPages {
                     L10n.t("The comment Facebook previews under a reel and the bubbles of friends who reacted. "
                             + "Open the comments to see them all.")));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_THREADS_CARDS,
-                    L10n.t("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't "
-                            + "been tried on a real account yet.")));
+                    L10n.t("Hides the \"Threads you might like\" card and other Meta promotions between reels. Off by "
+                            + "default, since it hasn't been tried on a real account yet.")));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_POST_CARDS,
                     L10n.t("Hides the carousels of posts Facebook puts between reels, like \"Catch up on "
                             + "conversations\" from your groups. Off by default.")));

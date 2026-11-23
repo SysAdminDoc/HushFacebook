@@ -28,6 +28,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * A shared post now stops at the lines you picked. Its text sits in a narrower box than the feed's, so with 3 lines picked it ran on to a 4th before the "more". (#506)
 * Reel captions have a list of their own now, `Fold reel captions` under Reels and Watch, so the count you pick in `Fold long posts` stays on posts. Since 0.24.0 a reel's caption took the posts' count. The new list starts at Facebook's choice. (#506)
 * `Show Comment when comments are off` works on Facebook 588 again. The Comment button down the side of a reel stayed hidden on reels whose author limited who can comment, even with the switch on. (#299)
+* `Hide Threads cards between reels` also takes out the Meta promos Facebook now puts between reels, which is how the Threads card started showing up again for some people. (#85)
 
 ## 0.24.0 (2026-11-22)
 
