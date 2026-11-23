@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.feed;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -23,6 +24,9 @@ import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Hide post prompts: with the switch on, a story the bumper predicate says has a bumper is answered
@@ -82,6 +86,61 @@ public class PostPromptsTest {
                 PostPrompts.showsCommentButton(false)));
         Settings.SHOW_POST_COMMENT_BUTTON.save(false);
         assertFalse(PostPrompts.showsCommentButton(false));
+    }
+
+    /** Stands in for Facebook's footer item enum: obfuscated names, the server's name from toString. */
+    enum FooterItem {
+        A("REACT"), B("COMMENT"), C("SHARE"), D("SEND");
+
+        private final String serverValue;
+
+        FooterItem(String serverValue) {
+            this.serverValue = serverValue;
+        }
+
+        @Override
+        public String toString() {
+            return serverValue;
+        }
+    }
+
+    /**
+     * #299: a post can come with its buttons named by the server, and on one you can't comment on
+     * that list has no Comment. With the switch on, Comment goes back right after Like; off, or on a
+     * post you can comment on, or a list with Comment or without Like, it's the very same list.
+     */
+    @Test
+    public void aSentButtonListWithoutCommentGetsItBackAfterLikeOnlyWithTheSwitchOn() {
+        List<FooterItem> sent = Arrays.asList(FooterItem.A, FooterItem.C, FooterItem.D);
+        assertSame("off, the sent list changed", sent, PostPrompts.withCommentButton(sent, false));
+
+        Settings.SHOW_POST_COMMENT_BUTTON.save(true);
+        assertEquals(Arrays.asList(FooterItem.A, FooterItem.B, FooterItem.C, FooterItem.D),
+                PostPrompts.withCommentButton(sent, false));
+        assertEquals(Arrays.asList(FooterItem.A, FooterItem.C, FooterItem.D), sent);
+        assertTrue(String.valueOf(statusLine()), statusLine().contains(PostPrompts.COMMENT_KEPT + " 1"));
+
+        assertSame("a post you can comment on changed", sent, PostPrompts.withCommentButton(sent, true));
+        List<FooterItem> withComment = Arrays.asList(FooterItem.A, FooterItem.B, FooterItem.C);
+        assertSame("a list with Comment changed", withComment, PostPrompts.withCommentButton(withComment, false));
+        List<FooterItem> noLike = Arrays.asList(FooterItem.C, FooterItem.D);
+        assertSame("a list without Like changed", noLike, PostPrompts.withCommentButton(noLike, false));
+        assertNull(PostPrompts.withCommentButton(null, false));
+        List<Object> strangers = Arrays.asList("REACT", "SHARE");
+        assertSame("a list that isn't the enum changed", strangers, PostPrompts.withCommentButton(strangers, false));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("paused, the sent list changed", sent, PostPrompts.withCommentButton(sent, false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertSame(
+                "before the settings were ready, the sent list changed", sent, PostPrompts.withCommentButton(sent, false)));
+
+        // The builder's start hands over the post's answer and its returns use it once.
+        PostPrompts.footerPost(false);
+        assertEquals(Arrays.asList(FooterItem.A, FooterItem.B, FooterItem.C, FooterItem.D), PostPrompts.withCommentButton(sent));
+        assertSame("a second list reused the last post's answer", sent, PostPrompts.withCommentButton(sent));
+        PostPrompts.footerPost(true);
+        assertSame("a post you can comment on changed", sent, PostPrompts.withCommentButton(sent));
     }
 
     private static String statusLine() {

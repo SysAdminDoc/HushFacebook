@@ -6,11 +6,16 @@ package app.morphe.extension.facebook.feed;
 
 import android.graphics.drawable.Drawable;
 
+import androidx.annotation.Nullable;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The strip Facebook draws on some posts: "Are you interested in this post?", "Show less", who
@@ -307,15 +312,12 @@ public final class PostPrompts {
         }
     }
 
-    /**
-     * The hook, at the start of the builder that turns a post's reaction, comment or share count
-     * into the text on its button. True makes the builder answer the empty text it gives a count of
-     * zero, so the button shows its word and keeps its place. False, which is the answer while the
-     * switch is off, paused, before the settings are ready or when anything here fails, lets the
-     * builder write the number as Facebook does.
-     */
     /** Counted under the patch's name each time a post you can't comment on keeps its Comment button. */
     static final String COMMENT_KEPT = "Comment button kept on a post with comments off";
+
+    /** The server's names for the footer's Comment and Like items, what their enum constants' toString answers. */
+    static final String COMMENT_ITEM = "COMMENT";
+    static final String LIKE_ITEM = "REACT";
 
     /**
      * Injection point, in the check that picks a post's footer buttons, handed Facebook's answer to
@@ -336,6 +338,79 @@ public final class PostPrompts {
         }
     }
 
+    /** Whether you may comment on the post the footer list builder on this thread is building for, or null. */
+    private static final ThreadLocal<Boolean> footerCanComment = new ThreadLocal<>();
+
+    /**
+     * Injection point, first thing in the builder of a post's footer item list: whether you may
+     * comment on the post, kept for {@link #withCommentButton(List)} at the builder's return (the
+     * builder reuses the post's register on the way). Never throws.
+     */
+    public static void footerPost(boolean canComment) {
+        footerCanComment.set(canComment);
+    }
+
+    /**
+     * Injection point, last thing in the builder of a post's footer item list, handed the list it
+     * returns. {@link #withCommentButton(List, boolean)} with the answer {@link #footerPost} kept, a
+     * yes when there's none. Never throws.
+     */
+    public static List<?> withCommentButton(@Nullable List<?> buttons) {
+        Boolean canComment = footerCanComment.get();
+        footerCanComment.remove();
+        return withCommentButton(buttons, canComment == null || canComment);
+    }
+
+    /**
+     * The footer item list (the constants of Facebook's footer item enum, each answering its server
+     * name from toString) for a post, given whether you may comment on it. A post can come with its
+     * buttons named by the server, and the builder takes that list as it is, never asking the check
+     * {@link #showsCommentButton} hooks: on a post you can't comment on, Comment just isn't in it
+     * (#299). While the switch is on, Comment goes back in right after the Like button (REACT), where
+     * it sits on every other post. A list with no Like button is left alone, since that's no post you
+     * could comment on anyway. Off, paused, before the settings are ready, or when anything here
+     * fails, the very same list. Never throws.
+     */
+    static List<?> withCommentButton(@Nullable List<?> buttons, boolean canComment) {
+        try {
+            if (buttons == null || buttons.isEmpty()) return buttons;
+            HookStatus.invoked(FAMILY);
+            if (canComment || !Utils.settingsReady() || !Settings.SHOW_POST_COMMENT_BUTTON.get()) return buttons;
+
+            int like = -1;
+            for (int i = 0; i < buttons.size(); i++) {
+                String name = String.valueOf(buttons.get(i));
+                if (COMMENT_ITEM.equals(name)) return buttons;
+                if (like < 0 && LIKE_ITEM.equals(name)) like = i;
+            }
+            if (like < 0 || !(buttons.get(like) instanceof Enum)) return buttons;
+
+            Object comment = null;
+            for (Object constant : ((Enum<?>) buttons.get(like)).getDeclaringClass().getEnumConstants()) {
+                if (COMMENT_ITEM.equals(String.valueOf(constant))) comment = constant;
+            }
+            if (comment == null) {
+                HookStatus.missingMember(FAMILY, "constant", "footer item", COMMENT_ITEM);
+                return buttons;
+            }
+
+            List<Object> withComment = new ArrayList<>(buttons);
+            withComment.add(like + 1, comment);
+            HookStatus.counted(FAMILY, COMMENT_KEPT);
+            return withComment;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, COMMENT_KEPT, failure);
+            return buttons;
+        }
+    }
+
+    /**
+     * The hook, at the start of the builder that turns a post's reaction, comment or share count
+     * into the text on its button. True makes the builder answer the empty text it gives a count of
+     * zero, so the button shows its word and keeps its place. False, which is the answer while the
+     * switch is off, paused, before the settings are ready or when anything here fails, lets the
+     * builder write the number as Facebook does.
+     */
     public static boolean hidePostCounts() {
         try {
             HookStatus.invoked(FAMILY);

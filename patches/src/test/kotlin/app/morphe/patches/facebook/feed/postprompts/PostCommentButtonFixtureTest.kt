@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.reels.CAN_VIEWER_COMMENT
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -16,6 +17,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -60,15 +62,76 @@ class PostCommentButtonFixtureTest {
                 assertNotNull("$name: ${called.definingClass} isn't in the build", target)
                 val result = (original[calls.single() + 1] as OneRegisterInstruction).registerA
 
+                // The one footer list builder: static, answering a List, calling the check, and taking the
+                // class the check reads the post off.
+                val field = storyField(check, calls.single())
+                assertNotNull("$name: the footer check reads no post off an Object field", field)
+                val checkName = referenceOf(check)
+                val builders = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.contains(check.definingClass) }) {
+                    buildsFooterList(it, checkName)
+                }
+                assertEquals("$name: footer list builders calling $checkName", 1, builders.size)
+                val builder = builders.single()
+                val story = parameterNumber(builder, field!!.definingClass)
+                assertNotNull("$name: the builder takes no one ${field.definingClass}", story)
+                val builderCode = builder.implementation!!.instructions.toList()
+                val returns = builderCode.filter { it.opcode == Opcode.RETURN_OBJECT }
+                assertTrue("$name: the builder returns nothing", returns.isNotEmpty())
+
+                // Its items are a GraphQL enum answering the server's name from toString, COMMENT and REACT
+                // (the Like button) among them, which is all the extension goes by.
+                val items = builderCode.mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.returnType }
+                    .distinct().filter { it.startsWith("L") && classOf(it)?.superclass == "Ljava/lang/Enum;" }
+                assertEquals("$name: enums the builder reads", 1, items.size)
+                val item = classOf(items.single())!!
+                val constants = item.methods.single { it.name == "<clinit>" }
+                for (server in listOf("COMMENT", "REACT", "SHARE")) {
+                    assertTrue("$name: ${item.type} names no $server", holdsString(constants, server))
+                }
+                val toString = item.methods.single { it.name == "toString" && it.parameterTypes.isEmpty() }
+                    .implementation!!.instructions.map { it.opcode }
+                assertEquals("$name: ${item.type}.toString answers a field", listOf(Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT), toString)
+
                 val owner = classOf(check.definingClass)!!
                 assertThrows("$name: without the can-comment check's class the patch must refuse", PatchException::class.java) {
                     PatchContexts.of(listOf(owner)).showPostCommentButton()
                 }
-                val context = PatchContexts.of(listOf(owner, target!!).distinctBy { it.type })
+                val builderOwner = classOf(builder.definingClass)!!
+                val context = PatchContexts.of(listOf(owner, target!!, builderOwner).distinctBy { it.type })
                 context.showPostCommentButton()
                 val patched = context.mutableClassDefBy(check.definingClass).methods.single {
                     it.name == check.name && it.parameterTypes.map(CharSequence::toString) == check.parameterTypes.map(CharSequence::toString)
                 }.implementation!!.instructions.toList()
+                val patchedBuilder = context.mutableClassDefBy(builder.definingClass).methods.single {
+                    it.name == builder.name && it.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
+                }.implementation!!.instructions.toList()
+                fun calledAt(at: Int) = ((patchedBuilder[at] as? ReferenceInstruction)?.reference as? MethodReference)?.toString()
+
+                // First thing, the post off the builder's own parameter (its register is reused later),
+                // asked whether you can comment the way the footer check asks, and the answer handed over.
+                val widths = builder.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+                val postRegister = builder.implementation!!.registerCount - widths + story!!
+                assertEquals("$name: the builder starts on its post", Opcode.MOVE_OBJECT_FROM16, patchedBuilder[0].opcode)
+                assertEquals("$name: the post parameter's register", postRegister, (patchedBuilder[0] as TwoRegisterInstruction).registerB)
+                val entry = patchedBuilder.indices.single { calledAt(it) == FOOTER_POST }
+                val before = patchedBuilder.take(entry).mapNotNull { (it as? ReferenceInstruction)?.reference?.toString() }
+                assertEquals("$name: the start reads the post field and asks the check",
+                    listOf(field.toString(), called.parameterTypes.single().toString(), called.toString()), before)
+                assertEquals("$name: then the builder's own code", builderCode.first().opcode, patchedBuilder[entry + 1].opcode)
+
+                // Before each return, the returned list goes to the extension and its answer is returned.
+                val listHooks = patchedBuilder.indices.filter { calledAt(it) == FOOTER_WITH_COMMENT }
+                assertEquals("$name: a list hook before each return", returns.size, listHooks.size)
+                for (hook in listHooks) {
+                    assertEquals("$name: the list hook is a static call", Opcode.INVOKE_STATIC_RANGE, patchedBuilder[hook].opcode)
+                    val list = (patchedBuilder[hook] as RegisterRangeInstruction).startRegister
+                    assertEquals("$name: the list hook gets one register", 1, (patchedBuilder[hook] as RegisterRangeInstruction).registerCount)
+                    assertEquals("$name: the extension's list", Opcode.MOVE_RESULT_OBJECT, patchedBuilder[hook + 1].opcode)
+                    assertEquals("$name: into the list's register", list, (patchedBuilder[hook + 1] as OneRegisterInstruction).registerA)
+                    assertEquals("$name: then returned", Opcode.RETURN_OBJECT, patchedBuilder[hook + 2].opcode)
+                    assertEquals("$name: that register returned", list, (patchedBuilder[hook + 2] as OneRegisterInstruction).registerA)
+                }
+                assertEquals("$name: instructions added to the builder", builderCode.size + entry + 1 + 2 * returns.size, patchedBuilder.size)
                 assertEquals("$name: two instructions added", original.size + 2, patched.size)
                 val hook = patched.indices.single {
                     ((patched[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == SHOW_POST_COMMENT_BUTTON
@@ -88,12 +151,12 @@ class PostCommentButtonFixtureTest {
     }
 
     @Test
-    fun `the extension has the hook`() {
-        val type = SHOW_POST_COMMENT_BUTTON.substringBefore("->")
-        val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "showsCommentButton" }
-        assertNotNull("the extension has no PostPrompts.showsCommentButton", hook)
-        assertEquals("showsCommentButton's shape", SHOW_POST_COMMENT_BUTTON,
-            "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
-        assertTrue("showsCommentButton isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
+    fun `the extension has the hooks`() {
+        for (reference in listOf(SHOW_POST_COMMENT_BUTTON, FOOTER_POST, FOOTER_WITH_COMMENT)) {
+            val name = reference.substringAfter("->").substringBefore("(")
+            val hook = ExtensionDex.classDef(reference.substringBefore("->")).methods.singleOrNull { referenceOf(it) == reference }
+            assertNotNull("the extension has no $reference", hook)
+            assertTrue("$name isn't static", AccessFlags.STATIC.isSet(hook!!.accessFlags))
+        }
     }
 }
