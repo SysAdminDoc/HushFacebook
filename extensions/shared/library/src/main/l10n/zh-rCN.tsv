@@ -1081,6 +1081,11 @@ Fold long posts will fold posts where Facebook does.	“折叠长帖子”将在
 Fold long posts will show %1$s before See more.	“折叠长帖子”将在“展开”前显示 %1$s.
 Fold long comments will fold comments where Facebook does.	“折叠长评论”将在 Facebook 折叠的位置折叠评论.
 Fold long comments will show %1$s before See more.	“折叠长评论”将在“展开”前显示 %1$s.
+Fold reel captions	折叠短视频说明
+Long reel captions fold where Facebook folds them.	长短视频说明在 Facebook 折叠的位置折叠.
+A long reel caption shows %1$s before more.	长短视频说明在“更多”前显示 %1$s.
+Fold reel captions will fold captions where Facebook does.	“折叠短视频说明”将在 Facebook 折叠的位置折叠说明.
+Fold reel captions will show %1$s before more.	“折叠短视频说明”将在“更多”前显示 %1$s.
 Show full reel captions	显示完整短视频说明
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	短视频的长说明会直接显示全部文字。点按说明即可重新折叠。更改从下一个短视频开始生效。
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

@@ -462,6 +462,9 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.holdReactionChange() != null) parts.add(holdReactionSentence(snapshot.holdReactionChange()));
             if (snapshot.foldPostsChange() != null) parts.add(foldPostsSentence(snapshot.foldPostsChange()));
             if (snapshot.foldCommentsChange() != null) parts.add(foldCommentsSentence(snapshot.foldCommentsChange()));
+            if (snapshot.foldReelCaptionsChange() != null) {
+                parts.add(foldReelCaptionsSentence(snapshot.foldReelCaptionsChange()));
+            }
             if (snapshot.videoBufferChange() != null) parts.add(videoBufferSentence(snapshot.videoBufferChange()));
             if (snapshot.grayOverChange() != null) parts.add(grayOverSentence(snapshot.grayOverChange()));
             if (snapshot.newRowMarkChange() != null) parts.add(newRowMarkSentence(snapshot.newRowMarkChange()));
@@ -706,6 +709,12 @@ public class SettingsBackupPreference extends Preference {
     static String foldCommentsSentence(FoldLines lines) {
         if (lines == FoldLines.FACEBOOK) return L10n.t("Fold long comments will fold comments where Facebook does.");
         return L10n.f("Fold long comments will show %1$s before See more.", HushfacebookPreferenceFragment.foldLinesLabel(lines));
+    }
+
+    /** The sentence that says where Fold reel captions folds after an import (#506). */
+    static String foldReelCaptionsSentence(FoldLines lines) {
+        if (lines == FoldLines.FACEBOOK) return L10n.t("Fold reel captions will fold captions where Facebook does.");
+        return L10n.f("Fold reel captions will show %1$s before more.", HushfacebookPreferenceFragment.foldLinesLabel(lines));
     }
 
     /** The sentence that says how much Video buffer loads after an import (#526). */
@@ -1203,6 +1212,8 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.holdReactionChange() == null ? "" : " " + holdReactionSentence(snapshot.holdReactionChange()))
                     + (snapshot.foldPostsChange() == null ? "" : " " + foldPostsSentence(snapshot.foldPostsChange()))
                     + (snapshot.foldCommentsChange() == null ? "" : " " + foldCommentsSentence(snapshot.foldCommentsChange()))
+                    + (snapshot.foldReelCaptionsChange() == null ? ""
+                            : " " + foldReelCaptionsSentence(snapshot.foldReelCaptionsChange()))
                     + (snapshot.videoBufferChange() == null ? "" : " " + videoBufferSentence(snapshot.videoBufferChange()))
                     + (snapshot.grayOverChange() == null ? "" : " " + grayOverSentence(snapshot.grayOverChange()))
                     + (snapshot.newRowMarkChange() == null ? "" : " " + newRowMarkSentence(snapshot.newRowMarkChange()))

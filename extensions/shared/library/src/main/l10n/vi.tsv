@@ -1084,6 +1084,11 @@ Fold long posts will fold posts where Facebook does.	Thu gọn bài viết dài 
 Fold long posts will show %1$s before See more.	Thu gọn bài viết dài sẽ hiện %1$s trước Xem thêm.
 Fold long comments will fold comments where Facebook does.	Thu gọn bình luận dài sẽ thu gọn bình luận ở chỗ Facebook thu gọn.
 Fold long comments will show %1$s before See more.	Thu gọn bình luận dài sẽ hiện %1$s trước Xem thêm.
+Fold reel captions	Thu gọn chú thích thước phim
+Long reel captions fold where Facebook folds them.	Chú thích thước phim dài được thu gọn ở chỗ Facebook thu gọn.
+A long reel caption shows %1$s before more.	Chú thích thước phim dài hiện %1$s trước Xem thêm.
+Fold reel captions will fold captions where Facebook does.	Thu gọn chú thích thước phim sẽ thu gọn chú thích ở chỗ Facebook thu gọn.
+Fold reel captions will show %1$s before more.	Thu gọn chú thích thước phim sẽ hiện %1$s trước Xem thêm.
 Show full reel captions	Hiện toàn bộ chú thích thước phim
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Chú thích dài của thước phim hiện toàn bộ nội dung ngay từ đầu. Nhấn vào chú thích để thu gọn lại. Thay đổi áp dụng từ thước phim tiếp theo.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

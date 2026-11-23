@@ -2064,17 +2064,21 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
 
     /** How many lines a long post shows before See more (#497), under Show full post text. */
     static FoldLinesRow foldPostsRow(Context context) {
-        return foldLinesRow(context, Settings.FOLD_POST_TEXT, L10n.t("Fold long posts"), false);
+        return foldLinesRow(context, Settings.FOLD_POST_TEXT, L10n.t("Fold long posts"));
     }
 
     /** How many lines a long comment shows before See more (#497). */
     static FoldLinesRow foldCommentsRow(Context context) {
-        return foldLinesRow(context, Settings.FOLD_COMMENTS, L10n.t("Fold long comments"), true);
+        return foldLinesRow(context, Settings.FOLD_COMMENTS, L10n.t("Fold long comments"));
     }
 
-    private static FoldLinesRow foldLinesRow(Context context, EnumSetting<FoldLines> setting, String title,
-            boolean comments) {
-        FoldLinesRow row = new FoldLinesRow(context, comments);
+    /** How many lines a folded reel caption shows before more (#506), under Show full reel captions. */
+    static FoldLinesRow foldReelCaptionsRow(Context context) {
+        return foldLinesRow(context, Settings.FOLD_REEL_CAPTIONS, L10n.t("Fold reel captions"));
+    }
+
+    private static FoldLinesRow foldLinesRow(Context context, EnumSetting<FoldLines> setting, String title) {
+        FoldLinesRow row = new FoldLinesRow(context, setting);
         row.setKey(setting.key);
         row.setTitle(title);
         row.setDialogTitle(title);
@@ -2099,8 +2103,12 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     /** What the choice does, for the row's summary. Show full post text, when in this build, wins for posts. */
-    static String foldLinesSummary(FoldLines lines, boolean comments) {
-        if (comments) {
+    static String foldLinesSummary(FoldLines lines, EnumSetting<FoldLines> setting) {
+        if (setting == Settings.FOLD_REEL_CAPTIONS) {
+            if (lines == FoldLines.FACEBOOK) return L10n.t("Long reel captions fold where Facebook folds them.");
+            return L10n.f("A long reel caption shows %1$s before more.", foldLinesLabel(lines));
+        }
+        if (setting == Settings.FOLD_COMMENTS) {
             if (lines == FoldLines.FACEBOOK) return L10n.t("Long comments fold where Facebook folds them.");
             return L10n.f("A long comment shows %1$s before See more.", foldLinesLabel(lines));
         }

@@ -1088,6 +1088,11 @@ Fold long posts will fold posts where Facebook does.	「收合長貼文」會在
 Fold long posts will show %1$s before See more.	「收合長貼文」會在「顯示更多」前顯示 %1$s。
 Fold long comments will fold comments where Facebook does.	「收合長留言」會在 Facebook 收合的位置收合留言。
 Fold long comments will show %1$s before See more.	「收合長留言」會在「顯示更多」前顯示 %1$s。
+Fold reel captions	收合連續短片說明
+Long reel captions fold where Facebook folds them.	長連續短片說明會在 Facebook 收合的位置收合。
+A long reel caption shows %1$s before more.	長連續短片說明會在「更多」前顯示 %1$s。
+Fold reel captions will fold captions where Facebook does.	「收合連續短片說明」會在 Facebook 收合的位置收合說明。
+Fold reel captions will show %1$s before more.	「收合連續短片說明」會在「更多」前顯示 %1$s。
 Show full reel captions	顯示完整連續短片說明
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	連續短片的長說明會直接顯示全部文字。輕觸說明即可重新收合。變更從下一部連續短片開始生效。
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

@@ -331,6 +331,12 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHOW_FULL_REEL_CAPTIONS,
                     L10n.t("Long captions on reels show all of their text right away. Tap the caption to fold it back. "
                             + "A change shows from the next reel.")));
+        }
+        // Fold long text's reel half, a list of its own since #506, read as each caption is measured.
+        if (build.contains(PatchFamily.FOLD_LONG_TEXT)) {
+            reels.addPreference(HushfacebookPreferenceFragment.foldReelCaptionsRow(context));
+        }
+        if (build.contains(PatchFamily.FULL_POST_TEXT)) {
             // Asked as each reel caption is built, so a change shows on the next caption (#419).
             if (captionBackdropInBuild()) {
                 reels.addPreference(toggle(context, Settings.DIM_OPEN_REEL_CAPTIONS,

@@ -109,7 +109,7 @@ val foldLongTextPatch = patch(
     description = "Lets you pick how many lines a long post or comment shows before See more, from 1 to 20, " +
         "so you can fold sooner or read more before tapping. Starts at Facebook's choice. Pick the lines for " +
         "posts in Hushfacebook settings > News feed, and for comments under Comments and writing. " +
-        "A video's caption follows the count for posts. While Show full post text is on, posts still show whole.",
+        "Reel captions get a count of their own under Reels and Watch. While Show full post text is on, posts still show whole.",
 ) {
     // Feed already holds the most a group may, and the comment half lives under Comments and writing in settings.
     category("Comments")

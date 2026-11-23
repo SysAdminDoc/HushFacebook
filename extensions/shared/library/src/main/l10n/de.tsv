@@ -1084,6 +1084,11 @@ Fold long posts will fold posts where Facebook does.	„Lange Beiträge einklapp
 Fold long posts will show %1$s before See more.	„Lange Beiträge einklappen“ zeigt %1$s vor „Mehr ansehen“.
 Fold long comments will fold comments where Facebook does.	„Lange Kommentare einklappen“ klappt Kommentare dort ein, wo Facebook es tut.
 Fold long comments will show %1$s before See more.	„Lange Kommentare einklappen“ zeigt %1$s vor „Mehr ansehen“.
+Fold reel captions	Reel-Beschreibungen einklappen
+Long reel captions fold where Facebook folds them.	Lange Reel-Beschreibungen werden dort eingeklappt, wo Facebook sie einklappt.
+A long reel caption shows %1$s before more.	Eine lange Reel-Beschreibung zeigt %1$s vor „mehr“.
+Fold reel captions will fold captions where Facebook does.	„Reel-Beschreibungen einklappen“ klappt Beschreibungen dort ein, wo Facebook es tut.
+Fold reel captions will show %1$s before more.	„Reel-Beschreibungen einklappen“ zeigt %1$s vor „mehr“.
 Show full reel captions	Ganze Reel-Beschreibungen zeigen
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Lange Beschreibungen bei Reels zeigen sofort ihren ganzen Text. Tippe auf die Beschreibung, um sie wieder einzuklappen. Die Änderung gilt ab dem nächsten Reel.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

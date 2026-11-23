@@ -112,6 +112,7 @@ import app.morphe.extension.facebook.settings.SettingsRows.RowSemantics;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BooleanSetting;
+import app.morphe.extension.shared.settings.EnumSetting;
 import app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment;
 
 /**
@@ -1711,15 +1712,15 @@ final class ValueRows {
     }
 
     /**
-     * Fold long posts or Fold long comments (#497). Its summary follows its value, as Reaction's
-     * does.
+     * Fold long posts, Fold long comments (#497) or Fold reel captions (#506). Its summary follows
+     * its value, as Reaction's does.
      */
     static final class FoldLinesRow extends PlainSummaryList {
-        private final boolean comments;
+        private final EnumSetting<FoldLines> setting;
 
-        FoldLinesRow(Context context, boolean comments) {
+        FoldLinesRow(Context context, EnumSetting<FoldLines> setting) {
             super(context);
-            this.comments = comments;
+            this.setting = setting;
         }
 
         @Override
@@ -1733,7 +1734,7 @@ final class ValueRows {
             for (FoldLines candidate : FoldLines.values()) {
                 if (candidate.name().equals(getValue())) lines = candidate;
             }
-            setSummary(foldLinesSummary(lines, comments));
+            setSummary(foldLinesSummary(lines, setting));
         }
 
         @Override

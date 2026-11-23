@@ -1112,6 +1112,11 @@ Fold long posts will fold posts where Facebook does.	«Сворачивать д
 Fold long posts will show %1$s before See more.	«Сворачивать длинные публикации» будет показывать до кнопки «Еще»: %1$s.
 Fold long comments will fold comments where Facebook does.	«Сворачивать длинные комментарии» будет сворачивать комментарии там же, где Facebook.
 Fold long comments will show %1$s before See more.	«Сворачивать длинные комментарии» будет показывать до кнопки «Еще»: %1$s.
+Fold reel captions	Сворачивать подписи к Reels
+Long reel captions fold where Facebook folds them.	Длинные подписи к Reels сворачиваются там же, где их сворачивает Facebook.
+A long reel caption shows %1$s before more.	Сколько видно у длинной подписи к Reels до «Еще»: %1$s.
+Fold reel captions will fold captions where Facebook does.	«Сворачивать подписи к Reels» будет сворачивать подписи там же, где Facebook.
+Fold reel captions will show %1$s before more.	«Сворачивать подписи к Reels» будет показывать до «Еще»: %1$s.
 Show full reel captions	Показывать полные подписи к Reels
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Длинные подписи к Reels сразу отображаются полностью. Нажмите на подпись, чтобы снова свернуть ее. Изменение действует со следующего ролика.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

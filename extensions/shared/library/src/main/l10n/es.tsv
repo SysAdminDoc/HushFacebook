@@ -1084,6 +1084,11 @@ Fold long posts will fold posts where Facebook does.	Contraer publicaciones larg
 Fold long posts will show %1$s before See more.	Contraer publicaciones largas mostrará %1$s antes de Ver más.
 Fold long comments will fold comments where Facebook does.	Contraer comentarios largos contraerá los comentarios donde lo hace Facebook.
 Fold long comments will show %1$s before See more.	Contraer comentarios largos mostrará %1$s antes de Ver más.
+Fold reel captions	Contraer descripciones de reels
+Long reel captions fold where Facebook folds them.	Las descripciones largas de reels se contraen donde lo decide Facebook.
+A long reel caption shows %1$s before more.	Una descripción larga de reel muestra %1$s antes de más.
+Fold reel captions will fold captions where Facebook does.	Contraer descripciones de reels contraerá las descripciones donde lo hace Facebook.
+Fold reel captions will show %1$s before more.	Contraer descripciones de reels mostrará %1$s antes de más.
 Show full reel captions	Mostrar las descripciones completas de los reels
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Las descripciones largas de los reels muestran todo su texto desde el principio. Toca la descripción para volver a contraerla. El cambio se aplica desde el siguiente reel.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

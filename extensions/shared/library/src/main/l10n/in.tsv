@@ -1084,6 +1084,11 @@ Fold long posts will fold posts where Facebook does.	Lipat postingan panjang aka
 Fold long posts will show %1$s before See more.	Lipat postingan panjang akan menampilkan %1$s sebelum Lihat selengkapnya.
 Fold long comments will fold comments where Facebook does.	Lipat komentar panjang akan melipat komentar di tempat Facebook melipatnya.
 Fold long comments will show %1$s before See more.	Lipat komentar panjang akan menampilkan %1$s sebelum Lihat selengkapnya.
+Fold reel captions	Lipat keterangan reel
+Long reel captions fold where Facebook folds them.	Keterangan reel panjang dilipat di tempat Facebook melipatnya.
+A long reel caption shows %1$s before more.	Keterangan reel panjang menampilkan %1$s sebelum selengkapnya.
+Fold reel captions will fold captions where Facebook does.	Lipat keterangan reel akan melipat keterangan di tempat Facebook melipatnya.
+Fold reel captions will show %1$s before more.	Lipat keterangan reel akan menampilkan %1$s sebelum selengkapnya.
 Show full reel captions	Tampilkan keterangan reel lengkap
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Keterangan panjang di reels langsung menampilkan seluruh teksnya. Ketuk keterangannya untuk melipatnya kembali. Perubahan berlaku mulai reel berikutnya.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

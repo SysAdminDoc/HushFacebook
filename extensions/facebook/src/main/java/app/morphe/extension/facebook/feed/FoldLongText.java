@@ -42,8 +42,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * to cut, which beats the line limit, so with a count picked that place is dropped ({@link #postCut}).
  * A feed post Facebook has chosen to show whole folds again ({@link #hoisted}). A comment's "lines"
  * only count line breaks, so its characters decide, and they're measured for the comment's own text
- * instead of guessed. A video's caption has a limit of its own, which takes the count picked for
- * posts ({@link #captionLines}).
+ * instead of guessed. A reel's caption has a limit of its own, which takes the count picked for
+ * reel captions ({@link #captionLines}).
  *
  * <p>Facebook's choice, paused, before the settings are ready, or when anything here fails, the
  * numbers are Facebook's own.
@@ -232,16 +232,17 @@ public final class FoldLongText {
     }
 
     /**
-     * The hook on the lines a video's folded caption shows, handed Facebook's. Answers the count
-     * picked for posts, or Facebook's. Show full post text has no say here, since captions have a
-     * switch of their own.
+     * The hook on the lines a reel's folded caption shows, handed Facebook's. Answers the count
+     * picked for reel captions, or Facebook's. That's a list of its own (#506): on 0.24.0 captions
+     * took the count for posts, and a reader who folds posts short didn't want the reel's caption
+     * cut the same. Show full post text has no say here, since captions have a switch of their own.
      */
     public static int captionLines(int lines) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, CAPTION_LINES);
             if (!Utils.settingsReady()) return lines;
-            int picked = Settings.FOLD_POST_TEXT.get().lines;
+            int picked = Settings.FOLD_REEL_CAPTIONS.get().lines;
             return picked > 0 ? picked : lines;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, CAPTION_LINES, failure);

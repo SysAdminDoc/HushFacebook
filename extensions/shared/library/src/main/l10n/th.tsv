@@ -1084,6 +1084,11 @@ Fold long posts will fold posts where Facebook does.	พับโพสต์ท
 Fold long posts will show %1$s before See more.	พับโพสต์ที่ยาวจะแสดง %1$s ก่อนดูเพิ่มเติม
 Fold long comments will fold comments where Facebook does.	พับความคิดเห็นที่ยาวจะพับความคิดเห็นตรงที่ Facebook พับ
 Fold long comments will show %1$s before See more.	พับความคิดเห็นที่ยาวจะแสดง %1$s ก่อนดูเพิ่มเติม
+Fold reel captions	พับคำบรรยาย Reels
+Long reel captions fold where Facebook folds them.	คำบรรยาย Reels ที่ยาวจะพับตรงที่ Facebook พับ
+A long reel caption shows %1$s before more.	คำบรรยาย Reels ที่ยาวจะแสดง %1$s ก่อนเพิ่มเติม
+Fold reel captions will fold captions where Facebook does.	พับคำบรรยาย Reels จะพับคำบรรยายตรงที่ Facebook พับ
+Fold reel captions will show %1$s before more.	พับคำบรรยาย Reels จะแสดง %1$s ก่อนเพิ่มเติม
 Show full reel captions	แสดงคำบรรยาย Reels แบบเต็ม
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	คำบรรยายขนาดยาวบน Reels จะแสดงข้อความทั้งหมดทันที แตะคำบรรยายเพื่อพับเก็บ การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

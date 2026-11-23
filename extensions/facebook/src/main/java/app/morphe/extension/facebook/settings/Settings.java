@@ -3665,6 +3665,14 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_fold_comments", FoldLines.FACEBOOK);
 
     /**
+     * How many lines a folded reel caption shows before more (#506), Facebook's own fold until a
+     * count is picked. Its own choice since 0.24.0 tied it to {@link #FOLD_POST_TEXT}. A change shows
+     * from the next reel.
+     */
+    public static final EnumSetting<FoldLines> FOLD_REEL_CAPTIONS =
+            new EnumSetting<>("hushfacebook_fold_reel_captions", FoldLines.FACEBOOK);
+
+    /**
      * Reel captions start whole instead of cut with "more" (#398, split from
      * {@link #SHOW_FULL_POST_TEXT}, whose stored value it takes over once). A change shows on the
      * reels drawn after it.

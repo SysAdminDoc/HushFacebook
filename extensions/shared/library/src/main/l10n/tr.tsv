@@ -1084,6 +1084,11 @@ Fold long posts will fold posts where Facebook does.	Uzun gönderileri daralt, g
 Fold long posts will show %1$s before See more.	Uzun gönderileri daralt, Devamını gör'den önce %1$s gösterecek.
 Fold long comments will fold comments where Facebook does.	Uzun yorumları daralt, yorumları Facebook'un daralttığı yerde daraltacak.
 Fold long comments will show %1$s before See more.	Uzun yorumları daralt, Devamını gör'den önce %1$s gösterecek.
+Fold reel captions	Reels açıklamalarını daralt
+Long reel captions fold where Facebook folds them.	Uzun Reels açıklamaları Facebook'un daralttığı yerde daralır.
+A long reel caption shows %1$s before more.	Uzun bir Reels açıklaması, devamı yazısından önce %1$s gösterir.
+Fold reel captions will fold captions where Facebook does.	Reels açıklamalarını daralt, açıklamaları Facebook'un daralttığı yerde daraltacak.
+Fold reel captions will show %1$s before more.	Reels açıklamalarını daralt, devamı yazısından önce %1$s gösterecek.
 Show full reel captions	Reels açıklamasının tamamını göster
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Reels'teki uzun açıklamalar metnin tamamını hemen gösterir. Açıklamaya dokunarak onu yeniden daraltabilirsin. Değişiklik bir sonraki reel'den itibaren geçerli olur.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

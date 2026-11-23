@@ -61,6 +61,7 @@ public class FoldLongTextSettingsTest {
         ScreenColors.shown = null;
         Settings.FOLD_POST_TEXT.resetToDefault();
         Settings.FOLD_COMMENTS.resetToDefault();
+        Settings.FOLD_REEL_CAPTIONS.resetToDefault();
     }
 
     @Test
@@ -112,6 +113,34 @@ public class FoldLongTextSettingsTest {
         }
     }
 
+    /** #506: reel captions got a list of their own, right under Show full reel captions, apart from the posts'. */
+    @Test
+    public void foldReelCaptionsFollowsShowFullReelCaptionsAndStartsAtFacebooksChoice() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(page(controller));
+            int full = indexOfKey(rows, Settings.SHOW_FULL_REEL_CAPTIONS.key);
+            assertTrue("Show full reel captions is missing", full >= 0);
+            assertEquals(full + 1, indexOfKey(rows, Settings.FOLD_REEL_CAPTIONS.key));
+            ValueRows.FoldLinesRow row = (ValueRows.FoldLinesRow) rows.get(full + 1);
+            assertEquals("Fold reel captions", String.valueOf(row.getTitle()));
+            assertEquals("Reels and Watch", String.valueOf(categoryOf(page(controller), row)));
+            assertEquals(ENTRIES, texts(row.getEntries()));
+            assertEquals(FoldLines.FACEBOOK, Settings.FOLD_REEL_CAPTIONS.get());
+            assertEquals("Long reel captions fold where Facebook folds them.", String.valueOf(row.getSummary()));
+
+            row.setValue("FOUR");
+            ShadowLooper.idleMainLooper();
+            assertEquals(FoldLines.FOUR, Settings.FOLD_REEL_CAPTIONS.savedValue());
+            assertEquals(FoldLines.FACEBOOK, Settings.FOLD_POST_TEXT.savedValue());
+            assertEquals("A long reel caption shows 4 lines before more.", String.valueOf(row.getSummary()));
+        }
+        // Without Show full post text in the build, the list still shows.
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.FOLD_LONG_TEXT);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            assertTrue(indexOfKey(rowsOf(page(controller)), Settings.FOLD_REEL_CAPTIONS.key) >= 0);
+        }
+    }
+
     @Test
     public void withoutShowFullPostTextInTheBuildThePostsRowSaysNothingOfIt() {
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.FOLD_LONG_TEXT);
@@ -132,6 +161,7 @@ public class FoldLongTextSettingsTest {
             assertTrue(indexOfKey(rows, Settings.SHOW_FULL_POST_TEXT.key) >= 0);
             assertEquals(-1, indexOfKey(rows, Settings.FOLD_POST_TEXT.key));
             assertEquals(-1, indexOfKey(rows, Settings.FOLD_COMMENTS.key));
+            assertEquals(-1, indexOfKey(rows, Settings.FOLD_REEL_CAPTIONS.key));
         }
     }
 
@@ -141,26 +171,33 @@ public class FoldLongTextSettingsTest {
         assertEquals("fold_post_text and fold_comments keep their keys", "hushfacebook_fold_post_text",
                 SettingsBackup.FOLD_POSTS.key);
         assertEquals("hushfacebook_fold_comments", SettingsBackup.FOLD_COMMENTS.key);
+        assertEquals("hushfacebook_fold_reel_captions", SettingsBackup.FOLD_REEL_CAPTIONS.key);
         List<FoldLines> choices = Arrays.asList(FoldLines.values());
         for (FoldLines choice : choices) {
             FoldLines other = choices.get((choices.indexOf(choice) + 3) % choices.size());
+            FoldLines caption = choices.get((choices.indexOf(choice) + 5) % choices.size());
             Settings.FOLD_POST_TEXT.save(choice);
             Settings.FOLD_COMMENTS.save(other);
+            Settings.FOLD_REEL_CAPTIONS.save(caption);
             String file = SettingsBackup.create();
             JSONObject settings = new JSONObject(file).getJSONObject("settings");
             assertEquals(choice.fileValue, settings.get(SettingsBackup.FOLD_POSTS.key));
             assertEquals(other.fileValue, settings.get(SettingsBackup.FOLD_COMMENTS.key));
+            assertEquals(caption.fileValue, settings.get(SettingsBackup.FOLD_REEL_CAPTIONS.key));
             Settings.FOLD_POST_TEXT.save(choice == FoldLines.TWO ? FoldLines.FIVE : FoldLines.TWO);
 
             SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
             assertEquals(choice, snapshot.foldPosts);
             assertEquals(other, snapshot.foldComments);
+            assertEquals(caption, snapshot.foldReelCaptions);
+            assertNull("the captions' choice is already the file's", snapshot.foldReelCaptionsChange());
             assertEquals(choice, snapshot.foldPostsChange());
             assertNull("the comments' choice is already the file's", snapshot.foldCommentsChange());
             assertEquals(Collections.singletonMap(SettingsBackup.FOLD_POSTS, choice), snapshot.changes());
             assertEquals(1, SettingsBackup.apply(snapshot));
             assertEquals(choice, Settings.FOLD_POST_TEXT.savedValue());
             assertEquals(other, Settings.FOLD_COMMENTS.savedValue());
+            assertEquals(caption, Settings.FOLD_REEL_CAPTIONS.savedValue());
             assertEquals("a file read back is the file", file, SettingsBackup.create());
         }
     }
@@ -174,6 +211,7 @@ public class FoldLongTextSettingsTest {
         for (Object refused : new Object[]{"FOUR", "four", "7", "0", "", 4, true, JSONObject.NULL}) {
             refuses(file, SettingsBackup.FOLD_POSTS.key, refused);
             refuses(file, SettingsBackup.FOLD_COMMENTS.key, refused);
+            refuses(file, SettingsBackup.FOLD_REEL_CAPTIONS.key, refused);
         }
         assertEquals("a refused file wrote something", FoldLines.FOUR, Settings.FOLD_POST_TEXT.savedValue());
         assertEquals(FoldLines.SIX, Settings.FOLD_COMMENTS.savedValue());
@@ -181,10 +219,12 @@ public class FoldLongTextSettingsTest {
         JSONObject older = new JSONObject(file);
         older.getJSONObject("settings").remove(SettingsBackup.FOLD_POSTS.key);
         older.getJSONObject("settings").remove(SettingsBackup.FOLD_COMMENTS.key);
+        older.getJSONObject("settings").remove(SettingsBackup.FOLD_REEL_CAPTIONS.key);
         Settings.FOLD_POST_TEXT.save(FoldLines.EIGHT);
         SettingsBackup.Snapshot snapshot = SettingsBackup.parse(older.toString());
         assertNull(snapshot.foldPosts);
         assertNull(snapshot.foldComments);
+        assertNull(snapshot.foldReelCaptions);
         assertNull(snapshot.foldPostsChange());
         SettingsBackup.apply(snapshot);
         assertEquals(FoldLines.EIGHT, Settings.FOLD_POST_TEXT.savedValue());
@@ -208,6 +248,10 @@ public class FoldLongTextSettingsTest {
                 SettingsBackupPreference.foldCommentsSentence(FoldLines.FACEBOOK));
         assertEquals("Fold long comments will show 1 line before See more.",
                 SettingsBackupPreference.foldCommentsSentence(FoldLines.ONE));
+        assertEquals("Fold reel captions will fold captions where Facebook does.",
+                SettingsBackupPreference.foldReelCaptionsSentence(FoldLines.FACEBOOK));
+        assertEquals("Fold reel captions will show 3 lines before more.",
+                SettingsBackupPreference.foldReelCaptionsSentence(FoldLines.THREE));
     }
 
     private static void refuses(String file, String key, Object refused) throws Exception {

@@ -39,7 +39,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * settings are ready, a post Facebook never folds (-1 or 0), and posts while Show full post text is on
  * all keep Facebook's numbers. The rest of #506: a post's fixed cut and Facebook's choice to show a
  * post whole give way to the count, so does a fold to one line, a comment's characters are measured so
- * it really ends at the count, and a video's caption takes the count picked for posts.
+ * it really ends at the count, and a reel's caption takes a count of its own.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -74,6 +74,7 @@ public class FoldLongTextTest {
         FoldLongText.fullTextInBuildForTests = null;
         Settings.FOLD_POST_TEXT.resetToDefault();
         Settings.FOLD_COMMENTS.resetToDefault();
+        Settings.FOLD_REEL_CAPTIONS.resetToDefault();
         Settings.SHOW_FULL_POST_TEXT.resetToDefault();
         HookStatus.clear();
     }
@@ -164,13 +165,17 @@ public class FoldLongTextTest {
         assertEquals(1, FoldLongText.hoisted(1));
     }
 
+    /** #506: a reel's caption has a count of its own, and the posts' and comments' don't reach it. */
     @Test
-    public void aVideosCaptionTakesTheCountPickedForPosts() {
+    public void aReelCaptionTakesItsOwnCount() {
         assertEquals(2, FoldLongText.captionLines(2));
         Settings.FOLD_COMMENTS.save(FoldLines.TEN);
         assertEquals("the comments' count isn't the caption's", 2, FoldLongText.captionLines(2));
+        Settings.FOLD_POST_TEXT.save(FoldLines.THREE);
+        assertEquals("the posts' count isn't the caption's", 2, FoldLongText.captionLines(2));
 
-        Settings.FOLD_POST_TEXT.save(FoldLines.EIGHT);
+        Settings.FOLD_REEL_CAPTIONS.save(FoldLines.EIGHT);
+        assertEquals("the caption's count isn't the posts'", 3, FoldLongText.postLines(POST_LINES));
         for (int lines : new int[] {0, 1, 2, 30}) {
             assertEquals("Facebook's " + lines + " lines stayed", 8, FoldLongText.captionLines(lines));
         }

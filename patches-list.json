@@ -1056,7 +1056,7 @@
     },
     {
       "name": "Fold long text",
-      "description": "Lets you pick how many lines a long post or comment shows before See more, from 1 to 20, so you can fold sooner or read more before tapping. Starts at Facebook's choice. Pick the lines for posts in Hushfacebook settings > News feed, and for comments under Comments and writing. A video's caption follows the count for posts. While Show full post text is on, posts still show whole.",
+      "description": "Lets you pick how many lines a long post or comment shows before See more, from 1 to 20, so you can fold sooner or read more before tapping. Starts at Facebook's choice. Pick the lines for posts in Hushfacebook settings > News feed, and for comments under Comments and writing. Reel captions get a count of their own under Reels and Watch. While Show full post text is on, posts still show whole.",
       "category": "Comments",
       "use": true,
       "dependencies": [
