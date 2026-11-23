@@ -3137,3 +3137,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	畫質設定
 Request community note	要求社群備註
 Something went wrong	發生錯誤
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	將所有通知標示為已讀
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	一次清除「通知」分頁中的所有未讀圓點，和那裡三點選單中的「全部標示為已讀」一樣，有些帳號沒有這個選單。
+All your notifications are marked as read.	你的所有通知都已標示為已讀。
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	沒有標示任何通知，因為 Facebook 沒有告知目前登入的是誰。請先開啟一次「通知」分頁，然後再試一次。
+This build can't mark notifications as read.	此建置版本無法將通知標示為已讀。
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook 無法將你的通知標示為已讀。請稍後再試一次。

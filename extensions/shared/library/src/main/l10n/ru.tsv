@@ -3191,3 +3191,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	Настройки качества
 Request community note	Запросить заметку сообщества
 Something went wrong	Что-то пошло не так
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	Отметить все уведомления как прочитанные
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	Убирает сразу все отметки непрочитанного на вкладке «Уведомления», как пункт «Отметить все как прочитанные» в меню с тремя точками, которого у некоторых аккаунтов нет.
+All your notifications are marked as read.	Все уведомления отмечены как прочитанные.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Ничего не отмечено, потому что Facebook не сообщил, кто вошёл в аккаунт. Откройте вкладку «Уведомления» один раз и попробуйте снова.
+This build can't mark notifications as read.	Эта сборка не может отмечать уведомления как прочитанные.
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook не смог отметить уведомления как прочитанные. Попробуйте ещё раз чуть позже.

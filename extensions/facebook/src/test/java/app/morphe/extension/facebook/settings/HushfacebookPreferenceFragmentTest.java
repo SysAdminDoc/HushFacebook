@@ -261,6 +261,39 @@ public class HushfacebookPreferenceFragmentTest {
     }
 
     /**
+     * Some accounts have no ⋯ on the Notifications tab, so no Mark all as read (Discussion #338).
+     * With Block promotional notifications in the build, the Notifications section opens with a
+     * row that runs the same thing at once and says how it went in a toast. A build without the
+     * patch's fill says so instead of pretending.
+     */
+    @Test
+    public void theMarkAllReadRowLeadsTheNotificationsSection() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.PROMO_NOTIFICATIONS);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            int at = indexOfKey(rows, AppPages.MARK_ALL_READ);
+            int reminders = indexOfKey(rows, Settings.BLOCK_ACCOUNT_SETUP_NOTIFICATIONS.key);
+            assertTrue("no Mark all as read row with the notifications patch", at >= 0);
+            assertTrue("the row sits above the notification switches", reminders > at);
+            Preference row = rows.get(at);
+            assertEquals("Mark all notifications as read", String.valueOf(row.getTitle()));
+            assertTrue("the row's tap acts at once, so it goes without a chevron", ((SettingsRows.Row) row).actsOnTap());
+            assertTrue(String.valueOf(row.getSummary()).contains("which some accounts don't have"));
+
+            ShadowToast.reset();
+            row.getOnPreferenceClickListener().onPreferenceClick(row);
+            ShadowLooper.idleMainLooper();
+            assertEquals("This build can't mark notifications as read.", ShadowToast.getTextOfLatestToast());
+        }
+
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.POST_WORDS);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            assertEquals("a build without the notifications patch has no row", -1,
+                    indexOfKey(rowsOf(controller), AppPages.MARK_ALL_READ));
+        }
+    }
+
+    /**
      * With Material You theme in the build the Accent color row still takes taps: its pick stands in
      * for the wallpaper's accent (#272).
      */

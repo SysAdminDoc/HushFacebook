@@ -7,11 +7,15 @@ package app.morphe.patches.facebook.notifications
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.misc.resignedtrust.FB_USER_SESSION
+import app.morphe.patches.facebook.misc.resignedtrust.sessionLookupEnd
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -24,6 +28,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -128,12 +133,25 @@ class NotificationFixtureTest {
                 assertEquals("$name: kinds that always post that aren't NotificationType constants",
                     emptySet<String>(), alwaysPost.toSet() - constants)
 
+                // The controller the ⋯ menu's Mark all as read runs (D#338): one class made from
+                // nothing with the one (FbUserSession, Context)V logging MAAR_CLICK.
+                val controllers = FixtureDex.classesHolding(bundle, MARK_ALL_CLICK)
+                    .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+                    .filter { classDef -> madeFromNothing(classDef) && classDef.methods.count(::isMarkAll) == 1 }
+                assertEquals("$name: Mark all as read controllers", 1, controllers.size)
+                val controller = controllers.single()
+                val markAll = controller.methods.single(::isMarkAll)
+                val lookups = sessionLookups(bundle)
+                assertTrue("$name: no session lookup", lookups.isNotEmpty())
+
                 // The patch, on this build's own classes.
                 val context = PatchContexts.of(
-                    (listOf(manager, builder, push) +
-                        listOf(ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(kindsClass))).distinctBy { it.type },
+                    (listOf(manager, builder, push, controller) + lookups +
+                        listOf(ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(kindsClass),
+                            ExtensionDex.classDef(MARK_ALL_READ))).distinctBy { it.type },
                 )
                 blockPromotionalNotificationsPatch.execute(context)
+                assertMarkAllReadFilled(name, context, controller, markAll)
                 val patched = context.mutableClassDefBy(TRAY_MANAGER).methods.single {
                     it.name == post.name && it.parameters() == post.parameters()
                 }.implementation!!.instructions.toList()
@@ -155,6 +173,45 @@ class NotificationFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /** The classes holding a public static (Context) lookup of the FbUserSession, as the patch finds them. */
+    private fun sessionLookups(bundle: java.io.File): List<ClassDef> {
+        val shaped = FixtureDex.methodsWhere(bundle, dexFilter = { true }) { method ->
+            method.returnType == FB_USER_SESSION && AccessFlags.STATIC.isSet(method.accessFlags) &&
+                method.parameters() == listOf("Landroid/content/Context;")
+        }
+        val owners = FixtureDex.classes(bundle, shaped.map { it.definingClass }.toSet())
+        return shaped.filter { sessionLookupEnd(owners.getValue(it.definingClass), it) != null }
+            .map { owners.getValue(it.definingClass) }.distinctBy { it.type }
+    }
+
+    /**
+     * MarkAllRead's stubs after the patch: patched() answers true, userSession asks a lookup and
+     * returns its answer, and markAll makes [controller] from nothing and runs [markAll] on the
+     * session and Context it was given.
+     */
+    private fun assertMarkAllReadFilled(name: String, context: BytecodePatchContext, controller: ClassDef, markAll: Method) {
+        val stubs = context.mutableClassDefBy(MARK_ALL_READ).methods
+        fun code(stub: String) = stubs.single { it.name == stub }.implementation!!.instructions.toList()
+
+        val patched = code("patched")
+        assertEquals("$name: patched() answers true", 1, (patched[0] as NarrowLiteralInstruction).narrowLiteral)
+
+        val session = code("userSession")
+        assertEquals("$name: userSession's call", Opcode.INVOKE_STATIC_RANGE, session[0].opcode)
+        val lookup = session[0].call!!
+        assertEquals("$name: userSession asks a session lookup", FB_USER_SESSION, lookup.returnType)
+        assertEquals(Opcode.RETURN_OBJECT, session[2].opcode)
+
+        val run = code("markAll")
+        assertEquals("$name: markAll's cast", FB_USER_SESSION, ((run[0] as ReferenceInstruction).reference as TypeReference).type)
+        assertEquals("$name: markAll's new controller", controller.type, ((run[1] as ReferenceInstruction).reference as TypeReference).type)
+        assertEquals("$name: markAll's constructor", "${controller.type}-><init>()V",
+            run[2].call!!.let { it.definingClass + "->" + it.name + "(" + it.parameterTypes.joinToString("") + ")" + it.returnType })
+        assertEquals("$name: markAll's call", "${controller.type}->${markAll.name}", run[3].call!!.let { it.definingClass + "->" + it.name })
+        assertEquals(Opcode.INVOKE_VIRTUAL, run[3].opcode)
+        assertEquals(Opcode.RETURN_VOID, run[4].opcode)
     }
 
     /** Every string NotificationType's static initializer loads: the name of each of its constants. */

@@ -3133,3 +3133,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	Qualitätseinstellungen
 Request community note	Community-Hinweis anfordern
 Something went wrong	Etwas ist schiefgelaufen
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	Alle Benachrichtigungen als gelesen markieren
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	Entfernt alle Ungelesen-Punkte im Tab „Benachrichtigungen“ auf einmal, wie „Alle als gelesen markieren“ im Drei-Punkte-Menü dort, das manche Konten nicht haben.
+All your notifications are marked as read.	Alle deine Benachrichtigungen sind als gelesen markiert.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Nichts wurde markiert, weil Facebook nicht gemeldet hat, wer angemeldet ist. Öffne einmal den Tab „Benachrichtigungen“ und versuche es dann noch einmal.
+This build can't mark notifications as read.	Dieser Build kann Benachrichtigungen nicht als gelesen markieren.
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook konnte deine Benachrichtigungen nicht als gelesen markieren. Versuche es gleich noch einmal.

@@ -3128,3 +3128,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	画质设置
 Request community note	申请社区笔记
 Something went wrong	出了点问题
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	将所有通知标为已读
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	一次清除“通知”标签中的所有未读圆点，和那里三点菜单中的“全部标为已读”一样，有些账户没有这个菜单。
+All your notifications are marked as read.	你的所有通知都已标为已读。
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	没有标记任何通知，因为 Facebook 没有告知当前登录的是谁。请先打开一次“通知”标签，然后再试。
+This build can't mark notifications as read.	此版本无法将通知标为已读。
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook 无法将你的通知标为已读。请稍后再试。

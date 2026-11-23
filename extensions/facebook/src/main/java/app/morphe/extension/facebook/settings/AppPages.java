@@ -31,6 +31,7 @@ import app.morphe.extension.facebook.chats.MessengerHandoff;
 import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
+import app.morphe.extension.facebook.notifications.MarkAllRead;
 import app.morphe.extension.facebook.notifications.NotificationSound;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Utils;
@@ -353,6 +354,7 @@ final class AppPages {
             Set<PatchFamily> build) {
         PreferenceCategory notifications = category(screen, L10n.t("Notifications"));
         if (build.contains(PatchFamily.PROMO_NOTIFICATIONS)) {
+            notifications.addPreference(markAllReadRow(context));
             notifications.addPreference(toggle(context, Settings.BLOCK_TRENDING_VIDEO_NOTIFICATIONS,
                     L10n.t("Trending videos and the reels Facebook picked for you stop showing up in your "
                             + "notifications.")));
@@ -391,6 +393,43 @@ final class AppPages {
                             + "always arrive. Android's notification settings for Facebook can block more.")));
         }
         notifications.addPreference(notificationSoundRow(context));
+    }
+
+    /** The row that marks every notification read. */
+    static final String MARK_ALL_READ = "action_mark_all_notifications_read";
+
+    /**
+     * A tap marks every notification read through the action the Notifications tab's three-dot menu
+     * runs, which some accounts never get (Discussion #338), and a toast says how it went. It
+     * comes with Block promotional notifications, whose patch fills that action in.
+     */
+    static Preference markAllReadRow(Context context) {
+        SettingsRows.Row row = new SettingsRows.Row(context);
+        row.setKey(MARK_ALL_READ);
+        row.setPersistent(false);
+        row.actsAtOnce = true;
+        row.setTitle(L10n.t("Mark all notifications as read"));
+        row.setSummary(L10n.t("Clears every unread dot in the Notifications tab at once, like Mark all as read in the "
+                + "three-dot menu there, which some accounts don't have."));
+        row.setOnPreferenceClickListener(p -> {
+            Utils.showToastLong(markAllReadMessage(MarkAllRead.run(p.getContext())));
+            return true;
+        });
+        return row;
+    }
+
+    static String markAllReadMessage(MarkAllRead.Outcome outcome) {
+        switch (outcome) {
+            case DONE:
+                return L10n.t("All your notifications are marked as read.");
+            case NO_SESSION:
+                return L10n.t("Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab "
+                        + "once, then try again.");
+            case NOT_IN_BUILD:
+                return L10n.t("This build can't mark notifications as read.");
+            default:
+                return L10n.t("Facebook couldn't mark your notifications as read. Try again in a moment.");
+        }
     }
 
     /**

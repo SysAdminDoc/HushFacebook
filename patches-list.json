@@ -357,7 +357,7 @@
     },
     {
       "name": "Block promotional notifications",
-      "description": "Blocks the kinds of notification you pick, such as trending videos, memories and birthdays, so you get fewer pings you don't care about. Messages, friend requests, comments and login alerts always come through. Starts off. Turn on the kinds you want in Hushfacebook settings > Notifications.",
+      "description": "Blocks the kinds of notification you pick, such as trending videos, memories and birthdays, so you get fewer pings you don't care about. Messages, friend requests, comments and login alerts always come through. Starts off. Turn on the kinds you want in Hushfacebook settings > Notifications. That section also has a row that marks every notification read at once.",
       "category": "Ads",
       "use": true,
       "dependencies": [

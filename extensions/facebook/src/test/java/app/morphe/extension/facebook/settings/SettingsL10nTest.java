@@ -439,6 +439,10 @@ public class SettingsL10nTest {
             addTypedNameToasts(rows, shown);
             addReleaseCheckText(shown);
             addNotificationSoundText(shown);
+            for (app.morphe.extension.facebook.notifications.MarkAllRead.Outcome outcome
+                    : app.morphe.extension.facebook.notifications.MarkAllRead.Outcome.values()) {
+                shown.add(AppPages.markAllReadMessage(outcome));
+            }
 
             // What the diagnostics rows say in a toast, with nothing to export or clear. The quick
             // report is built on a worker and answers on the main thread.

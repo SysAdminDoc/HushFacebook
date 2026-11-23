@@ -3133,3 +3133,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	Cài đặt chất lượng
 Request community note	Yêu cầu ghi chú cộng đồng
 Something went wrong	Đã xảy ra lỗi
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	Đánh dấu tất cả thông báo là đã đọc
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	Xóa cùng lúc mọi chấm chưa đọc trong tab Thông báo, giống Đánh dấu tất cả là đã đọc trong menu ba chấm ở đó, mục mà một số tài khoản không có.
+All your notifications are marked as read.	Tất cả thông báo của bạn đã được đánh dấu là đã đọc.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Chưa đánh dấu gì vì Facebook không cho biết ai đang đăng nhập. Hãy mở tab Thông báo một lần rồi thử lại.
+This build can't mark notifications as read.	Bản dựng này không thể đánh dấu thông báo là đã đọc.
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook không thể đánh dấu thông báo của bạn là đã đọc. Hãy thử lại sau giây lát.

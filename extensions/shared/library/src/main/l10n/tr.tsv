@@ -3133,3 +3133,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	Kalite ayarları
 Request community note	Topluluk notu iste
 Something went wrong	Bir şeyler ters gitti
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	Tüm bildirimleri okundu olarak işaretle
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	Bildirimler sekmesindeki tüm okunmamış noktalarını bir kerede temizler. Oradaki üç nokta menüsünde bulunan Tümünü okundu olarak işaretle ile aynıdır ve bazı hesaplarda bu menü yoktur.
+All your notifications are marked as read.	Tüm bildirimlerin okundu olarak işaretlendi.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Hiçbir şey işaretlenmedi, çünkü Facebook kimin oturum açtığını bildirmedi. Bildirimler sekmesini bir kez açıp yeniden dene.
+This build can't mark notifications as read.	Bu derleme bildirimleri okundu olarak işaretleyemez.
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook bildirimlerini okundu olarak işaretleyemedi. Birazdan yeniden dene.

@@ -3133,3 +3133,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	Pengaturan kualitas
 Request community note	Minta catatan komunitas
 Something went wrong	Terjadi kesalahan
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	Tandai semua notifikasi sudah dibaca
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	Menghapus semua titik belum dibaca di tab Notifikasi sekaligus, seperti Tandai semua sudah dibaca di menu titik tiga di sana, yang tidak dimiliki sebagian akun.
+All your notifications are marked as read.	Semua notifikasi Anda sudah ditandai dibaca.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Tidak ada yang ditandai karena Facebook tidak memberi tahu siapa yang masuk. Buka tab Notifikasi sekali, lalu coba lagi.
+This build can't mark notifications as read.	Build ini tidak bisa menandai notifikasi sudah dibaca.
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook tidak bisa menandai notifikasi Anda sudah dibaca. Coba lagi sebentar lagi.

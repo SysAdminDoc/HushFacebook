@@ -2206,3 +2206,10 @@ Your list of words to hide will hold %1$d words or phrases.|few	قائمة ال�
 Your list of words to hide will hold %1$d words or phrases.|many	قائمة الكلمات المطلوب إخفاؤها ستحمل %1$d كلمة أو عبارة.
 Your list of words to hide will hold %1$d words or phrases.|two	%1$d قائمة الكلمات المطلوب إخفاؤها ستحمل كلمتين أو عبارتين.
 Your list of words to hide will hold %1$d words or phrases.|zero	%1$d قائمة الكلمات المطلوب إخفاؤها لن تحمل أي كلمات أو عبارات.
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	تعليم كل الإشعارات كمقروءة
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	يزيل كل نقاط عدم القراءة في تبويب الإشعارات دفعة واحدة، مثل «تعليم الكل كمقروء» في قائمة النقاط الثلاث هناك، وهي غير موجودة في بعض الحسابات.
+All your notifications are marked as read.	تم تعليم كل إشعاراتك كمقروءة.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	لم يُعلَّم أي شيء، لأن فيسبوك لم يحدد الحساب المسجَّل دخوله. افتح تبويب الإشعارات مرة واحدة، ثم حاول مرة أخرى.
+This build can't mark notifications as read.	لا يستطيع هذا الإصدار تعليم الإشعارات كمقروءة.
+Facebook couldn't mark your notifications as read. Try again in a moment.	لم يتمكن فيسبوك من تعليم إشعاراتك كمقروءة. حاول مرة أخرى بعد قليل.

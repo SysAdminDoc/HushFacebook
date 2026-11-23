@@ -3133,3 +3133,10 @@ When a video in your feed has the poster's name on top of the video, that name s
 Quality settings	Configuración de calidad
 Request community note	Solicitar nota de la comunidad
 Something went wrong	Algo salió mal
+# context: the Mark all notifications as read row under Notifications and its toasts (Discussion #338)
+Mark all notifications as read	Marcar todas las notificaciones como leídas
+Clears every unread dot in the Notifications tab at once, like Mark all as read in the three-dot menu there, which some accounts don't have.	Quita de una vez todos los puntos de no leído de la pestaña Notificaciones, como Marcar todo como leído en su menú de tres puntos, que algunas cuentas no tienen.
+All your notifications are marked as read.	Todas tus notificaciones están marcadas como leídas.
+Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	No se marcó nada porque Facebook no indicó quién inició sesión. Abre la pestaña Notificaciones una vez y vuelve a intentarlo.
+This build can't mark notifications as read.	Esta compilación no puede marcar las notificaciones como leídas.
+Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook no pudo marcar tus notificaciones como leídas. Vuelve a intentarlo en un momento.

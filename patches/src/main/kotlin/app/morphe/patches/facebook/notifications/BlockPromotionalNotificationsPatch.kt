@@ -35,7 +35,8 @@ val blockPromotionalNotificationsPatch = patch(
     name = "Block promotional notifications",
     description = "Blocks the kinds of notification you pick, such as trending videos, memories and birthdays, " +
         "so you get fewer pings you don't care about. Messages, friend requests, comments and login alerts " +
-        "always come through. Starts off. Turn on the kinds you want in Hushfacebook settings > Notifications.",
+        "always come through. Starts off. Turn on the kinds you want in Hushfacebook settings > Notifications. " +
+        "That section also has a row that marks every notification read at once.",
     default = true,
 ) {
     category("Ads")
@@ -45,6 +46,8 @@ val blockPromotionalNotificationsPatch = patch(
     executeBytecode {
         val post = trayPost(PATCH)
         mutableClassDefBy(TRAY_MANAGER).findMutableMethodOf(post.method).postNothingWhenBlocked(post.notification)
+        // The settings row Mark all notifications as read runs the ⋯ menu's own action (D#338).
+        fillMarkAllRead(findMarkAllReadAnchors(PATCH))
         enableStatus("promoNotifications")
     }
 }
