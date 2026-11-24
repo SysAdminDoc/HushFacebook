@@ -51,16 +51,21 @@ public class PostActionButtonsTest {
 
     private static final String SAVE = PostActionButtonsForTests.SAVE;
 
-    /** Like, Comment, Repost, Share and Send's hide switches, in the order of {@link #ROW}. Read once Settings can load. */
+    /** Like, Comment, Repost, Share, Send and Stars' hide switches, in the order of {@link #ROW}. Read once Settings can load. */
     private static BooleanSetting[] hides() {
         return new BooleanSetting[] {Settings.HIDE_POST_LIKE_BUTTON, Settings.HIDE_POST_COMMENT_BUTTON,
-                Settings.HIDE_POST_REPOST_BUTTON, Settings.HIDE_POST_SHARE_BUTTON, Settings.HIDE_POST_SEND_BUTTON};
+                Settings.HIDE_POST_REPOST_BUTTON, Settings.HIDE_POST_SHARE_BUTTON, Settings.HIDE_POST_SEND_BUTTON,
+                Settings.HIDE_POST_STARS_BUTTON};
     }
 
-    /** Facebook's types as its row hands them: enum constants, Like being REACT and Repost REPOST (587, #450). */
-    private enum Type { REACT, COMMENT, REPOST, SHARE, SEND, SAVE, OVERFLOW }
+    /**
+     * Facebook's types as its row hands them: enum constants, Like being REACT, Repost REPOST (587,
+     * #450) and the Stars and gifts button STARS (588, #483).
+     */
+    private enum Type { REACT, COMMENT, REPOST, SHARE, SEND, STARS, SAVE, OVERFLOW }
 
-    private static final List<Type> ROW = Arrays.asList(Type.REACT, Type.COMMENT, Type.REPOST, Type.SHARE, Type.SEND);
+    private static final List<Type> ROW =
+            Arrays.asList(Type.REACT, Type.COMMENT, Type.REPOST, Type.SHARE, Type.SEND, Type.STARS);
 
     @Before
     public void startClean() {

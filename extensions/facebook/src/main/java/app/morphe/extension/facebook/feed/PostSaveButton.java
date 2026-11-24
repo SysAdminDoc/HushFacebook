@@ -16,7 +16,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * The row under a post, as Post action buttons changes it (issue #265): Like, Comment, Repost
- * (#450), Share, Send or Save (#541) taken out, and Save added.
+ * (#450), Share, Send, Stars and gifts (#483) or Save (#541) taken out, and Save added.
  *
  * <p>Facebook decides which buttons a post's row shows from a list of button types its server
  * sends, and Save is one of the types its row already knows how to draw: a bookmark that saves the
@@ -39,6 +39,8 @@ public final class PostSaveButton {
     static final String REPOST = "REPOST";
     static final String SHARE = "SHARE";
     static final String SEND = "SEND";
+    /** The button some creators' posts get for sending them Stars or gifts (588, #483). */
+    static final String STARS = "STARS";
     /** Save, which Facebook now sends some accounts on its own (#541). */
     static final String SAVE = "SAVE";
 
@@ -53,7 +55,7 @@ public final class PostSaveButton {
             boolean hidesSave = Settings.HIDE_POST_SAVE_BUTTON.get();
             boolean hides = Settings.HIDE_POST_LIKE_BUTTON.get() || Settings.HIDE_POST_COMMENT_BUTTON.get()
                     || Settings.HIDE_POST_REPOST_BUTTON.get() || Settings.HIDE_POST_SHARE_BUTTON.get()
-                    || Settings.HIDE_POST_SEND_BUTTON.get() || hidesSave;
+                    || Settings.HIDE_POST_SEND_BUTTON.get() || Settings.HIDE_POST_STARS_BUTTON.get() || hidesSave;
             // Hiding Save wins over adding it, so the two switches can't fight over the row.
             boolean adds = save != null && Settings.POST_SAVE_BUTTON.get() && !hidesSave;
             if (!hides && !adds) return types;
@@ -84,6 +86,7 @@ public final class PostSaveButton {
             case REPOST: return Settings.HIDE_POST_REPOST_BUTTON.get();
             case SHARE: return Settings.HIDE_POST_SHARE_BUTTON.get();
             case SEND: return Settings.HIDE_POST_SEND_BUTTON.get();
+            case STARS: return Settings.HIDE_POST_STARS_BUTTON.get();
             case SAVE: return Settings.HIDE_POST_SAVE_BUTTON.get();
             default: return false;
         }

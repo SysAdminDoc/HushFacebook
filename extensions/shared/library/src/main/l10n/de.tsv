@@ -590,6 +590,7 @@ Hide Repost under posts	Reposten unter Beiträgen ausblenden
 Hide Share under posts	Teilen unter Beiträgen ausblenden
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Senden unter Beiträgen ausblenden
+Hide Stars and gifts under posts	Sterne und Geschenke unter Beiträgen ausblenden
 Hide Save under posts	Speichern unter Beiträgen ausblenden
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Entfernt diesen Button aus der Leiste unter Beiträgen im Feed. Die anderen Buttons bleiben, und ein Beitrag, dessen Buttons alle ausgeblendet sind, zeigt keine Leiste.

@@ -590,6 +590,7 @@ Hide Repost under posts	Sembunyikan Posting Ulang di bawah postingan
 Hide Share under posts	Sembunyikan Bagikan di bawah postingan
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Sembunyikan Kirim di bawah postingan
+Hide Stars and gifts under posts	Sembunyikan Bintang dan hadiah di bawah postingan
 Hide Save under posts	Sembunyikan Simpan di bawah postingan
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Menghapus tombol ini dari baris di bawah postingan di feed. Tombol lainnya tetap ada, dan postingan yang semua tombolnya disembunyikan tidak menampilkan baris.

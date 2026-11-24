@@ -40,6 +40,11 @@ public final class PostActionButtonsForTests {
         return !PostSaveButton.types(Arrays.asList("REACT", "COMMENT", "SHARE"), SAVE).contains("REACT");
     }
 
+    /** True when a row of Like, Share and the Stars and gifts button (Facebook's STARS) loses Stars (#483). */
+    public static boolean hidesStars() {
+        return !PostSaveButton.types(Arrays.asList("REACT", "SHARE", "STARS"), SAVE).contains("STARS");
+    }
+
     /** True when the row under a post is drawn without its own tap (#540). */
     public static boolean leavesTheTapOff() {
         return PostRowTaps.ignoreRowTaps();

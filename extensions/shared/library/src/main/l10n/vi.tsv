@@ -590,6 +590,7 @@ Hide Repost under posts	Ẩn Đăng lại dưới bài viết
 Hide Share under posts	Ẩn Chia sẻ dưới bài viết
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Ẩn Gửi dưới bài viết
+Hide Stars and gifts under posts	Ẩn Sao và quà tặng dưới bài viết
 Hide Save under posts	Ẩn Lưu dưới bài viết
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Bỏ nút này khỏi hàng dưới bài viết trong bảng tin. Các nút khác vẫn còn, và bài viết bị ẩn hết nút sẽ không hiện hàng nút.

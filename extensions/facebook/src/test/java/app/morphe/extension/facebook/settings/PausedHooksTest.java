@@ -711,6 +711,7 @@ public class PausedHooksTest {
         probes.put(PatchFamily.POST_ACTION_BUTTONS, Arrays.asList(
                 PostActionButtonsForTests::hidesSave,
                 PostActionButtonsForTests::hidesLike,
+                PostActionButtonsForTests::hidesStars,
                 PostActionButtonsForTests::addsDownload,
                 PostActionButtonsForTests::leavesTheTapOff));
         // Marketplace's feed query asks to skip its ads, an ads-only query isn't sent, and a search
