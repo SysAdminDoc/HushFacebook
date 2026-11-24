@@ -2230,3 +2230,35 @@ All your notifications are marked as read.	تم تعليم كل إشعاراتك
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	لم يُعلَّم أي شيء، لأن فيسبوك لم يحدد الحساب المسجَّل دخوله. افتح تبويب الإشعارات مرة واحدة، ثم حاول مرة أخرى.
 This build can't mark notifications as read.	لا يستطيع هذا الإصدار تعليم الإشعارات كمقروءة.
 Facebook couldn't mark your notifications as read. Try again in a moment.	لم يتمكن فيسبوك من تعليم إشعاراتك كمقروءة. حاول مرة أخرى بعد قليل.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	تصدير الحساب
+Copies this account's cookies and token to the clipboard.	ينسخ ملفات تعريف الارتباط والرمز المميز لهذا الحساب إلى الحافظة.
+Copy token	نسخ الرمز المميز
+Copies only the access token.	ينسخ رمز الوصول فقط.
+Nothing was copied	لم يُنسخ شيء
+Facebook hasn't built a session yet. Open a post, then try again.	لم يُنشئ فيسبوك جلسة بعد. افتح منشورًا ثم حاول مجددًا.
+Token copied	تم نسخ الرمز المميز
+Import account	استيراد حساب
+Signs in with an account you paste, or a file.	يسجّل الدخول بحساب تلصقه أو بملف.
+Account copied	تم نسخ الحساب
+Nothing was exported	لم يُصدَّر شيء
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	لا يوجد حساب لتصديره في فيسبوك هذا. افتح رابط فيسبوك في متصفحه مرة واحدة ثم حاول مجددًا.
+Paste it into Import account on the other phone, or use the saved file.	الصقه في استيراد حساب على الهاتف الآخر أو استخدم الملف المحفوظ.
+From file	من ملف
+No account file on this phone.	لا يوجد ملف حساب على هذا الهاتف.
+That file couldn't be read.	تعذّرت قراءة هذا الملف.
+Facebook has to restart before the account shows.	يجب إعادة تشغيل فيسبوك ليظهر الحساب.
+Account imported	تم استيراد الحساب
+Later	لاحقًا
+Nothing was imported	لم يُستورد شيء
+That text couldn't be written into this Facebook.	تعذّرت كتابة ذلك النص في فيسبوك هذا.
+Your account	حسابك
+Import or export	استيراد أو تصدير
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	يعرض حسابات هذا الهاتف كنص. انسخها أو احفظها هنا، أو الصق حسابًا واحفظه في فيسبوك هذا.
+Export to file	تصدير إلى ملف
+Import from file	استيراد من ملف
+Copy	نسخ
+Copied.	تم النسخ.
+There's nothing to save.	لا يوجد شيء لحفظه.
+That file couldn't be written.	تعذّرت كتابة هذا الملف.
+Account saved.	تم حفظ الحساب.

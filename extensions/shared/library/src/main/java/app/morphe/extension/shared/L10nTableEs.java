@@ -18,7 +18,7 @@ final class L10nTableEs {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4246);
+        Map<String, String> table = new HashMap<>(4312);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,5 +4410,71 @@ final class L10nTableEs {
                 "sugerencias");
         table.put("this person",
                 "esta persona");
+        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
+                "Se aplic\u00f3 al parchear, as\u00ed que Pausar no puede desactivarlo:\\n%1$s\\nPara descartarlo, vuelve a parchear sin su parche.");
+        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
+                "Se aplicaron al parchear, as\u00ed que Pausar no puede desactivarlos:\\n%1$s\\nPara descartar uno, vuelve a parchear sin su parche.");
+        table.put("Export account",
+                "Exportar cuenta");
+        table.put("Copies this account's cookies and token to the clipboard.",
+                "Copia las cookies y el token de esta cuenta al portapapeles.");
+        table.put("Copy token",
+                "Copiar token");
+        table.put("Copies only the access token.",
+                "Copia solo el token de acceso.");
+        table.put("Nothing was copied",
+                "No se copi\u00f3 nada");
+        table.put("Facebook hasn't built a session yet. Open a post, then try again.",
+                "Facebook a\u00fan no ha creado una sesi\u00f3n. Abre una publicaci\u00f3n y vuelve a intentarlo.");
+        table.put("Token copied",
+                "Token copiado");
+        table.put("Import account",
+                "Importar cuenta");
+        table.put("Signs in with an account you paste, or a file.",
+                "Inicia sesi\u00f3n con una cuenta que pegues o con un archivo.");
+        table.put("Account copied",
+                "Cuenta copiada");
+        table.put("Nothing was exported",
+                "No se export\u00f3 nada");
+        table.put("This Facebook has no account to export. Open a Facebook link in its browser once, then try again.",
+                "Este Facebook no tiene ninguna cuenta para exportar. Abre una vez un enlace de Facebook en su navegador y vuelve a intentarlo.");
+        table.put("Paste it into Import account on the other phone, or use the saved file.",
+                "P\u00e9galo en Importar cuenta en el otro tel\u00e9fono o usa el archivo guardado.");
+        table.put("From file",
+                "Desde archivo");
+        table.put("No account file on this phone.",
+                "No hay ning\u00fan archivo de cuenta en este tel\u00e9fono.");
+        table.put("That file couldn't be read.",
+                "No se pudo leer ese archivo.");
+        table.put("Facebook has to restart before the account shows.",
+                "Facebook tiene que reiniciarse para que aparezca la cuenta.");
+        table.put("Account imported",
+                "Cuenta importada");
+        table.put("Later",
+                "M\u00e1s tarde");
+        table.put("Nothing was imported",
+                "No se import\u00f3 nada");
+        table.put("That text couldn't be written into this Facebook.",
+                "Ese texto no se pudo escribir en este Facebook.");
+        table.put("Your account",
+                "Tu cuenta");
+        table.put("Import or export",
+                "Importar o exportar");
+        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
+                "Muestra las cuentas de este tel\u00e9fono como texto. C\u00f3pialas o gu\u00e1rdalas aqu\u00ed, o pega una cuenta y gu\u00e1rdala en este Facebook.");
+        table.put("Export to file",
+                "Exportar a archivo");
+        table.put("Import from file",
+                "Importar desde archivo");
+        table.put("Copy",
+                "Copiar");
+        table.put("Copied.",
+                "Copiado.");
+        table.put("There's nothing to save.",
+                "No hay nada que guardar.");
+        table.put("That file couldn't be written.",
+                "No se pudo escribir ese archivo.");
+        table.put("Account saved.",
+                "Cuenta guardada.");
     }
 }

@@ -3215,3 +3215,35 @@ All your notifications are marked as read.	Все уведомления отм�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Ничего не отмечено, потому что Facebook не сообщил, кто вошёл в аккаунт. Откройте вкладку «Уведомления» один раз и попробуйте снова.
 This build can't mark notifications as read.	Эта сборка не может отмечать уведомления как прочитанные.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook не смог отметить уведомления как прочитанные. Попробуйте ещё раз чуть позже.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	Экспорт аккаунта
+Copies this account's cookies and token to the clipboard.	Копирует файлы cookie и токен этого аккаунта в буфер обмена.
+Copy token	Копировать токен
+Copies only the access token.	Копирует только токен доступа.
+Nothing was copied	Ничего не скопировано
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook ещё не создал сеанс. Откройте запись и повторите.
+Token copied	Токен скопирован
+Import account	Импорт аккаунта
+Signs in with an account you paste, or a file.	Вход с вставленным аккаунтом или из файла.
+Account copied	Аккаунт скопирован
+Nothing was exported	Ничего не экспортировано
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	В этом Facebook нет аккаунта для экспорта. Откройте ссылку Facebook в его браузере один раз и повторите.
+Paste it into Import account on the other phone, or use the saved file.	Вставьте в «Импорт аккаунта» на другом телефоне или используйте сохранённый файл.
+From file	Из файла
+No account file on this phone.	На этом телефоне нет файла аккаунта.
+That file couldn't be read.	Не удалось прочитать этот файл.
+Facebook has to restart before the account shows.	Нужно перезапустить Facebook, чтобы аккаунт появился.
+Account imported	Аккаунт импортирован
+Later	Позже
+Nothing was imported	Ничего не импортировано
+That text couldn't be written into this Facebook.	Не удалось записать этот текст в этот Facebook.
+Your account	Ваш аккаунт
+Import or export	Импорт или экспорт
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Показывает аккаунты этого телефона как текст. Скопируйте или сохраните их здесь либо вставьте аккаунт и сохраните в этот Facebook.
+Export to file	Экспорт в файл
+Import from file	Импорт из файла
+Copy	Копировать
+Copied.	Скопировано.
+There's nothing to save.	Сохранять нечего.
+That file couldn't be written.	Не удалось записать этот файл.
+Account saved.	Аккаунт сохранён.

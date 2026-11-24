@@ -3157,3 +3157,35 @@ All your notifications are marked as read.	Alle deine Benachrichtigungen sind al
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Nichts wurde markiert, weil Facebook nicht gemeldet hat, wer angemeldet ist. Öffne einmal den Tab „Benachrichtigungen“ und versuche es dann noch einmal.
 This build can't mark notifications as read.	Dieser Build kann Benachrichtigungen nicht als gelesen markieren.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook konnte deine Benachrichtigungen nicht als gelesen markieren. Versuche es gleich noch einmal.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	Konto exportieren
+Copies this account's cookies and token to the clipboard.	Kopiert die Cookies und das Token dieses Kontos in die Zwischenablage.
+Copy token	Token kopieren
+Copies only the access token.	Kopiert nur das Zugriffstoken.
+Nothing was copied	Nichts kopiert
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook hat noch keine Sitzung aufgebaut. Öffne einen Beitrag und versuche es erneut.
+Token copied	Token kopiert
+Import account	Konto importieren
+Signs in with an account you paste, or a file.	Meldet mit einem eingefügten Konto oder einer Datei an.
+Account copied	Konto kopiert
+Nothing was exported	Nichts exportiert
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Dieses Facebook hat kein Konto zum Exportieren. Öffne einmal einen Facebook-Link im Browser der App und versuche es erneut.
+Paste it into Import account on the other phone, or use the saved file.	Füge es auf dem anderen Telefon in Konto importieren ein oder nutze die gespeicherte Datei.
+From file	Aus Datei
+No account file on this phone.	Keine Kontodatei auf diesem Telefon.
+That file couldn't be read.	Diese Datei konnte nicht gelesen werden.
+Facebook has to restart before the account shows.	Facebook muss neu starten, bevor das Konto erscheint.
+Account imported	Konto importiert
+Later	Später
+Nothing was imported	Nichts importiert
+That text couldn't be written into this Facebook.	Dieser Text konnte nicht in dieses Facebook geschrieben werden.
+Your account	Dein Konto
+Import or export	Importieren oder exportieren
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Zeigt die Konten dieses Telefons als Text. Kopiere oder speichere sie hier, oder füge ein Konto ein und speichere es in dieses Facebook.
+Export to file	In Datei exportieren
+Import from file	Aus Datei importieren
+Copy	Kopieren
+Copied.	Kopiert.
+There's nothing to save.	Es gibt nichts zu speichern.
+That file couldn't be written.	Diese Datei konnte nicht geschrieben werden.
+Account saved.	Konto gespeichert.

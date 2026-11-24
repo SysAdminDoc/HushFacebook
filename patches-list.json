@@ -2715,6 +2715,44 @@
       ]
     },
     {
+      "name": "Import and export account",
+      "description": "Adds Export account, Copy token and Import account to Hushfacebook settings, and an Import account button to Facebook's login screen, so an account saved from one phone signs in on another without the password. Export writes the account's cookies and its access token.",
+      "category": "Settings",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings",
+        "Patch"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "588.0.0.42.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "588.0.0.42.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 707615136,
+                "ARMEABI_V7A": 707615135
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Install beside Meta's apps",
       "description": "Lets the official Messenger, Facebook Lite, Business Suite and Workplace install next to your patched Facebook. Without it, Android refuses them because they share two permissions with Facebook. Root Mount installs don't need it. Works as soon as you patch it in, with no switch.",
       "category": "Fixes",

@@ -403,6 +403,11 @@ final class HushfacebookPages {
         hushfacebook.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.UNDO_RESET,
                 L10n.t("Undo the reset"),
                 L10n.t("Brings back the switches and choices you had before the last reset.")), SettingsIcons.BACK));
+        // The account itself, the way FacebookAMD shares one: the cookies it is signed in with, and
+        // back. Beside the settings backup because it is the other thing worth carrying to a new
+        // phone, and above Troubleshooting because it acts at once rather than saving a switch.
+        subheading(hushfacebook, L10n.t("Your account"));
+        AccountsScreen.section(page, hushfacebook, context);
         subheading(hushfacebook, L10n.t("Troubleshooting"));
         // The settings entry's own: it's what a Facebook that won't open can still send.
         hushfacebook.addPreference(mark(toggle(context, Settings.SAVE_CRASH_FILE,

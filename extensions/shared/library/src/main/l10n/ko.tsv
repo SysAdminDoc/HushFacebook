@@ -3157,3 +3157,35 @@ All your notifications are marked as read.	모든 알림을 읽음으로 표시�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Facebook이 로그인한 계정을 알려 주지 않아서 아무것도 표시하지 않았어요. 알림 탭을 한 번 연 다음 다시 시도하세요.
 This build can't mark notifications as read.	이 빌드에서는 알림을 읽음으로 표시할 수 없어요.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook에서 알림을 읽음으로 표시하지 못했어요. 잠시 후 다시 시도하세요.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	계정 내보내기
+Copies this account's cookies and token to the clipboard.	이 계정의 쿠키와 토큰을 클립보드에 복사합니다.
+Copy token	토큰 복사
+Copies only the access token.	액세스 토큰만 복사합니다.
+Nothing was copied	복사한 항목이 없습니다
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook이 아직 세션을 만들지 않았습니다. 게시물을 연 뒤 다시 시도하세요.
+Token copied	토큰을 복사했습니다
+Import account	계정 가져오기
+Signs in with an account you paste, or a file.	붙여 넣은 계정이나 파일로 로그인합니다.
+Account copied	계정을 복사했습니다
+Nothing was exported	내보낸 항목이 없습니다
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	이 Facebook에는 내보낼 계정이 없습니다. 브라우저에서 Facebook 링크를 한 번 연 뒤 다시 시도하세요.
+Paste it into Import account on the other phone, or use the saved file.	다른 휴대폰의 계정 가져오기에 붙여 넣거나 저장된 파일을 사용하세요.
+From file	파일에서
+No account file on this phone.	이 휴대폰에 계정 파일이 없습니다.
+That file couldn't be read.	그 파일을 읽을 수 없습니다.
+Facebook has to restart before the account shows.	계정이 나타나려면 Facebook을 다시 시작해야 합니다.
+Account imported	계정을 가져왔습니다
+Later	나중에
+Nothing was imported	가져온 항목이 없습니다
+That text couldn't be written into this Facebook.	그 텍스트를 이 Facebook에 쓸 수 없습니다.
+Your account	내 계정
+Import or export	가져오기 또는 내보내기
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	이 휴대폰의 계정을 텍스트로 표시합니다. 여기에서 복사하거나 저장하고, 계정을 붙여 넣어 이 Facebook에 저장하세요.
+Export to file	파일로 내보내기
+Import from file	파일에서 가져오기
+Copy	복사
+Copied.	복사했습니다.
+There's nothing to save.	저장할 내용이 없습니다.
+That file couldn't be written.	그 파일을 쓸 수 없습니다.
+Account saved.	계정을 저장했습니다.

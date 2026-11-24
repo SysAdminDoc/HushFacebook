@@ -18,7 +18,7 @@ final class L10nTableVi {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4246);
+        Map<String, String> table = new HashMap<>(4312);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,5 +4410,71 @@ final class L10nTableVi {
                 "g\u1ee3i \u00fd");
         table.put("this person",
                 "ng\u01b0\u1eddi n\u00e0y");
+        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
+                "\u0110\u01b0\u1ee3c \u0111\u1eb7t khi b\u1ea1n v\u00e1, n\u00ean T\u1ea1m d\u1eebng kh\u00f4ng t\u1eaft \u0111\u01b0\u1ee3c:\\n%1$s\\n\u0110\u1ec3 lo\u1ea1i tr\u1eeb m\u1ee5c n\u00e0y, h\u00e3y v\u00e1 l\u1ea1i v\u00e0 b\u1ecf b\u1ea3n v\u00e1 c\u1ee7a n\u00f3.");
+        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
+                "C\u00e1c m\u1ee5c n\u00e0y \u0111\u01b0\u1ee3c \u0111\u1eb7t khi b\u1ea1n v\u00e1, n\u00ean T\u1ea1m d\u1eebng kh\u00f4ng t\u1eaft \u0111\u01b0\u1ee3c:\\n%1$s\\n\u0110\u1ec3 lo\u1ea1i tr\u1eeb m\u1ed9t m\u1ee5c, h\u00e3y v\u00e1 l\u1ea1i v\u00e0 b\u1ecf b\u1ea3n v\u00e1 c\u1ee7a n\u00f3.");
+        table.put("Export account",
+                "Xu\u1ea5t t\u00e0i kho\u1ea3n");
+        table.put("Copies this account's cookies and token to the clipboard.",
+                "Sao ch\u00e9p cookie v\u00e0 token c\u1ee7a t\u00e0i kho\u1ea3n n\u00e0y v\u00e0o clipboard.");
+        table.put("Copy token",
+                "Sao ch\u00e9p token");
+        table.put("Copies only the access token.",
+                "Ch\u1ec9 sao ch\u00e9p access token.");
+        table.put("Nothing was copied",
+                "Kh\u00f4ng sao ch\u00e9p \u0111\u01b0\u1ee3c g\u00ec");
+        table.put("Facebook hasn't built a session yet. Open a post, then try again.",
+                "Facebook ch\u01b0a t\u1ea1o phi\u00ean \u0111\u0103ng nh\u1eadp. H\u00e3y m\u1edf m\u1ed9t b\u00e0i vi\u1ebft, r\u1ed3i th\u1eed l\u1ea1i.");
+        table.put("Token copied",
+                "\u0110\u00e3 sao ch\u00e9p token");
+        table.put("Import account",
+                "Nh\u1eadp t\u00e0i kho\u1ea3n");
+        table.put("Signs in with an account you paste, or a file.",
+                "\u0110\u0103ng nh\u1eadp b\u1eb1ng t\u00e0i kho\u1ea3n b\u1ea1n d\u00e1n v\u00e0o, ho\u1eb7c b\u1eb1ng t\u1ec7p.");
+        table.put("Account copied",
+                "\u0110\u00e3 sao ch\u00e9p t\u00e0i kho\u1ea3n");
+        table.put("Nothing was exported",
+                "Kh\u00f4ng xu\u1ea5t \u0111\u01b0\u1ee3c g\u00ec");
+        table.put("This Facebook has no account to export. Open a Facebook link in its browser once, then try again.",
+                "Facebook n\u00e0y kh\u00f4ng c\u00f3 t\u00e0i kho\u1ea3n \u0111\u1ec3 xu\u1ea5t. H\u00e3y m\u1edf m\u1ed9t li\u00ean k\u1ebft Facebook trong tr\u00ecnh duy\u1ec7t c\u1ee7a n\u00f3 m\u1ed9t l\u1ea7n, r\u1ed3i th\u1eed l\u1ea1i.");
+        table.put("Paste it into Import account on the other phone, or use the saved file.",
+                "D\u00e1n v\u00e0o Nh\u1eadp t\u00e0i kho\u1ea3n tr\u00ean m\u00e1y kia, ho\u1eb7c d\u00f9ng t\u1ec7p \u0111\u00e3 l\u01b0u.");
+        table.put("From file",
+                "T\u1eeb t\u1ec7p");
+        table.put("No account file on this phone.",
+                "Kh\u00f4ng c\u00f3 t\u1ec7p t\u00e0i kho\u1ea3n n\u00e0o tr\u00ean m\u00e1y n\u00e0y.");
+        table.put("That file couldn't be read.",
+                "Kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c t\u1ec7p \u0111\u00f3.");
+        table.put("Facebook has to restart before the account shows.",
+                "Facebook ph\u1ea3i kh\u1edfi \u0111\u1ed9ng l\u1ea1i th\u00ec t\u00e0i kho\u1ea3n m\u1edbi hi\u1ec7n.");
+        table.put("Account imported",
+                "\u0110\u00e3 nh\u1eadp t\u00e0i kho\u1ea3n");
+        table.put("Later",
+                "\u0110\u1ec3 sau");
+        table.put("Nothing was imported",
+                "Kh\u00f4ng nh\u1eadp \u0111\u01b0\u1ee3c g\u00ec");
+        table.put("That text couldn't be written into this Facebook.",
+                "Kh\u00f4ng ghi \u0111\u01b0\u1ee3c \u0111o\u1ea1n v\u0103n b\u1ea3n \u0111\u00f3 v\u00e0o Facebook n\u00e0y.");
+        table.put("Your account",
+                "T\u00e0i kho\u1ea3n c\u1ee7a b\u1ea1n");
+        table.put("Import or export",
+                "Nh\u1eadp ho\u1eb7c Xu\u1ea5t");
+        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
+                "Hi\u1ec7n t\u00e0i kho\u1ea3n tr\u00ean m\u00e1y n\u00e0y d\u01b0\u1edbi d\u1ea1ng v\u0103n b\u1ea3n. Sao ch\u00e9p ho\u1eb7c l\u01b0u t\u1ea1i \u0111\u00e2y, ho\u1eb7c d\u00e1n m\u1ed9t t\u00e0i kho\u1ea3n r\u1ed3i l\u01b0u v\u00e0o Facebook n\u00e0y.");
+        table.put("Export to file",
+                "Xu\u1ea5t ra t\u1ec7p");
+        table.put("Import from file",
+                "Nh\u1eadp t\u1eeb t\u1ec7p");
+        table.put("Copy",
+                "Sao ch\u00e9p");
+        table.put("Copied.",
+                "\u0110\u00e3 sao ch\u00e9p.");
+        table.put("There's nothing to save.",
+                "Kh\u00f4ng c\u00f3 g\u00ec \u0111\u1ec3 l\u01b0u.");
+        table.put("That file couldn't be written.",
+                "Kh\u00f4ng ghi \u0111\u01b0\u1ee3c t\u1ec7p \u0111\u00f3.");
+        table.put("Account saved.",
+                "\u0110\u00e3 l\u01b0u t\u00e0i kho\u1ea3n.");
     }
 }

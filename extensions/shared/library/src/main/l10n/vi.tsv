@@ -3157,3 +3157,35 @@ All your notifications are marked as read.	Tất cả thông báo của bạn đ
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Chưa đánh dấu gì vì Facebook không cho biết ai đang đăng nhập. Hãy mở tab Thông báo một lần rồi thử lại.
 This build can't mark notifications as read.	Bản dựng này không thể đánh dấu thông báo là đã đọc.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook không thể đánh dấu thông báo của bạn là đã đọc. Hãy thử lại sau giây lát.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	Xuất tài khoản
+Copies this account's cookies and token to the clipboard.	Sao chép cookie và token của tài khoản này vào clipboard.
+Copy token	Sao chép token
+Copies only the access token.	Chỉ sao chép access token.
+Nothing was copied	Không sao chép được gì
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook chưa tạo phiên đăng nhập. Hãy mở một bài viết, rồi thử lại.
+Token copied	Đã sao chép token
+Import account	Nhập tài khoản
+Signs in with an account you paste, or a file.	Đăng nhập bằng tài khoản bạn dán vào, hoặc bằng tệp.
+Account copied	Đã sao chép tài khoản
+Nothing was exported	Không xuất được gì
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Facebook này không có tài khoản để xuất. Hãy mở một liên kết Facebook trong trình duyệt của nó một lần, rồi thử lại.
+Paste it into Import account on the other phone, or use the saved file.	Dán vào Nhập tài khoản trên máy kia, hoặc dùng tệp đã lưu.
+From file	Từ tệp
+No account file on this phone.	Không có tệp tài khoản nào trên máy này.
+That file couldn't be read.	Không đọc được tệp đó.
+Facebook has to restart before the account shows.	Facebook phải khởi động lại thì tài khoản mới hiện.
+Account imported	Đã nhập tài khoản
+Later	Để sau
+Nothing was imported	Không nhập được gì
+That text couldn't be written into this Facebook.	Không ghi được đoạn văn bản đó vào Facebook này.
+Your account	Tài khoản của bạn
+Import or export	Nhập hoặc Xuất
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Hiện tài khoản trên máy này dưới dạng văn bản. Sao chép hoặc lưu tại đây, hoặc dán một tài khoản rồi lưu vào Facebook này.
+Export to file	Xuất ra tệp
+Import from file	Nhập từ tệp
+Copy	Sao chép
+Copied.	Đã sao chép.
+There's nothing to save.	Không có gì để lưu.
+That file couldn't be written.	Không ghi được tệp đó.
+Account saved.	Đã lưu tài khoản.

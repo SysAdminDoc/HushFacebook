@@ -3157,3 +3157,35 @@ All your notifications are marked as read.	Tüm bildirimlerin okundu olarak işa
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Hiçbir şey işaretlenmedi, çünkü Facebook kimin oturum açtığını bildirmedi. Bildirimler sekmesini bir kez açıp yeniden dene.
 This build can't mark notifications as read.	Bu derleme bildirimleri okundu olarak işaretleyemez.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook bildirimlerini okundu olarak işaretleyemedi. Birazdan yeniden dene.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	Hesabı dışa aktar
+Copies this account's cookies and token to the clipboard.	Bu hesabın çerezlerini ve jetonunu panoya kopyalar.
+Copy token	Jetonu kopyala
+Copies only the access token.	Yalnızca erişim jetonunu kopyalar.
+Nothing was copied	Hiçbir şey kopyalanmadı
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook henüz bir oturum oluşturmadı. Bir gönderi açıp yeniden deneyin.
+Token copied	Jeton kopyalandı
+Import account	Hesabı içe aktar
+Signs in with an account you paste, or a file.	Yapıştırdığınız bir hesapla ya da bir dosyayla oturum açar.
+Account copied	Hesap kopyalandı
+Nothing was exported	Hiçbir şey dışa aktarılmadı
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Bu Facebook'ta dışa aktarılacak hesap yok. Tarayıcısında bir kez Facebook bağlantısı açıp yeniden deneyin.
+Paste it into Import account on the other phone, or use the saved file.	Diğer telefonda Hesabı içe aktar bölümüne yapıştırın ya da kaydedilen dosyayı kullanın.
+From file	Dosyadan
+No account file on this phone.	Bu telefonda hesap dosyası yok.
+That file couldn't be read.	O dosya okunamadı.
+Facebook has to restart before the account shows.	Hesabın görünmesi için Facebook'un yeniden başlaması gerekiyor.
+Account imported	Hesap içe aktarıldı
+Later	Sonra
+Nothing was imported	Hiçbir şey içe aktarılmadı
+That text couldn't be written into this Facebook.	O metin bu Facebook'a yazılamadı.
+Your account	Hesabınız
+Import or export	İçe veya dışa aktar
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Bu telefonun hesaplarını metin olarak gösterir. Buradan kopyalayın veya kaydedin, ya da bir hesap yapıştırıp bu Facebook'a kaydedin.
+Export to file	Dosyaya aktar
+Import from file	Dosyadan içe aktar
+Copy	Kopyala
+Copied.	Kopyalandı.
+There's nothing to save.	Kaydedilecek bir şey yok.
+That file couldn't be written.	O dosya yazılamadı.
+Account saved.	Hesap kaydedildi.

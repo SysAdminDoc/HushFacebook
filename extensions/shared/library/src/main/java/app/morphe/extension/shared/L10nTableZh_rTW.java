@@ -18,7 +18,7 @@ final class L10nTableZh_rTW {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4246);
+        Map<String, String> table = new HashMap<>(4312);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,5 +4410,71 @@ final class L10nTableZh_rTW {
                 "\u63a8\u85a6");
         table.put("this person",
                 "\u9019\u500b\u4eba");
+        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
+                "\u6b64\u9805\u76ee\u5728\u4fee\u88dc\u6642\u8a2d\u5b9a\uff0c\u66ab\u505c\u7121\u6cd5\u505c\u7528\uff1a\\n%1$s\\n\u82e5\u8981\u6392\u9664\u5176\u5f71\u97ff\uff0c\u8acb\u91cd\u65b0\u4fee\u88dc\u4e26\u53d6\u6d88\u9078\u53d6\u5c0d\u61c9\u4fee\u88dc\u9805\u76ee\u3002");
+        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
+                "\u9019\u4e9b\u9805\u76ee\u5728\u4fee\u88dc\u6642\u8a2d\u5b9a\uff0c\u66ab\u505c\u7121\u6cd5\u505c\u7528\uff1a\\n%1$s\\n\u82e5\u8981\u6392\u9664\u5176\u4e2d\u4e00\u9805\u7684\u5f71\u97ff\uff0c\u8acb\u91cd\u65b0\u4fee\u88dc\u4e26\u53d6\u6d88\u9078\u53d6\u5c0d\u61c9\u4fee\u88dc\u9805\u76ee\u3002");
+        table.put("Export account",
+                "\u532f\u51fa\u5e33\u865f");
+        table.put("Copies this account's cookies and token to the clipboard.",
+                "\u5c07\u6b64\u5e33\u865f\u7684 Cookie \u8207\u6b0a\u6756\u8907\u88fd\u5230\u526a\u8cbc\u7c3f\u3002");
+        table.put("Copy token",
+                "\u8907\u88fd\u6b0a\u6756");
+        table.put("Copies only the access token.",
+                "\u50c5\u8907\u88fd\u5b58\u53d6\u6b0a\u6756\u3002");
+        table.put("Nothing was copied",
+                "\u6c92\u6709\u8907\u88fd\u4efb\u4f55\u5167\u5bb9");
+        table.put("Facebook hasn't built a session yet. Open a post, then try again.",
+                "Facebook \u5c1a\u672a\u5efa\u7acb\u5de5\u4f5c\u968e\u6bb5\u3002\u8acb\u958b\u555f\u4e00\u5247\u8cbc\u6587\uff0c\u7136\u5f8c\u518d\u8a66\u3002");
+        table.put("Token copied",
+                "\u5df2\u8907\u88fd\u6b0a\u6756");
+        table.put("Import account",
+                "\u532f\u5165\u5e33\u865f");
+        table.put("Signs in with an account you paste, or a file.",
+                "\u7528\u4f60\u8cbc\u4e0a\u7684\u5e33\u865f\u6216\u6a94\u6848\u767b\u5165\u3002");
+        table.put("Account copied",
+                "\u5df2\u8907\u88fd\u5e33\u865f");
+        table.put("Nothing was exported",
+                "\u6c92\u6709\u532f\u51fa\u4efb\u4f55\u5167\u5bb9");
+        table.put("This Facebook has no account to export. Open a Facebook link in its browser once, then try again.",
+                "\u6b64 Facebook \u6c92\u6709\u53ef\u532f\u51fa\u7684\u5e33\u865f\u3002\u8acb\u5148\u5728\u5b83\u7684\u700f\u89bd\u5668\u4e2d\u958b\u555f\u4e00\u6b21 Facebook \u9023\u7d50\uff0c\u7136\u5f8c\u518d\u8a66\u3002");
+        table.put("Paste it into Import account on the other phone, or use the saved file.",
+                "\u8cbc\u5230\u53e6\u4e00\u652f\u624b\u6a5f\u7684\u532f\u5165\u5e33\u865f\uff0c\u6216\u4f7f\u7528\u5df2\u5132\u5b58\u7684\u6a94\u6848\u3002");
+        table.put("From file",
+                "\u5f9e\u6a94\u6848");
+        table.put("No account file on this phone.",
+                "\u9019\u652f\u624b\u6a5f\u4e0a\u6c92\u6709\u5e33\u865f\u6a94\u6848\u3002");
+        table.put("That file couldn't be read.",
+                "\u7121\u6cd5\u8b80\u53d6\u8a72\u6a94\u6848\u3002");
+        table.put("Facebook has to restart before the account shows.",
+                "\u9700\u8981\u91cd\u65b0\u555f\u52d5 Facebook \u5f8c\u5e33\u865f\u624d\u6703\u986f\u793a\u3002");
+        table.put("Account imported",
+                "\u5df2\u532f\u5165\u5e33\u865f");
+        table.put("Later",
+                "\u7a0d\u5f8c");
+        table.put("Nothing was imported",
+                "\u6c92\u6709\u532f\u5165\u4efb\u4f55\u5167\u5bb9");
+        table.put("That text couldn't be written into this Facebook.",
+                "\u7121\u6cd5\u5c07\u8a72\u6587\u5b57\u5beb\u5165\u6b64 Facebook\u3002");
+        table.put("Your account",
+                "\u4f60\u7684\u5e33\u865f");
+        table.put("Import or export",
+                "\u532f\u5165\u6216\u532f\u51fa");
+        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
+                "\u4ee5\u6587\u5b57\u986f\u793a\u9019\u652f\u624b\u6a5f\u4e0a\u7684\u5e33\u865f\u3002\u5728\u6b64\u8907\u88fd\u6216\u5132\u5b58\uff0c\u6216\u8cbc\u4e0a\u5e33\u865f\u4e26\u5132\u5b58\u5230\u6b64 Facebook\u3002");
+        table.put("Export to file",
+                "\u532f\u51fa\u5230\u6a94\u6848");
+        table.put("Import from file",
+                "\u5f9e\u6a94\u6848\u532f\u5165");
+        table.put("Copy",
+                "\u8907\u88fd");
+        table.put("Copied.",
+                "\u5df2\u8907\u88fd\u3002");
+        table.put("There's nothing to save.",
+                "\u6c92\u6709\u53ef\u5132\u5b58\u7684\u5167\u5bb9\u3002");
+        table.put("That file couldn't be written.",
+                "\u7121\u6cd5\u5beb\u5165\u8a72\u6a94\u6848\u3002");
+        table.put("Account saved.",
+                "\u5e33\u865f\u5df2\u5132\u5b58\u3002");
     }
 }

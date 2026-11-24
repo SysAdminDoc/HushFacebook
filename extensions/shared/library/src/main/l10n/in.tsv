@@ -3157,3 +3157,35 @@ All your notifications are marked as read.	Semua notifikasi Anda sudah ditandai 
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Tidak ada yang ditandai karena Facebook tidak memberi tahu siapa yang masuk. Buka tab Notifikasi sekali, lalu coba lagi.
 This build can't mark notifications as read.	Build ini tidak bisa menandai notifikasi sudah dibaca.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook tidak bisa menandai notifikasi Anda sudah dibaca. Coba lagi sebentar lagi.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	Ekspor akun
+Copies this account's cookies and token to the clipboard.	Menyalin cookie dan token akun ini ke papan klip.
+Copy token	Salin token
+Copies only the access token.	Hanya menyalin token akses.
+Nothing was copied	Tidak ada yang disalin
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook belum membuat sesi. Buka satu kiriman, lalu coba lagi.
+Token copied	Token disalin
+Import account	Impor akun
+Signs in with an account you paste, or a file.	Masuk dengan akun yang Anda tempel, atau dengan file.
+Account copied	Akun disalin
+Nothing was exported	Tidak ada yang diekspor
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Facebook ini tidak punya akun untuk diekspor. Buka tautan Facebook sekali di perambannya, lalu coba lagi.
+Paste it into Import account on the other phone, or use the saved file.	Tempel di Impor akun di ponsel lain, atau pakai file yang tersimpan.
+From file	Dari file
+No account file on this phone.	Tidak ada file akun di ponsel ini.
+That file couldn't be read.	File itu tidak bisa dibaca.
+Facebook has to restart before the account shows.	Facebook harus dimulai ulang agar akun muncul.
+Account imported	Akun diimpor
+Later	Nanti
+Nothing was imported	Tidak ada yang diimpor
+That text couldn't be written into this Facebook.	Teks itu tidak bisa ditulis ke Facebook ini.
+Your account	Akun Anda
+Import or export	Impor atau ekspor
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Menampilkan akun ponsel ini sebagai teks. Salin atau simpan di sini, atau tempel akun lalu simpan ke Facebook ini.
+Export to file	Ekspor ke file
+Import from file	Impor dari file
+Copy	Salin
+Copied.	Disalin.
+There's nothing to save.	Tidak ada yang bisa disimpan.
+That file couldn't be written.	File itu tidak bisa ditulis.
+Account saved.	Akun disimpan.

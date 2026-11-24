@@ -3043,3 +3043,35 @@ All your notifications are marked as read.	Todas as suas notificações foram ma
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Nada foi marcado porque o Facebook não informou quem está conectado. Abra a aba Notificações uma vez e tente de novo.
 This build can't mark notifications as read.	Esta versão não consegue marcar as notificações como lidas.
 Facebook couldn't mark your notifications as read. Try again in a moment.	O Facebook não conseguiu marcar suas notificações como lidas. Tente de novo daqui a pouco.
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	Exportar conta
+Copies this account's cookies and token to the clipboard.	Copia os cookies e o token desta conta para a área de transferência.
+Copy token	Copiar token
+Copies only the access token.	Copia apenas o token de acesso.
+Nothing was copied	Nada foi copiado
+Facebook hasn't built a session yet. Open a post, then try again.	O Facebook ainda não criou uma sessão. Abra uma publicação e tente de novo.
+Token copied	Token copiado
+Import account	Importar conta
+Signs in with an account you paste, or a file.	Entra com uma conta colada ou com um arquivo.
+Account copied	Conta copiada
+Nothing was exported	Nada foi exportado
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Este Facebook não tem conta para exportar. Abra um link do Facebook no navegador dele uma vez e tente de novo.
+Paste it into Import account on the other phone, or use the saved file.	Cole em Importar conta no outro telefone ou use o arquivo salvo.
+From file	De arquivo
+No account file on this phone.	Nenhum arquivo de conta neste telefone.
+That file couldn't be read.	Não foi possível ler esse arquivo.
+Facebook has to restart before the account shows.	O Facebook precisa reiniciar para a conta aparecer.
+Account imported	Conta importada
+Later	Depois
+Nothing was imported	Nada foi importado
+That text couldn't be written into this Facebook.	Não foi possível gravar esse texto neste Facebook.
+Your account	Sua conta
+Import or export	Importar ou exportar
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Mostra as contas deste telefone como texto. Copie ou salve aqui, ou cole uma conta e salve neste Facebook.
+Export to file	Exportar para arquivo
+Import from file	Importar de arquivo
+Copy	Copiar
+Copied.	Copiado.
+There's nothing to save.	Não há nada para salvar.
+That file couldn't be written.	Não foi possível gravar esse arquivo.
+Account saved.	Conta salva.

@@ -3161,3 +3161,35 @@ All your notifications are marked as read.	你的所有通知都已標示為已�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	沒有標示任何通知，因為 Facebook 沒有告知目前登入的是誰。請先開啟一次「通知」分頁，然後再試一次。
 This build can't mark notifications as read.	此建置版本無法將通知標示為已讀。
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook 無法將你的通知標示為已讀。請稍後再試一次。
+# context: the account sharing rows in Hushfacebook settings, and their dialogs
+Export account	匯出帳號
+Copies this account's cookies and token to the clipboard.	將此帳號的 Cookie 與權杖複製到剪貼簿。
+Copy token	複製權杖
+Copies only the access token.	僅複製存取權杖。
+Nothing was copied	沒有複製任何內容
+Facebook hasn't built a session yet. Open a post, then try again.	Facebook 尚未建立工作階段。請開啟一則貼文，然後再試。
+Token copied	已複製權杖
+Import account	匯入帳號
+Signs in with an account you paste, or a file.	用你貼上的帳號或檔案登入。
+Account copied	已複製帳號
+Nothing was exported	沒有匯出任何內容
+This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	此 Facebook 沒有可匯出的帳號。請先在它的瀏覽器中開啟一次 Facebook 連結，然後再試。
+Paste it into Import account on the other phone, or use the saved file.	貼到另一支手機的匯入帳號，或使用已儲存的檔案。
+From file	從檔案
+No account file on this phone.	這支手機上沒有帳號檔案。
+That file couldn't be read.	無法讀取該檔案。
+Facebook has to restart before the account shows.	需要重新啟動 Facebook 後帳號才會顯示。
+Account imported	已匯入帳號
+Later	稍後
+Nothing was imported	沒有匯入任何內容
+That text couldn't be written into this Facebook.	無法將該文字寫入此 Facebook。
+Your account	你的帳號
+Import or export	匯入或匯出
+Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	以文字顯示這支手機上的帳號。在此複製或儲存，或貼上帳號並儲存到此 Facebook。
+Export to file	匯出到檔案
+Import from file	從檔案匯入
+Copy	複製
+Copied.	已複製。
+There's nothing to save.	沒有可儲存的內容。
+That file couldn't be written.	無法寫入該檔案。
+Account saved.	帳號已儲存。
