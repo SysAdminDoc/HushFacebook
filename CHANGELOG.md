@@ -38,6 +38,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide Threads cards between reels` also takes out the Meta promos Facebook now puts between reels, which is how the Threads card started showing up again for some people. (#85)
 * `Next reel in the background` keeps going now. It used to play the reels Reels had loaded when you left and then the last one over and over, because Facebook stopped loading reels in the background. Reels loads more as it goes now, so new reels keep coming until you open Facebook again. (Discussion #524)
 * `Next reel in the background` also moves on in Reels layouts where a reel reaches under the tab bar. There it played the same reel again. (Discussion #524)
+* A reel's name, caption and buttons sit above the tab bar again after `Rounded tab bar` or `Hide the tab bar on the Reels tab` has been on. Turning either one off left every reel running a tab bar's height too tall, so the bottom of it hid behind the bar. (#551)
 
 ## 0.24.0 (2026-11-22)
 

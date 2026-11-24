@@ -477,11 +477,21 @@ public final class TabBarScrollAway {
     }
 
     /**
+     * Set in every {@link #barSetup}, so a list height kept before the setup counted Rounded tab bar
+     * and Hide the tab bar on the Reels tab matches none, and is seen again once (#551).
+     */
+    static final int COUNTS_REELS_BAR_SWITCHES = 1 << 10;
+
+    /**
      * The bar switches that change how tall the Reels list runs while Facebook's row stays the same,
      * as one number, so a list height seen under one setup isn't handed to rows under another.
+     * Rounded tab bar and Hide the tab bar on the Reels tab both run the list down to the screen's
+     * bottom. Left out, the height seen with either on stayed the setup's after it was turned off,
+     * so every start grew Facebook's rows by the tab bar's height and the reel's name, caption and
+     * buttons sat behind the bar (#551; emulator 2026-11-24: rows of 2062 made 2272 in a 2062 list).
      */
     static int barSetup() {
-        int bits = 0;
+        int bits = COUNTS_REELS_BAR_SWITCHES;
         if (Settings.TOP_TAB_BAR.get()) bits |= 1;
         if (Settings.BOTTOM_TAB_BAR.get()) bits |= 1 << 1;
         if (Settings.TAB_BAR_SCROLL_AWAY.get()) bits |= 1 << 2;
@@ -491,6 +501,8 @@ public final class TabBarScrollAway {
         if (Settings.HIDE_STATUS_BAR.get()) bits |= 1 << 6;
         // The Reels list runs up under the status bar too (#466), so a height seen before doesn't fit.
         if (ReelsStatusBar.wanted()) bits |= 1 << 7;
+        if (Settings.ROUNDED_TAB_BAR.get()) bits |= 1 << 8;
+        if (Settings.HIDE_REELS_TAB_BAR.get()) bits |= 1 << 9;
         return bits;
     }
 
