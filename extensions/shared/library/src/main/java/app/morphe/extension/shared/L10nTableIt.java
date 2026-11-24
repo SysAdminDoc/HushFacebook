@@ -2307,10 +2307,10 @@ final class L10nTableIt {
                 "Pulsante Segna come visto");
         table.put("Mark new settings",
                 "Segna le nuove impostazioni");
+        table.put("Marked as seen",
+                "Segnato come visto");
         table.put("Marked as seen and sent",
                 "Segnato come visto e inviato");
-        table.put("Marked as seen. Tap again to undo.",
-                "Segnato come visto. Tocca di nuovo per annullare.");
         table.put("Marketplace",
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",

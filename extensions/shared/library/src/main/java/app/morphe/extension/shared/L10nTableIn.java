@@ -2307,10 +2307,10 @@ final class L10nTableIn {
                 "Tombol Tandai sudah dilihat");
         table.put("Mark new settings",
                 "Tandai pengaturan baru");
+        table.put("Marked as seen",
+                "Ditandai sudah dilihat");
         table.put("Marked as seen and sent",
                 "Ditandai sudah dilihat dan dikirim");
-        table.put("Marked as seen. Tap again to undo.",
-                "Ditandai sudah dilihat. Ketuk lagi untuk membatalkan.");
         table.put("Marketplace",
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",

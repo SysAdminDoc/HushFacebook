@@ -2307,10 +2307,10 @@ final class L10nTableEs {
                 "Bot\u00f3n Marcar como vista");
         table.put("Mark new settings",
                 "Marcar ajustes nuevos");
+        table.put("Marked as seen",
+                "Marcada como vista");
         table.put("Marked as seen and sent",
                 "Marcada como vista y enviada");
-        table.put("Marked as seen. Tap again to undo.",
-                "Marcada como vista. Toca de nuevo para deshacer.");
         table.put("Marketplace",
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",

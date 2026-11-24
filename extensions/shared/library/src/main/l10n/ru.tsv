@@ -1491,7 +1491,7 @@ Adds an eye button to the top of each story while you view anonymously. Tap it t
 # context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
 Mark as seen	Отметить как просмотренное
 # context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
-Marked as seen. Tap again to undo.	Отмечено как просмотренное. Нажмите еще раз, чтобы отменить.
+Marked as seen	Отмечено как просмотренное
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	Отмечено как просмотренное и отправлено
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each

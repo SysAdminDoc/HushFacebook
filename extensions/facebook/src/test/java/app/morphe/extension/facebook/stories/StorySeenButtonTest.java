@@ -247,12 +247,14 @@ public class StorySeenButtonTest {
         assertTrue(eye.performClick());
         assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
         assertEquals(StoryMarks.State.MARKED, ((StorySeenButton.Eye) eye.getDrawable()).state());
-        assertEquals("Marked as seen. Tap again to undo.", eye.getContentDescription());
-        assertTrue(eye.performClick());
-        assertEquals("a second tap kept the mark", StoryMarks.State.UNMARKED, StorySeen.MARKS.state("100", "c1"));
+        assertEquals("Marked as seen", eye.getContentDescription());
+        // Marked, the eye dims and stays on seen: a second tap never takes the mark back (#557).
+        assertFalse(eye.isEnabled());
+        eye.performClick();
+        assertEquals("a second tap took the mark back", StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
+        assertEquals(StoryMarks.State.MARKED, ((StorySeenButton.Eye) eye.getDrawable()).state());
 
-        // Once sent, the eye dims and a tap changes nothing.
-        StorySeen.MARKS.toggle("100", "c1");
+        // Once sent it stays dimmed, and a tap still changes nothing.
         StorySeenForTests.send(StorySeenForTests.ACCOUNT, StorySeenForTests.cards("c1"));
         StorySeenButton.refresh();
         assertFalse(eye.isEnabled());
@@ -505,7 +507,7 @@ public class StorySeenButtonTest {
     public void marksLapseAfterADay() {
         AtomicLong now = new AtomicLong(1_000);
         StoryMarks marks = new StoryMarks(now::get);
-        marks.toggle("100", "c1");
+        marks.mark("100", "c1");
         now.addAndGet(StoryMarks.LIFETIME_MS);
         assertSame(StoryMarks.State.UNMARKED, marks.state("100", "c1"));
         assertNull("a lapsed mark went out", marks.choose("100", StorySeenForTests.cards("c1"),

@@ -2307,10 +2307,10 @@ final class L10nTableDe {
                 "Schaltfl\u00e4che Als gesehen markieren");
         table.put("Mark new settings",
                 "Neue Einstellungen markieren");
+        table.put("Marked as seen",
+                "Als gesehen markiert");
         table.put("Marked as seen and sent",
                 "Als gesehen markiert und gesendet");
-        table.put("Marked as seen. Tap again to undo.",
-                "Als gesehen markiert. Tippe erneut, um es r\u00fcckg\u00e4ngig zu machen.");
         table.put("Marketplace",
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",

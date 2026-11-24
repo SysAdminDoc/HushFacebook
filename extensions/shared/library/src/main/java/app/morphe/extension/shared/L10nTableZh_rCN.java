@@ -2307,10 +2307,10 @@ final class L10nTableZh_rCN {
                 "\u201c\u6807\u4e3a\u5df2\u770b\u201d\u6309\u94ae");
         table.put("Mark new settings",
                 "\u6807\u8bb0\u65b0\u8bbe\u7f6e");
+        table.put("Marked as seen",
+                "\u5df2\u6807\u4e3a\u5df2\u770b");
         table.put("Marked as seen and sent",
                 "\u5df2\u6807\u4e3a\u5df2\u770b\u5e76\u5df2\u53d1\u9001");
-        table.put("Marked as seen. Tap again to undo.",
-                "\u5df2\u6807\u4e3a\u5df2\u770b\u3002\u518d\u6b21\u70b9\u6309\u53ef\u64a4\u9500\u3002");
         table.put("Marketplace",
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",

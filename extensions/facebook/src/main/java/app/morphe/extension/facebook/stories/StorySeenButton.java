@@ -53,8 +53,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * dragged closed, and the eye stays out of the way while it moves (issue #117). The patch calls {@link #onCard} first thing in the seen
  * helper's per-card method, which runs for each card Facebook is about to count as viewed, with the
  * account's session, so the button always speaks for the card on screen. It shows where that card
- * stands ({@link StoryMarks}): an eye with a slash while it's held back, a solid eye once marked,
- * dimmed once sent. A tap marks the card, or takes the mark back before it goes. A card a batch
+ * stands ({@link StoryMarks}): an eye with a slash while it's held back, and a solid eye, dimmed,
+ * once it's marked or sent. A tap marks the card, and it stays marked (#557). A card a batch
  * already held back is sent straight away through the sender that held it ({@link StorySeen#sendHeld}).
  *
  * <p>The seen helper doesn't count every card (some bucket types skip it, and a late callback can
@@ -462,7 +462,7 @@ public final class StorySeenButton {
         }
     }
 
-    /** A tap on [eye]: marks its card or takes the mark back, and shows where it stands. Never throws. */
+    /** A tap on [eye]: marks its card, and shows where it stands. Never throws. */
     static void tapped(ImageView eye) {
         try {
             if (!(eye.getTag() instanceof Shown)) return;
@@ -486,7 +486,7 @@ public final class StorySeenButton {
             // Send at once only while the card is known to be on screen. Without that, the mark
             // waits and goes with the next batch that holds the card.
             boolean onScreen = current != null;
-            if (StorySeen.MARKS.toggle(bound.account, bound.card) == StoryMarks.State.MARKED && onScreen) {
+            if (StorySeen.MARKS.mark(bound.account, bound.card) == StoryMarks.State.MARKED && onScreen) {
                 sendNow.test(bound.account, bound.card);
             }
             StoryMarks.State now = StorySeen.MARKS.state(bound.account, bound.card);
@@ -501,7 +501,7 @@ public final class StorySeenButton {
     static String describe(StoryMarks.State state) {
         switch (state) {
             case MARKED:
-                return L10n.t("Marked as seen. Tap again to undo.");
+                return L10n.t("Marked as seen");
             case SENT:
                 return L10n.t("Marked as seen and sent");
             default:
@@ -704,8 +704,9 @@ public final class StorySeenButton {
         Drawable drawable = eye.getDrawable();
         if (drawable instanceof Eye) ((Eye) drawable).setState(state);
         eye.setContentDescription(describe(state));
-        eye.setEnabled(state != StoryMarks.State.SENT);
-        eye.setAlpha(state == StoryMarks.State.SENT ? 0.6f : 1f);
+        // Marked is as final as sent (#557): the eye takes no more taps once it's on seen.
+        eye.setEnabled(state == StoryMarks.State.UNMARKED);
+        eye.setAlpha(state == StoryMarks.State.UNMARKED ? 1f : 0.6f);
     }
 
     /**

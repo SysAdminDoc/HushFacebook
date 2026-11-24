@@ -2432,10 +2432,10 @@ final class L10nTableAr {
                 "\u0632\u0631 \u062a\u0645\u064a\u064a\u0632 \u0643\u0645\u064f\u0634\u0627\u0647\u062f");
         table.put("Mark new settings",
                 "\u062a\u0645\u064a\u064a\u0632 \u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u062c\u062f\u064a\u062f\u0629");
+        table.put("Marked as seen",
+                "\u0645\u0648\u0633\u0648\u0645 \u0643\u0645\u064f\u0634\u0627\u0647\u062f");
         table.put("Marked as seen and sent",
                 "\u0645\u0648\u0633\u0648\u0645 \u0643\u0645\u064f\u0634\u0627\u0647\u062f \u0648\u0645\u0631\u0633\u0644");
-        table.put("Marked as seen. Tap again to undo.",
-                "\u0645\u0648\u0633\u0648\u0645 \u0643\u0645\u064f\u0634\u0627\u0647\u062f. \u0627\u0636\u063a\u0637 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649 \u0644\u0644\u062a\u0631\u0627\u062c\u0639.");
         table.put("Marketplace",
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",
