@@ -93,6 +93,12 @@ public final class CaptionBackdrop {
     /** Counted each time the date under a full-screen video's caption gets the box. */
     static final String VIEWER_DATED = "full-screen video date dimmed";
 
+    /** The member the report names once a group reel's name has asked for its box (#490). */
+    static final String GROUP_NAME = "group reel name backdrop";
+
+    /** Counted each time a group reel's name and the line under it get the box. */
+    static final String GROUP_NAMED = "group reel name dimmed";
+
     /** The member the report names once a post header has read its name's line limit (#533). */
     static final String NAME_LINES = "post name lines";
 
@@ -147,6 +153,7 @@ public final class CaptionBackdrop {
     private static volatile boolean loggedMedia;
     private static volatile boolean loggedLines;
     private static volatile boolean loggedViewerDate;
+    private static volatile boolean loggedGroup;
 
     private CaptionBackdrop() {
     }
@@ -408,6 +415,29 @@ public final class CaptionBackdrop {
             return box();
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, VIEWER_DATE, failure);
+            return null;
+        }
+    }
+
+    /**
+     * The hook, right before a group reel's author line makes the column holding the group's name and the
+     * line under it (who posted it, when). Answers the box while Dark box behind reel names is on, otherwise
+     * null. A group reel draws that line with a component of its own, never through the post header the
+     * other reels' names go through, so {@link #forReelName} never sees it (#490).
+     */
+    public static Drawable forGroupName() {
+        try {
+            HookStatus.bound(FAMILY, GROUP_NAME);
+            if (!Utils.settingsReady() || !Settings.DIM_REEL_NAMES.get()) return null;
+            HookStatus.invoked(FAMILY);
+            HookStatus.counted(FAMILY, GROUP_NAMED);
+            if (!loggedGroup) {
+                loggedGroup = true;
+                Logger.printDebug(() -> "Full post text: a group reel's name got its dark box");
+            }
+            return box();
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, GROUP_NAME, failure);
             return null;
         }
     }

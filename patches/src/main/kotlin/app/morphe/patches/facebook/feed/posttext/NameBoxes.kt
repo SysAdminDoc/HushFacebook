@@ -61,6 +61,12 @@ internal const val STORY_TITLE_HELPER = "hushfacebookStoryTitleBox"
 /** The helper the box adds to each post header, putting the box on the column holding its name and the line under it (#490). */
 internal const val NAME_BLOCK_HELPER = "hushfacebookNameBlockBox"
 
+/** A group reel's author line, a component of its own whose static setup names it (588 `LX/0X81;`, #490). */
+internal const val GROUP_AUTHOR_COMPONENT = "FbShortsViewerVideoGroupAuthorKComponent"
+
+/** The helper a group reel's author line hands its names' column style through (#490). */
+internal const val GROUP_NAME_HELPER = "hushfacebookGroupNameBox"
+
 private const val LIST = "Ljava/util/List;"
 private const val STRING = "Ljava/lang/String;"
 private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
@@ -72,6 +78,7 @@ internal const val HEADER = "$CAPTION_BACKDROP->header($OBJECT$OBJECT)V"
 internal const val NAME_LINES = "$CAPTION_BACKDROP->nameLines(I)I"
 internal const val NAME_BLOCK = "$CAPTION_BACKDROP->nameBlock()V"
 internal const val FOR_NAME_BLOCK = "$CAPTION_BACKDROP->forNameBlock()$DRAWABLE"
+internal const val FOR_GROUP_NAME = "$CAPTION_BACKDROP->forGroupName()$DRAWABLE"
 private const val ARRAY_LIST = "Ljava/util/ArrayList;"
 
 /** One of the looks the post header can be drawn in, named in its look enum's static initializer (588 `LX/02ta;`). */
@@ -127,6 +134,11 @@ internal class FeedNames(
  */
 internal class NameBlock(val list: Place, val column: Place) {
     override fun toString() = "$column, list $list"
+
+    /** The kind of column Facebook builds the name and the line under it into (588 `LX/02gk;`). */
+    val columnType: String
+        get() = ((column.method.implementation!!.instructions.elementAt(column.index) as ReferenceInstruction)
+            .reference as MethodReference).definingClass
 }
 
 private fun isVirtualCall(instruction: Instruction) =
@@ -470,9 +482,36 @@ internal fun BytecodePatchContext.findNameBlocks(reel: ReelNames, feed: FeedName
     }
     val reelBlock = reelCallers.singleOrNull()
         ?: refuse("expected one method of $reelHost to build its name from outside its name methods, found ${reelCallers.size}")
-    val columnType = ((feedColumn.column.method.implementation!!.instructions.elementAt(feedColumn.column.index) as ReferenceInstruction)
-        .reference as MethodReference).definingClass
-    return listOf(nameBlockIn(reelBlock, styleType, columnType, entries), feedColumn)
+    return listOf(nameBlockIn(reelBlock, styleType, feedColumn.columnType, entries), feedColumn)
+}
+
+/**
+ * Finds the column a group reel's author line puts the group's name and the line under it in (#490). A
+ * group reel draws that line with a component of its own, the one whose static setup names
+ * [GROUP_AUTHOR_COMPONENT] (588 `LX/0X81;`), and no post header, so the reel name hooks never see it. Its
+ * render makes the picture's column of [columnType] first and the names' column last (588 `LX/02gk;` at
+ * 642, style v97, its list holding the group's name and the row under it). A column a branch jumps
+ * straight into, or whose style is read again after it's made, isn't taken.
+ */
+internal fun BytecodePatchContext.findGroupNameBlock(columnType: String, styleType: String): Place {
+    val owners = methodsNaming(GROUP_AUTHOR_COMPONENT) { it.name == "<clinit>" }.map { it.definingClass }.toSet()
+    val owner = owners.singleOrNull()
+        ?: refuse("expected one group reel author line (\"$GROUP_AUTHOR_COMPONENT\"), found ${owners.size}")
+    val renders = classDefByOrNull(owner)!!.methods.filter { it.name == "render" && it.implementation != null }
+    val render = renders.singleOrNull() ?: refuse("expected $owner to render once, found ${renders.size}")
+    val where = "$owner->render"
+    val code = render.implementation!!.instructions.toList()
+    val columns = code.indices.filter { at ->
+        isConstructorCall(code[at]) && containerStyle(code[at], styleType) != null &&
+            ((code[at] as ReferenceInstruction).reference as MethodReference).definingClass == columnType
+    }
+    if (columns.size < 2) refuse("expected $where to make its picture's column and its names', found ${columns.size} $columnType")
+    val at = columns.last()
+    val style = containerStyle(code[at], styleType)!!
+    val flow = ControlFlow.of(render)
+    if (flow.normal.withIndex().any { (from, to) -> at in to && from != at - 1 }) refuse("a branch in $where jumps straight to its names' column")
+    if (render.readsAfter(at, style).isNotEmpty()) refuse("$where reads its names' column style again after the column")
+    return Place(render, at, style)
 }
 
 /**
@@ -778,5 +817,25 @@ internal fun BytecodePatchContext.addNameBlockBoxes(text: FieldReference, blocks
             """,
         )
         method.addInstructions(block.list.index + 1, "invoke-static { }, $NAME_BLOCK")
+    }
+}
+
+/**
+ * Boxes a group reel's name and the line under it as one (#490), for [block] from [findGroupNameBlock]:
+ * right before the author line makes that column, a helper on its class puts [FOR_GROUP_NAME]'s box on
+ * the column's style, so Dark box behind reel names covers group reels too.
+ */
+internal fun BytecodePatchContext.addGroupNameBox(text: FieldReference, block: Place) {
+    val style = findBoxStyle(text.definingClass)
+    val styleType = style.background.substringAfterLast(')')
+    if (classDefByOrNull(CAPTION_BACKDROP)?.methods?.any { it.name == "forGroupName" } != true) {
+        refuse("the extension has no $CAPTION_BACKDROP->forGroupName()")
+    }
+    val host = block.method.definingClass
+    requireReachable(style, host)
+    addStyleHelper(host, GROUP_NAME_HELPER, style, FOR_GROUP_NAME)
+    addBefore(listOf(block)) {
+        "invoke-static/range { v${it.register} .. v${it.register} }, $host->$GROUP_NAME_HELPER($styleType)$styleType\n" +
+            "move-result-object v${it.register}"
     }
 }

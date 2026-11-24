@@ -232,11 +232,27 @@ val showFullPostTextPatch = patch(
                     patchLog.warning("${missing.message}, so a boxed name's date line keeps Facebook's look")
                     emptyList()
                 }
+                // A group reel's name and the line under it sit in a column of a component of their own (#490).
+                val group = blocks.firstOrNull()?.let { block ->
+                    try {
+                        findGroupNameBlock(block.columnType, findBoxStyle(tray.text.definingClass).background.substringAfterLast(')'))
+                    } catch (missing: PatchException) {
+                        patchLog.warning("${missing.message}, so a group reel's name keeps Facebook's look")
+                        null
+                    }
+                }
                 // Each header's column is boxed only where its name hooks went in: they say whose name it is.
                 val named = mutableSetOf<String>()
                 try {
                     addReelNameBoxes(tray.text, reel, lines, look)
                     named += reel.names.map { it.method.definingClass }
+                    if (group != null) {
+                        try {
+                            addGroupNameBox(tray.text, group)
+                        } catch (missing: PatchException) {
+                            patchLog.warning("${missing.message}, so a group reel's name keeps Facebook's look")
+                        }
+                    }
                 } catch (missing: PatchException) {
                     patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
                 }

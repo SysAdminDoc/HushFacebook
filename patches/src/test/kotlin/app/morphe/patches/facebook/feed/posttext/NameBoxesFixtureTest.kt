@@ -62,6 +62,7 @@ class NameBoxesFixtureTest {
         val feedLines: Set<String>,
         val feedLook: String,
         val blocks: Set<String>,
+        val group: String,
     )
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
@@ -77,7 +78,10 @@ class NameBoxesFixtureTest {
         // of `LX/03Gn;->invoke` (the setter `A1s` at 70, the line count at 85). Read 2026-11-23 (#490): the
         // reel header's `render` makes the list v10 at 471 for the column (`LX/02gk;`, style v27, at 498)
         // that takes the name (`A0B` at 479) and the date line under it, and the feed header's `A05` does
-        // the same with v2 at 61, `A04` at 69 and the column at 84 (style v11).
+        // the same with v2 at 61, `A04` at 69 and the column at 84 (style v11). Read 2026-11-24 (#490): a
+        // group reel's author line is `LX/0X81;` (FbShortsViewerVideoGroupAuthorKComponent), whose `render`
+        // makes the picture's `LX/02gk;` at 220 and the names' at 642 (style v97, list v105 = v10: the group's
+        // name row added at 347 and the row under it at 631).
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Hosts(
                 "LX/03rh;", 2, setOf("LX/0BEu;", "LX/0BF0;"), 3, "LX/09BS;", "LX/03GS;", setOf("LX/09BT;", "LX/02pb;"),
@@ -85,6 +89,7 @@ class NameBoxesFixtureTest {
                 "LX/02uV;->A04/p2/p1", setOf("LX/02uV;->A04@58/v0", "LX/03Gn;->invoke@70/v3"),
                 setOf("LX/02uV;->A04@74/v10", "LX/03Gn;->invoke@85/v0"), "LX/02uV;->A03:LX/02ta;",
                 setOf("LX/09BS;->render@498/v27, list LX/09BS;->render@472/v10", "LX/02uV;->A05@84/v11, list LX/02uV;->A05@62/v2"),
+                "LX/0X81;->render@642/v97",
             ),
         ),
     )
@@ -102,6 +107,26 @@ class NameBoxesFixtureTest {
     }
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
+
+    /**
+     * The classes of [bundle] naming [literal] in a method [wanted] takes: those holding it, and those asking a
+     * string table holding it for it (588's Android 9 build).
+     */
+    private fun namers(bundle: File, literal: String, wanted: (Method) -> Boolean): Map<String, ClassDef> {
+        val holders = FixtureDex.classesHolding(bundle, literal).filter { !it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
+        val tables = holders.values.flatMap { it.methods }.filter { isStringTable(it) && holdsString(it, literal) }
+            .associate { "${it.definingClass}->${it.name}" to tableIndices(it, literal) }
+        if (tables.isEmpty()) return holders
+        val askers = FixtureDex.methodsWhere(bundle, { true }) { method ->
+            val code = method.implementation?.instructions?.toList() ?: emptyList()
+            wanted(method) && code.indices.any { at ->
+                val index = tableIndexAt(code, at) ?: return@any false
+                val call = (code[at] as ReferenceInstruction).reference as MethodReference
+                index in tables["${call.definingClass}->${call.name}"].orEmpty()
+            }
+        }.map { it.definingClass }.toSet()
+        return holders + FixtureDex.classes(bundle, askers - holders.keys)
+    }
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -300,7 +325,9 @@ class NameBoxesFixtureTest {
                 val looks = FixtureDex.classes(bundle, anchors.values.flatMap { it.instanceFields }.map { it.type }
                     .filter { it.startsWith("LX/") }.toSet() - anchors.keys)
                     .filterValues { it.superclass == "Ljava/lang/Enum;" }
-                val classes = made + headerMade + backgrounds + styles + chain + tables + anchors + headerAskers + looks
+                // A group reel's author line, a component of its own (#490).
+                val groupAuthors = namers(bundle, GROUP_AUTHOR_COMPONENT) { it.name == "<clinit>" }
+                val classes = made + headerMade + backgrounds + styles + chain + tables + anchors + headerAskers + looks + groupAuthors
 
                 val context = PatchContexts.of(classes.values.toList() + extension)
                 val trayNames = context.findTrayNames()
@@ -311,6 +338,7 @@ class NameBoxesFixtureTest {
                 val feed = context.findFeedNames(trayNames.text, reel)
                 val style = context.findBoxStyle(builderType)
                 val blocks = context.findNameBlocks(reel, feed, style.background.substringAfterLast(')'))
+                val group = context.findGroupNameBlock(blocks.first().columnType, style.background.substringAfterLast(')'))
                 val trayHost = trayNames.places.map { it.method.definingClass }.toSet().single()
                 val openStoryHosts = openStory.map { it.method.definingClass }.toSet()
                 val header = reel.names.map { it.method.definingClass }.toSet().single()
@@ -327,8 +355,18 @@ class NameBoxesFixtureTest {
                         trayHost, trayNames.places.size, openStoryHosts, openStory.size, header, reel.props, marks, entries,
                         lineReads, lookField, "$feedHost->${feed.build.name}/p${feed.props}/p${feed.host}",
                         feed.names.map { it.toString() }.toSet(), feed.lines.map { it.toString() }.toSet(), feedLook,
-                        blocks.map { it.toString() }.toSet(),
+                        blocks.map { it.toString() }.toSet(), group.toString(),
                     ))
+                }
+                // A group reel's author line is neither header: it builds its names' column itself, of the
+                // headers' column type, and without its class there's no group name to box.
+                val groupHost = group.method.definingClass
+                assertTrue("$name: the group reel's author line is a post header", groupHost != header && groupHost != feed.build.definingClass)
+                assertEquals("$name: the group's names column isn't the headers' kind", blocks.first().columnType,
+                    ((group.method.code()[group.index] as ReferenceInstruction).reference as MethodReference).definingClass)
+                assertThrows("$name: a group reel's names were found without its author line", PatchException::class.java) {
+                    PatchContexts.of(classes.filterKeys { it !in groupAuthors.keys }.values.toList() + extension)
+                        .findGroupNameBlock(blocks.first().columnType, style.background.substringAfterLast(')'))
                 }
                 // Each header puts its name and the line under it into one column: the reel's and the
                 // feed's, of the same column type, each made from a list it made empty first.
@@ -414,10 +452,17 @@ class NameBoxesFixtureTest {
                     .distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}" }
                     .associateWith { it.code() }
                 val blockOriginals = blocks.associateWith { it.column.method.code() }
+                val groupOriginal = group.method.code()
                 context.addStoryNameBoxes(trayNames.text, trayNames.places, openStory)
                 context.addReelNameBoxes(trayNames.text, reel, lines, look)
                 context.addFeedNameBoxes(trayNames.text, feed)
                 context.addNameBlockBoxes(trayNames.text, blocks)
+                context.addGroupNameBox(trayNames.text, group)
+
+                // Right before the group's names column is made, its style goes through the author line's helper and back.
+                context.checkStyleHelper("$name: $group", groupHost, GROUP_NAME_HELPER, FOR_GROUP_NAME, style)
+                checkBefore("$name: $group", unpadded(groupOriginal), unpadded(context.method(group.method).code()), listOf(group),
+                    "$groupHost->$GROUP_NAME_HELPER($styleType)$styleType")
 
                 // Right after a column's list is made the extension hears a name block started, and right
                 // before the column is made its style goes through the header's helper and back.

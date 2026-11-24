@@ -160,6 +160,29 @@ public class CaptionBackdropTest {
                 + CaptionBackdrop.VIEWER_DATED + " 3", statusLine());
     }
 
+    /**
+     * A group reel's name and the line under it get one box from Dark box behind reel names, and keep
+     * Facebook's look with it off, with only the other name switches on, or Hushfacebook paused (#490).
+     */
+    @Test
+    public void aGroupReelsNameFollowsTheReelNameSwitch() {
+        Settings.DIM_FEED_VIDEO_NAMES.save(true);
+        Settings.DIM_STORY_NAMES.save(true);
+        assertNull("a group reel's name got a box with Dark box behind reel names off", CaptionBackdrop.forGroupName());
+        Settings.DIM_REEL_NAMES.save(true);
+        Drawable box = CaptionBackdrop.forGroupName();
+        assertNotNull("a group reel's name got no box with Dark box behind reel names on", box);
+        assertEquals("the group name's box isn't the reel name's black", CaptionBackdrop.COLOR,
+                ((GradientDrawable) box).getColor().getDefaultColor());
+        assertFalse("the group name's box carries padding", box.getPadding(new Rect()));
+        assertNotSame("two group reels share one drawable", box, CaptionBackdrop.forGroupName());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("a paused Hushfacebook still gave a group reel's name its box", CaptionBackdrop.forGroupName());
+        PauseForTests.resume();
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 2, 1 found, 0 missing. Counted: "
+                + CaptionBackdrop.GROUP_NAMED + " 2", statusLine());
+    }
+
     @Test
     public void pausedNoCaptionGetsABox() {
         Settings.DIM_OPEN_REEL_CAPTIONS.save(true);
