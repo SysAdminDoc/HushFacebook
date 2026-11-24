@@ -494,7 +494,7 @@ public class PatchFamilyTest {
                         + "hushfacebook_hide_reel_share_button=off, "
                         + "hushfacebook_show_reel_comment_button=off, hushfacebook_long_video_buttons=off, "
                         + "hushfacebook_show_reel_post_date=off, "
-                        + "hushfacebook_reel_post_date_style=AGO, hushfacebook_hide_reel_new_for_you=off, "
+                        + "hushfacebook_reel_post_date_style=AGO, hushfacebook_reel_post_date_after_caption=off, hushfacebook_hide_reel_new_for_you=off, "
                         + "hushfacebook_hide_reel_sound_button=off, hushfacebook_reel_speaker_above_menu=off, "
                         + "hushfacebook_hide_reel_audio_line=off, "
                         + "hushfacebook_hide_slow_connection_message=off, hushfacebook_hide_up_next=off, "

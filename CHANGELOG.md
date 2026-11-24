@@ -24,6 +24,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide Stars and gifts under posts` sits with the other hide switches under News feed. It takes out the button some creators' posts get for sending them Stars or gifts. It starts off. (#483)
 * `Show Videos in search` under Search puts a Videos chip in the row over search results, next to Posts, so a search can show just videos. It starts off. (#483)
 * `Share to Facebook chats` under Chats and Messenger puts `Facebook chats` in Android's share menu, for when your chats are inside Facebook. A photo or video you share there goes to your gallery, and text or a link goes to your clipboard. Then Facebook opens on your chats, so you can pick one and attach it or paste it there. Facebook carries Messenger's own share screens but none of the code behind them, so the share menu had no way into a chat before. It starts off. (#568)
+* `Post date after the caption` under Reels and Watch moves a reel's date to the end of its caption, for when the song, "AI content" and other labels crowd the line under the name. It works with `Show the post date on reels` on, and it starts off. (#490)
 
 ### Fixed
 

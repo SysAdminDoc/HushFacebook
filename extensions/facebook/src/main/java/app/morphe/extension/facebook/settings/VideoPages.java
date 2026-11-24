@@ -261,6 +261,10 @@ final class VideoPages {
                             + "who posted it. A change shows from the next reel.")));
             // Asked as each reel's date is worded, so a change shows from the next reel (#357).
             reels.addPreference(reelDateStyleRow(context));
+            // Asked as each reel's caption and footer are built, so no restart (#490).
+            reels.addPreference(toggle(context, Settings.REEL_POST_DATE_AFTER_CAPTION,
+                    L10n.t("With Show the post date on reels on, puts the date at the end of the caption instead of "
+                            + "under the name, where the song and other labels crowd it. A change shows from the next reel.")));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_NEW_FOR_YOU,
                     L10n.t("Takes \"New for you\", and other reasons Facebook gives for showing you a reel, off the line "
                             + "under its author, so the date and the song show right away. A change shows from the next reel.")));

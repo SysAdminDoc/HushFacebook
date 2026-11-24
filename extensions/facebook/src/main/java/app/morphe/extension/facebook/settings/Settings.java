@@ -1100,6 +1100,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_reel_post_date_style", ReelDateStyle.AGO);
 
     /**
+     * Post date after the caption: while {@link #SHOW_REEL_POST_DATE} is on, the date shows in the row
+     * Facebook draws after a reel's caption instead of on the line under its author, where the song
+     * and other labels crowd it ({@link app.morphe.extension.facebook.reels.ReelDeclutter#captionDateShows},
+     * #490). Off by default. A change shows from the next reel.
+     */
+    public static final BooleanSetting REEL_POST_DATE_AFTER_CAPTION =
+            new BooleanSetting("hushfacebook_reel_post_date_after_caption", FALSE);
+
+    /**
      * "New for you", the reason Facebook picked a reel, is left off the line under its author
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#slotNewForYou}, #520). Off by
      * default. A change shows from the next reel.

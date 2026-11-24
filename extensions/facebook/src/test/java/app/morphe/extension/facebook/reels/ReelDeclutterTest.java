@@ -81,6 +81,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_SHARE_BUTTON.resetToDefault();
         Settings.SHOW_REEL_COMMENT_BUTTON.resetToDefault();
         Settings.SHOW_REEL_POST_DATE.resetToDefault();
+        Settings.REEL_POST_DATE_AFTER_CAPTION.resetToDefault();
         Settings.HIDE_REEL_NEW_FOR_YOU.resetToDefault();
         Settings.REEL_POST_DATE_STYLE.resetToDefault();
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
@@ -651,6 +652,54 @@ public class ReelDeclutterTest {
         }
         Settings.SHOW_REEL_POST_DATE.save(false);
         assertTrue("turning the switch off didn't bring the caption date back", ReelDeclutter.captionDateShows(true));
+    }
+
+    /**
+     * #490: Post date after the caption moves the date to Facebook's row after a reel's caption,
+     * away from the song and the labels that crowd the line under the author. With it and the post
+     * date on, that row shows on every reel and the line under the author is Facebook's own again:
+     * no date, the song first and scrolling, the reason free to take the line, New for you where
+     * Facebook puts it, and Hide the audio line on reels hiding the whole line. With the post date
+     * off, paused, or once it's off again, it changes nothing.
+     */
+    @Test
+    public void thePostDateMovesAfterTheCaptionWithItsSwitch() {
+        assertFalse(Settings.REEL_POST_DATE_AFTER_CAPTION.defaultValue);
+        assertFalse("asked as each reel's caption and footer are built, so no restart",
+                Settings.REEL_POST_DATE_AFTER_CAPTION.rebootApp);
+        String song = "Some Band" + ReelDeclutter.DOT + "Original audio";
+        TreeJNI story = new TreeJNI().with("creation_time", System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60);
+
+        Settings.REEL_POST_DATE_AFTER_CAPTION.save(true);
+        assertFalse("the caption date showed with the post date off", ReelDeclutter.captionDateShows(false));
+        assertTrue(ReelDeclutter.captionDateShows(true));
+        assertTrue(ReelDeclutter.showsPostDate(true));
+        assertFalse(ReelDeclutter.showsPostDate(false));
+
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertTrue("the date didn't show after the caption", ReelDeclutter.captionDateShows(false));
+        assertTrue(ReelDeclutter.captionDateShows(true));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_AFTER_CAPTION));
+        assertFalse("the date showed under the author as well", ReelDeclutter.showsPostDate(true));
+        assertFalse(ReelDeclutter.showsPostDate(false));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_MOVED_OFF_AUTHOR));
+        assertSame("the song got the date in front of it as well", song, ReelDeclutter.audioLineText(song, story));
+        assertTrue("the song held still for a date it doesn't carry", ReelDeclutter.audioLineScrolls(1));
+        assertTrue("the reason lost its line to a date that isn't on it", ReelDeclutter.reasonAlone(true));
+        assertEquals("New for you moved for a date that isn't on the line", "[nfy, date, song]", slotted(0));
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertTrue("the audio line was drawn for a date that isn't on it", ReelDeclutter.hideAudioLine());
+        Settings.HIDE_REEL_AUDIO_LINE.save(false);
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the caption date showed while paused", ReelDeclutter.captionDateShows(false));
+        assertTrue("the date under the author went while paused", ReelDeclutter.showsPostDate(true));
+        PauseForTests.resume();
+
+        Settings.REEL_POST_DATE_AFTER_CAPTION.save(false);
+        assertFalse("turning it off left the date after the caption", ReelDeclutter.captionDateShows(true));
+        assertTrue("turning it off didn't bring the date back under the author", ReelDeclutter.showsPostDate(false));
+        assertEquals("3 weeks ago" + ReelDeclutter.DOT + song, ReelDeclutter.audioLineText(song, story));
     }
 
     /**
