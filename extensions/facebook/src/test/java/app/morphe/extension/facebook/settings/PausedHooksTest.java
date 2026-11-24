@@ -734,8 +734,16 @@ public class PausedHooksTest {
                 () -> ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsRemixAttribution"))) != null,
                 // The audio line goes under its own switch.
                 () -> ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsSoundtrackTitle"))) != null,
-                // So does the Reels tab's own audio line row.
-                ReelDeclutter::hideAudioLine,
+                // So does the Reels tab's own audio line row. With Show the post date on reels on as
+                // well the row stays to carry the date (#496), so it's off for this probe.
+                () -> {
+                    Settings.SHOW_REEL_POST_DATE.save(false);
+                    try {
+                        return ReelDeclutter.hideAudioLine();
+                    } finally {
+                        Settings.SHOW_REEL_POST_DATE.save(true);
+                    }
+                },
                 // And "Made with Edits" under the caption.
                 ReelDeclutter::hideEditsLabel,
                 // And the "Made with Edits" pill over a feed video (#314).
