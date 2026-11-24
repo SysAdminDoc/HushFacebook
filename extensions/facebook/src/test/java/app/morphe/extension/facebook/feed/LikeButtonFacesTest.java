@@ -18,6 +18,14 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.widget.FrameLayout;
 
+import com.facebook.graphql.model.GraphQLFeedback;
+import com.facebook.graphql.model.GraphQLStory;
+import com.facebook.graphql.modelutil.BaseModelWithTree;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -160,6 +168,8 @@ public class LikeButtonFacesTest {
         Settings.REACTIONS_ON_LIKE_BUTTON.resetToDefault();
         Settings.HIDE_POST_REACTIONS.resetToDefault();
         Settings.HIDE_COMMENT_REACTIONS.resetToDefault();
+        LikeButtonFaces.clearPending();
+        PostText.cachedMembers = null;
         HookStatus.clear();
     }
 
@@ -238,6 +248,71 @@ public class LikeButtonFacesTest {
         assertTrue("a Like button with no face of its own got no faces", LikeButtonFaces.isFaces(LikeButtonFaces.facesFor(unknown, "12")));
         assertEquals("the box isn't 2.4 icons wide", 16f * 2.4f,
                 (float) Double.longBitsToDouble(LikeButtonFaces.widthBits(faces, 16f)), 0.001f);
+    }
+
+    /** A post's three reads, its top reactions each used by [used] people. Counts every read. */
+    private static LikeButtonFaces.Readers post(int[] reads, int... used) {
+        GraphQLFeedback feedback = new GraphQLFeedback();
+        BaseModelWithTree top = new BaseModelWithTree(0);
+        List<Object> edges = new ArrayList<>();
+        for (int count : used) edges.add(new BaseModelWithTree(0).number("reaction_count", count));
+        return new LikeButtonFaces.Readers(story -> {
+            reads[0]++;
+            return story instanceof GraphQLStory ? feedback : null;
+        }, model -> model == feedback ? top : null, model -> model == top ? edges : null);
+    }
+
+    private static float width(Drawable faces) {
+        return (float) Double.longBitsToDouble(LikeButtonFaces.widthBits(faces, 16f));
+    }
+
+    /** The Like item's builder for one post: the post first, then the icon, then its return. */
+    private static Drawable build(Object story, LikeButtonFaces.Readers readers, Object icon) {
+        LikeButtonFaces.pendingStory(story, readers);
+        LikeButtonFaces.remember(icon, new Face());
+        LikeButtonFaces.clearPending();
+        return LikeButtonFaces.facesFor(icon, "12");
+    }
+
+    @Test
+    public void theBoxFitsThePostsFacesAtTheSameFaceSize() {
+        Settings.REACTIONS_ON_LIKE_BUTTON.save(true);
+        int[] reads = new int[1];
+        int[][] posts = {{4}, {9, 2}, {9, 2, 1}, {9, 2, 1, 1}, {7, 0}};
+        float[] boxes = {0.8f, 1.6f, 2.4f, 2.4f, 0.8f};
+        Glyph[] icons = new Glyph[posts.length];
+        for (int i = 0; i < posts.length; i++) {
+            // Every post's icon equals every other's, as Facebook's Like icons do.
+            icons[i] = new Glyph("thumb");
+            Drawable faces = build(new GraphQLStory(), post(reads, posts[i]), icons[i]);
+            assertEquals("the box of a post with reactions " + Arrays.toString(posts[i]),
+                    16f * boxes[i], width(faces), 0.001f);
+        }
+        for (int i = 0; i < posts.length; i++) {
+            assertEquals("a later post's count reached an earlier post's equal icon",
+                    16f * boxes[i], width(LikeButtonFaces.facesFor(icons[i], "12")), 0.001f);
+        }
+        assertFalse("one face and two faces read as the same icon",
+                build(new GraphQLStory(), post(reads, 3), new Glyph("thumb"))
+                        .equals(build(new GraphQLStory(), post(reads, 3, 3), new Glyph("thumb"))));
+
+        Glyph later = new Glyph("thumb");
+        LikeButtonFaces.remember(later, new Face());
+        assertEquals("an icon noted after the builder returned took a post's count",
+                16f * 2.4f, width(LikeButtonFaces.facesFor(later, "12")), 0.001f);
+        assertEquals("something that isn't a story got a count",
+                16f * 2.4f, width(build("props", post(reads, 1), new Glyph("thumb"))), 0.001f);
+        LikeButtonFaces.Readers unpatched = new LikeButtonFaces.Readers(
+                story -> StoryFlag.NOT_PATCHED, model -> StoryFlag.NOT_PATCHED, model -> StoryFlag.NOT_PATCHED);
+        assertEquals("an unpatched build got a count",
+                16f * 2.4f, width(build(new GraphQLStory(), unpatched, new Glyph("thumb"))), 0.001f);
+        assertEquals("a post nobody reacted to got a count",
+                16f * 2.4f, width(build(new GraphQLStory(), post(reads), new Glyph("thumb"))), 0.001f);
+
+        Settings.REACTIONS_ON_LIKE_BUTTON.save(false);
+        int before = reads[0];
+        LikeButtonFaces.pendingStory(new GraphQLStory(), post(reads, 1));
+        assertEquals("a post was read with the switch off", before, reads[0]);
     }
 
     @Test

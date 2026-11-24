@@ -12,6 +12,14 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
+import app.morphe.patches.facebook.feed.BASE_MODEL_WITH_TREE
+import app.morphe.patches.facebook.feed.GRAPHQL_STORY
+import app.morphe.patches.facebook.feed.aidetected.isModelListAccessor
+import app.morphe.patches.facebook.feed.fillStoryModelStub
+import app.morphe.patches.facebook.feed.modelAccessors
+import app.morphe.patches.facebook.feed.words.GRAPHQL_FEEDBACK
+import app.morphe.patches.facebook.feed.words.feedbackAccessors
+import app.morphe.patches.facebook.feed.words.hasPublicIntReader
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.reels.watchhistory.callRegisters
@@ -30,6 +38,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
@@ -62,6 +71,15 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * The faces at the end of the row are the facepile ReactionPreview.kt finds. Its draw already asks
  * the extension first, and now hands itself over too ([facepileAsk]), so the extension can hold it
  * back there and draw it on the button.
+ *
+ * That box fits the post's faces (read from 588, 2026-11-24). The feed's Like item builder
+ * (LX/039B;->A04) calls the plugin's look builders and reads its post as a GraphQLStory out of an
+ * Object field of its props parameter (LX/02df;->A01). First thing there, the patch hands that
+ * field to the extension, which counts the post's top reactions somebody used: GraphQLStory's
+ * feedback, the feedback's top_reactions (a TopReactionsConnection, A08()), its edges (TopReactionsEdge,
+ * LX/04I4;->A0i()) and each edge's reaction_count, as Facebook's facepile picks them
+ * (LX/03ls;->A01). The three accessors are found by field key and type tag and fill the
+ * extension's stubs. Every return of the builder clears the count again.
  */
 
 internal const val LIKE_BUTTON_PLUGIN =
@@ -80,6 +98,19 @@ private const val CONTEXT = "Landroid/content/Context;"
 private const val TEXT = "Ljava/lang/String;"
 private const val SCALE_TYPE = "Landroid/widget/ImageView\$ScaleType;"
 private const val WHAT = "Show reactions on the Like button does nothing in this build"
+internal const val FACES_STORY = "$LIKE_BUTTON_FACES->pendingStory(Ljava/lang/Object;)V"
+internal const val FACES_CLEAR = "$LIKE_BUTTON_FACES->clearPending()V"
+/** The extension's stubs a post's faces are counted through. */
+internal const val FACES_FEEDBACK_STUB = "feedback"
+internal const val FACES_TOP_STUB = "topReactions"
+internal const val FACES_EDGES_STUB = "reactionEdges"
+internal const val TOP_REACTIONS_FIELD = "top_reactions"
+internal const val TOP_REACTIONS_TYPE = "TopReactionsConnection"
+internal const val EDGES_FIELD = "edges"
+internal const val TOP_REACTION_EDGE_TYPE = "TopReactionsEdge"
+private const val OBJECT = "Ljava/lang/Object;"
+private const val WIDE_BOX = "Show reactions on the Like button keeps a box for three faces"
+private val RETURNS = setOf(Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT)
 
 /** What the Like button's plugin builds its look from, read off its own code. */
 internal class LikeLook(
@@ -431,6 +462,95 @@ private fun BytecodePatchContext.widenFaces(box: FacesBox) {
     )
 }
 
+/** Where a feed post's Like item builder reads its post: the register of the parameter holding it, and its field. */
+internal class StorySource(val builder: Method, val holder: Int, val story: FieldReference)
+
+/**
+ * The [StorySource] of [method], or null: a method outside the plugin that calls the plugin's look
+ * builders and reads a GraphQLStory out of one Object field of a parameter's class, with a register
+ * of its own to read it into first thing.
+ */
+internal fun storySource(found: LikeLook, method: Method): StorySource? {
+    if (method.definingClass == LIKE_BUTTON_PLUGIN) return null
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val builders = found.builders.map { it.smali() }.toSet()
+    if (code.none { it.methodRef()?.let { ref -> "$ref" in builders } == true }) return null
+    val params = method.parameterTypes.map(CharSequence::toString)
+    val fields = code.indices.mapNotNull { at ->
+        val field = (code[at] as? ReferenceInstruction)?.reference as? FieldReference
+        if (field == null || code[at].opcode != Opcode.IGET_OBJECT || field.type != OBJECT) return@mapNotNull null
+        if (params.count { it == field.definingClass } != 1) return@mapNotNull null
+        val casts = code.subList(at + 1, minOf(code.size, at + 4)).any {
+            it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as? TypeReference)?.type == GRAPHQL_STORY
+        }
+        if (casts) field else null
+    }.distinctBy { it.smali() }
+    val story = fields.singleOrNull() ?: return null
+    val incoming = params.sumOf { if (it == "J" || it == "D") 2 else 1 } + if (isStatic(method)) 0 else 1
+    if (method.implementation!!.registerCount <= incoming) return null
+    return StorySource(method, parameterRegister(method, params.indexOf(story.definingClass)), story)
+}
+
+/** The three accessors a post's faces are counted through. */
+internal class FaceAccessors(val feedback: Method, val topReactions: Method, val edges: Method)
+
+/**
+ * GraphQLStory's feedback, the feedback's top_reactions and their edges, each the one accessor of
+ * its field key and type tag, or null with why in [why]. [classOf] loads a type.
+ */
+internal fun faceAccessors(classOf: (String) -> ClassDef?, why: (String) -> Unit): FaceAccessors? {
+    val story = classOf(GRAPHQL_STORY) ?: return null.also { why("GraphQLStory isn't in this build") }
+    val feedbacks = feedbackAccessors(story)
+    val feedback = feedbacks.singleOrNull() ?: return null.also { why("expected one feedback accessor on GraphQLStory, found ${feedbacks.size}") }
+    val feedbackClass = classOf(GRAPHQL_FEEDBACK) ?: return null.also { why("GraphQLFeedback isn't in this build") }
+    val tops = modelAccessors(feedbackClass, TOP_REACTIONS_FIELD, TOP_REACTIONS_TYPE)
+    val top = tops.singleOrNull() ?: return null.also { why("expected one $TOP_REACTIONS_FIELD accessor on GraphQLFeedback, found ${tops.size}") }
+    val connection = classOf(top.returnType) ?: return null.also { why("${top.returnType} isn't in this build") }
+    val lists = connection.methods.filter { isModelListAccessor(it, connection.type, EDGES_FIELD, TOP_REACTION_EDGE_TYPE) }
+    val edges = lists.singleOrNull() ?: return null.also { why("expected one $EDGES_FIELD accessor on ${connection.type}, found ${lists.size}") }
+    val treeModel = classOf(BASE_MODEL_WITH_TREE) ?: return null.also { why("BaseModelWithTree isn't in this build") }
+    if (!hasPublicIntReader(treeModel)) return null.also { why("BaseModelWithTree has no public getCachedInt(int)") }
+    return FaceAccessors(feedback, top, edges)
+}
+
+/**
+ * The builder hands the extension its post first thing, read into v0 (a register of its own, not
+ * yet in use) from the holder parameter's field, and clears it again at every return.
+ */
+private fun BytecodePatchContext.storyFirst(source: StorySource) {
+    val method = mutableClassDefBy(source.builder.definingClass).findMutableMethodOf(source.builder)
+    val returns = method.implementation!!.instructions.withIndex().filter { it.value.opcode in RETURNS }.map { it.index }
+    for (index in returns.sortedDescending()) method.addInstructionsAtControlFlowLabel(index, "invoke-static { }, $FACES_CLEAR")
+    method.addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, v${source.holder}
+            if-eqz v0, :read
+            iget-object v0, v0, ${source.story.smali()}
+            :read
+            invoke-static { v0 }, $FACES_STORY
+        """,
+    )
+}
+
+/**
+ * Sizes the faces' box to the post's faces: the stubs filled and each [StorySource] patched, or
+ * nothing with why logged, which keeps the box wide enough for three.
+ */
+private fun BytecodePatchContext.facesCounted(found: LikeLook) {
+    val warn = { why: String -> patchLog.warning("$PATCH: $why. $WIDE_BOX") }
+    val sources = mutableListOf<StorySource>()
+    classDefForEachReferencing(types = listOf(LIKE_BUTTON_PLUGIN)) { classDef ->
+        classDef.methods.mapNotNullTo(sources) { storySource(found, it) }
+    }
+    if (sources.isEmpty()) return warn("no Like item builder reads its post")
+    val accessors = faceAccessors(::classDefByOrNull, warn) ?: return
+    fillStoryModelStub(LIKE_BUTTON_FACES, FACES_FEEDBACK_STUB, accessors.feedback)
+    fillStoryModelStub(LIKE_BUTTON_FACES, FACES_TOP_STUB, accessors.topReactions)
+    fillStoryModelStub(LIKE_BUTTON_FACES, FACES_EDGES_STUB, accessors.edges)
+    for (source in sources.distinctBy { it.builder.smali() }) storyFirst(source)
+}
+
 /**
  * Show reactions on the Like button: the helpers and their calls in the plugin and the litho
  * footer, the swap in the button renderer's constructors, and the wider box in its drawing. A
@@ -472,4 +592,5 @@ internal fun BytecodePatchContext.reactionsOnLikeButton() {
     for ((site, looks) in built) facesAfterLooks(found, site, looks)
     facesAtRenderers(found, inits)
     widenFaces(box)
+    facesCounted(found)
 }

@@ -17,7 +17,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -46,6 +48,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * back there while the row's Like button is a {@link Faces}. The button then draws them in its own
  * box.
  *
+ * <p>The box is as wide as the post's faces need. The builder of a feed post's Like item hands
+ * {@link #pendingStory} the post first: its top reactions that someone used, three at most, are the
+ * faces Facebook's facepile shows, and every icon the builder notes carries that count to its
+ * button. Faces don't change size with the count, so a post with one face has no gap before it. A
+ * count that can't be read keeps the box wide enough for three.
+ *
  * <p>A row whose end shows something else, like a video's view count, has no faces to move, so its
  * button shows the one face Facebook would give it: Like, or the viewer's own reaction. Hide the
  * reaction preview on posts overrules this switch, and a post with no count keeps its thumb. Off,
@@ -58,8 +66,18 @@ public final class LikeButtonFaces {
     static final String BUTTON = "reactions on the Like button";
     /** Counted under the patch's name each time a row's faces are held back for its Like button. */
     static final String MOVED = "Reaction faces moved to the Like button";
-    /** How wide the faces' box is, in icon heights: three faces, each overlapping the one before. */
+    /** How wide the faces' box is, in icon heights, when the post's count of faces isn't known. */
     static final float BOX_WIDTH = 2.4f;
+    /** The most faces Facebook's facepile shows. */
+    static final int MAX_FACES = 3;
+    /** Each face's share of the box, in icon heights, so a box for three is the wide one. */
+    static final float FACE_WIDTH = BOX_WIDTH / MAX_FACES;
+    /** A count of faces that wasn't read. */
+    static final int UNKNOWN = 0;
+    /** The GraphQL field of a top reaction edge that says how many people used it. */
+    static final int REACTION_COUNT_KEY = "reaction_count".hashCode();
+    /** How many of the latest Like icons keep their post's count of faces. */
+    private static final int COUNTED = 128;
     /** How far up from a drawable's host a row's LithoView is looked for. */
     private static final int HOPS = 40;
     private static final String FAMILY = FamilyNames.POST_PROMPTS;
@@ -77,6 +95,125 @@ public final class LikeButtonFaces {
      * reaction, or Like. Builders run on Litho's layout threads, so it's read and written locked.
      */
     private static final Map<Object, Drawable> likeIcons = new WeakHashMap<>();
+    /**
+     * The latest Like icons with their post's count of faces, matched by identity: Facebook's icon
+     * equals every other icon of the same reaction, whatever the post. Read and written locked.
+     */
+    private static final WeakReference<?>[] countedIcons = new WeakReference<?>[COUNTED];
+    private static final int[] iconCounts = new int[COUNTED];
+    private static int nextCounted;
+    /** The count of faces of the post whose Like item this thread is building. */
+    private static final ThreadLocal<Integer> pending = new ThreadLocal<>();
+
+    /** The three reads a post's faces are counted through: the patch's accessors, or a test's. */
+    static final class Readers {
+        final StoryFlag.Accessor feedback;
+        final StoryFlag.Accessor topReactions;
+        final StoryFlag.Accessor edges;
+
+        Readers(StoryFlag.Accessor feedback, StoryFlag.Accessor topReactions, StoryFlag.Accessor edges) {
+            this.feedback = feedback;
+            this.topReactions = topReactions;
+            this.edges = edges;
+        }
+    }
+
+    private static final Readers PATCHED =
+            new Readers(LikeButtonFaces::feedback, LikeButtonFaces::topReactions, LikeButtonFaces::reactionEdges);
+
+    /** Injection point, filled in by the patch: a GraphQLStory's {@code feedback}, or null. */
+    public static Object feedback(Object story) {
+        return StoryFlag.NOT_PATCHED;
+    }
+
+    /** Injection point, filled in by the patch: a GraphQLFeedback's {@code top_reactions}, or null. */
+    public static Object topReactions(Object feedback) {
+        return StoryFlag.NOT_PATCHED;
+    }
+
+    /** Injection point, filled in by the patch: a top reactions connection's {@code edges}, or null. */
+    public static Object reactionEdges(Object topReactions) {
+        return StoryFlag.NOT_PATCHED;
+    }
+
+    /**
+     * The hook first thing in the builder of a feed post's Like item, handed what it reads as the
+     * post's GraphQLStory: the post's count of faces is read now, for the icons the builder notes.
+     */
+    public static void pendingStory(@Nullable Object story) {
+        pendingStory(story, PATCHED);
+    }
+
+    static void pendingStory(@Nullable Object story, Readers readers) {
+        pending.remove();
+        try {
+            if (story == null || !on()) return;
+            int faces = facesOf(story, readers);
+            if (faces != UNKNOWN) pending.set(faces);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, BUTTON, failure);
+        }
+    }
+
+    /** The hook at every return of that builder: icons noted after it aren't this post's. */
+    public static void clearPending() {
+        pending.remove();
+    }
+
+    /**
+     * How many faces Facebook's facepile shows for [story]: the top reactions somebody used, three
+     * at most, the way its own facepile picks them. {@link #UNKNOWN} when they can't be read.
+     */
+    static int facesOf(Object story, Readers readers) throws Exception {
+        PostText.Members found = PostText.members();
+        Class<?> storyClass = found.story;
+        Class<?> treeModel = found.treeModel;
+        if (storyClass == null || !storyClass.isInstance(story) || FeedFilter.released(story)) return UNKNOWN;
+        Method cachedInt = PostReactions.cachedInt(treeModel);
+        if (cachedInt == null) return UNKNOWN;
+        Object feedback = live(readers.feedback.model(story), "the feedback accessor");
+        Object top = feedback == null ? null : live(readers.topReactions.model(feedback), "the top reactions accessor");
+        Object edges = top == null ? null : readers.edges.model(top);
+        if (edges == StoryFlag.NOT_PATCHED) HookStatus.missingMember(FAMILY, "method", "top_reactions", "the edges accessor");
+        if (!(edges instanceof List)) return UNKNOWN;
+        int faces = 0;
+        for (Object edge : (List<?>) edges) {
+            if (!treeModel.isInstance(edge) || FeedFilter.released(edge)) continue;
+            Object used = cachedInt.invoke(edge, REACTION_COUNT_KEY);
+            if (used instanceof Integer && (Integer) used > 0 && ++faces == MAX_FACES) break;
+        }
+        return faces;
+    }
+
+    /** A model a read answered, or null when there's none, it's released or the read wasn't patched. */
+    @Nullable
+    private static Object live(@Nullable Object model, String accessor) {
+        if (model == StoryFlag.NOT_PATCHED) {
+            HookStatus.missingMember(FAMILY, "method", "a post's reactions", accessor);
+            return null;
+        }
+        return model == null || FeedFilter.released(model) ? null : model;
+    }
+
+    /** Notes [icon] as one of a post with [faces] faces. */
+    private static void count(Object icon, int faces) {
+        synchronized (countedIcons) {
+            countedIcons[nextCounted] = new WeakReference<>(icon);
+            iconCounts[nextCounted] = faces;
+            nextCounted = (nextCounted + 1) % COUNTED;
+        }
+    }
+
+    /** The count of faces [icon]'s post was noted with, or {@link #UNKNOWN}. */
+    static int countOf(Object icon) {
+        synchronized (countedIcons) {
+            for (int i = 0; i < COUNTED; i++) {
+                WeakReference<?> held = countedIcons[i];
+                if (held != null && held.get() == icon) return iconCounts[i];
+            }
+        }
+        return UNKNOWN;
+    }
 
     /** The switch, on and ready, and not overruled by Hide the reaction preview on posts. */
     static boolean on() {
@@ -102,6 +239,8 @@ public final class LikeButtonFaces {
             synchronized (likeIcons) {
                 likeIcons.put(icon, face);
             }
+            Integer faces = pending.get();
+            if (faces != null) count(icon, faces);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, BUTTON, failure);
         }
@@ -123,7 +262,7 @@ public final class LikeButtonFaces {
                 face = likeIcons.get(icon);
             }
             HookStatus.bound(FAMILY, BUTTON);
-            return new Faces(face);
+            return new Faces(face, countOf(icon));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, BUTTON, failure);
             return null;
@@ -144,9 +283,14 @@ public final class LikeButtonFaces {
         return icon instanceof Faces;
     }
 
-    /** The width of a faces icon's box for an icon [size] dp tall, in the bits Facebook's style takes. */
+    /**
+     * The width of a faces icon's box for an icon [size] dp tall, in the bits Facebook's style takes:
+     * room for its post's faces, or for three when their count isn't known.
+     */
     public static long widthBits(@Nullable Drawable icon, float size) {
-        return Double.doubleToRawLongBits(size * BOX_WIDTH);
+        int faces = icon instanceof Faces ? ((Faces) icon).faces : UNKNOWN;
+        float width = faces >= 1 && faces <= MAX_FACES ? FACE_WIDTH * faces : BOX_WIDTH;
+        return Double.doubleToRawLongBits(size * width);
     }
 
     /**
@@ -240,15 +384,23 @@ public final class LikeButtonFaces {
     /**
      * The Like button's icon while the switch is on: its row's faces, right-aligned against the
      * count and scaled to the icon's height, or the one face Facebook would have shown until the row
-     * has faces to give. Equal to another for the same face, so a button drawn again keeps it.
+     * has faces to give. Equal to another for the same face and count of faces, so a button drawn
+     * again keeps it.
      */
     static final class Faces extends Drawable {
         @Nullable private final Drawable source;
         @Nullable private final Drawable face;
+        /** How many faces the post's facepile shows, or {@link #UNKNOWN}. */
+        final int faces;
 
         Faces(@Nullable Drawable source) {
+            this(source, UNKNOWN);
+        }
+
+        Faces(@Nullable Drawable source, int faces) {
             this.source = source;
             this.face = own(source);
+            this.faces = faces;
         }
 
         @Nullable
@@ -317,12 +469,12 @@ public final class LikeButtonFaces {
 
         @Override
         public boolean equals(Object other) {
-            return other instanceof Faces && ((Faces) other).source == source;
+            return other instanceof Faces && ((Faces) other).source == source && ((Faces) other).faces == faces;
         }
 
         @Override
         public int hashCode() {
-            return System.identityHashCode(source);
+            return System.identityHashCode(source) * 31 + faces;
         }
     }
 }

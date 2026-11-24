@@ -43,6 +43,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * A reel's name, caption and buttons sit above the tab bar again after `Rounded tab bar` or `Hide the tab bar on the Reels tab` has been on. Turning either one off left every reel running a tab bar's height too tall, so the bottom of it hid behind the bar. (#551)
 * The eye on stories stays on seen after you tap it. A second tap used to take the mark back, which was easy to do by accident, so now the eye dims after one tap and the mark goes with Facebook's next batch like before. (#557)
 * `Post menu items` can take the `Skip silent parts` row out of a reel's More menu now. It joins the list once a reel's menu has shown it. A few reel rows that read like "Fb control type view edit privacy" on the list read plainly too. (#475)
+* `Show reactions on the Like button` fits the box to the faces each post has. A post with one or two kinds of reactions got an empty gap before the faces, and its faces came out bigger than on a post with three. Now there's no gap and the faces are the same size everywhere. (#541)
 
 ## 0.24.0 (2026-11-22)
 
