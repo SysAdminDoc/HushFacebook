@@ -1173,7 +1173,9 @@ $it
  * **consecutive** registers, so its block sits high at `v40` and each value is moved up once it is
  * built. The accessibility actions (two since 586) go in as null, as Facebook's own sidebar button
  * passes them: an action makes the button long-clickable, and its long press opened an empty gray
- * pop-up (#518).
+ * pop-up (#518). The first Boolean is no too. On 588 (arm64 LX/09Hd;->A0D) yes asks for the label
+ * Facebook shows on a long press while the phone's font size is above default, and that label is
+ * the caption, which is blank here, so the long press opened an empty gray box (#518 again).
  * `new-instance` and `const-string` take 8-bit registers, so those can write high directly.
  *
  * The six parameters are the session, the scoped context, the player, the reel's story and the
@@ -1236,7 +1238,7 @@ ${(1..shift).joinToString("") { "        move-object/from16 v${42 + it}, v2\n" }
 
         move-object/from16 v40, v6
         sget-object v41, ${mode.definingClass}->${mode.name}:${mode.type}
-        sget-object v${46 + shift}, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
+        sget-object v${46 + shift}, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
         sget-object v${47 + shift}, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
         const-string v${48 + shift}, "$testId"
         const-string v${49 + shift}, "$CAPTION"
