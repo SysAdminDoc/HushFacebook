@@ -62,8 +62,18 @@ public final class PostMenuItems {
     /** Counted under the patch's name each time a reel's More sheet loses a row. */
     static final String REEL_HIDDEN = "Reel menu row kept out";
 
-    /** The ids Hushfacebook's own reel rows carry. Each of those has a switch of its own. */
+    /** The ids Hushfacebook's own reel rows carry. Each of those has a switch of its own, but one. */
     static final String OWN_ROW = "hushfacebook_";
+
+    /**
+     * Skip silent parts' row, the own row with no switch of its own besides the feature's, so the
+     * list can keep it out like one of Facebook's (#475). The id is SkipSilenceRow.kt's SKIP_ROW_ID.
+     */
+    static final String SKIP_SILENCE_ROW = "hushfacebook_skip_silence";
+    static final String SKIP_SILENT_PARTS = "SKIP_SILENT_PARTS";
+
+    /** What a few reel kinds still start with when their id had a wrapping the list doesn't take off. */
+    private static final String[] KIND_WRAPS = {"FB_CONTROL_TYPE_", "FB_CONTROL_"};
 
     /** What a reel row id starts and ends with around its kind, taken off in this order. */
     private static final String[] REEL_ID_STARTS = {"fds_control_type_", "fds_control_", "fds_"};
@@ -295,11 +305,12 @@ public final class PostMenuItems {
 
     /**
      * The kind a reel row's [id] stands for: SEE_MORE and SEE_LESS for Interested and Not interested,
-     * else the id without its fds_control_ wrapping, in capitals. Null for Hushfacebook's own rows
-     * and for an id that leaves no kind.
+     * else the id without its fds_control_ wrapping, in capitals. SKIP_SILENT_PARTS for Skip silent
+     * parts' row. Null for Hushfacebook's other rows and for an id that leaves no kind.
      */
     @Nullable
     static String reelKind(@Nullable String id) {
+        if (SKIP_SILENCE_ROW.equals(id)) return SKIP_SILENT_PARTS;
         if (id == null || id.startsWith(OWN_ROW)) return null;
         switch (id) {
             case "fds_control_type_preference_signal_positive": return "SEE_MORE";
@@ -652,13 +663,24 @@ public final class PostMenuItems {
             case "BEST_GUESS_POST": return L10n.t("Quality settings");
             case "OTHER": return L10n.t("Request community note");
             case "BUG": return L10n.t("Something went wrong");
+            case SKIP_SILENT_PARTS: return L10n.t("Skip silent parts");
             default: return readable(kind);
         }
     }
 
-    /** [kind] in words, as ASK_META_AI reads "Ask meta ai". */
+    /**
+     * [kind] in words, as ASK_META_AI reads "Ask meta ai", without an fb_control_type_ wrapping
+     * the kind kept (#475): FB_CONTROL_TYPE_VIEW_EDIT_PRIVACY reads "View edit privacy".
+     */
     static String readable(String kind) {
-        String words = kind.replace('_', ' ').trim().toLowerCase(Locale.ROOT);
+        String bare = kind;
+        for (String wrap : KIND_WRAPS) {
+            if (bare.startsWith(wrap) && bare.length() > wrap.length()) {
+                bare = bare.substring(wrap.length());
+                break;
+            }
+        }
+        String words = bare.replace('_', ' ').trim().toLowerCase(Locale.ROOT);
         return words.isEmpty() ? kind : Character.toUpperCase(words.charAt(0)) + words.substring(1);
     }
 

@@ -365,6 +365,9 @@ public class PostMenuItemsTest {
         assertEquals("Quality settings", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_best_guess_post_control")));
         assertEquals("Request community note", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_other")));
         assertEquals("Something went wrong", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_bug")));
+        // #475: a kind that kept an fb_control_type_ wrapping reads without it, and Skip silent parts by its title.
+        assertEquals("View edit privacy", PostMenuItems.label(PostMenuItems.reelKind("fb_control_type_view_edit_privacy")));
+        assertEquals("Skip silent parts", PostMenuItems.label(PostMenuItems.reelKind("hushfacebook_skip_silence")));
     }
 
     /**
@@ -508,6 +511,8 @@ public class PostMenuItemsTest {
         assertEquals("AUDIO_AND_LANGUAGE", PostMenuItems.reelKind("fds_audio_and_language_control"));
         assertEquals("LEGAL_REPORT", PostMenuItems.reelKind("legal_report"));
         assertNull("Hushfacebook's own row", PostMenuItems.reelKind("hushfacebook_download_reel"));
+        assertEquals("Skip silent parts has no switch of its own (#475)", "SKIP_SILENT_PARTS",
+                PostMenuItems.reelKind("hushfacebook_skip_silence"));
         assertNull(PostMenuItems.reelKind("fds_control_"));
         assertNull(PostMenuItems.reelKind("9 lives"));
         assertNull(PostMenuItems.reelKind(null));
@@ -536,6 +541,21 @@ public class PostMenuItemsTest {
         String line = statusLine(FamilyNames.POST_MENU_ITEMS);
         assertNotNull(String.join("\n", HookStatus.report()), line);
         assertTrue(line, line.contains(PostMenuItems.REEL_HIDDEN + " 3"));
+    }
+
+    /** #475: Skip silent parts' row is offered once a sheet showed it, and leaves the sheet when picked. */
+    @Test
+    public void skipSilentPartsIsOfferedAndLeavesTheSheetWhenPicked() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        ReelRow skip = new ReelRow("Skip silent parts: on", "hushfacebook_skip_silence");
+        List<Object> rows = Arrays.asList(reelSpeed, skip, ownDownload, captions);
+        assertSame("nothing picked keeps it", rows, PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertTrue(PostMenuItems.choices().contains("SKIP_SILENT_PARTS"));
+
+        PostMenuItems.hide(Collections.singletonList("SKIP_SILENT_PARTS"));
+        assertEquals(Arrays.asList(reelSpeed, ownDownload, captions), PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertTrue(PostMenuItems.reelRowHidden(skip, REEL_MODEL, "A04"));
+        assertFalse("the Download row keeps its own switch", PostMenuItems.reelRowHidden(ownDownload, REEL_MODEL, "A04"));
     }
 
     @Test
