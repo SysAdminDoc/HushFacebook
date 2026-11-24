@@ -37,10 +37,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -51,7 +54,9 @@ import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.stories.StorySeenButton;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.Setting;
+import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
 /**
  * Burn-in guard (#288), HushGram's ported to Facebook: keeps a reel's fixed controls from sitting on
@@ -149,6 +154,8 @@ public final class BurnInGuard {
     static final long SETTLE_MS = 600L;
     /** The most views looked at in one search, so a strange tree can't make a long one. */
     static final int MAX_VIEWS = 4000;
+    /** The views the Debug report's story lines name from each of kept and dimmed, biggest first. */
+    static final int REPORT_VIEWS = 16;
 
     /** Where the content goes, in steps: where Facebook put it, then once around it. */
     private static final int[][] PLACES = {
@@ -174,6 +181,21 @@ public final class BurnInGuard {
     private static final Focus FOCUS = new Focus();
     private static final Layout LAYOUT = new Layout();
     private static final Draw DRAW = new Draw();
+
+    /**
+     * The Debug report's look at the story viewer (#523): what the last dim pass there kept bright and
+     * what it dimmed, each view by class, resource name, box, share of the window, and whether it
+     * takes taps. Recorded only while Debug logging is on. No text or description on the screen is
+     * read.
+     */
+    public static final LogBufferManager.ReportSection REPORT = new LogBufferManager.ReportSection() {
+        @Override public String title() { return "BURN-IN GUARD"; }
+        @Override public List<String> lines() { return report(SystemClock.elapsedRealtime()); }
+        @Override public boolean isAppState() { return true; }
+    };
+    /** The story viewer's last dim pass, as the report writes it, or null before one. */
+    private static volatile List<String> storyLayout;
+    private static volatile long storyLayoutAt;
 
     private static Handler handler;
     /** The activity in front, the one every pass looks at. */
@@ -596,8 +618,71 @@ public final class BurnInGuard {
             if (view != null && view.getAlpha() == entry.getValue()[1]) view.setAlpha(entry.getValue()[0]);
             entries.remove();
         }
+        if (frontStory) noteStoryLayout(decor, surfaces, beside);
         float factor = factor(level());
         for (View view : beside) dim(view, factor);
+    }
+
+    /** The Debug report's story section: nothing until the story viewer has dimmed with Debug logging on. */
+    static List<String> report(long now) {
+        List<String> layout = storyLayout;
+        if (layout == null) return Collections.emptyList();
+        List<String> out = new ArrayList<>();
+        out.add(String.format(Locale.ROOT, "story viewer, last dimmed %d s before this report",
+                Math.max(0L, (now - storyLayoutAt) / 1000L)));
+        out.addAll(layout);
+        return out;
+    }
+
+    /** Keeps what a dim pass in the story viewer kept bright and dimmed, with Debug logging on (#523). */
+    private static void noteStoryLayout(View decor, List<View> kept, Collection<View> dimmed) {
+        try {
+            if (!Utils.settingsReady() || !BaseSettings.DEBUG.get()) return;
+            long window = (long) decor.getWidth() * decor.getHeight();
+            if (window <= 0L) return;
+            List<String> lines = new ArrayList<>();
+            lines.add(String.format(Locale.ROOT, "window %dx%d", decor.getWidth(), decor.getHeight()));
+            for (View view : biggest(kept)) lines.add("kept: " + describe(view, window));
+            for (View view : biggest(dimmed)) lines.add("dimmed: " + describe(view, window));
+            storyLayout = lines;
+            storyLayoutAt = SystemClock.elapsedRealtime();
+        } catch (Throwable ignored) {
+            // The report goes without these lines rather than the pass going without its dim.
+        }
+    }
+
+    /** The first {@link #REPORT_VIEWS} of [views] by size, biggest first. */
+    private static List<View> biggest(Collection<View> views) {
+        List<View> sorted = new ArrayList<>(views);
+        Collections.sort(sorted, new Comparator<View>() {
+            @Override
+            public int compare(View a, View b) {
+                return Long.compare((long) b.getWidth() * b.getHeight(), (long) a.getWidth() * a.getHeight());
+            }
+        });
+        return sorted.size() > REPORT_VIEWS ? sorted.subList(0, REPORT_VIEWS) : sorted;
+    }
+
+    /** A view by class and resource name, its box in the window, its share of the window, and whether it takes taps. */
+    static String describe(View view, long window) {
+        String name = view.getClass().getName();
+        if (name.startsWith("android.") || name.startsWith("androidx.")) name = view.getClass().getSimpleName();
+        StringBuilder text = new StringBuilder(name);
+        if (view.getId() != View.NO_ID) {
+            try {
+                text.append(' ').append(view.getResources().getResourceEntryName(view.getId()));
+            } catch (Throwable ignored) {
+                // An id made at run time has no name.
+            }
+        }
+        int[] at = new int[2];
+        view.getLocationInWindow(at);
+        long area = (long) view.getWidth() * view.getHeight();
+        text.append(String.format(Locale.ROOT, " [%d,%d %dx%d, %d%%]", at[0], at[1], view.getWidth(),
+                view.getHeight(), Math.round(100.0 * area / window)));
+        if (view.isClickable()) text.append(", takes taps");
+        if (view instanceof ViewGroup) text.append(", ").append(((ViewGroup) view).getChildCount()).append(" children");
+        return text.toString();
     }
 
     @Nullable
@@ -1135,5 +1220,6 @@ public final class BurnInGuard {
         MOVED.clear();
         OVERLAYS.clear();
         WRAPPED.clear();
+        storyLayout = null;
     }
 }

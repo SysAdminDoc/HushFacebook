@@ -45,11 +45,14 @@ import org.robolectric.shadows.ShadowSystemClock;
 import org.robolectric.util.ReflectionHelpers;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
@@ -304,6 +307,61 @@ public class BurnInGuardTest {
         after(IDLE * 3);
         assertEquals("the header", 1f, card[3].getAlpha(), 0f);
         assertEquals("the reply bar", 1f, card[5].getAlpha(), 0f);
+    }
+
+    /**
+     * With Debug logging on, the Debug report says what a story's dim pass kept bright and what it
+     * dimmed, biggest first, each with its box and whether it takes taps (#523: a note story came
+     * out blurred, and the report shows which of its views the guard took for controls). Off,
+     * nothing is kept.
+     */
+    @Test
+    public void theDebugReportSaysWhatAStoryKeptAndDimmed() {
+        ActivityController<StoryViewerActivity> story = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        try {
+            Activity screen = story.get();
+            View[] card = photoStory(screen);
+            View decor = screen.getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(W, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(H, View.MeasureSpec.EXACTLY));
+            decor.layout(0, 0, W, H);
+            story.windowFocusChanged(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+
+            BurnInGuard.resumed(screen);
+            after(IDLE + 100);
+            assertEquals("dimmed", BurnInGuard.IDLE_LEVEL, card[3].getAlpha(), 0f);
+            assertTrue("nothing kept with Debug logging off", BurnInGuard.REPORT.lines().isEmpty());
+
+            BaseSettings.DEBUG.save(true);
+            after(BurnInGuard.KEEP_MS + 100);
+            List<String> lines = BurnInGuard.REPORT.lines();
+            assertEquals("BURN-IN GUARD", BurnInGuard.REPORT.title());
+            assertTrue(BurnInGuard.REPORT.isAppState());
+            assertTrue(lines.get(0), lines.get(0).startsWith("story viewer, last dimmed 0 s before this report"));
+            assertEquals("window " + W + "x" + H, lines.get(1));
+            List<String> kept = new ArrayList<>();
+            List<String> dimmed = new ArrayList<>();
+            for (String line : lines) {
+                if (line.startsWith("kept: ")) kept.add(line);
+                if (line.startsWith("dimmed: ")) dimmed.add(line);
+            }
+            long window = (long) W * H;
+            assertEquals("the photo and the layer over it: " + lines, 2, kept.size());
+            assertTrue(lines.toString(), kept.contains("kept: " + BurnInGuard.describe(card[0], window)));
+            assertTrue(lines.toString(), kept.contains("kept: " + BurnInGuard.describe(card[1], window)));
+            assertTrue("the layer holds the button", BurnInGuard.describe(card[1], window).startsWith("FrameLayout [0,"));
+            assertTrue("the layer holds the button", BurnInGuard.describe(card[1], window).endsWith(", 1 children"));
+            assertEquals("the button, the header, the tap zone and the reply bar: " + lines, 4, dimmed.size());
+            for (String line : dimmed) assertTrue(line, line.endsWith(", takes taps"));
+            assertEquals("the tall tap zone first", "dimmed: " + BurnInGuard.describe(card[4], window), dimmed.get(0));
+            assertEquals("the story's button last", "dimmed: " + BurnInGuard.describe(card[2], window), dimmed.get(3));
+            BurnInGuard.paused(screen);
+        } finally {
+            BaseSettings.DEBUG.resetToDefault();
+            story.close();
+        }
     }
 
     /**

@@ -706,6 +706,7 @@ public enum PatchFamily {
         LogBufferManager.registerReportSection(SupportedLinks.REPORT);
         LogBufferManager.registerReportSection(LastScreen.REPORT);
         LogBufferManager.registerReportSection(ScreenLog.REPORT);
+        LogBufferManager.registerReportSection(BurnInGuard.REPORT);
         LogBufferManager.registerReportSection(MaterialYouTheme.REPORT);
         LogBufferManager.registerReportSection(SeenPosts.REPORT);
         LogBufferManager.registerReportSection(AppLock.REPORT);
