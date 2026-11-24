@@ -1980,8 +1980,10 @@ Show reactions on the Like button	在“赞”按钮上显示回应
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	把帖子的回应图标从按钮行的末尾移到“赞”按钮上，紧挨在数字前面。“赞”按钮仍像以前一样点赞和回应。在那里显示播放次数的视频会显示一个“赞”图标，你回应后则显示你自己的回应。“隐藏帖子上的回应预览”优先。更改会在之后显示的帖子上生效。
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	隐藏评论上的回应预览
+Hide reaction counts on comments	隐藏评论上的回应数
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	隐藏评论角落里叠放的回应图标。空间仍保留，因此点按它们原来所在的位置仍会打开回应列表。
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	隐藏评论上回应图标旁的数字。图标仍保留，点按它们仍会打开回应列表。
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	帖子菜单中下载优先
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording

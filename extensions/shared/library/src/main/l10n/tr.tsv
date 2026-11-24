@@ -1985,8 +1985,10 @@ Show reactions on the Like button	Tepkileri Beğen düğmesinde göster
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	Bir gönderinin tepki simgelerini düğme satırının sonundan Beğen düğmesine, sayının hemen önüne taşır. Beğen düğmesi eskisi gibi beğenir ve tepki verir. Orada izlenme sayısını gösteren bir video tek bir Beğen simgesi alır ya da tepki verdiğinde kendi tepkini. Gönderilerdeki tepki önizlemesini gizle bundan önce gelir. Bir değişiklik, ondan sonra gösterilen gönderilerde görünür.
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	Yorumlardaki tepki önizlemesini gizle
+Hide reaction counts on comments	Yorumlardaki tepki sayılarını gizle
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	Bir yorumun köşesindeki üst üste dizilmiş tepki simgelerini gizler. Boşluk yerinde kalır, bu yüzden eskiden oldukları yere dokunmak yine tepki listesini açar.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Bir yorumdaki tepki simgelerinin yanındaki sayıyı gizler. Simgeler yerinde kalır ve onlara dokunmak tepki listesini yine açar.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Gönderi menülerinde önce İndir
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording

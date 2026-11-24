@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide Save under posts` sits with the other hide switches under News feed. Facebook has started putting its own Save button under posts for some accounts, and this takes it out. If `Save button under posts` is on too, hiding wins. (#541)
 * `Show the time on every story` under Stories puts how long ago a story was posted next to the name on stories that leave it out, like a Page's. Friends' stories already show it, and they stay as they are. It's off until you turn it on. (#563)
 * With Debug logging on, a Debug report now says what Burn-in guard kept bright and what it dimmed on the last story it dimmed, view by view with each one's size. A story that comes out wrong with the guard on, like a note story, can be pinned down from the report. (#523)
+* `Hide reaction counts on comments` under Comments takes the number off the reaction faces on each comment. The faces stay, and tapping them still shows who reacted. Facebook's own setting for hiding reaction counts leaves comments alone. It's off until you turn it on. (#483)
 
 ### Fixed
 

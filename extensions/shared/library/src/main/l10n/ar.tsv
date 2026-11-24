@@ -817,6 +817,7 @@ Hide the Notifications tab badge	إخفاء شارة تبويب الإشعارا
 Hide the Professional dashboard tab	إخفاء تبويب لوحة الاحتراف
 Hide the pull down to lock hint	إخفاء تلميح اسحب للأسفل للقفل
 Hide the reaction preview on comments	إخفاء معاينة التفاعل على التعليقات
+Hide reaction counts on comments	إخفاء عدد التفاعلات على التعليقات
 Hide the reaction preview on posts	إخفاء معاينة التفاعل على المنشورات
 Hide the Reels tab	إخفاء تبويب الريلز
 Hide the Reels tab dot	إخفاء نقطة تبويب الريلز
@@ -918,6 +919,7 @@ Hides the row of Stories from people you aren't connected to, between posts. You
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	يخفي اقتراح البحث تحت وصف الريل، والعدسة المكبرة مع سؤال للبحث عنه، والذي في أعلى تعليقاته، وشريط البحث فوق الريل التي تفتحها من ملف شخصي.
 Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions. To take the number off the Like button too, turn on Hide counts on posts.	يخفي أيقونات التفاعل المكدّسة وعدّاد التفاعلات تحت المنشورات. المساحة تبقى، لذلك نقرة حيث كانت ما زالت تفتح قائمة التفاعلات. لإزالة الرقم من زر الإعجاب أيضًا، فعّل إخفاء العدّادات على المنشورات.
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	يخفي أيقونات التفاعل المكدّسة في زاوية تعليق. المساحة تبقى، لذلك نقرة حيث كانت ما زالت تفتح قائمة التفاعلات.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	يخفي الرقم بجانب أيقونات التفاعل على تعليق. تبقى الأيقونات، والنقر عليها ما زال يفتح قائمة التفاعلات.
 Hides the Stories tray card that asks to upload your contacts. Applies when Facebook next loads the tray.	يخفي بطاقة درج القصص التي تطلب رفع جهات اتصالك. يُطبَّق عندما يحمّل فيسبوك الدرج في المرة التالية.
 Hides the strip on some posts, like "Are you interested in this post?" or who recently commented, plus follow and chat suggestions there. The post stays.	يخفي الشريط على بعض المنشورات، مثل هل أنت مهتم بهذا المنشور؟ أو من علّق حديثًا، بالإضافة إلى اقتراحات المتابعة والمحادثة هناك. المنشور يبقى.
 Hides the WhatsApp button beside reels and videos. WhatsApp stays in the Share menu. A change shows from the next video.	يخفي زر WhatsApp بجانب الريلز والفيديوهات. WhatsApp يبقى في قائمة المشاركة. يظهر التغيير من الفيديو التالي.

@@ -1987,8 +1987,10 @@ Show reactions on the Like button	在「讚」按鈕上顯示心情
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	把貼文的心情圖示從按鈕列的末端移到「讚」按鈕上，緊接在數字前面。「讚」按鈕仍像以前一樣按讚和表達心情。在那裡顯示觀看次數的影片會顯示一個「讚」圖示，你表達心情後則顯示你自己的心情。「隱藏貼文上的心情預覽」優先。變更會在之後顯示的貼文上生效。
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	隱藏留言上的心情預覽
+Hide reaction counts on comments	隱藏留言上的心情數
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	隱藏留言角落重疊的心情圖示。空間仍會保留，點按原本的位置仍可開啟心情清單。
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	隱藏留言心情圖示旁的數字。圖示仍會保留，點按它們仍可開啟心情清單。
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	在貼文選單優先顯示下載
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording

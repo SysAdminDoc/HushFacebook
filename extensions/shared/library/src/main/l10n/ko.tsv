@@ -1985,8 +1985,10 @@ Show reactions on the Like button	좋아요 버튼에 감정 표현 표시
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	게시물 버튼 줄 끝에 있는 감정 표현 아이콘을 좋아요 버튼의 숫자 바로 앞으로 옮겨요. 좋아요 버튼은 이전처럼 좋아요와 감정 표현을 남겨요. 그 자리에 조회수를 표시하는 동영상에는 좋아요 아이콘 하나가 표시되고, 감정 표현을 남기면 내 감정 표현이 표시돼요. "게시물의 감정 표현 미리보기 숨기기"가 우선해요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	댓글의 감정 표현 미리보기 숨기기
+Hide reaction counts on comments	댓글의 감정 표현 수 숨기기
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	댓글 모서리에 겹쳐 표시되는 감정 표현 아이콘을 숨겨요. 공간은 그대로 남아서 그 자리를 탭하면 여전히 감정 표현 목록이 열려요.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	댓글의 감정 표현 아이콘 옆 숫자를 숨겨요. 아이콘은 그대로 남고, 탭하면 여전히 감정 표현 목록이 열려요.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	게시물 메뉴에서 다운로드를 맨 위로
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording

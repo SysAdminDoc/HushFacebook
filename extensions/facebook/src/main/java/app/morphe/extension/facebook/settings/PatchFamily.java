@@ -74,7 +74,7 @@ public enum PatchFamily {
             Settings.HIDE_POST_PROMPTS, Settings.HIDE_POST_FOLLOW_LINK, Settings.HIDE_POST_SUBSCRIBE_LINK,
             Settings.HIDE_POST_JOIN_BUTTON, Settings.HIDE_POST_X,
             Settings.HIDE_POST_COUNTS, Settings.HIDE_POST_REACTIONS, Settings.HIDE_COMMENT_REACTIONS,
-            Settings.REACTIONS_ON_LIKE_BUTTON, Settings.HIDE_REACTION_BUBBLES, Settings.HIDE_REACTOR_NAMES,
+            Settings.HIDE_COMMENT_REACTION_COUNTS, Settings.REACTIONS_ON_LIKE_BUTTON, Settings.HIDE_REACTION_BUBBLES, Settings.HIDE_REACTOR_NAMES,
             Settings.SHOW_POST_COMMENT_BUTTON),
     PROFILE_PICTURES(FamilyNames.PROFILE_PICTURES, "profilePictures", null,
             Settings.HIDE_FEED_PROFILE_PICTURES, Settings.HIDE_COMMENT_PROFILE_PICTURES),

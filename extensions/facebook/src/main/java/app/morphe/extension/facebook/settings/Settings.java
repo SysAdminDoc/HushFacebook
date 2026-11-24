@@ -3597,6 +3597,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_reaction_preview", FALSE);
 
     /**
+     * The number beside the reaction faces on a comment is left out, and the faces, their tap and
+     * what TalkBack reads stay ({@link app.morphe.extension.facebook.feed.PostPrompts#commentReactionCount},
+     * #483). Facebook's own setting for reaction counts misses comments. Off by default. A change
+     * shows on the comments drawn after it.
+     */
+    public static final BooleanSetting HIDE_COMMENT_REACTION_COUNTS =
+            new BooleanSetting("hushfacebook_hide_comment_reaction_counts", FALSE);
+
+    /**
      * A post's stacked reaction faces leave the end of its button row and sit on its Like button,
      * right before the count ({@link app.morphe.extension.facebook.feed.LikeButtonFaces}, #541). Off
      * by default, and {@link #HIDE_POST_REACTIONS} overrules it. A change shows on the posts drawn

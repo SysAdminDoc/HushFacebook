@@ -1871,8 +1871,10 @@ Show reactions on the Like button	Mostrar as reações no botão Curtir
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	Move os ícones de reação de uma publicação do fim da fileira de botões para o botão Curtir, logo antes do número. O botão Curtir continua curtindo e reagindo como antes. Um vídeo que mostra ali as visualizações ganha um ícone de Curtir, ou a sua própria reação quando você reage. Ocultar a prévia de reações nas publicações tem prioridade. Uma mudança aparece nas publicações exibidas depois dela.
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	Ocultar a prévia de reações nos comentários
+Hide reaction counts on comments	Ocultar o número de reações nos comentários
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	Oculta os ícones de reação empilhados no canto de um comentário. O espaço continua lá, então tocar onde eles estavam ainda abre a lista de reações.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Oculta o número ao lado dos ícones de reação de um comentário. Os ícones continuam lá, e tocar neles ainda abre a lista de reações.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Baixar primeiro nos menus de publicações
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording

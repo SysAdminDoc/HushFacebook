@@ -1985,8 +1985,10 @@ Show reactions on the Like button	แสดงความรู้สึกบ�
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	ย้ายไอคอนความรู้สึกของโพสต์จากท้ายแถวปุ่มไปไว้บนปุ่ม "ถูกใจ" ก่อนตัวเลขพอดี ปุ่ม "ถูกใจ" ยังกดถูกใจและแสดงความรู้สึกได้เหมือนเดิม วิดีโอที่แสดงยอดการดูตรงนั้นจะได้ไอคอนถูกใจหนึ่งอัน หรือความรู้สึกของคุณเองเมื่อคุณแสดงความรู้สึก "ซ่อนการแสดงตัวอย่างความรู้สึกบนโพสต์" มีผลเหนือกว่า การเปลี่ยนแปลงจะเห็นได้ในโพสต์ที่แสดงหลังจากนั้น
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	ซ่อนการแสดงตัวอย่างความรู้สึกในความคิดเห็น
+Hide reaction counts on comments	ซ่อนจำนวนความรู้สึกในความคิดเห็น
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	ซ่อนไอคอนความรู้สึกที่ซ้อนกันที่มุมของความคิดเห็น โดยพื้นที่ว่างจะยังคงอยู่ ดังนั้นการแตะบริเวณนั้นจะยังคงเปิดรายการความรู้สึก
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	ซ่อนตัวเลขข้างไอคอนความรู้สึกในความคิดเห็น โดยไอคอนจะยังคงอยู่ และการแตะไอคอนจะยังคงเปิดรายการความรู้สึก
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	ดาวน์โหลดเป็นอันดับแรกในเมนูโพสต์
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording

@@ -559,6 +559,8 @@ public class PausedHooksTest {
                 // The reaction preview is left undrawn only while the patch runs.
                 PostPrompts::hideReactionPreview,
                 () -> PostPrompts.hideReactionPreview(true),
+                // So is the count beside a comment's faces (#483).
+                () -> PostPrompts.commentReactionCount(12, true) == 0,
                 // A Like button's icon is noted, and with a count it takes the post's faces (#541).
                 // Hide the reaction preview on posts overrules it, so it's off for this probe.
                 () -> {

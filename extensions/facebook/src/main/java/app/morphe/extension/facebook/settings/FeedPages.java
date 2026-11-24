@@ -1076,6 +1076,9 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REACTIONS,
                     L10n.t("Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap "
                             + "where they were still opens the list of reactions.")));
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REACTION_COUNTS,
+                    L10n.t("Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them "
+                            + "still opens the list of reactions.")));
         }
         if (pictures) {
             // Read as each comment is built, so a change shows on the comments drawn after it.
