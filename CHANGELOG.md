@@ -47,6 +47,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Post menu items` can take the `Skip silent parts` row out of a reel's More menu now. It joins the list once a reel's menu has shown it. A few reel rows that read like "Fb control type view edit privacy" on the list read plainly too. (#475)
 * `Show reactions on the Like button` fits the box to the faces each post has. A post with one or two kinds of reactions got an empty gap before the faces, and its faces came out bigger than on a post with three. Now there's no gap and the faces are the same size everywhere. (#541)
 * `Hide prompts and promos under reels` now cleans the row under a video in the feed too, where "Made with Edits" sat beside the poster's name. Remix, Use template, Stars and the other prompts it hides on reels go from that row as well, and `Hide the audio line on reels` takes the sound out of it. That row keeps a list of its own, so the switch never reached it before. (#314)
+* With `Hide the audio line on reels` and `Show the post date on reels` both on, a reel keeps its date. The date sits on the audio line, so hiding the line took the date along with it. Now the line stays with just the date on it and the song left off. (#496)
 
 ## 0.24.0 (2026-11-22)
 

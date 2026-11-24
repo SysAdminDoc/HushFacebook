@@ -849,6 +849,51 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * The Reels tab's audio line is where the post date goes (#357), so hiding the line took the date
+     * with it: a reel with "Original audio" showed its name and caption and no date (#496, S22 588,
+     * 2026-11-24). While the date's switch is on the line stays with the date alone on it, the song
+     * still left off. Date off, paused or unready settings: the line goes or stays the way it did.
+     */
+    @Test
+    public void aHiddenAudioLineKeepsThePostDateAlone() {
+        String song = "JulesScenery" + ReelDeclutter.DOT + "Original audio";
+        long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
+        assertEquals("3 weeks ago", ReelDeclutter.dateAlone(threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        assertEquals("Oct 12", ReelDeclutter.dateAlone(1791817200L, NOW, ReelDateStyle.DATE, Locale.US, UTC));
+        for (ReelDateStyle style : ReelDateStyle.values()) {
+            assertEquals("no time, no song either", "", ReelDeclutter.dateAlone(0, NOW, style, Locale.US, UTC));
+            assertEquals("a time to come", "", ReelDeclutter.dateAlone(NOW / 1000 + 3600, NOW, style, Locale.US, UTC));
+        }
+
+        long posted = System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60;
+        TreeJNI story = new TreeJNI().with("creation_time", posted);
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertTrue("the date off, the line goes as before", ReelDeclutter.hideAudioLine());
+        assertSame(song, ReelDeclutter.audioLineText(song, story));
+
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertFalse("the line went and took the date with it", ReelDeclutter.hideAudioLine());
+        assertEquals("the song stayed on the line", "3 weeks ago", ReelDeclutter.audioLineText(song, story));
+        assertEquals("a story with no time showed the song", "", ReelDeclutter.audioLineText(song, new TreeJNI()));
+        assertTrue(line(ReelDeclutter.AUDIO_ROUTE),
+                line(ReelDeclutter.AUDIO_ROUTE).contains(ReelDeclutter.AUDIO_LINE_DATE_ONLY + " 2"));
+
+        Settings.HIDE_REEL_AUDIO_LINE.save(false);
+        assertEquals("the line shown, the date goes in front of the song", "3 weeks ago" + ReelDeclutter.DOT + song,
+                ReelDeclutter.audioLineText(song, story));
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the line went while paused", ReelDeclutter.hideAudioLine());
+        assertSame("the song left off while paused", song, ReelDeclutter.audioLineText(song, story));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> {
+            assertFalse("the line went before the settings were ready", ReelDeclutter.hideAudioLine());
+            assertSame("the song left off before the settings were ready", song, ReelDeclutter.audioLineText(song, story));
+        });
+    }
+
+    /**
      * The song chip scrolls its line sideways, which carried the date in front of the song out of
      * sight (#503). While the date's switch is on the chip holds still; off, paused or before the
      * settings are ready it scrolls the way Facebook asked, and a chip that wasn't going to scroll

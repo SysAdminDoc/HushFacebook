@@ -160,6 +160,8 @@ public final class ReelDeclutter {
     /** Counted under its own name each time the Reels tab's audio line isn't drawn. */
     static final String AUDIO_ROUTE = "Reel audio line";
     static final String AUDIO_LINE = "audio line";
+    /** Counted under the audio line's name each time its song is left off and the line kept for the post date (#496). */
+    static final String AUDIO_LINE_DATE_ONLY = "song left off for the date";
 
     /** Counted under its own name each time a reel's "Made with Edits" line isn't drawn (#314). */
     static final String EDITS_ROUTE = "Reel Edits line";
@@ -548,7 +550,9 @@ public final class ReelDeclutter {
      * Injection point, first thing in the component that draws the audio line on the Reels tab
      * (#200). That row picks the soundtrack out of the reel's attribution models on its own, so the
      * chip filter never sees it. True makes it draw nothing, as it does for a reel with no sound
-     * line. Never throws: false draws it as before.
+     * line. The post date rides on this line (#357), so while Show the post date on reels is on it's
+     * drawn anyway and {@link #audioLineText} leaves the song off it (#496). Never throws: false
+     * draws it as before.
      */
     public static boolean hideAudioLine() {
         try {
@@ -556,6 +560,10 @@ public final class ReelDeclutter {
             FeedFilterCounters.sawList(AUDIO_ROUTE, 1);
             FeedFilterCounters.sawKind(AUDIO_ROUTE, AUDIO_LINE);
             boolean hide = Utils.settingsReady() && Settings.HIDE_REEL_AUDIO_LINE.get();
+            if (hide && Settings.SHOW_REEL_POST_DATE.get()) {
+                logOnce(AUDIO_LINE_DATE_ONLY, () -> "Reel audio line: drawn for the post date, its song left off");
+                return false;
+            }
             if (hide) {
                 FeedFilterCounters.removed(AUDIO_ROUTE, 1, AUDIO_LINE);
                 logOnce(AUDIO_LINE, () -> "Reel audio line: not drawn");
@@ -1039,7 +1047,9 @@ public final class ReelDeclutter {
      * and the reel's story (#357). Facebook draws one line under a reel's author, and on a reel with a
      * song that line is the song's, so no date showed on most reels even with the switch on. With the
      * switch on the date goes in front of the song, read from the story's creation time and worded the
-     * way the date style says. Never throws: anything going wrong answers what it was handed.
+     * way the date style says. With Hide the audio line on reels on too, the line is drawn for the date
+     * alone ({@link #hideAudioLine}), so the song is left off it (#496). Never throws: anything going
+     * wrong answers what it was handed.
      */
     @Nullable
     public static String audioLineText(@Nullable String line, @Nullable Object story) {
@@ -1047,6 +1057,12 @@ public final class ReelDeclutter {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             if (line == null || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return line;
             Date posted = PostDetails.postedOf(story);
+            if (Settings.HIDE_REEL_AUDIO_LINE.get()) {
+                String alone = dateAlone(posted == null ? 0 : posted.getTime() / 1000, System.currentTimeMillis(),
+                        Settings.REEL_POST_DATE_STYLE.get(), L10n.locale(), TimeZone.getDefault());
+                FeedFilterCounters.removed(AUDIO_ROUTE, 1, AUDIO_LINE_DATE_ONLY);
+                return alone;
+            }
             if (posted == null) return line;
             String dated = audioLine(line, posted.getTime() / 1000, System.currentTimeMillis(),
                     Settings.REEL_POST_DATE_STYLE.get(), L10n.locale(), TimeZone.getDefault());
@@ -1247,6 +1263,16 @@ public final class ReelDeclutter {
     static String audioLine(String line, long seconds, long nowMillis, ReelDateStyle style, Locale locale, TimeZone zone) {
         String date = postDate(null, seconds, nowMillis, style, true, locale, zone);
         return date == null || date.isEmpty() ? line : date + DOT + line;
+    }
+
+    /**
+     * What the Reels tab's audio line reads while Hide the audio line on reels is on and the date
+     * rides on it (#496): the day the reel was posted, at [seconds], alone. A time that can't be a
+     * post's reads blank, so the song stays off the line either way.
+     */
+    static String dateAlone(long seconds, long nowMillis, ReelDateStyle style, Locale locale, TimeZone zone) {
+        String date = postDate(null, seconds, nowMillis, style, true, locale, zone);
+        return date == null ? "" : date;
     }
 
     /**
