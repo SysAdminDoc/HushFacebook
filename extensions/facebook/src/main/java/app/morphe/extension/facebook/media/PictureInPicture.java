@@ -146,6 +146,15 @@ public final class PictureInPicture {
     /** Counted each time the window is armed again because Facebook didn't after it was opened full screen. */
     static final String REARMED_AFTER_WINDOW = "armed again after the window closed";
 
+    /** Counted each time the window is armed for the player that last played, in place of an armed one with no video view. */
+    static final String TAKEN_OVER = "armed for the player that played, not one with no video";
+
+    /**
+     * How long after an arming the window looks whether the armed player still has a video view.
+     * Facebook arms from a thread of its own and keeps the player once the arming is done.
+     */
+    static final long TAKE_OVER_MS = 300;
+
     /** How long after its screen pauses the page watch looks whether it went into the window. */
     static final long FLOAT_CHECK_MS = 800;
 
@@ -294,6 +303,9 @@ public final class PictureInPicture {
     /** Goes up with each arming and disarm, so a later look can tell whether Facebook did either. */
     private static int armings;
 
+    /** The player that last started playing, armed or not. */
+    private static WeakReference<Object> lastPlayed = new WeakReference<>(null);
+
     /** How each view the window's viewer hid showed before, until it's shown again. */
     private static final Map<View, Integer> beforeWindow = Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -305,12 +317,24 @@ public final class PictureInPicture {
 
     static volatile Views views = PictureInPicture::playerView;
 
+    /** Reads the view a player's video shows in, as Facebook's window handler asks the armed player for it. Tests stand in their own. */
+    static volatile Views videoViews = PictureInPicture::videoView;
+
     private PictureInPicture() {
     }
 
     /** Filled in by the patch: the view FbGrootPlayer's video is attached to, or null. Only a player may be passed. */
     @Nullable
     public static ViewGroup playerView(Object player) {
+        return null;
+    }
+
+    /**
+     * Filled in by the patch: the view [player]'s video shows in, which Facebook's window viewer
+     * opens around, or null for a player that has none. Only a player may be passed.
+     */
+    @Nullable
+    public static View videoView(Object player) {
         return null;
     }
 
@@ -461,10 +485,48 @@ public final class PictureInPicture {
             if (activity != null) watch(activity.getApplication());
             // Facebook turns auto-enter on right after this hook, so it goes off again once the arming is done.
             if (activity != null && (menuOnly() || underSettings(activity))) Utils.runOnMainThread(() -> keepForMenu(activity));
+            if (activity != null && player != null) Utils.runOnMainThreadDelayed(() -> takeOver(arguments, player), TAKE_OVER_MS);
             PictureInPictureButton.sync();
             Logger.printDebug(() -> "Picture-in-picture: armed for player " + System.identityHashCode(player));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "arming", failure);
+        }
+    }
+
+    /**
+     * A moment after Facebook armed the window for [armed] with [arguments]: when that player has no
+     * video view, the window is armed again for the player that last played, if that one has a video
+     * view on the armed screen and on screen. Facebook's handler opens its window viewer around the
+     * armed player's video view and opens none without it, so leaving Facebook put the whole screen
+     * in the window, comment bar and all, and back full screen the video stayed window-sized in a
+     * corner (#495). A video opened full screen from the feed or a Page's reels grid plays in a player
+     * of its own there, and Facebook arms the window for the player it played in before, which let go
+     * of its video. Nothing changes once anything was armed or disarmed since, or with the switch off.
+     */
+    static void takeOver(Object[] arguments, Object armed) {
+        try {
+            Activity screen;
+            Object played;
+            synchronized (PictureInPicture.class) {
+                if (arguments == null || arguments != arming || armed != current.get()) return;
+                screen = armedScreen.get();
+                played = lastPlayed.get();
+            }
+            if (screen == null || played == null || played == armed || !on() || screen.isInPictureInPictureMode()) return;
+            if (videoViews.of(armed) != null) return;
+            View video = videoViews.of(played);
+            if (video == null || activityOf(video.getContext()) != screen || offScreen(played)) return;
+            synchronized (PictureInPicture.class) {
+                if (arguments != arming || armed != current.get()) return;
+                current = new WeakReference<>(played);
+            }
+            HookStatus.bound(FAMILY, "arming check");
+            HookStatus.counted(FAMILY, TAKEN_OVER);
+            Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(armed) + " has no video, armed for player "
+                    + System.identityHashCode(played));
+            armAgain(arguments, played);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "arming check", failure);
         }
     }
 
@@ -1057,6 +1119,9 @@ public final class PictureInPicture {
     public static void playerPlaying(Object player) {
         try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || player == null) return;
+            synchronized (PictureInPicture.class) {
+                lastPlayed = new WeakReference<>(player);
+            }
             if (anotherReel(player) && onAnotherScreen(player)) {
                 HookStatus.counted(FAMILY, OTHER_SCREEN);
                 Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays on another screen, left out");
@@ -1368,6 +1433,7 @@ public final class PictureInPicture {
             backAt = -RETURN_MS;
             ended = new WeakReference<>(null);
             endedAt = -LOOP_MS;
+            lastPlayed = new WeakReference<>(null);
         }
     }
 }

@@ -28,6 +28,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* Leaving Facebook while a video you opened full screen from the feed plays puts just the video in the picture-in-picture window again. Facebook kept the window tied to the feed's player, which no longer had the video, so the whole screen shrank into the window with the comment box under it, and it stayed small in a corner after you opened it back up. The same happened with a video opened from a Page's reels. (#495)
 * `Dark box behind reel names` now covers the date and details under a reel's name too ("AI content", the song), all in one box. Before, the box sat behind the name alone and its bottom edge ran through the date, which looked like a dark line under the name. `Dark box behind feed video names` does the same for the date under a name on a feed video. (#490)
 * A reel with no caption no longer gets a thin dark line under its name when `Dark box behind folded captions` or `Dark box behind open captions` is on. Facebook still makes an empty caption there, and the box went behind it with nothing to cover. (#490)
 * `Dark box behind reel names` covers group reels now, with the line under the group's name (who posted it, or the song) in the same box. Group reels draw that part their own way, so it never got a box before. (#490)

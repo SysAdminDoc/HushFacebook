@@ -221,6 +221,16 @@ internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
  * extension hears each view hidden and keeps how it showed, and the handler's call that shows it
  * again goes through the extension, which puts that back.
  *
+ * The handler opens that viewer around the armed player's video view (588 `LX/05mn;->FjY()`, the
+ * one View it asks the player for) and opens nothing when there's none, leaving the whole screen,
+ * comment bar and all, squeezed into the window. A video opened full screen from the feed or a
+ * Page's reels grid plays in a player of its own there, but Facebook arms the window for the player
+ * it played in before, which let go of its view: the Watch viewer arms Facebook's front player as it
+ * resumes, and the step scheduling each arming (588 `LX/0DYo;->A07`, updatePiPParams) then skips
+ * every later ask for the same video. A moment after each arming the extension asks the armed
+ * player for its view the handler's way, and when there's none it arms the window again for the
+ * player that last played, if that one has a view on the armed screen (#495).
+ *
  * A reel floating from the full-screen viewer has the viewer at the root of the window's task, and a
  * link opened from another app starts that viewer for its page: Android only brought the reel back.
  * A link that builds Facebook's main screen under its page cleared the window's task instead. The
@@ -272,6 +282,12 @@ val pictureInPicturePatch = patch(
             patchLog.warning("${exception.message}, so landscape reels open no window.")
         }
         applyArming(arming, player.play.definingClass, videoParams)
+        // Arming for the player that played once the armed one has no video view (#495); the window opens without it.
+        try {
+            fillVideoView(player.play.definingClass, findVideoViewCall(player.play.definingClass))
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a video opened full screen from the feed may put the whole screen in the window.")
+        }
         disarms.forEach { applyDisarm(it) }
         applyPlayer(player)
         applyPlayerEnd(playerEnd)
@@ -710,6 +726,51 @@ private fun helper(
     null,
     MutableMethodImplementation(registers),
 ).toMutable().apply { addInstructions(0, smali) }
+
+/** The extension's stub the patch fills with the handler's own call for the armed player's view. */
+internal const val VIDEO_VIEW_STUB = "videoView"
+
+/**
+ * The calls [holders] make on [player] that take nothing and answer a View. In the classes loading
+ * [VIEWER_CONTAINER] that's the one call by which Facebook's window handler asks the armed player
+ * for the view its video shows in (588 `LX/05mn;->FjY()`), returning with no viewer opened when
+ * there's none.
+ */
+internal fun videoViewCalls(holders: List<ClassDef>, player: String): List<MethodReference> = holders
+    .flatMap { it.methods }
+    .flatMap { it.calls() }
+    .filter { it.definingClass == player && it.parameterTypes.isEmpty() && it.returnType == VIEW }
+    .distinctBy { it.toString() }
+
+/** The handler's one call for the armed player's view. Changes nothing. */
+internal fun BytecodePatchContext.findVideoViewCall(player: String): MethodReference {
+    val holders = classDefByStrings(VIEWER_CONTAINER, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+    val calls = videoViewCalls(holders, player)
+    return calls.singleOrNull()
+        ?: refuse("expected the classes loading \"$VIEWER_CONTAINER\" to ask $player for one view, found ${calls.map { it.name }}")
+}
+
+/**
+ * Fills the extension's video view stub with [call]: a moment after each arming, the extension asks
+ * the armed player for its video view as the handler will, and arms the window again for the player
+ * that last played when there's none (#495).
+ */
+internal fun BytecodePatchContext.fillVideoView(player: String, call: MethodReference) {
+    val stub = mutableClassDefBy(PICTURE_IN_PICTURE).methods.singleOrNull {
+        it.name == VIDEO_VIEW_STUB && it.returnType == VIEW && AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.shape() == listOf("Ljava/lang/Object;")
+    } ?: refuse("$PICTURE_IN_PICTURE has no static $VIEW $VIDEO_VIEW_STUB(Object)")
+    val kind = if (AccessFlags.INTERFACE.isSet(classDefBy(player).accessFlags)) "interface" else "virtual"
+    stub.addInstructions(
+        0,
+        """
+            check-cast p0, $player
+            invoke-$kind { p0 }, $call
+            move-result-object p0
+            return-object p0
+        """,
+    )
+}
 
 /** Each disarm tells the extension first. */
 internal fun BytecodePatchContext.applyDisarm(disarm: Method) {
