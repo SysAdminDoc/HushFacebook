@@ -585,6 +585,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_story_up_next", FALSE);
 
     /**
+     * A story that leaves out how long ago it was posted, like a Page's, shows it next to the name
+     * the way a friend's story does ({@link app.morphe.extension.facebook.stories.StoryViewerCleanup},
+     * #563). Starts off. Read as each story's header is built.
+     */
+    public static final BooleanSetting SHOW_STORY_TIME =
+            new BooleanSetting("hushfacebook_show_story_time", FALSE);
+
+    /**
      * The bar under someone else's story leaves: the repost button, the Send message box and the quick
      * reactions ({@link app.morphe.extension.facebook.stories.StoryViewerCleanup}, #542). Starts off.
      * Read as the bar draws.

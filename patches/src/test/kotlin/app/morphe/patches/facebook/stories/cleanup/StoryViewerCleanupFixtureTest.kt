@@ -808,6 +808,120 @@ class StoryViewerCleanupFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /**
+     * #563: every answer of the check the story line builder asks before it puts in the time goes
+     * through the extension, with no branch skipping the hook, and the rest stays Facebook's.
+     */
+    @Test
+    fun `each declared build's story time check answers through the extension`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val bucket = "Lcom/facebook/stories/model/StoryBucket;"
+        val card = "Lcom/facebook/stories/model/StoryCard;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val shaped = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == bucket } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf(bucket, card)
+                }.distinctBy { "${it.definingClass}->${it.name}" }
+                val checks = shaped.filter(::isStoryTimeCheck)
+                assertEquals("$name: story time checks", 1, checks.size)
+                // Negative control: other checks of a bucket and a card answer a boolean too.
+                assertTrue("$name: no other bucket and card check to tell it from", shaped.size > checks.size)
+                val check = checks.single()
+                val original = check.code()
+                val answers = original.indices.filter { original[it].opcode == Opcode.RETURN }
+                assertTrue("$name: the check never answers", answers.isNotEmpty())
+
+                val (_, row) = timeLineRows(bundle, check.definingClass)
+                val context = PatchContexts.of(FixtureDex.classes(bundle, setOf(check.definingClass, row.single().definingClass)).values.toList())
+                context.showStoryTime()
+                val code = context.mutableClassDefBy(check.definingClass).methods.single { it.signature() == check.signature() }.code()
+                val returns = code.indices.filter { code[it].opcode == Opcode.RETURN }
+                assertEquals("$name: answers", answers.size, returns.size)
+                for (at in returns) {
+                    val register = (code[at] as OneRegisterInstruction).registerA
+                    val asked = (code.getOrNull(at - 2) as? ReferenceInstruction)?.reference?.toString()
+                    assertEquals("$name: the answer at $at doesn't ask the extension", HIDE_STORY_TIME, asked)
+                    assertEquals("$name: the answer at $at hands over another register", register, firstRegister(code[at - 2]))
+                    assertEquals("$name: the answer at $at keeps the extension's answer elsewhere", Opcode.MOVE_RESULT, code[at - 1].opcode)
+                    assertEquals("$name: the answer at $at keeps the extension's answer elsewhere", register,
+                        (code[at - 1] as OneRegisterInstruction).registerA)
+                    assertFalse("$name: a branch skips the hook before the answer at $at", landsOn(code, at - 1) || landsOn(code, at))
+                }
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    code.filterIndexed { at, _ -> returns.none { at == it - 2 || at == it - 1 } }.unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /** The static methods of [bundle] taking [builder], and those of them that return right before reading its line. */
+    private fun timeLineRows(bundle: File, builder: String): Pair<List<Method>, List<Method>> {
+        val taking = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == builder } }) {
+            AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType.startsWith("L") &&
+                it.parameterTypes.any { type -> type.toString() == builder } && it.definingClass != builder
+        }.distinctBy { "${it.definingClass}->${it.signature()}" }
+        return taking to taking.filter { timeLineReturns(it, builder).isNotEmpty() }
+    }
+
+    /**
+     * #563 on an S22: a Page's story header returned before it read the line the builder put the time
+     * in. The one place a static method taking the builder returns right before reading its line asks
+     * the extension first: a yes goes on to read the line, every branch to the return runs the ask,
+     * and the rest stays Facebook's.
+     */
+    @Test
+    fun `each declared build's story header asks the extension before it skips the time line`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val bucket = "Lcom/facebook/stories/model/StoryBucket;"
+        val card = "Lcom/facebook/stories/model/StoryCard;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val check = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == bucket } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf(bucket, card) && isStoryTimeCheck(it)
+                }.distinctBy { "${it.definingClass}->${it.name}" }.single()
+                val builder = check.definingClass
+                val (taking, rows) = timeLineRows(bundle, builder)
+                assertEquals("$name: header rows returning before the line", 1, rows.size)
+                // Negative control: other static methods take the builder too.
+                assertTrue("$name: no other method takes the builder", taking.size > rows.size)
+                val row = rows.single()
+                val (at, builderRegister, line) = timeLineReturns(row, builder).single()
+                val original = row.code()
+
+                val context = PatchContexts.of(FixtureDex.classes(bundle, setOf(builder, row.definingClass)).values.toList())
+                context.showStoryTime()
+                val code = context.mutableClassDefBy(row.definingClass).methods.single { it.signature() == row.signature() }.code()
+                assertEquals("$name: nothing reads the line before the return", Opcode.IGET_OBJECT, code[at].opcode)
+                val read = code[at] as TwoRegisterInstruction
+                assertEquals("$name: the ask reads the line", line.toString(), code[at].reference())
+                assertEquals("$name: the ask reads the builder", builderRegister, read.registerB)
+                val temp = read.registerA
+                assertEquals("$name: the ask", SHOWS_TIME_LINE, code[at + 1].reference())
+                assertEquals("$name: the ask hands over the line", temp, firstRegister(code[at + 1]))
+                assertEquals("$name: the answer", temp, (code[at + 2] as OneRegisterInstruction).registerA)
+                assertEquals("$name: a no", Opcode.IF_EQZ, code[at + 3].opcode)
+                assertTrue("$name: a no doesn't land on Facebook's return", landsOn(code, at + 5))
+                assertEquals("$name: Facebook's return", Opcode.RETURN_OBJECT, code[at + 6].opcode)
+                assertFalse("$name: a branch skips the ask before the return", landsOn(code, at + 6))
+                assertTrue("$name: a yes doesn't go on to read the line",
+                    landsOn(code, at + 7) && code[at + 4].opcode in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32))
+                assertEquals("$name: the line reads moved", original[at + 1].reference(), code[at + 7].reference())
+                assertTrue("$name: the ask borrows v$temp, the builder's or past v15", temp != builderRegister && temp < 16)
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    code.filterIndexed { index, _ -> index !in at until at + 6 }.unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     @Test
     fun `the extension has every hook`() {
         for ((owner, hook) in listOf(STORY_VIEWER_CLEANUP to HIDE_CREDITS, STORY_VIEWER_CLEANUP to HIDE_REPLY_SUGGESTIONS,
@@ -815,7 +929,8 @@ class StoryViewerCleanupFixtureTest {
             STORY_VIEWER_CLEANUP to HIDE_CREATE_STORY_CARD, STORY_VIEWER_CLEANUP to HIDE_SONG_PILL,
             STORY_VIEWER_CLEANUP to WITHOUT_CREATE_CARDS, STORY_VIEWER_CLEANUP to IS_CREATE_CARD,
             STORY_VIEWER_CLEANUP to CUBE_TURN, STORY_PROGRESS_BAR to SEGMENTS_MOVED,
-            STORY_VIEWER_CLEANUP to HIDE_FOLLOW, STORY_VIEWER_CLEANUP to SHOW_UP_NEXT, STORY_VIEWER_CLEANUP to HIDE_REPLY_BAR)) {
+            STORY_VIEWER_CLEANUP to HIDE_FOLLOW, STORY_VIEWER_CLEANUP to SHOW_UP_NEXT, STORY_VIEWER_CLEANUP to HIDE_REPLY_BAR,
+            STORY_VIEWER_CLEANUP to HIDE_STORY_TIME, STORY_VIEWER_CLEANUP to SHOWS_TIME_LINE)) {
             val method = ExtensionDex.classDef(owner).methods.singleOrNull {
                 "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == hook
             }

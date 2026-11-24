@@ -2822,6 +2822,8 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	Barra di scorrimento nelle storie
 Plain slide between people	Scorrimento semplice tra le persone
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Passando alle storie della persona successiva o precedente, scorrono di lato invece di girare come un cubo. Si applica dal prossimo scorrimento.
+Show the time on every story	Mostra l'ora su ogni storia
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	Le storie che non indicano da quanto sono state pubblicate, come quelle di una Pagina, lo mostrano accanto al nome come la storia di un amico. Si applica dalla prossima storia che apri.
 Fade the story seek bar	Sfuma la barra di scorrimento delle storie
 Story position	Posizione nella storia
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Mostra una barra lungo il fondo di una storia video da trascinare per spostarti al suo interno. La storia aspetta mentre trascini. Barra di avanzamento in basso le lascia il posto nelle storie video.

@@ -2826,6 +2826,8 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	限時動態上的進度列
 Plain slide between people	不同人之間改為平移切換
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	滑到下一位或上一位的限時動態時，畫面會平移過去，而不是像立方體那樣轉動。從你下一次滑動開始生效。
+Show the time on every story	在每則限時動態上顯示時間
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	沒有顯示發布多久的限時動態（例如粉絲專頁的限時動態）會像朋友的限時動態一樣在名稱旁顯示。從你開啟的下一則限時動態開始生效。
 Fade the story seek bar	淡化限時動態進度列
 Story position	限時動態播放位置
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	在影片限時動態底部顯示一條可以拖曳的進度列，用來在限時動態裡前後移動。拖曳時限時動態會等你放開。在影片限時動態上，「底部進度列」會讓位給它。

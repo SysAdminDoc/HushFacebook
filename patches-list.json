@@ -507,7 +507,7 @@
     },
     {
       "name": "Clean up the story viewer",
-      "description": "Switches that take the song and effect credits and the Subscribe and Follow buttons off a story, the suggested replies or the whole reply bar off the bottom, the Up next card off the next people's stories, and the cards between stories that ask you to make your own out of the viewer. Two more add a thin progress bar along the bottom like the one on Reels and swap the cube turn between people's stories for a plain slide. All start off. Turn them on in Hushfacebook settings > Stories.",
+      "description": "Switches that take the song and effect credits and the Subscribe and Follow buttons off a story, the suggested replies or the whole reply bar off the bottom, the Up next card off the next people's stories, and the cards between stories that ask you to make your own out of the viewer. Two more add a thin progress bar along the bottom like the one on Reels and swap the cube turn between people's stories for a plain slide. Another puts how long ago a story was posted next to the name on stories that leave it out, like a Page's. All start off. Turn them on in Hushfacebook settings > Stories.",
       "category": "Stories",
       "use": true,
       "dependencies": [

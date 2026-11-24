@@ -665,6 +665,8 @@ public class PausedHooksTest {
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideFollow,
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideReplyBar,
                 () -> !app.morphe.extension.facebook.stories.StoryViewerCleanup.showUpNext(true),
+                () -> !app.morphe.extension.facebook.stories.StoryViewerCleanup.hideTime(true),
+                () -> app.morphe.extension.facebook.stories.StoryViewerCleanup.showsTimeLine("10h"),
                 app.morphe.extension.facebook.stories.StoryViewerCleanupForTests::dropsACreateCard,
                 app.morphe.extension.facebook.stories.StoryProgressBarForTests::drawsABar,
                 app.morphe.extension.facebook.stories.StoryViewerCleanupForTests::flattensACubeTurn));

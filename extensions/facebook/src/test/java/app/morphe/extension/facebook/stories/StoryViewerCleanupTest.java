@@ -58,7 +58,54 @@ public class StoryViewerCleanupTest {
         Settings.HIDE_STORY_REPLY_BAR.resetToDefault();
         Settings.HIDE_STORY_CREATE_CARDS.resetToDefault();
         Settings.STORY_FLAT_SLIDE.resetToDefault();
+        Settings.SHOW_STORY_TIME.resetToDefault();
         HookStatus.clear();
+    }
+
+    /**
+     * #563: with the switch on, a story whose line Facebook would leave without the time keeps it,
+     * and one that has the time keeps it whatever the switch says.
+     */
+    @Test
+    public void theTimeSwitchKeepsTheTimeOnStoriesThatLeaveItOut() {
+        assertFalse(Settings.SHOW_STORY_TIME.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.SHOW_STORY_TIME));
+        assertTrue("off, a Page's story got the time", StoryViewerCleanup.hideTime(true));
+        assertFalse("off, a friend's story lost the time", StoryViewerCleanup.hideTime(false));
+        Settings.HIDE_STORY_UP_NEXT.save(true);
+        Settings.HIDE_STORY_CREDITS.save(true);
+        assertTrue("another switch gave a Page's story the time", StoryViewerCleanup.hideTime(true));
+        Settings.SHOW_STORY_TIME.save(true);
+        assertFalse("on, a Page's story stayed without the time", StoryViewerCleanup.hideTime(true));
+        assertFalse("on, a friend's story lost the time", StoryViewerCleanup.hideTime(false));
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertTrue("paused, a Page's story got the time", StoryViewerCleanup.hideTime(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertTrue("a Page's story got the time before the settings were ready", StoryViewerCleanup.hideTime(true)));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.TIME_SHOWN + " 1"));
+    }
+
+    /**
+     * #563 on an S22: a Page's story header returned before it read the line, so the time the builder
+     * put in never showed. With the switch on, a line with something in it is read; an empty one, or
+     * the switch off, paused or before the settings are ready, keeps Facebook's return.
+     */
+    @Test
+    public void theHeaderReadsTheTimeLineOnlyWithTheSwitchOn() {
+        assertFalse("off, a Page's header read its line", StoryViewerCleanup.showsTimeLine("10h"));
+        Settings.HIDE_STORY_CREDITS.save(true);
+        assertFalse("another switch made a Page's header read its line", StoryViewerCleanup.showsTimeLine("10h"));
+        Settings.SHOW_STORY_TIME.save(true);
+        assertTrue("on, a Page's header skipped the time", StoryViewerCleanup.showsTimeLine("10h"));
+        assertFalse("an empty line was read", StoryViewerCleanup.showsTimeLine(""));
+        assertFalse("no line was read", StoryViewerCleanup.showsTimeLine(null));
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertFalse("paused, a Page's header read its line", StoryViewerCleanup.showsTimeLine("10h"));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("a header read its line before the settings were ready", StoryViewerCleanup.showsTimeLine("10h")));
+        assertTrue(statusLine(), statusLine().contains(StoryViewerCleanup.TIME_LINE_SHOWN + " 1"));
     }
 
     private static String statusLine() {

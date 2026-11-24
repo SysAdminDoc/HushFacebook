@@ -2822,6 +2822,8 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	스토리 탐색 막대
 Plain slide between people	사람 간 단순 슬라이드 전환
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	다음 또는 이전 사람의 스토리로 스와이프할 때 큐브처럼 돌아가지 않고 옆으로 밀려나요. 다음 스와이프부터 적용돼요.
+Show the time on every story	모든 스토리에 시간 표시
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	페이지 스토리처럼 게시된 지 얼마나 됐는지 표시하지 않는 스토리도 친구 스토리처럼 이름 옆에 표시합니다. 다음에 여는 스토리부터 적용됩니다.
 Fade the story seek bar	스토리 탐색 막대 흐리게
 Story position	스토리 위치
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	동영상 스토리 하단에 드래그해서 원하는 위치로 이동할 수 있는 막대를 표시해요. 드래그하는 동안 스토리는 멈춰 있어요. 동영상 스토리에서는 "하단 진행률 바" 대신 이 막대가 표시돼요.

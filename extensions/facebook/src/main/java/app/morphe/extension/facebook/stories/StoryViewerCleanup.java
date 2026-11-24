@@ -6,6 +6,8 @@ package app.morphe.extension.facebook.stories;
 
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -38,7 +40,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * card built from recent gallery photos, which the viewer's finished list loses on its way out (#521).
  *
  * <p>The flat slide switch keeps the cube Facebook turns between people's stories square to the
- * screen, so the pages slide across instead (#521).
+ * screen, so the pages slide across instead (#521). The time switch puts how long ago a story was
+ * posted next to the name on the stories Facebook leaves it off, like a Page's (#563).
  *
  * <p>Off, paused, settings that aren't ready yet or a failure in here, and Facebook draws its own.
  */
@@ -69,6 +72,12 @@ public final class StoryViewerCleanup {
 
     /** Counted each time the viewer's list of stories is built without the "Add to story" card. */
     static final String CREATE_CARDS_HIDDEN = "story create cards left out";
+
+    /** Counted each time a story keeps the time Facebook would have left out next to its name (#563). */
+    static final String TIME_SHOWN = "story time shown";
+
+    /** Counted each time a story's header shows the line with the time where it would have shown the name alone (#563). */
+    static final String TIME_LINE_SHOWN = "story time line shown";
 
     /**
      * The pill types, by Facebook's own names for them, that credit a song, a sound or the effect,
@@ -161,6 +170,46 @@ public final class StoryViewerCleanup {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story Up next card", failure);
             return show;
+        }
+    }
+
+    /**
+     * Injection point, at each answer of the check the line next to a story's name asks before it
+     * puts in how long ago the story was posted: whether to leave the time out (#563). Facebook says
+     * yes for a Page's story and a few other kinds, and with the switch on a yes turns into a no, so
+     * the line gets the time the way a friend's story does. Never throws.
+     */
+    public static boolean hideTime(boolean hide) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story time");
+            if (!hide || !Utils.settingsReady() || !Settings.SHOW_STORY_TIME.get()) return hide;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, TIME_SHOWN);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time", failure);
+            return hide;
+        }
+    }
+
+    /**
+     * Injection point, where the title row of a story's header gives up on the line next to the name
+     * before reading it, as it does for a Page's story (#563). With the switch on, {@link #hideTime}
+     * already had the time put in that line, and a true answer makes the row read it and show it the
+     * way a friend's story does. An empty line keeps Facebook's way. Never throws.
+     *
+     * @param line the line the header built, the time with the switch on.
+     */
+    public static boolean showsTimeLine(@Nullable CharSequence line) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story time line");
+            if (line == null || line.length() == 0 || !Utils.settingsReady() || !Settings.SHOW_STORY_TIME.get()) return false;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, TIME_LINE_SHOWN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time line", failure);
+            return false;
         }
     }
 

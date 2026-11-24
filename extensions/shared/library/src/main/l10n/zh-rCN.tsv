@@ -2817,6 +2817,8 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	快拍上的进度条
 Plain slide between people	不同人之间改为平移切换
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	滑到下一个或上一个人的快拍时，画面会平移过去，而不是像立方体那样转动。从你下一次滑动开始生效。
+Show the time on every story	在每条快拍上显示时间
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	没有显示发布时间的快拍（例如公共主页的快拍）会像好友的快拍一样在名字旁显示。从你打开的下一条快拍开始生效。
 Fade the story seek bar	淡化快拍进度条
 Story position	快拍播放位置
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	在视频快拍底部显示一条可以拖动的进度条，用来在快拍里前后移动。拖动时快拍会等你松手。在视频快拍上，“底部进度条”会给它让位。

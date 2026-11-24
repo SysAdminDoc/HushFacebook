@@ -397,6 +397,8 @@ public class ColdStartHooksTest {
         assertFalse("a story's Follow button drawn before the context drew nothing", StoryViewerCleanup.hideFollow());
         assertFalse("a story's reply bar drawn before the context drew nothing", StoryViewerCleanup.hideReplyBar());
         assertTrue("a story page opened before the context skipped its Up next card", StoryViewerCleanup.showUpNext(true));
+        assertTrue("a Page's story built before the context got the time", StoryViewerCleanup.hideTime(true));
+        assertFalse("a Page's story header built before the context read its line", StoryViewerCleanup.showsTimeLine("10h"));
         assertFalse("a story played before the context got a progress bar", StoryProgressBarForTests.drawsABar());
         assertFalse("a swipe between people before the context kept the pages flat",
                 StoryViewerCleanupForTests.flattensACubeTurn());

@@ -2822,6 +2822,8 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	แถบเลื่อนในสตอรี่
 Plain slide between people	เลื่อนแบบธรรมดาระหว่างแต่ละคน
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	เมื่อปัดไปยังสตอรี่ของคนถัดไปหรือคนก่อนหน้า สตอรี่จะเลื่อนผ่านไปด้านข้างแทนการหมุนแบบลูกบาศก์ จะมีผลตั้งแต่การปัดครั้งถัดไป
+Show the time on every story	แสดงเวลาบนทุกสตอรี่
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	สตอรี่ที่ไม่บอกว่าโพสต์มานานเท่าไร เช่น สตอรี่ของเพจ จะแสดงเวลาข้างชื่อเหมือนสตอรี่ของเพื่อน มีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
 Fade the story seek bar	จางแถบเลื่อนในสตอรี่
 Story position	ตำแหน่งในสตอรี่
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	แสดงแถบที่ด้านล่างของสตอรี่วิดีโอที่คุณสามารถลากเพื่อเลื่อนดูได้ โดยสตอรี่จะหยุดรอขณะที่คุณลาก ทั้งนี้ "แถบแสดงความคืบหน้าที่ด้านล่าง" จะเปิดทางให้แถบนี้ในสตอรี่วิดีโอ

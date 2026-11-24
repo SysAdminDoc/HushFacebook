@@ -2878,6 +2878,8 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	Полоса перемотки в Историях
 Plain slide between people	Простое перелистывание между людьми
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	При перелистывании к Историям следующего или предыдущего человека они сдвигаются в сторону, а не поворачиваются, как куб. Применяется со следующего перелистывания.
+Show the time on every story	Показывать время на каждой истории
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	Истории, где не указано, как давно они опубликованы, например истории Страниц, показывают это рядом с именем, как история друга. Действует со следующей открытой истории.
 Fade the story seek bar	Приглушать полосу перемотки Историй
 Story position	Позиция в Истории
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Показывает внизу видеоистории полосу, которую можно тянуть, чтобы перемещаться по ней. Пока вы тянете, История ждёт. «Полоса прогресса внизу» уступает ей место в видеоисториях.

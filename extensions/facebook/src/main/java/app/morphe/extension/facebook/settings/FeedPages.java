@@ -991,6 +991,9 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.STORY_FLAT_SLIDE,
                         L10n.t("Swiping to the next or previous person's stories slides them across instead of "
                                 + "turning them like a cube. Applies from your next swipe.")));
+                stories.addPreference(toggle(context, Settings.SHOW_STORY_TIME,
+                        L10n.t("Stories that leave out how long ago they were posted, like a Page's, show it next to "
+                                + "the name the way a friend's story does. Applies from the next story you open.")));
             }
             if (build.contains(PatchFamily.STORY_RINGS)) {
                 // Read each time a picture draws, so a change shows on what's drawn after it.
