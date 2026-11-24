@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
@@ -653,6 +654,68 @@ class CleanUpReelsShapesTest {
         assertEquals(Opcode.IF_EQZ, body[2].opcode)
         assertEquals("the hook answers false", 0, (body[3] as NarrowLiteralInstruction).narrowLiteral)
         assertEquals(Opcode.RETURN, body[4].opcode)
+    }
+
+    /** Loads every chip type the switches hide, and the sound's, as a row's render does before it walks its list. */
+    private val namesEveryChip = (HIDDEN_CHIPS + SOUNDTRACK_CHIP).joinToString("\n") { "const-string v0, \"$it\"" }
+
+    /** A feed video chip row: p0 the row, p1 the context; it reads its list out of a state, casts and walks it. */
+    private fun chipRow(names: String = namesEveryChip, read: String = "invoke-static { p1 }, Lfixture/State;->read(Ljava/lang/Object;)Ljava/lang/Object;", between: String = "", static: Boolean = false) =
+        method("render", listOf("Lfixture/Context;"), "Lfixture/Component;", 6, static, """
+            $names
+            $read
+            move-result-object v2
+            check-cast v2, Ljava/util/AbstractCollection;
+            const/4 v3, 0x0
+            $between
+            if-eqz v2, :none
+            invoke-virtual { v2 }, Ljava/util/AbstractCollection;->iterator()Ljava/util/Iterator;
+            move-result-object v1
+            :none
+            return-object v3
+        """)
+
+    /**
+     * The chip row under a feed video (#314 on 588) keeps its list in a state and never sees the reel
+     * chip builder, so its list goes through the same filter right before the row casts it. Rows
+     * reading a field, missing a chip, reading the list from an instance call, overwriting it before
+     * the walk, or static, are not it.
+     */
+    @Test
+    fun `the feed chip row's list goes through the filter before its cast`() {
+        val row = chipRow()
+        assertTrue(isFeedChipRow(row) { null })
+        val missing = namesEveryChip.lines().filterNot { "XFBFBShortsEditsAppAttribution" in it }.joinToString("\n")
+        assertTrue("a row missing a chip was taken", !isFeedChipRow(chipRow(names = missing)) { null })
+        val instanceRead = "invoke-virtual { p1 }, Lfixture/Context;->read()Ljava/lang/Object;"
+        assertTrue("a list from an instance call was taken", !isFeedChipRow(chipRow(read = instanceRead)) { null })
+        assertTrue("a list overwritten before the walk was taken", !isFeedChipRow(chipRow(between = "move-object v2, v3")) { null })
+        assertTrue("a static method was taken", !isFeedChipRow(chipRow(static = true)) { null })
+        val field = method("render", listOf("Lfixture/Context;"), "Lfixture/Component;", 6, static = false, """
+            $namesEveryChip
+            iget-object v2, p0, Lfixture/Host;->A06:$IMMUTABLE_LIST
+            invoke-virtual { v2 }, Ljava/util/AbstractCollection;->iterator()Ljava/util/Iterator;
+            move-result-object v1
+            const/4 v3, 0x0
+            return-object v3
+        """)
+        assertTrue("a reel row reading its field was taken", !isFeedChipRow(field) { null })
+
+        val cast = feedChipListCast(row)!!
+        row.filterFeedChipList()
+        val body = row.body()
+        assertEquals(FILTER_CHIPS, body[cast].call)
+        assertEquals(2, (body[cast] as RegisterRangeInstruction).startRegister)
+        val answer = (body[cast + 1] as OneRegisterInstruction).registerA
+        assertTrue("the answer took v$answer, which the row reads", answer != 2 && answer < 4)
+        assertEquals(Opcode.IF_EQZ, body[cast + 2].opcode)
+        assertEquals("null keeps the list", cast + 5, row.target(cast + 2))
+        assertEquals(COPY_OF, body[cast + 3].call)
+        assertEquals(answer, (body[cast + 3] as RegisterRangeInstruction).startRegister)
+        assertEquals(2, (body[cast + 4] as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.NOP, body[cast + 5].opcode)
+        assertEquals(Opcode.CHECK_CAST, body[cast + 6].opcode)
+        assertEquals(2, (body[cast + 6] as OneRegisterInstruction).registerA)
     }
 
     /** A reel header: p0 the row, p1 the search bar, p2 its send button, each wrapped and tagged when there is one. */

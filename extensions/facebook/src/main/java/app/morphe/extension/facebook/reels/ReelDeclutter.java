@@ -342,9 +342,10 @@ public final class ReelDeclutter {
     }
 
     /**
-     * Injection point, before each return of the method that builds a reel's chip list. The chips
-     * to keep, when the switch took any out, or null to keep the list Facebook built. The patch
-     * rebuilds its list from the answer. Never throws.
+     * Injection point, before each return of the method that builds a reel's chip list, and where
+     * the chip row under a feed video reads the list it keeps (#314, "Made with Edits" there). The
+     * chips to keep, when the switch took any out, or null to keep the list Facebook built. The
+     * patch rebuilds its list from the answer. Never throws.
      *
      * @param chips the list Facebook is about to return, an ImmutableList of attribution models.
      */

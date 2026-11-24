@@ -215,7 +215,7 @@ internal fun isChipListBuilder(method: Method, resolve: (MethodReference) -> Met
 }
 
 /** Whether [method] names every one of [literals], each loaded or asked of a string table [resolve] reads. */
-private fun namesEvery(method: Method, literals: List<String>, resolve: (MethodReference) -> Method?): Boolean {
+internal fun namesEvery(method: Method, literals: List<String>, resolve: (MethodReference) -> Method?): Boolean {
     val loaded = stringsOf(method)
     return loaded.containsAll(literals) || (loaded + tableStringsAsked(method, resolve)).containsAll(literals)
 }

@@ -120,6 +120,8 @@ val cleanUpReelsPatch = patch(
 
     executeBytecode {
         filterChips()
+        // #314: the chip row under a feed video keeps a list of its own (see FeedChipRow.kt).
+        filterFeedChipRow()
         // #314: and "Made with Edits" under the caption, which isn't one of the chips.
         hideEditsLabel()
         // #200: the Reels tab draws the audio line in a row of its own, past the chip list. Looked up

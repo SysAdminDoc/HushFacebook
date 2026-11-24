@@ -6,6 +6,7 @@ package app.morphe.patches.facebook.reels
 
 import app.morphe.Fixtures
 import app.morphe.RepoFiles
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.isStringTableCall
@@ -17,7 +18,10 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -326,6 +330,59 @@ class ReelAnchorsFixtureTest {
                 assertEquals("$name: $checks", 1, checks.size)
                 assertTrue("$name: the check has no local for the hook", locals(checks.single()) >= 1)
                 checked[version] = checks.single().definingClass
+            }
+        }
+        assertEquals("a declared build went unchecked: $checked", versions.toSet(), checked.keys)
+    }
+
+    /**
+     * The chip row under a feed video (#314, "Made with Edits" there on 588), found the way the patch
+     * finds it: among the classes naming the Remix chip, the one render naming every hidden chip and
+     * the sound's that walks a list it casts out of its state. The reel rows naming the same types
+     * read a field the chip builder fills. The hook puts the filter right before the cast, its answer
+     * in a register Facebook writes before it reads.
+     */
+    @Test
+    fun `every declared build has one feed video chip row, with a free register for its hook`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableMapOf<String, String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val renders = FixtureDex.classesHolding(bundle, CHIP_ANCHOR).flatMap { classDef ->
+                    classDef.methods.filter { it.name == RENDER }.map { ImmutableMethod.of(it) }
+                }
+                val tableOwners = renders.flatMap { method ->
+                    method.implementation?.instructions?.toList().orEmpty().filter(::isStringTableCall)
+                        .mapNotNull { ((it as ReferenceInstruction).reference as? MethodReference)?.definingClass }
+                }.toSet()
+                val tables = FixtureDex.classes(bundle, tableOwners)
+                val resolve = { call: MethodReference -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val rows = renders.filter { isFeedChipRow(it, resolve) }
+                assertEquals("$name: $rows", 1, rows.size)
+                // The reel rows load the Remix chip and the sound's too.
+                val lookalikes = renders.count { holdsString(it, CHIP_ANCHOR) && holdsString(it, SOUNDTRACK_CHIP) }
+                assertTrue("$name: only $lookalikes renders load the Remix chip and the sound's", lookalikes > rows.size)
+
+                val row = MutableMethod(rows.single())
+                val cast = requireNotNull(feedChipListCast(row)) { "$name: no cast" }
+                val list = (row.implementation!!.instructions.elementAt(cast) as OneRegisterInstruction).registerA
+                row.filterFeedChipList()
+                val code = row.implementation!!.instructions.toList()
+                assertEquals("$name: the filter", FILTER_CHIPS, ((code[cast] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: the filter reads the list", list, (code[cast] as RegisterRangeInstruction).startRegister)
+                val answer = (code[cast + 1] as OneRegisterInstruction).registerA
+                assertTrue("$name: the answer took the list's v$list", answer != list)
+                assertEquals("$name: the cast", Opcode.CHECK_CAST, code[cast + 6].opcode)
+                assertEquals("$name: the cast's register", list, (code[cast + 6] as OneRegisterInstruction).registerA)
+                // Facebook's next use of the answer's register, past the cast, writes it.
+                val next = code.drop(cast + 7).first { instruction ->
+                    (instruction as? OneRegisterInstruction)?.registerA == answer ||
+                        (instruction as? TwoRegisterInstruction)?.registerB == answer
+                }
+                assertTrue("$name: $next reads v$answer", (next as OneRegisterInstruction).registerA == answer && next.opcode.setsRegister())
+                checked[version] = rows.single().definingClass
             }
         }
         assertEquals("a declared build went unchecked: $checked", versions.toSet(), checked.keys)
