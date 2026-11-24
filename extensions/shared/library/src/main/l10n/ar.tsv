@@ -1021,7 +1021,7 @@ Keep feed position on return	الاحتفاظ بموضع الخلاصة عند �
 Keep feed videos muted	إبقاء فيديوهات الخلاصة مكتومة
 Keep playing in the background	الاستمرار في التشغيل في الخلفية
 Next reel in the background	الريل التالي في الخلفية
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	عندما ينتهي ريل يعمل في الخلفية، يُشغَّل الريل التالي بدلًا من إعادة الريل نفسه. يمرّ عبر الريلز التي كانت ريلز قد حمّلتها عندما غادرت. يعمل مع تشغيل الاستمرار في التشغيل في الخلفية.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	عندما ينتهي ريل يعمل في الخلفية، يُشغَّل الريل التالي بدلًا من إعادة الريل نفسه، وتواصل ريلز تحميل المزيد أثناء ذلك. يعمل مع تشغيل الاستمرار في التشغيل في الخلفية.
 Keep post dates	الاحتفاظ بتواريخ المنشورات
 Keep seen posts hidden for	إبقاء المنشورات المرئية مخفية لمدة
 Keep Settings and privacy expanded	إبقاء الإعدادات والخصوصية موسّعة

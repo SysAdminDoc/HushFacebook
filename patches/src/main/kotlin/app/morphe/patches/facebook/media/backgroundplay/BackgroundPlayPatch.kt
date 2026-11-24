@@ -27,10 +27,13 @@ import app.morphe.patches.facebook.media.taptoplay.isEnumNaming
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.parameterRegister
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.reels.namedRunnable
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
@@ -67,6 +70,12 @@ val backgroundPlayPatch = patch(
         hookPlayer(player)
         hookHandler(handler)
         hookNextReel(player, handler)
+        try {
+            hookLoadingPage()
+            hookSurfacePause()
+        } catch (missing: PatchException) {
+            patchLog.warning("${missing.message}, so Next reel in the background stops at the reels Facebook had loaded")
+        }
         hookWindowButtons()
         hookTouches(PATCH, doubleTap = false)
         enableStatus("backgroundPlay")
@@ -317,6 +326,63 @@ private fun BytecodePatchContext.hookNextReel(player: Player, handler: Handler) 
         .singleOrNull { it.name == RELEASE_METHOD && it.parameterTypes.isEmpty() && it.returnType == STRING }
         ?.returnEarly(release)
         ?: throw PatchException("$PATCH: the extension has no $RELEASE_METHOD() to fill in")
+}
+
+/**
+ * The Reels viewer's loading page hands the extension the handler Facebook runs when the page shows,
+ * right after making it. That handler is where Facebook asks for more reels, and a stopped screen shows
+ * nothing, so a reel playing in the background runs it itself once the loaded reels run out (D#524).
+ */
+internal fun BytecodePatchContext.hookLoadingPage() {
+    val renders = classDefByStrings(LOADING_SPINNER, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { classDef -> classDef.methods.filter { holdsString(it, LOADING_SPINNER) } }
+    val render = renders.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one loading page holding \"$LOADING_SPINNER\", found ${renders.size}")
+    val handlers = classDefByStrings(LOADING_SHOWN, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .filter { classDef -> classDef.methods.any { holdsString(it, LOADING_SHOWN) } }
+    val handler = handlers.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one class holding \"$LOADING_SHOWN\", found ${handlers.size}")
+    val (made, register) = shownHandlerMade(render, handler.type) ?: throw PatchException(
+        "$PATCH: ${render.definingClass}->${render.name} doesn't make one ${handler.type} and construct it next",
+    )
+    mutableClassDefBy(render.definingClass).findMutableMethodOf(render)
+        .addInstruction(made + 1, "invoke-static/range { v$register .. v$register }, $LOADING_PAGE")
+}
+
+/**
+ * Each of Facebook's surfaces hands the extension itself as it pauses with its screen, with the class of
+ * the runnable that resumes one. A paused surface doesn't render the new lists it hears about, so the
+ * reels Facebook loads for a background run reach the Reels viewer once the extension resumes it (D#524).
+ */
+internal fun BytecodePatchContext.hookSurfacePause() {
+    val managers = classDefByStrings(SURFACE_RECEIVES, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .filter { classDef -> classDef.methods.any { holdsString(it, SURFACE_RECEIVES) } }
+    val manager = managers.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one surface manager holding \"$SURFACE_RECEIVES\", found ${managers.size}")
+    val steps = mutableListOf<Pair<SurfaceStep, Method>>()
+    classDefForEachReferencing(types = listOf(manager.type)) { classDef ->
+        val run = namedRunnable(classDef, SURFACE_RUNNABLE) ?: return@classDefForEachReferencing
+        surfaceStep(classDef, run, manager.type)?.let { steps += it to run }
+    }
+    val (pause, resume) = surfacePauseResume(steps.map { it.first }) ?: throw PatchException(
+        "$PATCH: expected one $SURFACE_RUNNABLE pause and resume of the same ${manager.type} flag, " +
+            "found ${steps.joinToString { "${it.first.runnable} sets ${it.first.flag} to ${it.first.value}" }}",
+    )
+    val run = steps.first { it.first == pause }.second
+    val method = mutableClassDefBy(run.definingClass).findMutableMethodOf(run)
+    method.requireLocals(PATCH, 2)
+    val self = method.implementation!!.registerCount - 1
+    method.addInstructions(
+        0,
+        """
+            iget-object v0, v$self, ${pause.surface}
+            const-class v1, ${resume.runnable}
+            invoke-static { v0, v1 }, $SURFACE_PAUSED
+        """,
+    )
 }
 
 /** The binder hands the player, its origin and the rich params to the extension before its own first instruction. */

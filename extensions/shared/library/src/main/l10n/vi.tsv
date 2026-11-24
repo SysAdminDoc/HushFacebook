@@ -1865,7 +1865,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	Tiếp tục phát trong nền
 Next reel in the background	Reel tiếp theo trong nền
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	Khi một reel đang phát trong nền kết thúc, reel tiếp theo sẽ phát thay vì phát lại reel đó. Nó phát lần lượt các reel mà Reels đã tải khi bạn rời đi. Hoạt động khi bật Tiếp tục phát trong nền.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	Khi một reel đang phát trong nền kết thúc, reel tiếp theo sẽ phát thay vì phát lại reel đó, và Reels tiếp tục tải thêm. Hoạt động khi bật Tiếp tục phát trong nền.
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	Video bạn bắt đầu bằng một lần chạm, hoặc reel bạn vuốt tới trong Reels, vẫn tiếp tục phát âm thanh sau khi bạn rời Facebook, và thông báo của nó có thể tạm dừng video. Vuốt bỏ thông báo hoặc nghe cuộc gọi sẽ dừng video.
 # context: title of that notification when the video has none of its own

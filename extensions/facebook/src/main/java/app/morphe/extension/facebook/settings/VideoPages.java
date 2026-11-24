@@ -699,8 +699,8 @@ final class VideoPages {
                 // Asked as each background reel nears its end, so a change counts right away.
                 playback.addPreference(toggle(context, Settings.NEXT_REEL_IN_BACKGROUND,
                         L10n.t("When a reel playing in the background ends, the next reel plays instead of the same one "
-                                + "again. It goes through the reels Reels had loaded when you left. Works with Keep "
-                                + "playing in the background on.")));
+                                + "again, and Reels keeps loading more as it goes. Works with Keep playing in the "
+                                + "background on.")));
                 if (build.contains(PatchFamily.PICTURE_IN_PICTURE)) {
                     // Asked as each window's buttons are made, so a change shows from the next window.
                     playback.addPreference(toggle(context, Settings.BACKGROUND_PLAY_BUTTON,

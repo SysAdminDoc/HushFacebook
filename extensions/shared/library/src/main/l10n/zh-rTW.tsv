@@ -1867,7 +1867,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	在背景繼續播放
 Next reel in the background	在背景播放下一個 Reels
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	在背景播放的 Reels 結束後，會播放下一個，而不是重複播放同一個。會依序播放你離開時 Reels 已載入的內容。需啟用「在背景繼續播放」。
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	在背景播放的 Reels 結束後，會播放下一個，而不是重複播放同一個，Reels 也會繼續載入更多。需啟用「在背景繼續播放」。
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	你點按開始播放的影片，或在 Reels 中滑到的短片，在離開 Facebook 後仍會繼續播放聲音，可透過其通知暫停。滑掉通知或接聽來電會停止播放。
 # context: title of that notification when the video has none of its own

@@ -35,6 +35,8 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * Reel captions have a list of their own now, `Fold reel captions` under Reels and Watch, so the count you pick in `Fold long posts` stays on posts. Since 0.24.0 a reel's caption took the posts' count. The new list starts at Facebook's choice. (#506)
 * `Show Comment when comments are off` works on Facebook 588 again. The Comment button down the side of a reel stayed hidden on reels whose author limited who can comment, even with the switch on. (#299)
 * `Hide Threads cards between reels` also takes out the Meta promos Facebook now puts between reels, which is how the Threads card started showing up again for some people. (#85)
+* `Next reel in the background` keeps going now. It used to play the reels Reels had loaded when you left and then the last one over and over, because Facebook stopped loading reels in the background. Reels loads more as it goes now, so new reels keep coming until you open Facebook again. (Discussion #524)
+* `Next reel in the background` also moves on in Reels layouts where a reel reaches under the tab bar. There it played the same reel again. (Discussion #524)
 
 ## 0.24.0 (2026-11-22)
 

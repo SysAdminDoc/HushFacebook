@@ -4210,8 +4210,8 @@ final class L10nTableDe {
                 "Wenn Facebook mit Feeds startet, zeigt der Feeds-Tab %1$s. Hat dein Feeds-Tab diesen Filter nicht, \u00f6ffnet er sich wie gewohnt.");
         table.put("When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.",
                 "Wenn Facebook mit Feeds startet, zeigt der Feeds-Tab den Filter, den Facebook ausw\u00e4hlt.");
-        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.",
-                "Wenn ein Reel im Hintergrund zu Ende ist, l\u00e4uft das n\u00e4chste Reel statt noch einmal dasselbe. Es geht durch die Reels, die Reels beim Verlassen geladen hatte. Funktioniert mit eingeschaltetem \u201eIm Hintergrund weiterspielen\u201c.");
+        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.",
+                "Wenn ein Reel im Hintergrund zu Ende ist, l\u00e4uft das n\u00e4chste Reel statt noch einmal dasselbe, und Reels l\u00e4dt dabei weitere nach. Funktioniert mit eingeschaltetem \u201eIm Hintergrund weiterspielen\u201c.");
         table.put("When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.",
                 "Wenn ein Video in deinem Newsfeed den Namen des Verfassers auf dem Video zeigt, liegen dieser Name und das Datum darunter auf demselben dunklen Kasten. Die \u00c4nderung zeigt sich bei den danach geladenen Beitr\u00e4gen.");
         table.put("When the comments or a menu close",

@@ -4210,8 +4210,8 @@ final class L10nTableTr {
                 "Facebook Ak\u0131\u015flar sekmesinde a\u00e7\u0131ld\u0131\u011f\u0131nda Ak\u0131\u015flar %1$s filtresinde a\u00e7\u0131l\u0131r. Ak\u0131\u015flar sekmende bu filtre yoksa her zamanki gibi a\u00e7\u0131l\u0131r.");
         table.put("When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.",
                 "Facebook Ak\u0131\u015flar sekmesinde a\u00e7\u0131ld\u0131\u011f\u0131nda Ak\u0131\u015flar, Facebook'un se\u00e7ti\u011fi filtrede a\u00e7\u0131l\u0131r.");
-        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.",
-                "Arka planda \u00e7alan bir reel bitti\u011finde ayn\u0131s\u0131 tekrar \u00e7almak yerine sonraki reel \u00e7alar. \u00c7\u0131kt\u0131\u011f\u0131nda Reels'in y\u00fcklemi\u015f oldu\u011fu reel'ler s\u0131rayla \u00e7alar. Arka planda \u00e7almaya devam et a\u00e7\u0131kken \u00e7al\u0131\u015f\u0131r.");
+        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.",
+                "Arka planda \u00e7alan bir reel bitti\u011finde ayn\u0131s\u0131 tekrar \u00e7almak yerine sonraki reel \u00e7alar ve Reels bu s\u0131rada yenilerini y\u00fcklemeye devam eder. Arka planda \u00e7almaya devam et a\u00e7\u0131kken \u00e7al\u0131\u015f\u0131r.");
         table.put("When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.",
                 "Ak\u0131\u015f\u0131ndaki bir video, g\u00f6nderi sahibinin ad\u0131n\u0131 videonun \u00fcst\u00fcnde g\u00f6sterdi\u011finde bu ad ve alt\u0131ndaki tarih de ayn\u0131 koyu kutunun \u00fcst\u00fcnde durur. De\u011fi\u015fiklik, sonras\u0131nda y\u00fcklenen g\u00f6nderilerde g\u00f6r\u00fcn\u00fcr.");
         table.put("When the comments or a menu close",

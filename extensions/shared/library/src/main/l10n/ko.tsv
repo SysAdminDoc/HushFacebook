@@ -1865,7 +1865,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	백그라운드에서 계속 재생
 Next reel in the background	백그라운드에서 다음 릴스 재생
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	백그라운드에서 재생 중인 릴스가 끝나면 같은 릴스를 반복하지 않고 다음 릴스를 재생해요. 나갈 때 릴스에 불러와 있던 릴스를 차례로 재생해요. "백그라운드에서 계속 재생"이 켜져 있을 때 작동해요.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	백그라운드에서 재생 중인 릴스가 끝나면 같은 릴스를 반복하지 않고 다음 릴스를 재생하고, 릴스가 계속 더 불러와요. "백그라운드에서 계속 재생"이 켜져 있을 때 작동해요.
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	탭해서 시작한 동영상이나 릴스에서 스와이프해서 넘긴 릴스는 Facebook을 나간 후에도 소리가 계속 나고, 알림에서 일시 정지할 수 있어요. 알림을 밀어서 없애거나 전화를 받으면 멈춰요.
 # context: title of that notification when the video has none of its own

@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.reels.namedRunnable
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.namedRegisters
@@ -37,9 +38,11 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -73,8 +76,13 @@ class BackgroundPlayFixtureTest {
                 val name = fixture.name
 
                 val holders = mutableMapOf<String, MutableList<ClassDef>>()
-                val anchors = listOf(GROOT_PLAY, FULLSCREEN_HANDLER, MANAGER_ON_BACKGROUND, WINDOW_SKIP_BACK)
+                val anchors = listOf(GROOT_PLAY, FULLSCREEN_HANDLER, MANAGER_ON_BACKGROUND, WINDOW_SKIP_BACK, LOADING_SPINNER,
+                    LOADING_SHOWN, SURFACE_RECEIVES)
+                val surfaceRunnables = mutableListOf<ClassDef>()
                 FixtureDex.forEach(fixture) { dex ->
+                    for (classDef in dex.classes) {
+                        if (namedRunnable(classDef, SURFACE_RUNNABLE) != null) surfaceRunnables += ImmutableClassDef.of(classDef)
+                    }
                     val strings = anchors.filter { anchor -> dex.stringSection.any { it == anchor } }
                     if (strings.isEmpty()) return@forEach
                     for (classDef in dex.classes) {
@@ -153,6 +161,28 @@ class BackgroundPlayFixtureTest {
                 assertNotNull("$name: the return's release", release)
                 assertTrue("$name: the release is the window button's pause", release != windowPause!!.name)
 
+                // The Reels viewer's loading page: one render naming its spinner, one class holding the shown
+                // handler's log line, made once there and constructed next. Another class is never taken for it.
+                val renders = holders[LOADING_SPINNER].orEmpty().flatMap { it.methods.filter { method -> holdsString(method, LOADING_SPINNER) } }
+                assertEquals("$name: loading page renders", 1, renders.size)
+                val render = renders.single()
+                val shownHandlers = holders[LOADING_SHOWN].orEmpty()
+                assertEquals("$name: classes holding \"$LOADING_SHOWN\"", 1, shownHandlers.size)
+                val shownMade = shownHandlerMade(render, shownHandlers.single().type)
+                assertNotNull("$name: the shown handler's making", shownMade)
+                assertNull("$name: a class the render doesn't make", shownHandlerMade(render, groot.type))
+
+                // The Reels viewer's surface: one manager naming its new lists, and among its runnables one
+                // pause and one resume of the same flag. A pause with no resume is never taken for the pair.
+                val surfaceManagers = holders[SURFACE_RECEIVES].orEmpty()
+                assertEquals("$name: classes holding \"$SURFACE_RECEIVES\"", 1, surfaceManagers.size)
+                val surfaceType = surfaceManagers.single().type
+                val steps = surfaceRunnables.mapNotNull { surfaceStep(it, namedRunnable(it, SURFACE_RUNNABLE)!!, surfaceType) }
+                val pauseResume = surfacePauseResume(steps)
+                assertNotNull("$name: the surface's pause and resume among ${steps.joinToString { "${it.runnable} ${it.flag}=${it.value}" }}", pauseResume)
+                val (surfacePause, surfaceResume) = pauseResume!!
+                assertNull("$name: a pause alone", surfacePauseResume(steps.filter { it != surfaceResume }))
+
                 // The check: every way to its no is one the patch knows, as many of each as expected.
                 val read = readHandlerCheck(checks.single(), record)
                 assertEquals("$name: the notification's starter", 9, read.starter.parameterTypes.size)
@@ -177,7 +207,9 @@ class BackgroundPlayFixtureTest {
                     classes.getValue(FRAGMENT_ACTIVITY), ExtensionDex.classDef(SETTINGS_STATUS),
                     ExtensionDex.classDef(BACKGROUND_PLAY), ExtensionDex.classDef(NEXT_REEL)) + holders.getValue(GROOT_PLAY).filter { it !== groot } +
                     helperClasses.filter { helperClass -> holders.getValue(GROOT_PLAY).none { it.type == helperClass.type } }
-                val context = PatchContexts.of(base + windowHolders.filter { holder -> base.none { it.type == holder.type } })
+                val loading = (holders.getValue(LOADING_SPINNER) + shownHandlers + surfaceManagers + surfaceRunnables).distinctBy { it.type }
+                val withWindow = base + windowHolders.filter { holder -> base.none { it.type == holder.type } }
+                val context = PatchContexts.of(withWindow + loading.filter { holder -> withWindow.none { it.type == holder.type } })
                 backgroundPlayPatch.execute(context)
                 fun patched(method: Method) = context.mutableClassDefBy(method.definingClass).methods.single {
                     it.name == method.name && it.returnType == method.returnType &&
@@ -212,6 +244,35 @@ class BackgroundPlayFixtureTest {
                 assertEquals(listOf(0, 1, 2), bound[3].namedRegisters())
                 assertEquals("$name: the binder's own first instruction after the hand over",
                     binder.implementation!!.instructions.first().opcode, bound[4].opcode)
+
+                // The loading page hands its shown handler over right after constructing it, and is otherwise Facebook's.
+                val (constructed, shownRegister) = shownMade!!
+                val rendered = patched(render).implementation!!.instructions.toList()
+                val original = render.implementation!!.instructions.toList()
+                assertEquals("$name: the render's length", original.size + 1, rendered.size)
+                assertTrue("$name: the shown handler's constructor stays", rendered[constructed].callsTo(
+                    original[constructed].call!!.let { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" },
+                ))
+                assertEquals("$name: the hand over", Opcode.INVOKE_STATIC_RANGE, rendered[constructed + 1].opcode)
+                assertTrue("$name: the hand over calls Next reel", rendered[constructed + 1].callsTo(LOADING_PAGE))
+                assertEquals("$name: the hand over reads the handler", listOf(shownRegister), rendered[constructed + 1].namedRegisters())
+                assertEquals("$name: the render's own code after the hand over",
+                    original.drop(constructed + 1).map { it.opcode }, rendered.drop(constructed + 2).map { it.opcode })
+
+                // A surface pausing hands itself and its resume's class over first, and is otherwise Facebook's.
+                val pauseRun = namedRunnable(surfaceRunnables.single { it.type == surfacePause.runnable }, SURFACE_RUNNABLE)!!
+                val paused = patched(pauseRun).implementation!!.instructions.toList()
+                assertEquals("$name: the pause's hand over", listOf(Opcode.IGET_OBJECT, Opcode.CONST_CLASS, Opcode.INVOKE_STATIC),
+                    paused.take(3).map { it.opcode })
+                val heldSurface = (paused[0] as ReferenceInstruction).reference as FieldReference
+                assertEquals("$name: the pause reads its surface", surfacePause.surface,
+                    "${heldSurface.definingClass}->${heldSurface.name}:${heldSurface.type}")
+                assertEquals("$name: the resume's class", surfaceResume.runnable,
+                    ((paused[1] as ReferenceInstruction).reference as TypeReference).type)
+                assertTrue("$name: the hand over calls Next reel", paused[2].callsTo(SURFACE_PAUSED))
+                assertEquals("$name: the hand over passes both", listOf(0, 1), paused[2].namedRegisters())
+                assertEquals("$name: the pause's own code after the hand over",
+                    pauseRun.implementation!!.instructions.map { it.opcode }, paused.drop(3).map { it.opcode })
 
                 // The play and the inner pause tell the extension first with p0 and p1.
                 listOf(play to STARTED, pause to PAUSING).forEach { (original, tell) ->

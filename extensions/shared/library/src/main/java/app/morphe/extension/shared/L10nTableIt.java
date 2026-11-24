@@ -4210,8 +4210,8 @@ final class L10nTableIt {
                 "Quando Facebook si apre su Feed, la scheda Feed si apre su %1$s. Se la tua scheda Feed non ce l'ha, si apre come al solito.");
         table.put("When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.",
                 "Quando Facebook si apre su Feed, la scheda Feed si apre sul filtro scelto da Facebook.");
-        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.",
-                "Quando finisce un reel in riproduzione in background, parte il reel successivo invece dello stesso. Scorre i reel che Reels aveva caricato quando sei uscito. Funziona con Continua la riproduzione in background attivo.");
+        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.",
+                "Quando finisce un reel in riproduzione in background, parte il reel successivo invece dello stesso, e Reels continua a caricarne altri. Funziona con Continua la riproduzione in background attivo.");
         table.put("When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.",
                 "Quando un video nel feed ha il nome di chi l'ha pubblicato sopra il video, quel nome e la data sotto hanno dietro lo stesso riquadro scuro. La modifica si vede sui post mostrati dopo.");
         table.put("When the comments or a menu close",

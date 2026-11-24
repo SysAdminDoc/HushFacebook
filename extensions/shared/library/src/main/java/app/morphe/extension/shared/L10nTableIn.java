@@ -4210,8 +4210,8 @@ final class L10nTableIn {
                 "Saat Facebook terbuka di Feed, tab Feed terbuka di %1$s. Jika tab Feed kamu tidak memilikinya, tab itu terbuka seperti biasa.");
         table.put("When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.",
                 "Saat Facebook terbuka di Feed, tab Feed terbuka di filter yang dipilih Facebook.");
-        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.",
-                "Saat reel yang diputar di latar belakang selesai, reel berikutnya diputar, bukan reel yang sama lagi. Ini memutar reel yang sudah dimuat Reels saat kamu keluar. Berfungsi saat Tetap putar di latar belakang aktif.");
+        table.put("When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.",
+                "Saat reel yang diputar di latar belakang selesai, reel berikutnya diputar, bukan reel yang sama lagi, dan Reels terus memuat lebih banyak. Berfungsi saat Tetap putar di latar belakang aktif.");
         table.put("When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.",
                 "Saat video di Kabar Beranda menampilkan nama pemosting di atas video, nama itu dan tanggal di bawahnya tampil di atas kotak gelap yang sama. Perubahan terlihat pada postingan yang dimuat setelahnya.");
         table.put("When the comments or a menu close",
