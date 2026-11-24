@@ -1004,6 +1004,7 @@ Hide the Create tab	Sembunyikan tab Buat
 Hide the Explore tab	Sembunyikan tab Jelajahi
 Hide the Jobs tab	Sembunyikan tab Lowongan Kerja
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Menghapus tab ini dari bilah tab. Halamannya masih ada di Menu. Mulai ulang Facebook untuk melihat perubahannya.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Menghapus tab ini dari bilah tab. Halamannya masih ada di Menu, kecuali kamu memilihnya di Ubin Menu yang disembunyikan. Mulai ulang Facebook untuk melihat perubahannya.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook terbuka di Beranda selama “%1$s” aktif, karena %2$s tidak ada di bilah tab. Pilihan Anda tetap tersimpan.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Tanpa titik atau jumlah baru di tab Reels, yang di beberapa akun bernama Video. Tab lain tetap menampilkannya.

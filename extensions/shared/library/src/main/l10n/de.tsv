@@ -1004,6 +1004,7 @@ Hide the Create tab	Erstellen-Tab ausblenden
 Hide the Explore tab	Erkunden-Tab ausblenden
 Hide the Jobs tab	Jobs-Tab ausblenden
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Entfernt diesen Tab aus der Tab-Leiste. Seine Seite bleibt im Menü. Starte Facebook neu, um die Änderung zu sehen.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Entfernt diesen Tab aus der Tab-Leiste. Seine Seite bleibt im Menü, außer du wählst sie unter Menükacheln zum Ausblenden. Starte Facebook neu, um die Änderung zu sehen.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook öffnet auf der Startseite, solange „%1$s“ an ist, da %2$s dann nicht in der Tab-Leiste ist. Deine Auswahl bleibt gespeichert.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Kein Punkt und keine Neu-Zahl am Reels-Tab, bei manchen Konten Video genannt. Andere Tabs behalten ihre.

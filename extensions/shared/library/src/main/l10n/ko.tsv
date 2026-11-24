@@ -1004,6 +1004,7 @@ Hide the Create tab	만들기 탭 숨기기
 Hide the Explore tab	탐색 탭 숨기기
 Hide the Jobs tab	채용 정보 탭 숨기기
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	탭 바에서 이 탭을 없애요. 해당 페이지는 메뉴에 그대로 있어요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	탭 바에서 이 탭을 없애요. 해당 페이지는 메뉴에 그대로 있어요. 숨길 메뉴 타일에서 고르면 메뉴에서도 빠져요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	"%1$s" 스위치가 켜져 있으면 %2$s 탭이 탭 바에 없으므로 Facebook이 홈에서 열려요. 선택한 설정은 저장된 상태로 남아요.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	릴스 탭(일부 계정에서는 동영상)에 점이나 새 항목 수가 표시되지 않아요. 다른 탭은 그대로 표시돼요.

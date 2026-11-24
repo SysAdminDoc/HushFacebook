@@ -1004,6 +1004,7 @@ Hide the Create tab	ซ่อนแท็บสร้าง
 Hide the Explore tab	ซ่อนแท็บสำรวจ
 Hide the Jobs tab	ซ่อนแท็บงาน
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	นำแท็บนี้ออกจากแถบแท็บ แต่หน้าของแท็บนี้จะยังคงอยู่ในเมนู โปรดรีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	นำแท็บนี้ออกจากแถบแท็บ แต่หน้าของแท็บนี้จะยังคงอยู่ในเมนู เว้นแต่คุณจะเลือกไว้ใน ไทล์เมนูที่ต้องการซ่อน โปรดรีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook จะเปิดไปที่หน้าหลักในขณะที่เปิด "%1$s" เนื่องจาก %2$s ไม่ได้อยู่บนแถบแท็บ ตัวเลือกของคุณจะยังคงได้รับการบันทึกไว้
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	ไม่แสดงจุดหรือจำนวนรายการใหม่บนแท็บ Reels ซึ่งบางบัญชีจะเรียกว่าแท็บวิดีโอ ส่วนแท็บอื่นๆ จะยังคงแสดงตามปกติ

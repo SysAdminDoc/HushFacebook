@@ -1026,6 +1026,7 @@ Hide the Create tab	Скрывать вкладку «Создать»
 Hide the Explore tab	Скрывать вкладку «Интересное»
 Hide the Jobs tab	Скрывать вкладку «Вакансии»
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Удаляет эту вкладку с панели вкладок. Ее страница по-прежнему доступна в меню. Перезапустите Facebook, чтобы увидеть изменения.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Удаляет эту вкладку с панели вкладок. Ее страница по-прежнему доступна в меню, если не выбрать ее в разделе «Плитки меню для скрытия». Перезапустите Facebook, чтобы увидеть изменения.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Пока включена настройка «%1$s», Facebook открывается на вкладке «Главная», поскольку «%2$s» удалена с панели вкладок. Ваш выбор сохраняется.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	На вкладке Reels (в некоторых аккаунтах она называется «Видео») не будет точки или счетчика новых элементов. На остальных вкладках счетчики сохраняются.

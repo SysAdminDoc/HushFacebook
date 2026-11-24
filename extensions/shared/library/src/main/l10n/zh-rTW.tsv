@@ -1008,6 +1008,7 @@ Hide the Create tab	隱藏建立分頁
 Hide the Explore tab	隱藏探索分頁
 Hide the Jobs tab	隱藏工作機會分頁
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	從分頁列移除此分頁。仍可在選單中找到其頁面。重新啟動 Facebook 後生效。
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	從分頁列移除此分頁。仍可在選單中找到其頁面，除非你在「要隱藏的選單方塊」中選取它。重新啟動 Facebook 後生效。
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	啟用 %1$s 時，由於 %2$s 已不在分頁列，Facebook 會開啟首頁。你的選擇仍會儲存。
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	不顯示 Reels 分頁（部分帳號稱為「影片」）上的提示點與新增數量。其他分頁不受影響。

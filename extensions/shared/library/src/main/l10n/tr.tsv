@@ -1004,6 +1004,7 @@ Hide the Create tab	Oluştur sekmesini gizle
 Hide the Explore tab	Keşfet sekmesini gizle
 Hide the Jobs tab	İş İlanları sekmesini gizle
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Bu sekmeyi sekme çubuğundan kaldırır. Sayfası Menü'de durur. Değişikliği görmek için Facebook'u yeniden başlatın.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Bu sekmeyi sekme çubuğundan kaldırır. Gizlenecek Menü kutucukları içinde seçmediğiniz sürece sayfası Menü'de durur. Değişikliği görmek için Facebook'u yeniden başlatın.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	“%1$s” açıkken Facebook Ana Sayfa'da açılır, çünkü %2$s sekme çubuğunda yoktur. Seçiminiz kayıtlı kalır.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Bazı hesaplarda Video adıyla görünen Reels sekmesinde nokta ya da yeni sayısı olmaz. Diğer sekmeler kendilerininkini korur.

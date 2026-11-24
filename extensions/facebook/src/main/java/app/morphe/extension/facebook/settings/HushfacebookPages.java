@@ -144,11 +144,16 @@ final class HushfacebookPages {
         }
         if (build.contains(PatchFamily.HIDDEN_TABS)) {
             subheading(tabs, L10n.t("Tabs to hide"));
-            // Facebook builds the tab bar once, so a change waits for a restart.
+            // Facebook builds the tab bar once, so a change waits for a restart. The page stays in the
+            // Menu, which is the side panel on some accounts, so the summary names the row that takes
+            // it out of there too, where the build has it (#564).
+            String summary = build.contains(PatchFamily.MENU_PROMOTIONS)
+                    ? L10n.t("Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in "
+                            + "Menu tiles to hide. Restart Facebook to see the change.")
+                    : L10n.t("Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the "
+                            + "change.");
             for (HiddenTabs.Tab tab : HiddenTabs.Tab.values()) {
-                tabs.addPreference(toggle(context, tab.setting(),
-                        L10n.t("Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the "
-                                + "change.")));
+                tabs.addPreference(toggle(context, tab.setting(), summary));
             }
             // The tabs left on the bar, in the order you pick (#341). Also built once, so it waits too.
             tabs.addPreference(TabOrderRow.row(page, context));

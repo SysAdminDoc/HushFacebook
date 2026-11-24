@@ -49,6 +49,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide prompts and promos under reels` now cleans the row under a video in the feed too, where "Made with Edits" sat beside the poster's name. Remix, Use template, Stars and the other prompts it hides on reels go from that row as well, and `Hide the audio line on reels` takes the sound out of it. That row keeps a list of its own, so the switch never reached it before. (#314)
 * With `Hide the audio line on reels` and `Show the post date on reels` both on, a reel keeps its date. The date sits on the audio line, so hiding the line took the date along with it. Now the line stays with just the date on it and the song left off. (#496)
 * A long press on a reel's Download, Cast or Clean mode button no longer opens an empty gray box when your phone's font size is set above the default. With larger text Facebook shows a big copy of a button's label on a long press, and these buttons have no label under them, so the box came up empty. (#518)
+* The switches under `Tabs to hide` now point to `Menu tiles to hide`. Hiding a tab leaves its page in the Menu, which is the side panel on some accounts, and that list is what takes it out of there too. (#564)
 
 ## 0.24.0 (2026-11-22)
 

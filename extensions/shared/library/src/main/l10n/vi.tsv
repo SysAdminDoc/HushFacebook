@@ -1004,6 +1004,7 @@ Hide the Create tab	Ẩn tab Tạo
 Hide the Explore tab	Ẩn tab Khám phá
 Hide the Jobs tab	Ẩn tab Việc làm
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Gỡ tab này khỏi thanh tab. Trang của tab vẫn có trong Menu. Khởi động lại Facebook để thấy thay đổi.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Gỡ tab này khỏi thanh tab. Trang của tab vẫn có trong Menu, trừ khi bạn chọn nó trong Ô trong Menu cần ẩn. Khởi động lại Facebook để thấy thay đổi.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook mở ở Trang chủ khi %1$s đang bật, vì %2$s không còn trên thanh tab. Lựa chọn của bạn vẫn được lưu.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Không có chấm hay số mục mới trên tab Reels (một số tài khoản gọi là Video). Các tab khác vẫn giữ.

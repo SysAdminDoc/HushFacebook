@@ -1001,6 +1001,7 @@ Hide the Create tab	隐藏“创建”标签页
 Hide the Explore tab	隐藏“探索”标签页
 Hide the Jobs tab	隐藏“招聘”标签页
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	从标签栏中移除此标签页。它的页面仍在菜单中。重启 Facebook 后可看到更改。
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	从标签栏中移除此标签页。它的页面仍在菜单中，除非你在“要隐藏的菜单图块”中选中它。重启 Facebook 后可看到更改。
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	开启“%1$s”后，Facebook 会打开主页，因为“%2$s”已不在标签栏上。你的选择仍会保存。
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Reels 标签页（部分账号称为“视频”）上不显示圆点或新内容数量。其他标签页保持原样。

@@ -1004,6 +1004,7 @@ Hide the Create tab	Nascondi la scheda Crea
 Hide the Explore tab	Nascondi la scheda Esplora
 Hide the Jobs tab	Nascondi la scheda Offerte di lavoro
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Rimuove questa scheda dalla barra delle schede. La sua pagina resta nel Menu. Riavvia Facebook per vedere la modifica.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Rimuove questa scheda dalla barra delle schede. La sua pagina resta nel Menu, a meno che tu non la scelga in Riquadri del Menu da nascondere. Riavvia Facebook per vedere la modifica.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook si apre sulla Home mentre %1$s è attivo, perché %2$s non è nella barra delle schede. La tua scelta resta salvata.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Nessun pallino né contatore di novità sulla scheda Reels, chiamata Video su alcuni account. Le altre schede mantengono i loro.
