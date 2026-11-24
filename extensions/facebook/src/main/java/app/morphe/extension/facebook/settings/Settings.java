@@ -692,8 +692,9 @@ public class Settings extends BaseSettings {
 
     /**
      * Each takes one button out of the row under a post (issue #265, {@link
-     * app.morphe.extension.facebook.feed.PostSaveButton}): Like, Comment, Repost (#450), Share or
-     * Send. Start off.
+     * app.morphe.extension.facebook.feed.PostSaveButton}): Like, Comment, Repost (#450), Share,
+     * Send, or Save, which Facebook now shows some accounts on its own (#541) and which this wins
+     * over POST_SAVE_BUTTON. Start off.
      */
     public static final BooleanSetting HIDE_POST_LIKE_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_like_button", FALSE);
@@ -705,6 +706,8 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_post_share_button", FALSE);
     public static final BooleanSetting HIDE_POST_SEND_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_send_button", FALSE);
+    public static final BooleanSetting HIDE_POST_SAVE_BUTTON =
+            new BooleanSetting("hushfacebook_hide_post_save_button", FALSE);
 
     /**
      * A tap on the empty part of the row under a post, between its buttons and the reaction faces,

@@ -596,6 +596,7 @@ Hide Repost under posts	Скрывать кнопку «Репост» под п
 Hide Share under posts	Скрывать кнопку «Поделиться» под публикациями
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Скрывать кнопку «Отправить» под публикациями
+Hide Save under posts	Скрывать кнопку «Сохранить» под публикациями
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Удаляет эту кнопку из строки под публикациями в Ленте. Остальные кнопки остаются. Если скрыты все кнопки публикации, строка не отображается.
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post

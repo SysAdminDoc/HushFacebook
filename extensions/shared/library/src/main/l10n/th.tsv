@@ -590,6 +590,7 @@ Hide Repost under posts	ซ่อน "รีโพสต์" ใต้โพส�
 Hide Share under posts	ซ่อน "แชร์" ใต้โพสต์
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	ซ่อน "ส่ง" ใต้โพสต์
+Hide Save under posts	ซ่อน "บันทึก" ใต้โพสต์
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	นำปุ่มนี้ออกจากแถวใต้โพสต์ในฟีด ปุ่มอื่นๆ จะยังคงอยู่ และโพสต์ที่ซ่อนปุ่มทั้งหมดจะไม่แสดงแถวปุ่ม
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post

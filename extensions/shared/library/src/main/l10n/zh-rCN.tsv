@@ -590,6 +590,7 @@ Hide Repost under posts	隐藏帖子下方的转发
 Hide Share under posts	隐藏帖子下方的分享
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	隐藏帖子下方的发送
+Hide Save under posts	隐藏帖子下方的保存
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	从动态中帖子下方的按钮行里移除这个按钮。其他按钮保留，所有按钮都隐藏的帖子不显示按钮行。
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post

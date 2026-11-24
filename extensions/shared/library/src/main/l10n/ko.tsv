@@ -590,6 +590,7 @@ Hide Repost under posts	게시물 아래 리포스트 숨기기
 Hide Share under posts	게시물 아래 공유하기 숨기기
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	게시물 아래 보내기 숨기기
+Hide Save under posts	게시물 아래 저장 숨기기
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	피드 게시물 아래 줄에서 이 버튼을 없애요. 다른 버튼은 그대로 남고, 모든 버튼을 숨긴 게시물에는 줄이 표시되지 않아요.
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post

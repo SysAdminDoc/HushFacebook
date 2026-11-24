@@ -27,6 +27,14 @@ public final class PostActionButtonsForTests {
         return PostSaveButton.types(Arrays.asList("LIKE", "COMMENT", "SHARE"), SAVE).contains(SAVE);
     }
 
+    /**
+     * True when a row with Facebook's own Save loses it (#541). With every switch on, hiding Save wins
+     * over adding it, so this is the Save probe that runs then.
+     */
+    public static boolean hidesSave() {
+        return !PostSaveButton.types(Arrays.asList("REACT", SAVE, "SHARE"), SAVE).contains(SAVE);
+    }
+
     /** True when a row of Like (Facebook's REACT), Comment and Share loses Like. */
     public static boolean hidesLike() {
         return !PostSaveButton.types(Arrays.asList("REACT", "COMMENT", "SHARE"), SAVE).contains("REACT");

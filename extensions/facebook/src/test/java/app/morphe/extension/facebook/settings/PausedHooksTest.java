@@ -702,10 +702,10 @@ public class PausedHooksTest {
         // Your own profile's count line shows the number you typed.
         probes.put(PatchFamily.LOCAL_PROFILE_COUNTS,
                 Collections.singletonList(app.morphe.extension.facebook.profile.LocalProfileCountsForTests::swapsAFriendsCount));
-        // A post's row gets Save and loses Like, a video post's row gets Download, and the row goes
-        // without its own tap.
+        // A post's row loses Facebook's own Save and Like, a video post's row gets Download, and the
+        // row goes without its own tap. With every switch on, hiding Save wins over adding it (#541).
         probes.put(PatchFamily.POST_ACTION_BUTTONS, Arrays.asList(
-                PostActionButtonsForTests::addsSave,
+                PostActionButtonsForTests::hidesSave,
                 PostActionButtonsForTests::hidesLike,
                 PostActionButtonsForTests::addsDownload,
                 PostActionButtonsForTests::leavesTheTapOff));

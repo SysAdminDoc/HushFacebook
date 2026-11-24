@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Tap the video to bring them back` sits under Burn-in guard. Once the buttons on a reel fade, a tap on the video brings them back without pausing it. The next tap pauses like always, and holding for 2x still works. It's off until you turn it on. (#523)
 * `Faint Clean mode button` under Reels and Watch makes Facebook's button for leaving Clean mode see-through, so the text in the video under it stays readable. It still works when you tap it, and it starts off. (#519)
 * `Material You theme` has a switch now, under Colors and theme in the Hush settings. Turn it off, restart Facebook, and it's back to Facebook's own colors without patching again. Turn it back on the same way. Your accent color and AMOLED black still work with it off. The switch shows on Android 11 and up. (Discussion #527)
+* `Hide Save under posts` sits with the other hide switches under News feed. Facebook has started putting its own Save button under posts for some accounts, and this takes it out. If `Save button under posts` is on too, hiding wins. (#541)
 
 ### Fixed
 

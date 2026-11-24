@@ -536,6 +536,7 @@ Hide Repost under posts	Ocultar Repostar abaixo das publicações
 Hide Share under posts	Ocultar Compartilhar abaixo das publicações
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Ocultar Enviar abaixo das publicações
+Hide Save under posts	Ocultar Salvar abaixo das publicações
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Tira este botão da linha abaixo das publicações no feed. Os outros botões ficam, e uma publicação com todos os botões ocultos não mostra a linha.
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
