@@ -77,6 +77,11 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
  * <p>With the AMOLED black theme in the same build, AMOLED goes first. Its black backgrounds and
  * near-black cards reach this class in colours no dark-theme token has, so they stay as AMOLED made
  * them, and this class recolours text, icons, dividers and the buttons and inputs AMOLED leaves grey.
+ *
+ * <p>With its switch off (D#527, {@link MaterialYouSwitch}) every route here answers the colour it
+ * was given, which is Facebook's, or AMOLED's when AMOLED went first, route three's fields hold
+ * Facebook's surfaces, and the colours route two changed in the resources go back to Facebook's
+ * ({@link AccentResources#recolour}).
  */
 public final class MaterialYouTheme {
 
@@ -232,7 +237,8 @@ public final class MaterialYouTheme {
         // Only with the theme in the build: nothing asks for the phone's palette otherwise, and the
         // read it makes through the Accent color row was what an Android 11 phone without the theme
         // saw as a toast at every start (#300).
-        if (SettingsStatus.materialYouTheme()) bind();
+        // Nor with its switch off (D#527), when every route answers Facebook's colour.
+        if (SettingsStatus.materialYouTheme() && MaterialYouSwitch.switchedOn()) bind();
     }
 
     /**
@@ -258,6 +264,7 @@ public final class MaterialYouTheme {
     }
 
     private static int fds(int color, String name) {
+        if (!MaterialYouSwitch.switchedOn()) return color;
         if (!DarkMode.on()) {
             int themed = lightFds(color, name);
             if (themed == color && isLightSurface(color)) noteUnlisted(name, color);
@@ -410,7 +417,7 @@ public final class MaterialYouTheme {
      */
     public static int mig(int color, Object token) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
-        if ((color >>> 24) != 0xFF || !DarkMode.on()) return color;
+        if (!MaterialYouSwitch.switchedOn() || (color >>> 24) != 0xFF || !DarkMode.on()) return color;
         int themed = recolour(palette(), color);
         return token instanceof Enum ? AmoledTheme.foreground(themed, ((Enum<?>) token).name()) : themed;
     }
@@ -503,7 +510,10 @@ public final class MaterialYouTheme {
 
     static int sheetBackground(int color, boolean amoled) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
-        if (amoled || !DarkMode.on() || !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_BAR_CHANNEL)) return color;
+        if (amoled || !MaterialYouSwitch.switchedOn() || !DarkMode.on()
+                || !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_BAR_CHANNEL)) {
+            return color;
+        }
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 
@@ -530,6 +540,7 @@ public final class MaterialYouTheme {
 
     static int bloksFill(int color, boolean amoled) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
+        if (!MaterialYouSwitch.switchedOn()) return color;
         if (amoled && (AmoledTheme.bloksFill(color) != color || AmoledTheme.ownsWithoutToken(color))) return color;
         if (!DarkMode.on()) return lightSurface(color);
         if (!isSurface(color) && Arrays.binarySearch(DARK_GREYS, color) < 0) return color;
@@ -703,7 +714,7 @@ public final class MaterialYouTheme {
      * @return whether it changed the background
      */
     static boolean recolourWindow(@Nullable Window window, boolean amoled) {
-        if (window == null) return false;
+        if (window == null || !MaterialYouSwitch.switchedOn()) return false;
         View decor = window.peekDecorView();
         if (decor == null) return false;
         Drawable background = decor.getBackground();
@@ -776,7 +787,7 @@ public final class MaterialYouTheme {
      * @return how many views it recoloured
      */
     static int recolourBackgrounds(View root) {
-        if (SettingsStatus.amoledTheme() && DarkMode.on()) return 0;
+        if (!MaterialYouSwitch.switchedOn() || (SettingsStatus.amoledTheme() && DarkMode.on())) return 0;
         return recolourBackgrounds(root, 0);
     }
 
@@ -956,7 +967,7 @@ public final class MaterialYouTheme {
      * other colour, keep it.
      */
     private static int lightSurface(int color) {
-        if (DarkMode.on() || !isLightSurface(color)) return color;
+        if (!MaterialYouSwitch.switchedOn() || DarkMode.on() || !isLightSurface(color)) return color;
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 
@@ -967,7 +978,9 @@ public final class MaterialYouTheme {
      */
     private static int darkSiteGrey(int color) {
         int themed = withoutToken(color);
-        if (themed != color || !DarkMode.on() || Arrays.binarySearch(DARK_GREYS, color) < 0) return themed;
+        if (themed != color || !MaterialYouSwitch.switchedOn() || !DarkMode.on() || Arrays.binarySearch(DARK_GREYS, color) < 0) {
+            return themed;
+        }
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 
@@ -977,6 +990,7 @@ public final class MaterialYouTheme {
      * Facebook has said which mode is on, light mode included (issue #141).
      */
     private static int withoutToken(int color) {
+        if (!MaterialYouSwitch.switchedOn()) return color;
         if (isSurface(color) && DarkMode.on()) return palette().sameLightness(TonePalette.NEUTRAL, color);
         if (isServerBlue(color) && DarkMode.hasAnswered()) return palette().sameLightness(TonePalette.ACCENT, color);
         return color;
@@ -1011,7 +1025,7 @@ public final class MaterialYouTheme {
     static int statusBar(int color, boolean dark, boolean amoled) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
         if (amoled) color = AmoledTheme.statusBar(color, dark);
-        if (!dark || !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_BAR_CHANNEL)) return color;
+        if (!MaterialYouSwitch.switchedOn() || !dark || !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_BAR_CHANNEL)) return color;
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 
@@ -1031,7 +1045,7 @@ public final class MaterialYouTheme {
     static int navigationBar(int color, boolean dark, boolean amoled) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
         if (amoled) color = AmoledTheme.navigationBar(color, dark);
-        if (!dark || !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_CHANNEL)) return color;
+        if (!MaterialYouSwitch.switchedOn() || !dark || !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_CHANNEL)) return color;
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 
@@ -1072,6 +1086,7 @@ public final class MaterialYouTheme {
      */
     public static int tabBarSelected(int color) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
+        if (!MaterialYouSwitch.switchedOn()) return color;
         return tabBarSelected(palette(), color, DarkMode.on());
     }
 
@@ -1139,10 +1154,14 @@ public final class MaterialYouTheme {
     public static final LogBufferManager.ReportSection REPORT = new LogBufferManager.ReportSection() {
         @Override public String title() { return "MATERIAL YOU"; }
         @Override public List<String> lines() {
-            return SettingsStatus.materialYouTheme() ? Collections.singletonList(reportLine(palette())) : Collections.emptyList();
+            if (!SettingsStatus.materialYouTheme()) return Collections.emptyList();
+            return Collections.singletonList(MaterialYouSwitch.switchedOn() ? reportLine(palette()) : SWITCHED_OFF);
         }
         @Override public boolean isAppState() { return true; }
     };
+
+    /** The report's line with the theme's switch off (D#527). */
+    static final String SWITCHED_OFF = "switched off: Facebook's own colours, no palette";
 
     /** Where the palette came from and how colourful its accent is. No colours: they follow the wallpaper. */
     static String reportLine(@Nullable TonePalette p) {
@@ -1182,6 +1201,23 @@ public final class MaterialYouTheme {
         }
     }
 
+    /**
+     * Called as Facebook starts, right after the extension gets its context, before Facebook's own
+     * startup reads a colour. Route three's fields take the switch's answer (D#527): the class can
+     * load before the settings are ready, when the switch reads off. With the switch off, the
+     * application's resources take back the colours route two changed ({@link AccentResources#recolour}),
+     * as each activity's do as it's created.
+     */
+    public static void load() {
+        try {
+            publish();
+            if (MaterialYouSwitch.off()) AccentResources.load();
+        } catch (Throwable failure) {
+            // Throwable, as in every hook: this runs as Facebook starts.
+            Logger.printException(() -> "Material You theme: could not set itself up at the start", failure);
+        }
+    }
+
     static void reload(Context context) {
         palette = phonePalette(context);
         publish();
@@ -1207,7 +1243,7 @@ public final class MaterialYouTheme {
      */
     private static void publish() {
         synchronized (PUBLISHING) {
-            TonePalette p = DarkMode.on() ? palette : null;
+            TonePalette p = DarkMode.on() && MaterialYouSwitch.switchedOn() ? palette : null;
             DARK_101011 = surface(p, 0x101011);
             DARK_18191A = surface(p, 0x18191A);
             DARK_1C1C1D = surface(p, 0x1C1C1D);

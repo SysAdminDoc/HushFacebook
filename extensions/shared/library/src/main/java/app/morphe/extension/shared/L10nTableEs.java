@@ -970,8 +970,8 @@ final class L10nTableEs {
                 "Fondo oscuro detr\u00e1s de los nombres de reels");
         table.put("Dark box behind story names",
                 "Fondo oscuro detr\u00e1s de los nombres de historias");
-        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.",
-                "El modo oscuro y esta pantalla usan colores de tu fondo de pantalla (azul en Android 11). Activa el modo oscuro en Facebook para verlo.");
+        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.",
+                "El modo oscuro y esta pantalla usan colores de tu fondo de pantalla (azul en Android 11). Desact\u00edvalo para volver a los colores de antes sin volver a parchear. Reinicia Facebook para ver el cambio.");
         table.put("Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.",
                 "El modo oscuro usa %1$s en lugar de gris oscuro. Activa el modo oscuro en Facebook para verlo.");
         table.put("Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.",

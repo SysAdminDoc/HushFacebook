@@ -206,6 +206,46 @@ class MaterialYouStylesTest {
         assertEquals(emptySet<String>(), pointedAt - given.map { it.first }.toSet())
     }
 
+    /**
+     * D#527: with the originals noted, each item points at the palette through a colour of the
+     * patch's own for the value it held, so the theme's switch can hand every item its value back.
+     * Light mode's names still all have a value (issue #323).
+     */
+    @Test
+    fun `with the originals noted each item goes through a colour for the value it held`() {
+        val night = xml("<resources/>")
+        val paletteColours = xml("<resources/>")
+        val stateLists = mutableMapOf<String, String>()
+        val originals = sortedMapOf<String, StyleOriginal>()
+        val changed = writeNightStyles(darkFdsStyles(defaults(), tokens), colours, nightColourNames, tokens, night,
+            paletteColours, xml("<resources/>"), stateLists, setOf("PRIMARY_TEXT"), originals)
+        assertEquals(6, changed)
+
+        val copies = night.elements("style.2").associateBy { it.getAttribute("name") }
+        val dark = copies.getValue("dark").items()
+        assertEquals("a reference keeps the name it named", "@color/hushfacebook_you_was_r_blue_alias",
+            dark[attribute("PRIMARY_BUTTON_BACKGROUND")])
+        assertEquals("a colour keeps its value", "@color/hushfacebook_you_was_c_ff333334", dark[attribute("CARD_BACKGROUND")])
+        assertEquals("the logo keeps Facebook's blue", "@color/blue", dark[attribute("FB_LOGO")])
+        assertEquals("a plain token's own colour is told apart", "@color/hushfacebook_you_was_r_text_t",
+            copies.getValue("darker_child").items()[attribute("PRIMARY_TEXT")])
+
+        val given = paletteColours.elements("color").associate { it.getAttribute("name") to it.textContent }
+        assertEquals("each own colour points at the palette colour the item took before",
+            "@color/hushfacebook_you_accent_l48", given["hushfacebook_you_was_r_blue_alias"])
+        assertEquals("@color/hushfacebook_you_neutral_l21", given["hushfacebook_you_was_c_ff333334"])
+        assertEquals("@color/hushfacebook_you_neutral_95", given["hushfacebook_you_was_r_text_t"])
+        assertEquals(StyleOriginal("@color/blue_alias", 0xFF0866FF.toInt()), originals["hushfacebook_you_was_r_blue_alias"])
+        assertEquals(StyleOriginal("#ff333334", 0xFF333334.toInt()), originals["hushfacebook_you_was_c_ff333334"])
+        assertEquals(StyleOriginal("@color/text", 0xFFF2F4F7.toInt()), originals["hushfacebook_you_was_r_text_t"])
+        assertEquals("one per value and kind", 6, originals.size)
+
+        val pointedAt = night.elements("style.2").flatMap { it.items().values }
+            .filter { it.startsWith("@color/hushfacebook_you_") }.map { it.removePrefix("@color/") }.toSet()
+        assertEquals("every own colour an item names has a default value", emptySet<String>(), pointedAt - given.keys)
+        assertEquals(originals.keys, pointedAt)
+    }
+
     @Test
     fun `a shade keeps the listed colour's lightness and alpha on both routes`() {
         val tint = checkNotNull(nightShade(0x331D85FC))

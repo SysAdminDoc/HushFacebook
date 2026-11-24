@@ -208,6 +208,7 @@ import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.theme.DarkMode;
 import app.morphe.extension.facebook.theme.FeedGapsForTests;
 import app.morphe.extension.facebook.theme.ForceDarkModeForTests;
+import app.morphe.extension.facebook.theme.MaterialYouForTests;
 import app.morphe.extension.facebook.updates.UpdatePrompts;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
@@ -1065,6 +1066,8 @@ public class PausedHooksTest {
                     DarkMode.answer(true);
                     return FeedGapsForTests.drawsTheGap();
                 }));
+        // Material You: a server colour in dark mode takes the palette's (D#527).
+        probes.put(PatchFamily.MATERIAL_YOU_THEME, Collections.singletonList(MaterialYouForTests::recolours));
         // A request for a post's comments that names no order asks for the chosen one, and with
         // All comments chosen, the menu its answer draws is picked in.
         probes.put(PatchFamily.DEFAULT_COMMENT_ORDER, Arrays.asList(

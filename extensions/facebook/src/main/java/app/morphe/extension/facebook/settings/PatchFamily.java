@@ -363,7 +363,8 @@ public enum PatchFamily {
     // The theme is written into the APK and stays; Pause takes Black cards back to near black and the lines away.
     AMOLED_THEME(FamilyNames.AMOLED_THEME, "amoledTheme", FamilyNames.AMOLED_THEME, Settings.AMOLED_FLAT_CARDS,
             Settings.AMOLED_FEED_GAPS),
-    MATERIAL_YOU_THEME(FamilyNames.MATERIAL_YOU_THEME, "materialYouTheme", FamilyNames.MATERIAL_YOU_THEME),
+    // Written into the APK too, but its switch puts Facebook's colours back at the next start (D#527), and Pause with it.
+    MATERIAL_YOU_THEME(FamilyNames.MATERIAL_YOU_THEME, "materialYouTheme", null, Settings.MATERIAL_YOU),
     // No switch: a list picks the accent, and Pause makes it read Facebook's blue, so nothing stays in.
     ACCENT_COLOR(FamilyNames.ACCENT_COLOR, "accentColor", Settings.ACCENT_COLOR),
     // No switch: three color codes pick the colors, and Pause makes them read Facebook's own.

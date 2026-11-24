@@ -915,14 +915,15 @@ public final class AmoledTheme {
      * Reads the Background color row (issue #214), once, as Facebook's application starts: the patch
      * calls this right after the extension gets its context, before Facebook sets itself up, and the
      * application's resources take the row's colour from here ({@link AmoledResources}). A blank
-     * row, a paused Facebook, a colour the row's rule refuses and a build with Material You keep the
-     * patch's colour. Material You recolours the same greys, and its resources aren't this table's.
+     * row, a paused Facebook, a colour the row's rule refuses and Material You running (in the build,
+     * its switch on) keep the patch's colour. Material You recolours the same greys, and its resources
+     * aren't this table's.
      * The Light background color row is read here too ({@link #loadLight}), and the application's
      * resources take either row's colour once both are read.
      */
     public static void load() {
         try {
-            if (!Utils.settingsReady() || SettingsStatus.materialYouTheme()) return;
+            if (!Utils.settingsReady() || MaterialYouSwitch.on()) return;
             try {
                 loadLight();
             } catch (Throwable failure) {

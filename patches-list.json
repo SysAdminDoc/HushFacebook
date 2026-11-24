@@ -3058,7 +3058,7 @@
     },
     {
       "name": "Material You theme",
-      "description": "Gives Facebook the colors of your wallpaper on Android 12 and newer, so it matches your phone. Dark mode takes them everywhere, and light mode on its grays, blues and selected tab. It isn't selected by default because undoing it means patching again. Turn on Expert mode in Manager to pick it.",
+      "description": "Gives Facebook the colors of your wallpaper on Android 12 and newer, so it matches your phone. Dark mode takes them everywhere, and light mode on its grays, blues and selected tab. A switch in Hushfacebook's settings turns it off without patching again. It isn't selected by default because it recolors Facebook as soon as it's patched in. Turn on Expert mode in Manager to pick it.",
       "category": "Theme",
       "use": false,
       "dependencies": [

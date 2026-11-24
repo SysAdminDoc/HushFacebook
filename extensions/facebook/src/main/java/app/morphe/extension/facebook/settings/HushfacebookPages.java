@@ -23,6 +23,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
@@ -45,6 +46,7 @@ import app.morphe.extension.facebook.settings.SettingsRows.PictureRow;
 import app.morphe.extension.facebook.settings.SettingsRows.Row;
 import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.theme.MarkColors;
+import app.morphe.extension.facebook.theme.MaterialYouSwitch;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -201,9 +203,17 @@ final class HushfacebookPages {
             chooseEmoji.show();
         }
         subheading(appearance, L10n.t("Colors and theme"));
+        // The theme as this start runs it: the switch is read once, as Facebook starts (D#527).
+        boolean materialYou = build.contains(PatchFamily.MATERIAL_YOU_THEME) && MaterialYouSwitch.switchedOn();
+        if (build.contains(PatchFamily.MATERIAL_YOU_THEME) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Its resources go back as Facebook starts, which needs Android 11's resource loaders (D#527).
+            appearance.addPreference(toggle(context, Settings.MATERIAL_YOU,
+                    L10n.t("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off "
+                            + "to go back to the old colors without patching again. Restart Facebook to see the change.")));
+        }
         if (build.contains(PatchFamily.ACCENT_COLOR)) {
             // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.
-            appearance.addPreference(accentRow(page, context, build.contains(PatchFamily.MATERIAL_YOU_THEME)));
+            appearance.addPreference(accentRow(page, context, materialYou));
         }
         if (build.contains(PatchFamily.MARK_COLORS)) {
             // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.
@@ -219,8 +229,8 @@ final class HushfacebookPages {
         }
         if (build.contains(PatchFamily.AMOLED_THEME)) {
             // Read once as Facebook starts (#214). Material You recolours the same greys, light mode's too,
-            // so it has neither row there.
-            if (!build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
+            // so it has neither row while it's switched on.
+            if (!materialYou) {
                 appearance.addPreference(page.backgroundRow(context));
                 appearance.addPreference(page.lightBackgroundRow(context));
             }
@@ -233,7 +243,7 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.AMOLED_FEED_GAPS,
                     L10n.t("A thin gray line between posts in the feed, so posts without photos don't run together on "
                             + "the black page.")));
-        } else if (!build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
+        } else if (!materialYou) {
             // Morphe Manager leaves the theme out unless it's picked, so dark mode staying gray says why (#275).
             appearance.addPreference(info(context, L10n.t(FamilyNames.AMOLED_THEME),
                     L10n.f("Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it "
@@ -331,7 +341,7 @@ final class HushfacebookPages {
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.AD_PREFETCH) || build.contains(PatchFamily.AD_TELEMETRY)
                 || build.contains(PatchFamily.AUDIENCE_NETWORK) || build.contains(PatchFamily.AMOLED_THEME)
-                || build.contains(PatchFamily.MATERIAL_YOU_THEME) || build.contains(PatchFamily.RESTORE_TRUST)
+                || build.contains(PatchFamily.RESTORE_TRUST)
                 || build.contains(PatchFamily.INSTALL_BESIDE_META_APPS) || build.contains(PatchFamily.OPEN_IN_FACEBOOK)) {
             PreferenceCategory patched = category(screen, L10n.t("Built-in changes"));
             if (build.contains(PatchFamily.AD_PREFETCH)) {
@@ -349,11 +359,6 @@ final class HushfacebookPages {
             if (build.contains(PatchFamily.AMOLED_THEME)) {
                 patched.addPreference(mark(info(context, L10n.t(PatchFamily.AMOLED_THEME.staysWhilePaused),
                         amoledSummary(AmoledTheme.background())), SettingsIcons.MOON));
-            }
-            if (build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
-                patched.addPreference(mark(info(context, L10n.t(PatchFamily.MATERIAL_YOU_THEME.staysWhilePaused),
-                        L10n.t("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in "
-                                + "Facebook to see it.")), SettingsIcons.APPEARANCE));
             }
             if (build.contains(PatchFamily.RESTORE_TRUST)) {
                 patched.addPreference(mark(info(context, L10n.t(PatchFamily.RESTORE_TRUST.staysWhilePaused),

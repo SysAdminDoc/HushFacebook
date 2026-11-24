@@ -26,14 +26,14 @@ public final class ReactColours {
 
     /** A view's background colour. */
     public static int background(int color) {
-        boolean materialYou = SettingsStatus.materialYouTheme();
+        boolean materialYou = MaterialYouSwitch.on();
         int themed = background(color, SettingsStatus.amoledTheme(), materialYou);
         return materialYou || !SettingsStatus.accentColor() ? themed : AccentColor.reactBackground(themed);
     }
 
     /** A text span's colour. */
     public static int text(int color) {
-        return text(color, SettingsStatus.materialYouTheme(), SettingsStatus.accentColor());
+        return text(color, MaterialYouSwitch.on(), SettingsStatus.accentColor());
     }
 
     /** {@link #text(int)} with the themes in the build given: Material You decides when it's there. */
@@ -44,7 +44,7 @@ public final class ReactColours {
     /** A border's or an image tint's colour, or null when the screen set none. */
     @Nullable
     public static Integer colour(@Nullable Integer color) {
-        return colour(color, SettingsStatus.materialYouTheme());
+        return colour(color, MaterialYouSwitch.on());
     }
 
     /**

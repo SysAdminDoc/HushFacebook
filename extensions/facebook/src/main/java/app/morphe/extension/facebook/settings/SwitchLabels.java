@@ -466,6 +466,7 @@ final class SwitchLabels {
         if (setting == Settings.FORCE_DARK_MODE) return L10n.t("Force dark mode");
         if (setting == Settings.AMOLED_FLAT_CARDS) return L10n.t("Black cards");
         if (setting == Settings.AMOLED_FEED_GAPS) return L10n.t("Lines between posts");
+        if (setting == Settings.MATERIAL_YOU) return L10n.t("Material You theme");
         throw new IllegalArgumentException("No individual switch label: " + setting.key);
     }
 }

@@ -22,8 +22,8 @@ class DefaultSelectionPolicyTest {
     private val keptOptIn = mapOf(
         "AMOLED black theme" to "It has no switch: it writes black into Facebook's dark mode resources and code " +
             "when you patch, so taking it back out means patching again.",
-        "Material You theme" to "It has no switch: it recolours Facebook's dark mode resources and styles when you " +
-            "patch, so taking it back out means patching again.",
+        "Material You theme" to "Its switch starts on, since picking the theme asks for it, so it would recolour " +
+            "everyone's Facebook as soon as it's patched in. Turning it off later needs no repatch (D#527).",
         "Disable Play Store updates" to "It raises the version code in the manifest, so a later build without it " +
             "can't install over it, and it doesn't work on a Root Mount install.",
         "GmsCore support" to "Facebook stops asking Google Play services and asks microG-RE instead, so on a phone " +

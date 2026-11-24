@@ -47,7 +47,7 @@ public final class CommentTimeColour {
     /** The time's colour, as the row was about to draw it. Gives the colour to draw. */
     public static int commentTime(int color) {
         boolean amoled = SettingsStatus.amoledTheme();
-        boolean materialYou = SettingsStatus.materialYouTheme();
+        boolean materialYou = MaterialYouSwitch.on();
         if (!amoled && !materialYou) return color;
         HookStatus.invoked(amoled ? FamilyNames.AMOLED_THEME : FamilyNames.MATERIAL_YOU_THEME);
         return commentTime(color, amoled, materialYou, DarkMode.on());

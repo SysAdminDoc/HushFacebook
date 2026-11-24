@@ -67,7 +67,7 @@ Export settings	ส่งออกการตั้งค่า
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook ขัดข้องหรือค้างภายในหนึ่งนาทีหลังเริ่มทำงานติดต่อกัน 3 ครั้ง Hushfacebook จึงหยุดการทำงานชั่วคราวโดยอัตโนมัติ
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook จะไม่ดาวน์โหลดโฆษณาหรือข้อมูลที่ใช้สำหรับเลือกโฆษณาในเบื้องหลังอีกต่อไป
 Facebook doesn't show its ads inside other apps on this phone.	Facebook จะไม่แสดงโฆษณาของตนภายในแอปอื่นๆ บนโทรศัพท์เครื่องนี้
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	โหมดมืดและหน้าจอนี้จะใช้สีจากวอลเปเปอร์ของคุณ (สีน้ำเงินบน Android 11) เปิดโหมดมืดใน Facebook เพื่อดูผลลัพธ์
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	โหมดมืดและหน้าจอนี้จะใช้สีจากวอลเปเปอร์ของคุณ (สีน้ำเงินบน Android 11) ปิดเพื่อกลับไปใช้สีเดิมโดยไม่ต้องแพตช์ใหม่ เริ่มต้น Facebook ใหม่อีกครั้งเพื่อดูการเปลี่ยนแปลง
 Hide Stories between posts	ซ่อนสตอรี่ระหว่างโพสต์
 Joining the picture and sound	กำลังรวมภาพและเสียงเข้าด้วยกัน
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

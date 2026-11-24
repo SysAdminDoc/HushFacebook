@@ -21,6 +21,8 @@ final class ColourTableReader {
         int uiMode;
         int sdkVersion;
         final Map<Integer, Integer> colours = new LinkedHashMap<>();
+        /** Each entry's Res_value type: 0x1c for a colour, 0x01 for a reference to another resource. */
+        final Map<Integer, Integer> types = new LinkedHashMap<>();
     }
 
     final int[] specFlags;
@@ -43,7 +45,9 @@ final class ColourTableReader {
             config.uiMode = in.get(at + 20 + 29);
             for (int index = 0; index < entryCount; index++) {
                 int offset = in.getInt(at + 84 + 4 * index);
-                if (offset != 0xFFFFFFFF) config.colours.put(index, in.getInt(at + entriesStart + offset + 12));
+                if (offset == 0xFFFFFFFF) continue;
+                config.colours.put(index, in.getInt(at + entriesStart + offset + 12));
+                config.types.put(index, in.get(at + entriesStart + offset + 11) & 0xFF);
             }
             configs.add(config);
             at += in.getInt(at + 4);

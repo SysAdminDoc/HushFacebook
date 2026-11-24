@@ -71,7 +71,7 @@ Export settings	Экспортировать настройки
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook три раза подряд аварийно завершил работу или завис в течение минуты после запуска, поэтому Hushfacebook автоматически приостановил свою работу.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook больше не загружает в фоновом режиме рекламу и данные, используемые для ее подбора.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook не показывает свою рекламу в других приложениях на этом телефоне.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Темный режим и этот экран используют цвета обоев (на Android 11 синий цвет). Чтобы увидеть изменения, включите темный режим в Facebook.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	Темный режим и этот экран используют цвета обоев (на Android 11 синий цвет). Выключите, чтобы вернуть прежние цвета без повторного патчинга. Перезапустите Facebook, чтобы увидеть изменения.
 Hide Stories between posts	Скрывать Истории между публикациями
 Joining the picture and sound	Объединение изображения и звука
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

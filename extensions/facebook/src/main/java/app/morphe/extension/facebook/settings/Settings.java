@@ -3448,6 +3448,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_amoled_flat_cards", FALSE, true);
 
     /**
+     * With the Material You theme in the build, whether it runs (D#527). Off, Facebook keeps the
+     * colours it has without the theme, AMOLED's with that one in the build, with no new patch
+     * ({@link app.morphe.extension.facebook.theme.MaterialYouSwitch}). Its resources go back as
+     * Facebook starts, so a change brings up the restart row. Starts on: picking the patch in
+     * Manager asked for the theme.
+     */
+    public static final BooleanSetting MATERIAL_YOU =
+            new BooleanSetting("hushfacebook_material_you", TRUE, true);
+
+    /**
      * With the AMOLED black theme, the gap Facebook leaves between a list's rows, posts in the feed
      * among them, shows as a thin gray line instead of the page's black
      * ({@link app.morphe.extension.facebook.theme.FeedGaps}, issue #206). Rows read it as they

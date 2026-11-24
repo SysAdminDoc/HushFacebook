@@ -67,7 +67,7 @@ Export settings	Ayarları dışa aktar
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook açıldıktan sonraki bir dakika içinde üst üste üç kez çöktü veya dondu, bu yüzden Hushfacebook kendini duraklattı.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook artık arka planda reklamları veya reklam seçmekte kullandığı verileri indirmez.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook, bu telefondaki diğer uygulamaların içinde reklamlarını göstermez.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Karanlık mod ve bu ekran duvar kağıdınızın renklerini kullanır (Android 11'de mavi). Görmek için Facebook'ta karanlık modu açın.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	Karanlık mod ve bu ekran duvar kağıdınızın renklerini kullanır (Android 11'de mavi). Yeniden yamalamadan eski renklere dönmek için kapatın. Değişikliği görmek için Facebook'u yeniden başlatın.
 Hide Stories between posts	Gönderiler arasındaki Hikayeleri gizle
 Joining the picture and sound	Görüntü ve ses birleştiriliyor
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

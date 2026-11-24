@@ -970,8 +970,8 @@ final class L10nTableIn {
                 "Kotak gelap di balik nama reel");
         table.put("Dark box behind story names",
                 "Kotak gelap di balik nama cerita");
-        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.",
-                "Mode gelap dan layar ini memakai warna dari wallpaper kamu (biru di Android 11). Aktifkan mode gelap di Facebook untuk melihatnya.");
+        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.",
+                "Mode gelap dan layar ini memakai warna dari wallpaper kamu (biru di Android 11). Matikan untuk kembali ke warna lama tanpa tambal ulang. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.",
                 "Mode gelap memakai %1$s, bukan abu-abu gelap. Aktifkan mode gelap di Facebook untuk melihatnya.");
         table.put("Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.",

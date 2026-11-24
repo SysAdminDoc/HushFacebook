@@ -970,8 +970,8 @@ final class L10nTablePt_rBR {
                 "Fundo escuro atr\u00e1s dos nomes nos reels");
         table.put("Dark box behind story names",
                 "Fundo escuro atr\u00e1s dos nomes nos stories");
-        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.",
-                "O modo escuro e esta tela usam cores do seu papel de parede (azul no Android 11). Ative o modo escuro no Facebook para ver.");
+        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.",
+                "O modo escuro e esta tela usam cores do seu papel de parede (azul no Android 11). Desative para voltar \u00e0s cores de antes sem aplicar os patches novamente. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.",
                 "O modo escuro usa %1$s em vez de cinza-escuro. Ative o modo escuro no Facebook para ver.");
         table.put("Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.",

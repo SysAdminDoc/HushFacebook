@@ -545,6 +545,7 @@ public final class SettingsBackup {
             Settings.FORCE_DARK_MODE,
             Settings.AMOLED_FLAT_CARDS,
             Settings.AMOLED_FEED_GAPS,
+            Settings.MATERIAL_YOU,
             Settings.HIDE_REEL_PROMPTS,
             Settings.HIDE_GET_MESSENGER_CARD,
             Settings.HIDE_CHAT_NOTES_TRAY,

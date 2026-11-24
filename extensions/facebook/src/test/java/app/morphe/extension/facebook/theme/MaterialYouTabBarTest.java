@@ -9,10 +9,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import app.morphe.extension.shared.SettingsContextRule;
 
 /**
  * Material You's selected tab (#65): in Facebook's dark mode the colour Facebook's tab bar asks for
@@ -33,8 +36,12 @@ public class MaterialYouTabBarTest {
     private static final int DARK_BAR = 0xFF252728;
     private static final int BLACK = 0xFF000000;
 
+    /** The theme's switch reads off until the settings are ready (D#527). */
+    @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
+
     @Before
     public void usePalette() {
+        MaterialYouSwitch.forgetForTests();
         MaterialYouTheme.use(TonePalette.fallback(), false);
     }
 

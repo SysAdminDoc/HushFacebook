@@ -254,7 +254,7 @@ public final class AccentColor {
      * before the settings are ready. The alpha is {@code color}'s.
      */
     public static int themedBlue(int color) {
-        return themedBlue(color, SettingsStatus.materialYouTheme(), SettingsStatus.accentColor());
+        return themedBlue(color, MaterialYouSwitch.on(), SettingsStatus.accentColor());
     }
 
     /** {@link #themedBlue(int)} with [materialYou] and [accent] saying which of the two patches is in the build. */
@@ -277,7 +277,7 @@ public final class AccentColor {
     @Nullable
     static Preset chosen() {
         Preset preset = Settings.ACCENT_COLOR.get();
-        if (preset == Preset.FACEBOOK || SettingsStatus.materialYouTheme() || !usable(preset)) return null;
+        if (preset == Preset.FACEBOOK || MaterialYouSwitch.on() || !usable(preset)) return null;
         return preset;
     }
 

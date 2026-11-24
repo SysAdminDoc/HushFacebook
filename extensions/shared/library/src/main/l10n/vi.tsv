@@ -67,7 +67,7 @@ Export settings	Xuất cài đặt
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook bị dừng đột ngột hoặc treo trong vòng một phút sau khi mở, ba lần liên tiếp, nên Hushfacebook đã tự tạm dừng.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook không còn tải quảng cáo hay dữ liệu dùng để chọn quảng cáo ở chế độ nền.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook không hiện quảng cáo của mình bên trong ứng dụng khác trên điện thoại này.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Chế độ tối và màn hình này dùng màu từ hình nền của bạn (màu xanh dương trên Android 11). Hãy bật chế độ tối trong Facebook để thấy.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	Chế độ tối và màn hình này dùng màu từ hình nền của bạn (màu xanh dương trên Android 11). Tắt đi để quay về màu cũ mà không cần vá lại. Khởi động lại Facebook để thấy thay đổi.
 Hide Stories between posts	Ẩn tin giữa các bài viết
 Joining the picture and sound	Đang ghép hình và tiếng
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

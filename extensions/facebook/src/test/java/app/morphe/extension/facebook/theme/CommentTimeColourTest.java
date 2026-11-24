@@ -10,10 +10,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import app.morphe.extension.shared.SettingsContextRule;
 
 /**
  * The older comment row's time (#138): in dark mode, with AMOLED or Material You in the build, a
@@ -31,8 +34,12 @@ public class CommentTimeColourTest {
 
     private final TonePalette green = PalettesForTests.palette(PalettesForTests.GREEN);
 
+    /** The theme's switch reads off until the settings are ready (D#527). */
+    @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
+
     @Before
     public void greenPalette() {
+        MaterialYouSwitch.forgetForTests();
         MaterialYouTheme.use(green, false);
         DarkMode.answer(true);
     }

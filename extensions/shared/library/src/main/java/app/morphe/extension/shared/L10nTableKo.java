@@ -970,8 +970,8 @@ final class L10nTableKo {
                 "\ub9b4\uc2a4 \uc774\ub984 \ub4a4 \uc5b4\ub450\uc6b4 \uc0c1\uc790");
         table.put("Dark box behind story names",
                 "\uc2a4\ud1a0\ub9ac \uc774\ub984 \ub4a4 \uc5b4\ub450\uc6b4 \uc0c1\uc790");
-        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.",
-                "\ub2e4\ud06c \ubaa8\ub4dc\uc640 \uc774 \ud654\uba74\uc5d0 \ubc30\uacbd\ud654\uba74 \uc0c9\uc0c1\uc744 \uc0ac\uc6a9\ud574\uc694(Android 11\uc5d0\uc11c\ub294 \ud30c\ub780\uc0c9). \ud655\uc778\ud558\ub824\uba74 Facebook\uc5d0\uc11c \ub2e4\ud06c \ubaa8\ub4dc\ub97c \ucf1c\uc138\uc694.");
+        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.",
+                "\ub2e4\ud06c \ubaa8\ub4dc\uc640 \uc774 \ud654\uba74\uc5d0 \ubc30\uacbd\ud654\uba74 \uc0c9\uc0c1\uc744 \uc0ac\uc6a9\ud574\uc694(Android 11\uc5d0\uc11c\ub294 \ud30c\ub780\uc0c9). \ub044\uba74 \ub2e4\uc2dc \ud328\uce58\ud558\uc9c0 \uc54a\uace0\ub3c4 \uc774\uc804 \uc0c9\uc0c1\uc73c\ub85c \ub3cc\uc544\uac00\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc744 \ubcf4\ub824\uba74 Facebook\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uc138\uc694.");
         table.put("Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.",
                 "\ub2e4\ud06c \ubaa8\ub4dc\uc5d0\uc11c \uc9d9\uc740 \ud68c\uc0c9 \ub300\uc2e0 %1$s \uc0c9\uc744 \uc0ac\uc6a9\ud574\uc694. \ud655\uc778\ud558\ub824\uba74 Facebook\uc5d0\uc11c \ub2e4\ud06c \ubaa8\ub4dc\ub97c \ucf1c\uc138\uc694.");
         table.put("Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.",

@@ -225,9 +225,15 @@ internal fun lstar(r: Int, g: Int, b: Int): Double {
  * [night], which Android 11 reads, and the wallpaper palette's in [nightV31], which Android 12 and
  * newer prefer. A colour Facebook already gives a value of its own for Android 12 and newer is left
  * alone, and the default (light) colours are never opened. Each one it moves to an accent tone goes
- * in [accents] by name, for [youAccentsTable]. Answers how many it changed.
+ * in [accents] by name, for [youAccentsTable], and each one it changes goes in [originals] by name
+ * with the value it had, for [youOriginalsTable]. Answers how many it changed.
  */
-internal fun recolourNightColours(night: Document, nightV31: Document, accents: MutableMap<String, NightTone>? = null): Int {
+internal fun recolourNightColours(
+    night: Document,
+    nightV31: Document,
+    accents: MutableMap<String, NightTone>? = null,
+    originals: MutableMap<String, String>? = null,
+): Int {
     val resources = nightV31.documentElement
     val present = mutableSetOf<String>()
     val existing = resources.getElementsByTagName("color")
@@ -242,6 +248,7 @@ internal fun recolourNightColours(night: Document, nightV31: Document, accents: 
         val tone = nightTone(color.textContent) ?: continue
         val name = color.getAttribute("name")
         if (name in present) continue
+        originals?.put(name, color.textContent.trim())
         color.textContent = tone.fallback
         resources.appendChild(
             nightV31.createElement("color").also {
@@ -280,6 +287,37 @@ internal fun youAccentsTable(accents: Map<String, NightTone>, palette: Document,
         ACCENT_SHADE_NAME.matchEntire(name)?.let { shade ->
             entries[name] = "l" + shade.groupValues[1] + shade.groupValues[2].let { if (it.isEmpty()) "" else "/$it" }
         }
+    }
+    return entries.entries.joinToString(";") { (key, value) -> "$key=$value" }
+}
+
+/** The string resource that lists, for AccentResources, what the theme's switch puts back when it's off (D#527). */
+internal const val YOU_ORIGINALS = "hushfacebook_you_originals"
+
+/**
+ * What the theme's switch puts back when it's off (D#527), for AccentResources: each of Facebook's
+ * night colours route two moved ([nightOriginals], the value it had by name), by the id [idOf]
+ * answers in hex, and each of the patch's own colours a night style item points at in place of
+ * Facebook's ([styleOriginals], [writeNightStyles]'), by name. A value is `#` and a colour in hex, or
+ * `@` and the id in hex of the colour resource the style named, so a table another patch gives that
+ * resource still answers; one with no id goes back as the colour it held. Sorted by key:
+ * "7f0601ab=#ff252728;hushfacebook_you_was_r_blue=@7f0601d5". A night colour with no id, or a value
+ * that's no colour, is left out.
+ */
+internal fun youOriginalsTable(
+    nightOriginals: Map<String, String>,
+    styleOriginals: Map<String, StyleOriginal>,
+    idOf: (String) -> Long?,
+): String {
+    val entries = sortedMapOf<String, String>()
+    for ((name, value) in nightOriginals) {
+        val id = idOf(name) ?: continue
+        entries["%08x".format(id)] = "#%08x".format(argb(value) ?: continue)
+    }
+    for ((name, original) in styleOriginals) {
+        val text = original.text.trim()
+        val id = if (text.startsWith("@color/")) idOf(text.removePrefix("@color/")) else null
+        entries[name] = if (id != null) "@%08x".format(id) else "#%08x".format(original.colour)
     }
     return entries.entries.joinToString(";") { (key, value) -> "$key=$value" }
 }
@@ -369,8 +407,12 @@ private val materialYouResourcePatch = patch {
         }
         val nightColourNames = nightValuedColours(get("res", false))
         val accents = sortedMapOf<String, NightTone>()
+        // What the theme's switch puts back when it's off (D#527): each night colour's value, and each
+        // night style item's, through a colour of the patch's own per value.
+        val nightOriginals = sortedMapOf<String, String>()
+        val styleOriginals = sortedMapOf<String, StyleOriginal>()
         val changed = document(NIGHT_COLORS).use { night ->
-            document(NIGHT_V31_COLORS).use { nightV31 -> recolourNightColours(night, nightV31, accents) }
+            document(NIGHT_V31_COLORS).use { nightV31 -> recolourNightColours(night, nightV31, accents, nightOriginals) }
         }
         check(changed > 0) { "No night colour is near a palette tone, so text would keep its grey" }
 
@@ -392,7 +434,7 @@ private val materialYouResourcePatch = patch {
                 document(DEFAULT_COLORS).use { paletteColours ->
                     document(V31_COLORS).use { paletteV31Colours ->
                         writeNightStyles(family, colours, nightColourNames, tokenAttributeNames, night, paletteColours,
-                            paletteV31Colours, stateLists, plain)
+                            paletteV31Colours, stateLists, plain, styleOriginals)
                     }
                 }
             }
@@ -412,9 +454,17 @@ private val materialYouResourcePatch = patch {
         val youAccents = youAccentsTable(accents, readOnly(get(DEFAULT_COLORS))) { name ->
             resourceIds.getOrNull(ResourceType.COLOR, name) ?: decodedColourId(name)
         }
+        // What the theme's switch puts back when it's off (D#527), read by the extension the same way.
+        val youOriginals = youOriginalsTable(nightOriginals, styleOriginals) { name ->
+            resourceIds.getOrNull(ResourceType.COLOR, name) ?: decodedColourId(name)
+        }
+        check(youOriginals.isNotEmpty()) { "Nothing for the theme's switch to put back, so turning it off would keep the palette" }
         decode(STRINGS)
         check(get(STRINGS, false).exists()) { "Facebook has no $STRINGS to hold the accent colour list" }
-        document(STRINGS).use { it.putUntranslatedString(YOU_ACCENTS, youAccents) }
+        document(STRINGS).use {
+            it.putUntranslatedString(YOU_ACCENTS, youAccents)
+            it.putUntranslatedString(YOU_ORIGINALS, youOriginals)
+        }
 
         val nightOnly = ownNightOnlyColours(get("res", false))
         check(nightOnly.isEmpty()) { "These colours have only a night value, so leaving night would crash Facebook: $nightOnly" }
@@ -425,8 +475,9 @@ private val materialYouResourcePatch = patch {
 val materialYouThemePatch = patch(
     name = "Material You theme",
     description = "Gives Facebook the colors of your wallpaper on Android 12 and newer, so it matches your " +
-        "phone. Dark mode takes them everywhere, and light mode on its grays, blues and selected tab. It isn't " +
-        "selected by default because undoing it means patching again. Turn on Expert mode in Manager to pick it.",
+        "phone. Dark mode takes them everywhere, and light mode on its grays, blues and selected tab. A switch " +
+        "in Hushfacebook's settings turns it off without patching again. It isn't selected by default because it " +
+        "recolors Facebook as soon as it's patched in. Turn on Expert mode in Manager to pick it.",
     default = false,
 ) {
     category("Theme")
@@ -439,6 +490,9 @@ val materialYouThemePatch = patch(
 
     executeBytecode {
         enableStatus("materialYouTheme")
+        // The theme's switch, read as Facebook starts (D#527): off, the application's resources take
+        // Facebook's colours back before Facebook's own startup reads one.
+        callAsFacebookStarts("$MATERIAL_YOU->load()V")
     }
 
     // After every patch's execute, so with AMOLED in the build its hooks and rewrites are already

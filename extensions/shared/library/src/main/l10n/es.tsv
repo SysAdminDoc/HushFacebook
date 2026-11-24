@@ -67,7 +67,7 @@ Export settings	Exportar configuración
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Tres veces seguidas, Facebook falló o se congeló durante el primer minuto tras iniciarse, así que Hushfacebook se pausó solo.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook ya no descarga en segundo plano anuncios ni los datos que usa para elegirlos.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook no muestra sus anuncios dentro de otras apps de este teléfono.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	El modo oscuro y esta pantalla usan colores de tu fondo de pantalla (azul en Android 11). Activa el modo oscuro en Facebook para verlo.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	El modo oscuro y esta pantalla usan colores de tu fondo de pantalla (azul en Android 11). Desactívalo para volver a los colores de antes sin volver a parchear. Reinicia Facebook para ver el cambio.
 Hide Stories between posts	Ocultar historias entre publicaciones
 Joining the picture and sound	Uniendo la imagen y el sonido
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

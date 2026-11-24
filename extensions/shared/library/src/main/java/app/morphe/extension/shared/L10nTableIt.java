@@ -970,8 +970,8 @@ final class L10nTableIt {
                 "Riquadro scuro dietro i nomi dei reel");
         table.put("Dark box behind story names",
                 "Riquadro scuro dietro i nomi delle storie");
-        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.",
-                "La modalit\u00e0 scura e questa schermata usano i colori del tuo sfondo (blu su Android 11). Attiva la modalit\u00e0 scura in Facebook per vederlo.");
+        table.put("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.",
+                "La modalit\u00e0 scura e questa schermata usano i colori del tuo sfondo (blu su Android 11). Disattivalo per tornare ai colori di prima senza applicare di nuovo le patch. Riavvia Facebook per vedere la modifica.");
         table.put("Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.",
                 "La modalit\u00e0 scura usa %1$s invece del grigio scuro. Attiva la modalit\u00e0 scura in Facebook per vederlo.");
         table.put("Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.",

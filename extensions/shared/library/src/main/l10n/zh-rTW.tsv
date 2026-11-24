@@ -71,7 +71,7 @@ Export settings	匯出設定
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook 連續三次在啟動後一分鐘內當機或停止回應，因此 Hushfacebook 已自行暫停。
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook 不再於背景下載廣告或用於挑選廣告的資料。
 Facebook doesn't show its ads inside other apps on this phone.	Facebook 不會在這支手機上的其他應用程式中顯示自己的廣告。
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	深色模式與此畫面使用桌布的配色（Android 11 使用藍色）。請在 Facebook 啟用深色模式以查看效果。
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	深色模式與此畫面使用桌布的配色（Android 11 使用藍色）。關閉後不必重新修補即可恢復原本的配色。重新啟動 Facebook 後生效。
 Hide Stories between posts	隱藏貼文之間的限時動態
 Joining the picture and sound	正在合併影像與聲音
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

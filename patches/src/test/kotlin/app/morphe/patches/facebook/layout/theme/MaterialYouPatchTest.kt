@@ -235,6 +235,36 @@ class MaterialYouPatchTest {
     }
 
     /**
+     * D#527: the list the extension reads to put back what the theme changed once its switch is off.
+     * Each night colour route two moved keeps the value it had, and each colour a night style item
+     * points at keeps the item's: a colour as it was, or the colour resource it named by id.
+     */
+    @Test
+    fun `the switch's list holds each value the theme replaced`() {
+        val night = xml(
+            "<resources><color name=\"color_0x7f06044f\">#5aa7ff</color><color name=\"color_0x7f060003\">#ffe4e6eb</color>" +
+                "<color name=\"named_blue\">#5aa7ff</color><color name=\"black\">#ff000000</color></resources>",
+        )
+        val originals = sortedMapOf<String, String>()
+        assertEquals(3, recolourNightColours(night, xml("<resources/>"), null, originals))
+        assertEquals("the value each had, and nothing for a colour left alone",
+            mapOf("color_0x7f06044f" to "#5aa7ff", "color_0x7f060003" to "#ffe4e6eb", "named_blue" to "#5aa7ff"), originals)
+
+        val styles = mapOf(
+            "hushfacebook_you_was_c_ff333334" to StyleOriginal("#ff333334", 0xFF333334.toInt()),
+            "hushfacebook_you_was_r_color_0x7f0601d5" to StyleOriginal("@color/color_0x7f0601d5", 0xFF0866FF.toInt()),
+            "hushfacebook_you_was_r_unnamed_t" to StyleOriginal("@color/unnamed", 0xFF1D85FC.toInt()),
+        )
+        val table = youOriginalsTable(originals, styles) { name -> if (name == "named_blue" || name == "unnamed") null else decodedColourId(name) }
+        assertEquals(
+            "a night colour with no id is left out, and a style's colour resource with none goes back as its colour",
+            "7f060003=#ffe4e6eb;7f06044f=#ff5aa7ff;hushfacebook_you_was_c_ff333334=#ff333334;" +
+                "hushfacebook_you_was_r_color_0x7f0601d5=@7f0601d5;hushfacebook_you_was_r_unnamed_t=#ff1d85fc",
+            table,
+        )
+    }
+
+    /**
      * The palette adds nothing when there is nothing it recognises: both files come out byte for
      * byte as they went in. With AMOLED first, its black backgrounds are such colours.
      */

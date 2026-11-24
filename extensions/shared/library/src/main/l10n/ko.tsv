@@ -67,7 +67,7 @@ Export settings	설정 내보내기
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook이 시작하고 1분 안에 세 번 연속으로 비정상 종료되거나 멈춰서 Hushfacebook이 스스로 일시 정지했어요.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook이 더 이상 백그라운드에서 광고나 광고 선택에 쓰는 데이터를 다운로드하지 않아요.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook이 이 휴대폰의 다른 앱 안에 광고를 표시하지 않아요.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	다크 모드와 이 화면에 배경화면 색상을 사용해요(Android 11에서는 파란색). 확인하려면 Facebook에서 다크 모드를 켜세요.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	다크 모드와 이 화면에 배경화면 색상을 사용해요(Android 11에서는 파란색). 끄면 다시 패치하지 않고도 이전 색상으로 돌아가요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
 Hide Stories between posts	게시물 사이의 스토리 숨기기
 Joining the picture and sound	영상과 소리를 합치는 중
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working

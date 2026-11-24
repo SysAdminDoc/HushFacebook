@@ -15,6 +15,8 @@ import java.nio.charset.StandardCharsets;
  * a {@code ResourcesLoader}, and a colour in it answers for the app's colour of the same id and the
  * same configuration (AssetManager2 lets a loader's entry win a tie), so a drawable or a theme that
  * names the colour gets this one. Material Components builds its custom colour tables the same way.
+ * An entry can instead point at another of the app's colour resources ({@link Config#references}),
+ * which the Material You switch uses to hand a style item back the resource Facebook named (D#527).
  *
  * <p>Each colour has a default value and may have a night one. The night values go in twice, as
  * {@code night} and as {@code night-v8}: aapt2 writes {@code values-night} with the v8 its qualifier
@@ -26,22 +28,36 @@ import java.nio.charset.StandardCharsets;
  */
 final class ColourTable {
 
-    /** One configuration's colours: those {@code present} marks, or all of them when it's null. */
+    /**
+     * One configuration's colours: those {@code present} marks, or all of them when it's null. Where
+     * {@code references} marks one, its value is the id of another colour resource, which the entry
+     * points at as a {@code @color/} reference does, instead of a colour.
+     */
     static final class Config {
         final int uiMode;
         final int sdkVersion;
         final int[] colours;
         final boolean[] present;
+        final boolean[] references;
 
         Config(int uiMode, int sdkVersion, int[] colours, boolean[] present) {
+            this(uiMode, sdkVersion, colours, present, null);
+        }
+
+        Config(int uiMode, int sdkVersion, int[] colours, boolean[] present, boolean[] references) {
             this.uiMode = uiMode;
             this.sdkVersion = sdkVersion;
             this.colours = colours;
             this.present = present;
+            this.references = references;
         }
 
         boolean has(int index) {
             return present == null || present[index];
+        }
+
+        boolean refers(int index) {
+            return references != null && references[index];
         }
     }
 
@@ -64,6 +80,7 @@ final class ColourTable {
     private static final int UTF8_FLAG = 0x100;
     private static final int NO_ENTRY = 0xFFFFFFFF;
     private static final int TYPE_INT_COLOR_ARGB8 = 0x1c;
+    private static final int TYPE_REFERENCE = 0x01;
 
     /** ResTable_config's uiMode, at byte 29, for night; and the configuration-change flag that goes with it. */
     private static final int CONFIG_UI_MODE_OFFSET = 29;
@@ -81,14 +98,26 @@ final class ColourTable {
      *     given twice, or arrays of different lengths
      */
     static byte[] write(String packageName, int[] ids, int[] defaults, int[] nights, boolean[] hasNight) {
+        return write(packageName, ids, defaults, nights, hasNight, false);
+    }
+
+    /**
+     * The same, with the night values also as {@code night-v31} when {@code nightV31} says so: a
+     * Material You build gives Facebook's night colours a value there, which only an entry of that
+     * configuration beats on Android 12 and newer.
+     */
+    static byte[] write(String packageName, int[] ids, int[] defaults, int[] nights, boolean[] hasNight, boolean nightV31) {
         if (defaults.length != ids.length || nights.length != ids.length || hasNight.length != ids.length) {
             throw new IllegalArgumentException("ids and colours don't line up");
         }
         boolean anyNight = false;
         for (boolean night : hasNight) anyNight |= night;
         if (!anyNight) return write(packageName, ids, new Config(0, 0, defaults, null));
-        return write(packageName, ids, new Config(0, 0, defaults, null),
-                new Config(UI_MODE_NIGHT_YES, 0, nights, hasNight), new Config(UI_MODE_NIGHT_YES, 8, nights, hasNight));
+        Config night = new Config(UI_MODE_NIGHT_YES, 0, nights, hasNight);
+        Config nightV8 = new Config(UI_MODE_NIGHT_YES, 8, nights, hasNight);
+        if (!nightV31) return write(packageName, ids, new Config(0, 0, defaults, null), night, nightV8);
+        return write(packageName, ids, new Config(0, 0, defaults, null), night, nightV8,
+                new Config(UI_MODE_NIGHT_YES, 31, nights, hasNight));
     }
 
     /**
@@ -101,7 +130,8 @@ final class ColourTable {
     static byte[] write(String packageName, int[] ids, Config... configs) {
         if (ids.length == 0) throw new IllegalArgumentException("no ids");
         for (Config config : configs) {
-            if (config.colours.length != ids.length || (config.present != null && config.present.length != ids.length)) {
+            if (config.colours.length != ids.length || (config.present != null && config.present.length != ids.length)
+                    || (config.references != null && config.references.length != ids.length)) {
                 throw new IllegalArgumentException("ids and colours don't line up");
             }
         }
@@ -226,9 +256,11 @@ final class ColourTable {
         }
         for (int offset : offsets) out.putInt(offset);
         for (int i : order) {
-            // ResTable_entry: its size, no flags, and the key; then a Res_value holding the colour.
+            // ResTable_entry: its size, no flags, and the key; then a Res_value holding the colour, or
+            // the id of the colour resource it points at.
             out.putShort((short) 8).putShort((short) 0).putInt(i);
-            out.putShort((short) 8).put((byte) 0).put((byte) TYPE_INT_COLOR_ARGB8).putInt(config.colours[i]);
+            int type = config.refers(i) ? TYPE_REFERENCE : TYPE_INT_COLOR_ARGB8;
+            out.putShort((short) 8).put((byte) 0).put((byte) type).putInt(config.colours[i]);
         }
         return out.array();
     }
