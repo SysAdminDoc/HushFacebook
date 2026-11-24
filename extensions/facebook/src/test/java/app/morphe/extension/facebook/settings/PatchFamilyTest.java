@@ -448,7 +448,7 @@ public class PatchFamilyTest {
                         + "mode, Hide the Get Messenger card, Clean up Facebook's chat list, Open Messenger from the "
                         + "top bar, Hide Menu promotions, Hide Meta upsells, Share sheet items, Post menu items, Hide Meta AI in search, "
                         + "Don't save search history, Search date range, Search posts tab, Saved button in search, Hold back analytics uploads, Allow screenshots, Block screenshot detection, Skip location prompts, Hide typing indicator, "
-                        + "Hide read receipts, Send chat photos and videos at original quality, Block promotional "
+                        + "Hide read receipts, Send chat photos and videos at original quality, Share to Facebook chats, Block promotional "
                         + "notifications, Block ad telemetry, Disable Audience Network, AMOLED black theme, Material "
                         + "You theme, Accent color, Badge and logo colors, Restore screens on re-signed builds, Start on x86 devices, "
                         + "Install beside Meta's apps, Disable Play Store updates, GmsCore support, Clone install under "
@@ -472,7 +472,7 @@ public class PatchFamilyTest {
                         + "Force dark mode, Hide the Get Messenger card, Clean up Facebook's chat list, Open "
                         + "Messenger from the top bar, Hide Menu promotions, Hide Meta upsells, Share sheet items, Post menu items, Hide "
                         + "Meta AI in search, Don't save search history, Search date range, Search posts tab, Saved button in search, Hold back analytics uploads, Allow screenshots, Block screenshot detection, Skip location prompts, Hide "
-                        + "typing indicator, Hide read receipts, Send chat photos and videos at original quality, "
+                        + "typing indicator, Hide read receipts, Send chat photos and videos at original quality, Share to Facebook chats, "
                         + "Block promotional notifications, Block ad telemetry, Disable Audience Network, Accent "
                         + "color, Badge and logo colors, Restore screens on re-signed builds, Start on x86 devices, Install beside Meta's "
                         + "apps, Open in Facebook from the share menu, Hushfacebook in the Menu"),

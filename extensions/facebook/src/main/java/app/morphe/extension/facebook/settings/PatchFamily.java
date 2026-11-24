@@ -352,6 +352,8 @@ public enum PatchFamily {
             Settings.HIDE_READ_RECEIPTS),
     ORIGINAL_CHAT_MEDIA(FamilyNames.ORIGINAL_CHAT_MEDIA, "originalChatMedia", null,
             Settings.ORIGINAL_CHAT_MEDIA),
+    SHARE_TO_CHATS(FamilyNames.SHARE_TO_CHATS, "shareToChats", null,
+            Settings.SHARE_TO_CHATS),
     PROMO_NOTIFICATIONS(FamilyNames.PROMO_NOTIFICATIONS, "promoNotifications", null,
             Settings.BLOCK_TRENDING_VIDEO_NOTIFICATIONS, Settings.BLOCK_MEMORY_NOTIFICATIONS,
             Settings.BLOCK_BIRTHDAY_NOTIFICATIONS, Settings.BLOCK_HIGHLIGHT_NOTIFICATIONS,

@@ -290,6 +290,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean shareToChats() {
+        return false;
+    }
+
     public static boolean audienceNetwork() {
         return false;
     }

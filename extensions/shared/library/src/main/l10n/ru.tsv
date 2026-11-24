@@ -3228,3 +3228,13 @@ All your notifications are marked as read.	Все уведомления отм�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Ничего не отмечено, потому что Facebook не сообщил, кто вошёл в аккаунт. Откройте вкладку «Уведомления» один раз и попробуйте снова.
 This build can't mark notifications as read.	Эта сборка не может отмечать уведомления как прочитанные.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook не смог отметить уведомления как прочитанные. Попробуйте ещё раз чуть позже.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Поделиться в чатах Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Добавляет чаты Facebook в меню «Поделиться» Android. Фото или видео, которым вы там делитесь, сохраняется в галерею, а текст копируется, после чего открываются ваши чаты, чтобы вы выбрали один и отправили.
+Share to Facebook chats is off.	Поделиться в чатах Facebook отключено.
+Nothing in it to send.	Нечего отправить.
+Couldn't save it to your gallery.	Не удалось сохранить в галерею.
+Copied and saved. Pick a chat.	Скопировано и сохранено. Выберите чат.
+In your gallery now. Pick a chat.	Уже в галерее. Выберите чат.
+Copied. Pick a chat and paste it.	Скопировано. Выберите чат и вставьте.
+Open your chats to pick one.	Откройте чаты и выберите один.

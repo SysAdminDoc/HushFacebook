@@ -49,6 +49,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.preference.ReopenSettingsAfterRestart;
 import app.morphe.extension.facebook.ads.AudienceNetwork;
+import app.morphe.extension.facebook.chats.ShareToChats;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.download.ClipboardLink;
 import app.morphe.extension.facebook.download.SaveLeftovers;
@@ -852,6 +853,8 @@ public final class SettingsEntry {
             FreeStuffShortcut.refresh(activity);
             if (SettingsStatus.sponsoredMarketplace()) MarketplaceFilterButton.activityResumed(activity);
             if (SettingsStatus.bottomTabBar()) ReelsTabBarHidden.activityShown(activity);
+            // Keeps the share target in step with its switch, and presses Messaging after a share (#568).
+            if (SettingsStatus.shareToChats()) ShareToChats.activityResumed(activity);
         }
 
         @Override

@@ -3964,6 +3964,44 @@
       "options": []
     },
     {
+      "name": "Share to Facebook chats",
+      "description": "Puts Facebook chats in Android's share menu, for when your chats are inside Facebook instead of the Messenger app. Share a photo, video or link there and it's saved to your gallery or copied, then Facebook opens on your chats so you can pick one and send it. Starts off. Turn it on in Hushfacebook settings > Chats and Messenger.",
+      "category": "Chats",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings",
+        "Patch"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "588.0.0.42.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "588.0.0.42.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 707615136,
+                "ARMEABI_V7A": 707615135
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Show View profile on Marketplace sellers",
       "description": "Adds View profile to every seller's Marketplace page. It opens their regular Facebook profile, so you can check who you're buying from. Facebook shows that button to only some accounts. On by default. Turn it off in Hushfacebook settings > Marketplace.",
       "category": "Interface",

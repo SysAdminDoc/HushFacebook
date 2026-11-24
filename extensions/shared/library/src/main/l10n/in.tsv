@@ -3170,3 +3170,13 @@ All your notifications are marked as read.	Semua notifikasi Anda sudah ditandai 
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Tidak ada yang ditandai karena Facebook tidak memberi tahu siapa yang masuk. Buka tab Notifikasi sekali, lalu coba lagi.
 This build can't mark notifications as read.	Build ini tidak bisa menandai notifikasi sudah dibaca.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook tidak bisa menandai notifikasi Anda sudah dibaca. Coba lagi sebentar lagi.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Bagikan ke chat Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Menambahkan chat Facebook ke menu bagikan Android. Foto atau video yang kamu bagikan ke sana disimpan ke galeri dan teks disalin, lalu chat kamu terbuka agar kamu bisa memilih satu dan mengirimnya.
+Share to Facebook chats is off.	Bagikan ke chat Facebook nonaktif.
+Nothing in it to send.	Tidak ada yang bisa dikirim.
+Couldn't save it to your gallery.	Tidak bisa menyimpan ke galeri.
+Copied and saved. Pick a chat.	Disalin dan disimpan. Pilih chat.
+In your gallery now. Pick a chat.	Sudah di galeri. Pilih chat.
+Copied. Pick a chat and paste it.	Disalin. Pilih chat lalu tempel.
+Open your chats to pick one.	Buka chat kamu untuk memilih satu.

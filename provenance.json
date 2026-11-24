@@ -326,6 +326,17 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/ShareToChats.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/GalleryCopy.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/chats/ShareToChatsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #568: a Facebook chats share target the manifest declares turned off, which its switch turns on. It puts shared text on the clipboard and copies shared photos and videos into the gallery through the same writer as every save, then brings Facebook forward and presses the top bar's Messaging button so Chats opens to pick one."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/GenAiLabel.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/AiCharacterPosts.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/aidetected/**"

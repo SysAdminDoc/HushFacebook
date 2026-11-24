@@ -3170,3 +3170,13 @@ All your notifications are marked as read.	ทำเครื่องหมา�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	ยังไม่ได้ทำเครื่องหมายอะไร เพราะ Facebook ไม่ได้บอกว่าใครลงชื่อเข้าใช้อยู่ เปิดแท็บการแจ้งเตือนหนึ่งครั้ง แล้วลองอีกครั้ง
 This build can't mark notifications as read.	เวอร์ชันบิลด์นี้ทำเครื่องหมายว่าอ่านการแจ้งเตือนแล้วไม่ได้
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook ทำเครื่องหมายว่าอ่านการแจ้งเตือนของคุณแล้วไม่ได้ โปรดลองอีกครั้งในอีกสักครู่
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	แชร์ไปยังแชท Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	เพิ่มแชท Facebook ในเมนูแชร์ของ Android รูปภาพหรือวิดีโอที่คุณแชร์ไปที่นั่นจะถูกบันทึกลงในแกลเลอรีและข้อความจะถูกคัดลอก จากนั้นแชทของคุณจะเปิดขึ้นให้คุณเลือกแชทแล้วส่ง
+Share to Facebook chats is off.	แชร์ไปยังแชท Facebook ปิดอยู่
+Nothing in it to send.	ไม่มีอะไรให้ส่ง
+Couldn't save it to your gallery.	บันทึกลงแกลเลอรีไม่ได้
+Copied and saved. Pick a chat.	คัดลอกและบันทึกแล้ว เลือกแชท
+In your gallery now. Pick a chat.	อยู่ในแกลเลอรีแล้ว เลือกแชท
+Copied. Pick a chat and paste it.	คัดลอกแล้ว เลือกแชทแล้ววาง
+Open your chats to pick one.	เปิดแชทเพื่อเลือกหนึ่งแชท

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 import app.morphe.extension.facebook.chats.MessengerHandoff;
+import app.morphe.extension.facebook.chats.ShareToChats;
 import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
@@ -67,7 +68,8 @@ final class AppPages {
     static void chats(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.MESSENGER_CARD) || build.contains(PatchFamily.CHAT_LIST)
-                || build.contains(PatchFamily.MESSENGER_ICON) || build.contains(PatchFamily.ORIGINAL_CHAT_MEDIA)) {
+                || build.contains(PatchFamily.MESSENGER_ICON) || build.contains(PatchFamily.ORIGINAL_CHAT_MEDIA)
+                || build.contains(PatchFamily.SHARE_TO_CHATS)) {
             PreferenceCategory chats = category(screen, L10n.t("Chats and Messenger"));
             if (build.contains(PatchFamily.MESSENGER_CARD)) {
                 chats.addPreference(toggle(context, Settings.HIDE_GET_MESSENGER_CARD,
@@ -109,6 +111,19 @@ final class AppPages {
                 chats.addPreference(toggle(context, Settings.ORIGINAL_CHAT_MEDIA,
                         L10n.t("Sends photos and videos in Facebook chats at full quality. Photos lose location and camera details. "
                                 + "Big files and videos with a location tag are still shrunk.")));
+            }
+            if (build.contains(PatchFamily.SHARE_TO_CHATS)) {
+                // The share menu lists the share target only while it's turned on, so the switch
+                // turns it on or off right away.
+                SwitchPreference share = toggle(context, Settings.SHARE_TO_CHATS,
+                        L10n.t("Adds Facebook chats to Android's share menu. A photo or video you share there is saved to "
+                                + "your gallery and text is copied, then your chats open so you can pick one and send it."));
+                share.setOnPreferenceChangeListener((preference, value) -> {
+                    Settings.SHARE_TO_CHATS.save((Boolean) value);
+                    ShareToChats.changed(context);
+                    return true;
+                });
+                chats.addPreference(share);
             }
         }
     }

@@ -3170,3 +3170,13 @@ All your notifications are marked as read.	Tất cả thông báo của bạn đ
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Chưa đánh dấu gì vì Facebook không cho biết ai đang đăng nhập. Hãy mở tab Thông báo một lần rồi thử lại.
 This build can't mark notifications as read.	Bản dựng này không thể đánh dấu thông báo là đã đọc.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook không thể đánh dấu thông báo của bạn là đã đọc. Hãy thử lại sau giây lát.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Chia sẻ vào chat của Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Thêm chat của Facebook vào menu chia sẻ của Android. Ảnh hoặc video bạn chia sẻ vào đó được lưu vào thư viện và văn bản được sao chép, rồi các đoạn chat của bạn mở ra để bạn chọn một đoạn chat và gửi.
+Share to Facebook chats is off.	Chia sẻ vào chat của Facebook đang tắt.
+Nothing in it to send.	Không có gì để gửi.
+Couldn't save it to your gallery.	Không lưu được vào thư viện.
+Copied and saved. Pick a chat.	Đã sao chép và lưu. Chọn một đoạn chat.
+In your gallery now. Pick a chat.	Đã có trong thư viện. Chọn đoạn chat.
+Copied. Pick a chat and paste it.	Đã sao chép. Chọn đoạn chat rồi dán.
+Open your chats to pick one.	Mở các đoạn chat để chọn một.

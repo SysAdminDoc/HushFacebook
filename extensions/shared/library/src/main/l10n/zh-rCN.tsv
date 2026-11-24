@@ -3165,3 +3165,13 @@ All your notifications are marked as read.	你的所有通知都已标为已读�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	没有标记任何通知，因为 Facebook 没有告知当前登录的是谁。请先打开一次“通知”标签，然后再试。
 This build can't mark notifications as read.	此版本无法将通知标为已读。
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook 无法将你的通知标为已读。请稍后再试。
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	分享到 Facebook 聊天
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	在 Android 的分享菜单中加入 Facebook 聊天。分享到这里的照片或视频会保存到图库，文字会被复制，然后打开你的聊天，选一个发送即可。
+Share to Facebook chats is off.	分享到 Facebook 聊天已关闭。
+Nothing in it to send.	没有可发送的内容。
+Couldn't save it to your gallery.	无法保存到图库。
+Copied and saved. Pick a chat.	已复制并保存。请选择聊天。
+In your gallery now. Pick a chat.	已在图库中。请选择聊天。
+Copied. Pick a chat and paste it.	已复制。选择聊天后粘贴。
+Open your chats to pick one.	打开聊天列表选择一个。

@@ -2243,3 +2243,13 @@ All your notifications are marked as read.	تم تعليم كل إشعاراتك
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	لم يُعلَّم أي شيء، لأن فيسبوك لم يحدد الحساب المسجَّل دخوله. افتح تبويب الإشعارات مرة واحدة، ثم حاول مرة أخرى.
 This build can't mark notifications as read.	لا يستطيع هذا الإصدار تعليم الإشعارات كمقروءة.
 Facebook couldn't mark your notifications as read. Try again in a moment.	لم يتمكن فيسبوك من تعليم إشعاراتك كمقروءة. حاول مرة أخرى بعد قليل.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	المشاركة في محادثات فيسبوك
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	يضيف محادثات فيسبوك إلى قائمة المشاركة في Android. تُحفظ الصورة أو الفيديو الذي تشاركه هناك في معرض الصور ويُنسخ النص، ثم تُفتح محادثاتك لتختار واحدة وترسله.
+Share to Facebook chats is off.	المشاركة في محادثات فيسبوك متوقفة.
+Nothing in it to send.	لا يوجد ما يُرسل.
+Couldn't save it to your gallery.	تعذّر الحفظ في معرض الصور.
+Copied and saved. Pick a chat.	تم النسخ والحفظ. اختر محادثة.
+In your gallery now. Pick a chat.	أصبح في معرض الصور. اختر محادثة.
+Copied. Pick a chat and paste it.	تم النسخ. اختر محادثة والصقه.
+Open your chats to pick one.	افتح محادثاتك لتختار واحدة.

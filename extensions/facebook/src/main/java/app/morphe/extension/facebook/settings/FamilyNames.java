@@ -136,6 +136,7 @@ public final class FamilyNames {
     public static final String TYPING_INDICATOR = "Hide typing indicator";
     public static final String READ_RECEIPTS = "Hide read receipts";
     public static final String ORIGINAL_CHAT_MEDIA = "Send chat photos and videos at original quality";
+    public static final String SHARE_TO_CHATS = "Share to Facebook chats";
     public static final String AUDIENCE_NETWORK = "Disable Audience Network";
     public static final String GAME_ADS = "Block Instant Games ads";
     public static final String AMOLED_THEME = "AMOLED black theme";

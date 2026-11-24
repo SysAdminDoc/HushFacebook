@@ -3170,3 +3170,13 @@ All your notifications are marked as read.	모든 알림을 읽음으로 표시�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Facebook이 로그인한 계정을 알려 주지 않아서 아무것도 표시하지 않았어요. 알림 탭을 한 번 연 다음 다시 시도하세요.
 This build can't mark notifications as read.	이 빌드에서는 알림을 읽음으로 표시할 수 없어요.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook에서 알림을 읽음으로 표시하지 못했어요. 잠시 후 다시 시도하세요.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Facebook 채팅으로 공유
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Android 공유 메뉴에 Facebook 채팅을 추가해요. 여기로 공유한 사진이나 동영상은 갤러리에 저장되고 텍스트는 복사돼요. 그다음 채팅이 열리니 하나를 골라 보내면 돼요.
+Share to Facebook chats is off.	Facebook 채팅으로 공유가 꺼져 있어요.
+Nothing in it to send.	보낼 내용이 없어요.
+Couldn't save it to your gallery.	갤러리에 저장하지 못했어요.
+Copied and saved. Pick a chat.	복사하고 저장했어요. 채팅을 고르세요.
+In your gallery now. Pick a chat.	갤러리에 저장했어요. 채팅을 고르세요.
+Copied. Pick a chat and paste it.	복사했어요. 채팅을 골라 붙여넣으세요.
+Open your chats to pick one.	채팅을 열어 하나를 고르세요.

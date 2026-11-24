@@ -65,6 +65,7 @@ import app.morphe.extension.facebook.chats.MessengerHandoffForTests;
 import app.morphe.extension.facebook.chats.MessengerIconForTests;
 import app.morphe.extension.facebook.chats.OriginalChatMediaForTests;
 import app.morphe.extension.facebook.chats.ReadReceipts;
+import app.morphe.extension.facebook.chats.ShareToChatsForTests;
 import app.morphe.extension.facebook.chats.TypingIndicator;
 import app.morphe.extension.facebook.download.ClipboardLinkForTests;
 import app.morphe.extension.facebook.download.CommentGifForTests;
@@ -1328,6 +1329,8 @@ public class PausedHooksTest {
         // check says it can skip the re-encode.
         probes.put(PatchFamily.ORIGINAL_CHAT_MEDIA, Arrays.asList(OriginalChatMediaForTests::sendsAPhotoAsIs,
                 OriginalChatMediaForTests::sendsAPhotoAsyncAsIs, OriginalChatMediaForTests::passesAVideo));
+        // The share target is in the share menu only while its switch runs.
+        probes.put(PatchFamily.SHARE_TO_CHATS, Collections.singletonList(ShareToChatsForTests::putsItInTheShareMenu));
         // A push of each kind a notification switch blocks isn't posted, asked at 11 PM, inside
         // the quiet hours every switch on turns on.
         probes.put(PatchFamily.PROMO_NOTIFICATIONS, Arrays.asList(

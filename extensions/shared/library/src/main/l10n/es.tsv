@@ -3170,3 +3170,13 @@ All your notifications are marked as read.	Todas tus notificaciones están marca
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	No se marcó nada porque Facebook no indicó quién inició sesión. Abre la pestaña Notificaciones una vez y vuelve a intentarlo.
 This build can't mark notifications as read.	Esta compilación no puede marcar las notificaciones como leídas.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook no pudo marcar tus notificaciones como leídas. Vuelve a intentarlo en un momento.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Compartir en chats de Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Añade los chats de Facebook al menú de compartir de Android. Una foto o un vídeo que compartas ahí se guarda en tu galería y el texto se copia. Luego se abren tus chats para que elijas uno y lo envíes.
+Share to Facebook chats is off.	Compartir en chats de Facebook está desactivado.
+Nothing in it to send.	No hay nada que enviar.
+Couldn't save it to your gallery.	No se pudo guardar en tu galería.
+Copied and saved. Pick a chat.	Copiado y guardado. Elige un chat.
+In your gallery now. Pick a chat.	Ya está en tu galería. Elige un chat.
+Copied. Pick a chat and paste it.	Copiado. Elige un chat y pégalo.
+Open your chats to pick one.	Abre tus chats para elegir uno.

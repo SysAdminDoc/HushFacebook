@@ -2560,6 +2560,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_open_chats_in_messenger", FALSE, true);
 
     /**
+     * Facebook chats in Android's share menu (#568): a photo or video shared there goes to the
+     * gallery and text to the clipboard, and Facebook opens on Chats to pick one. Starts off, and
+     * the share target stays out of the share menu until it's on.
+     */
+    public static final BooleanSetting SHARE_TO_CHATS =
+            new BooleanSetting("hushfacebook_share_to_chats", FALSE);
+
+    /**
      * The Upgrades section of Facebook's Menu, the group Facebook types UPSELL, with its offers.
      * Only that group goes: Settings, Help and support and the rest of the Menu stay. A Menu built
      * before the switch changed keeps the group on screen even though its sections ask again (#184),

@@ -3170,3 +3170,13 @@ All your notifications are marked as read.	Tüm bildirimlerin okundu olarak işa
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Hiçbir şey işaretlenmedi, çünkü Facebook kimin oturum açtığını bildirmedi. Bildirimler sekmesini bir kez açıp yeniden dene.
 This build can't mark notifications as read.	Bu derleme bildirimleri okundu olarak işaretleyemez.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook bildirimlerini okundu olarak işaretleyemedi. Birazdan yeniden dene.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Facebook sohbetlerinde paylaş
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Android'in paylaşım menüsüne Facebook sohbetlerini ekler. Oraya paylaştığın fotoğraf veya video galerine kaydedilir ve metin kopyalanır, ardından sohbetlerin açılır, böylece birini seçip gönderebilirsin.
+Share to Facebook chats is off.	Facebook sohbetlerinde paylaş kapalı.
+Nothing in it to send.	Gönderilecek bir şey yok.
+Couldn't save it to your gallery.	Galeriye kaydedilemedi.
+Copied and saved. Pick a chat.	Kopyalandı ve kaydedildi. Bir sohbet seç.
+In your gallery now. Pick a chat.	Artık galerinde. Bir sohbet seç.
+Copied. Pick a chat and paste it.	Kopyalandı. Bir sohbet seçip yapıştır.
+Open your chats to pick one.	Birini seçmek için sohbetlerini aç.
