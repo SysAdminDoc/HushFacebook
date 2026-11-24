@@ -2732,7 +2732,9 @@ Your tab bar will go in this order: %1$s.	แถบแท็บของคุ�
 Show only watched stories	แสดงเฉพาะสตอรี่ที่ดูแล้ว
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	ถาดสตอรี่จะเก็บเฉพาะสตอรี่ที่คุณดูแล้วเพื่อให้คุณค้นหาอีกครั้งได้ ปิดตัวเลือกนี้เพื่อดูสตอรี่ใหม่ ตัวเลือก "ซ่อนสตอรี่ที่ดูแล้ว" จะหยุดทำงานชั่วคราวขณะเปิดใช้งานตัวเลือกนี้ จะมีผลเมื่อ Facebook โหลดถาดสตอรี่ในครั้งต่อไป
 Show Posts in search	แสดงโพสต์ในการค้นหา
+Show Videos in search	แสดงวิดีโอในการค้นหา
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	นำแท็บ "โพสต์" กลับมาไว้ในแถวเหนือผลการค้นหาต่อจาก Reels เพื่อให้คุณดูเฉพาะโพสต์สำหรับสิ่งที่คุณค้นหาได้
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	ใส่ วิดีโอ ในแถวเหนือผลการค้นหา ถัดจาก โพสต์ เพื่อให้คุณดูเฉพาะวิดีโอของสิ่งที่ค้นหา
 Saved button in search	ปุ่ม "ที่บันทึกไว้" ในการค้นหา
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	เพิ่มปุ่ม "ที่บันทึกไว้" ที่ท้ายแถบค้นหา เพื่อให้คุณเปิดโพสต์และวิดีโอที่บันทึกไว้ได้ด้วยการแตะเพียงครั้งเดียว รีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
 Restore feed sound after opened videos	คืนค่าเสียงของฟีดหลังจากเปิดดูวิดีโอ

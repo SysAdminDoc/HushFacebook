@@ -335,7 +335,7 @@ public enum PatchFamily {
     SEARCH_DATE_RANGE(FamilyNames.SEARCH_DATE_RANGE, "searchDateRange", null,
             Settings.SEARCH_DATE_RANGE),
     SEARCH_POSTS_TAB(FamilyNames.SEARCH_POSTS_TAB, "searchPostsTab", null,
-            Settings.SEARCH_POSTS_TAB),
+            Settings.SEARCH_POSTS_TAB, Settings.SEARCH_VIDEOS_TAB),
     SEARCH_SAVED_BUTTON(FamilyNames.SEARCH_SAVED_BUTTON, "searchSavedButton", null,
             Settings.SEARCH_SAVED_BUTTON),
     ANALYTICS_UPLOADS(FamilyNames.ANALYTICS_UPLOADS, "analyticsUploads", null,

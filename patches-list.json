@@ -3814,7 +3814,7 @@
     },
     {
       "name": "Search posts tab",
-      "description": "Puts the Posts chip back in the row over search results, after Reels, so you can see only posts for what you searched. Turn it off in Hushfacebook settings > Search.",
+      "description": "Puts the Posts chip back in the row over search results, after Reels, so you can see only posts for what you searched. A Videos chip can go in next to it too. Turn each on or off in Hushfacebook settings > Search.",
       "category": "Interface",
       "use": true,
       "dependencies": [

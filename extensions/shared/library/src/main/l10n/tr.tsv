@@ -2732,7 +2732,9 @@ Your tab bar will go in this order: %1$s.	Sekme çubuğunuz şu sırayla olacak:
 Show only watched stories	Yalnızca izlenen hikayeleri göster
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	Hikayeler tepsisi yalnızca izlediğiniz hikayeleri tutar, böylece birini yeniden bulabilirsiniz. Yenileri görmek için kapatın. Bu açıkken İzlenen hikayeleri gizle bekler. Facebook tepsiyi bir sonraki yüklediğinde uygulanır.
 Show Posts in search	Aramada Gönderiler'i göster
+Show Videos in search	Aramada Videoları göster
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	Gönderiler'i arama sonuçlarının üstündeki sıraya, Reels'ten sonra geri koyar, böylece aradığın şey için yalnızca gönderileri görebilirsin.
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	Arama sonuçlarının üstündeki satıra, Gönderiler'in yanına Videolar'ı koyar, böylece aradığın şeyin yalnızca videolarını görürsün.
 Saved button in search	Aramada Kaydedilenler düğmesi
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	Arama çubuğunun sonuna bir Kaydedilenler düğmesi koyar, böylece kaydettiğin gönderiler ve videolar bir dokunuş uzakta olur. Değişikliği görmek için Facebook'u yeniden başlatın.
 Restore feed sound after opened videos	Açılan videolardan sonra akışın sesini geri yükle

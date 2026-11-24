@@ -2772,6 +2772,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_search_posts_tab", TRUE);
 
     /**
+     * A Videos chip goes in the row over search results, after Posts, labelled and opened through
+     * Facebook's own table of tab labels like the Posts chip (#483). Off by default.
+     */
+    public static final BooleanSetting SEARCH_VIDEOS_TAB =
+            new BooleanSetting("hushfacebook_search_videos_tab", FALSE);
+
+    /**
      * A Saved button at the end of the search bar opens Facebook's Saved screen
      * ({@link app.morphe.extension.facebook.search.SearchSavedButton}, #433). Off by default. The
      * button goes in as Facebook builds the bar, so turning it on takes a restart.

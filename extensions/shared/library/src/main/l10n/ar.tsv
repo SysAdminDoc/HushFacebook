@@ -1372,6 +1372,7 @@ Puts every feature switch but Lock Facebook back the way it started.	يعيد ك
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu.	يضع إعدادات Hushfacebook في القائمة التي تحصل عليها بالضغط المطوّل على أيقونة فيسبوك. متوقف، يترك تلك القائمة.
 Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	يضع سرعة التشغيل في الصفحة الأولى من القائمة، مع حفظ وبلاغ، حتى تكون على بعد نقرة واحدة. متوقف، يبقى تحت خيارات أكثر.
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	يضع المنشورات مرة أخرى في صف فوق نتائج البحث، بعد الريلز، حتى ترى فقط المنشورات لما بحثت عنه.
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	يضع «الفيديوهات» في الصف فوق نتائج البحث، بجانب المنشورات، حتى ترى الفيديوهات فقط لما بحثت عنه.
 Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.	يضع زر مكبر الصوت في العمود الجانبي للريلز، فوق النقاط الثلاث مباشرة. يظهر التغيير من الريل التالي.
 Puts your words or Facebook's logo back at the top of Home. Restart Facebook to see the change.	يضع كلماتك أو شعار فيسبوك مرة أخرى في أعلى الرئيسية. أعد تشغيل فيسبوك لترى التغيير.
 Putting your settings back	إعادة إعداداتك
@@ -1618,6 +1619,7 @@ Show only comments that match	إظهار التعليقات المتطابقة �
 Show only watched stories	إظهار القصص المشاهدة فقط
 Show original	إظهار الأصلي
 Show Posts in search	إظهار المنشورات في البحث
+Show Videos in search	إظهار الفيديوهات في البحث
 Show reactions on the Like button	إظهار التفاعلات على زر الإعجاب
 Show Reels in gray	إظهار الريلز باللون الرمادي
 Show Reels in gray will make reels gray from the start.	إظهار الريلز باللون الرمادي سيجعل الريلز رمادية من البداية.

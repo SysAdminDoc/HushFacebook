@@ -288,6 +288,9 @@ final class AppPages {
                 search.addPreference(toggle(context, Settings.SEARCH_POSTS_TAB,
                         L10n.t("Puts Posts back in the row over search results, after Reels, so you can see only posts "
                                 + "for what you searched.")));
+                search.addPreference(toggle(context, Settings.SEARCH_VIDEOS_TAB,
+                        L10n.t("Puts Videos in the row over search results, next to Posts, so you can see only videos "
+                                + "for what you searched.")));
             }
             if (build.contains(PatchFamily.SEARCH_SAVED_BUTTON)) {
                 search.addPreference(toggle(context, Settings.SEARCH_SAVED_BUTTON,

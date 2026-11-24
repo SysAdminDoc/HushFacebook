@@ -34,25 +34,44 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * chip goes in after Reels (or after the first chip, All, when there's no Reels). A row that
  * already has Posts stays as it came. Facebook marks the chip of the open tab, and the row it
  * draws over the posts results has none marked, so there the Posts chip goes in marked.
+ *
+ * <p>Videos (#483) is in the same table (BLENDED_SHOWS_HOME), so its own switch adds it the same
+ * way, after Posts. There's no Photos chip: Facebook answers both photo tabs its results page can
+ * open with no results for any search. A tap rebuilds the row from Facebook's
+ * stored chips, which never include the added ones, so with more than one added the patch also
+ * hands over the label of each tapped chip, and a row with none marked marks the one tapped last.
  */
 public final class SearchPostsTab {
     /** The posts tab, as Facebook's tab enum names it. */
     static final String POSTS_TAB = "BLENDED_STORIES";
 
-    /** The tab Posts goes after. */
+    /** The videos tab: the one Facebook's table labels Videos. */
+    static final String VIDEOS_TAB = "BLENDED_SHOWS_HOME";
+
+    /** The tab the added chips go after. */
     static final String REELS_TAB = "REELS";
 
     /** The member the report names once the row's chips have been handed over. */
     static final String CHIPS = "search result chips";
 
+    /** The member the report names once a tapped chip's label has been handed over. */
+    static final String TAPS = "search chip taps";
+
     /** What the report counts each time Posts goes into the row. */
     static final String ADDED = "Posts chip added";
+
+    /** What the report counts each time Videos goes into the row. */
+    static final String VIDEOS_ADDED = "Videos chip added";
 
     private static final String FAMILY = FamilyNames.SEARCH_POSTS_TAB;
 
     /** The table tests hand the hook in place of Facebook's; null in the app. */
     @Nullable
     static Map<?, ?> testLabels;
+
+    /** The label of the chip tapped last, or null before the first tap. */
+    @Nullable
+    static volatile String tapped;
 
     private SearchPostsTab() {
     }
@@ -65,10 +84,12 @@ public final class SearchPostsTab {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, CHIPS);
-            if (chips == null || chips.isEmpty() || !Utils.settingsReady() || !Settings.SEARCH_POSTS_TAB.get()) {
-                return chips;
-            }
-            return withPosts(chips, testLabels != null ? testLabels : tabLabels(Utils.getContext()));
+            if (chips == null || chips.isEmpty() || !Utils.settingsReady()) return chips;
+            List<String> tabs = new ArrayList<>(2);
+            if (Settings.SEARCH_POSTS_TAB.get()) tabs.add(POSTS_TAB);
+            if (Settings.SEARCH_VIDEOS_TAB.get()) tabs.add(VIDEOS_TAB);
+            if (tabs.isEmpty()) return chips;
+            return withTabs(chips, testLabels != null ? testLabels : tabLabels(Utils.getContext()), tabs);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, CHIPS, failure);
             return chips;
@@ -76,41 +97,82 @@ public final class SearchPostsTab {
     }
 
     /**
-     * [chips] with a Posts chip added where {@link #insertAt} puts it, labelled as [labels] (Facebook's
-     * table between tab labels and tabs, either way round) labels the posts tab. The same list
-     * when the table has no posts label or the row needs no chip.
+     * The hook as a chip is tapped, at the start of the method that rebuilds the row with the tapped
+     * chip marked and opens its tab, handed the chip's label.
      */
-    static List<?> withPosts(List<?> chips, @Nullable Map<?, ?> labels) throws ReflectiveOperationException {
-        String posts = labelOf(labels, POSTS_TAB);
-        if (posts == null) {
-            Logger.printDebug(() -> "Search posts tab: no label for the posts tab");
-            return chips;
+    public static void tapped(@Nullable String label) {
+        try {
+            HookStatus.bound(FAMILY, TAPS);
+            tapped = label;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, TAPS, failure);
         }
-        List<String> names = new ArrayList<>(chips.size());
-        for (Object chip : chips) names.add(label(chip));
-        int at = insertAt(names, posts, labelOf(labels, REELS_TAB));
-        if (at < 0) {
-            Logger.printDebug(() -> "Search posts tab: chips stay " + names);
-            return chips;
-        }
-        // Facebook marks the chip of the tab that's open, and Posts isn't one of its chips any
-        // more, so a row with none marked is the posts results' own row.
-        Object chip = chipLike(chips.get(0), posts, noneSelected(chips));
-        if (chip == null) return chips;
-        List<Object> out = new ArrayList<>(chips.size() + 1);
-        out.addAll(chips);
-        out.add(at, chip);
-        HookStatus.counted(FAMILY, ADDED);
-        Logger.printDebug(() -> "Search posts tab: Posts goes in at " + at + " of " + names);
-        return out;
     }
 
     /**
-     * Where Posts goes among the chips' [labels], or -1 for no change: after the [reels] chip, else
-     * after the first chip. No change for no chips, or when one is already labelled [posts].
+     * [chips] with a chip added for each of [tabs] (tab names, in order) that [labels] (Facebook's
+     * table between tab labels and tabs, either way round) labels and the row doesn't have yet. The
+     * first goes after Reels, else after the first chip, and each after the one before it, or after
+     * that tab's chip when the row already has it. The same list when nothing goes in.
      */
-    static int insertAt(List<String> labels, String posts, @Nullable String reels) {
-        if (labels.isEmpty() || labels.contains(posts)) return -1;
+    static List<?> withTabs(List<?> chips, @Nullable Map<?, ?> labels, List<String> tabs)
+            throws ReflectiveOperationException {
+        List<String> names = new ArrayList<>(chips.size());
+        for (Object chip : chips) names.add(label(chip));
+        List<String> added = new ArrayList<>(tabs.size());
+        List<String> addedTabs = new ArrayList<>(tabs.size());
+        List<Integer> places = new ArrayList<>(tabs.size());
+        List<String> out = new ArrayList<>(names);
+        int next = insertAt(names, labelOf(labels, REELS_TAB));
+        if (next < 0) return chips;
+        for (String tab : tabs) {
+            String label = labelOf(labels, tab);
+            if (label == null) {
+                Logger.printDebug(() -> "Search posts tab: no label for " + tab);
+                continue;
+            }
+            int there = out.indexOf(label);
+            if (there >= 0) {
+                next = there + 1;
+                continue;
+            }
+            out.add(next, label);
+            added.add(label);
+            addedTabs.add(tab);
+            places.add(next);
+            next++;
+        }
+        if (added.isEmpty()) {
+            Logger.printDebug(() -> "Search posts tab: chips stay " + names);
+            return chips;
+        }
+        // Facebook marks the chip of the tab that's open, and the added tabs aren't among its
+        // chips, so a row with none marked is the results of one of them: the only one added, or
+        // the one tapped last.
+        String marked = null;
+        if (noneSelected(chips)) {
+            String last = tapped;
+            marked = added.size() == 1 ? added.get(0) : added.contains(last) ? last : null;
+        }
+        List<Object> row = new ArrayList<>(chips);
+        for (int i = 0; i < added.size(); i++) {
+            Object chip = chipLike(chips.get(0), added.get(i), added.get(i).equals(marked));
+            if (chip == null) return chips;
+            row.add(places.get(i), chip);
+        }
+        for (String tab : addedTabs) {
+            HookStatus.counted(FAMILY, POSTS_TAB.equals(tab) ? ADDED : VIDEOS_ADDED);
+        }
+        Logger.printDebug(() -> "Search posts tab: " + added + " go in, making " + out);
+        return row;
+    }
+
+    /**
+     * Where the first added chip goes among the chips' [labels], or -1 for no change: after the
+     * [reels] chip, else after the first chip. -1 for no chips.
+     */
+    static int insertAt(List<String> labels, @Nullable String reels) {
+        if (labels.isEmpty()) return -1;
         int at = reels == null ? -1 : labels.indexOf(reels);
         return at >= 0 ? at + 1 : 1;
     }

@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * With Debug logging on, a Debug report now says what Burn-in guard kept bright and what it dimmed on the last story it dimmed, view by view with each one's size. A story that comes out wrong with the guard on, like a note story, can be pinned down from the report. (#523)
 * `Hide reaction counts on comments` under Comments takes the number off the reaction faces on each comment. The faces stay, and tapping them still shows who reacted. Facebook's own setting for hiding reaction counts leaves comments alone. It's off until you turn it on. (#483)
 * `Hide Stars and gifts under posts` sits with the other hide switches under News feed. It takes out the button some creators' posts get for sending them Stars or gifts. It starts off. (#483)
+* `Show Videos in search` under Search puts a Videos chip in the row over search results, next to Posts, so a search can show just videos. It starts off. (#483)
 
 ### Fixed
 
