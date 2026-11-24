@@ -96,6 +96,8 @@ public class ReelsStatusBarTest {
         Settings.HIDE_STATUS_BAR.resetToDefault();
         Settings.HIDE_REELS_TAB_BAR.resetToDefault();
         ReelsTabBarHidden.forgetWindow();
+        TabBarScrollAway.Stored.BAR_ROOM.resetToDefault();
+        TabBarScrollAway.Stored.WIDE_BAR_ROOM.resetToDefault();
         ReelsHeaderClear.resetForTests();
         TabBarScrollAway.mainScreenCreated(null);
         TabBarScrollAway.forgetBuilt();

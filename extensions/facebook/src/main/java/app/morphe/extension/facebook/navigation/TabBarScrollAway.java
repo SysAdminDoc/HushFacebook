@@ -342,8 +342,12 @@ public final class TabBarScrollAway {
         boolean shown = onReelsTab();
         boolean under = shown ? reelUnderBars(tabsOnTop) : reelsWillRunUnderBars(tabsOnTop);
         int dropped = droppedTop;
+        // A list not laid out yet runs down past the bar Hide the tab bar on the Reels tab takes
+        // away (#566); a list laid out says how tall it is.
+        int freed = list > 0 || tabsOnTop ? 0 : ReelsTabBarHidden.roomFreed();
         Logger.printDebug(() -> "Top bars: a Reels row of " + height + (shown ? " on the Reels tab" : " made ahead")
-                + ", under the bars " + under + ", list " + list + ", tab padding " + tabPad + ", padding dropped " + dropped);
+                + ", under the bars " + under + ", list " + list + ", tab padding " + tabPad + ", padding dropped " + dropped
+                + ", room the hidden tab bar frees " + freed);
         if (list > 0 && window > 0 && height > window) {
             Logger.printDebug(() -> "Top bars: a Reels row of " + height + " is taller than the window's "
                     + window + ", worked out for the screen held the other way, made " + list);
@@ -365,8 +369,16 @@ public final class TabBarScrollAway {
         } else if (rowMade.get() == height && listSeen.get() > height
                 && (setupSeen.get() == setup || sameListUnderTabBar(setupSeen.get(), setup))) {
             wanted = listSeen.get();
-        } else if (under) {
-            wanted = height + (tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0);
+        } else if (under || freed > 0) {
+            int grown = height + (!under ? 0 : tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0) + freed;
+            if (under && list <= 0 && window > 0 && ReelsTabBarHidden.on() && !Settings.KEEP_TOP_BAR.get()) {
+                // The list a reel under the bars runs in once the tab bar is hidden on Reels: the
+                // window down to the navigation bar its page keeps. With no list seen for this
+                // setup yet, as on the first start after the switch goes on, Facebook's height
+                // stopped short of it by the tab bar it was worked out for (#566).
+                grown = Math.max(grown, window - ReelsTabBarHidden.navigationStrip());
+            }
+            wanted = grown;
         } else {
             return height;
         }
@@ -522,9 +534,17 @@ public final class TabBarScrollAway {
         static final IntegerSetting WIDE_ROW_MADE = new IntegerSetting("hushfacebook_reels_wide_row_made", 0, false, false);
         static final IntegerSetting WIDE_LIST_HEIGHT = new IntegerSetting("hushfacebook_reels_wide_list_height", 0, false, false);
         static final IntegerSetting WIDE_ROW_SETUP = new IntegerSetting("hushfacebook_reels_wide_row_setup", -1, false, false);
+        /**
+         * The room the tab bar takes above the phone's navigation bar, held upright and on its side,
+         * last read off a laid out bar ({@link ReelsTabBarHidden#roomFreed}). Facebook makes the first
+         * Reels rows as it starts, before its bar is laid out (#566).
+         */
+        static final IntegerSetting BAR_ROOM = new IntegerSetting("hushfacebook_reels_bar_room", 0, false, false);
+        static final IntegerSetting WIDE_BAR_ROOM = new IntegerSetting("hushfacebook_reels_wide_bar_room", 0, false, false);
 
         static {
-            Setting.keepWhenPaused(ROW_MADE, LIST_HEIGHT, ROW_SETUP, WIDE_ROW_MADE, WIDE_LIST_HEIGHT, WIDE_ROW_SETUP);
+            Setting.keepWhenPaused(ROW_MADE, LIST_HEIGHT, ROW_SETUP, WIDE_ROW_MADE, WIDE_LIST_HEIGHT, WIDE_ROW_SETUP,
+                    BAR_ROOM, WIDE_BAR_ROOM);
         }
 
         private Stored() {

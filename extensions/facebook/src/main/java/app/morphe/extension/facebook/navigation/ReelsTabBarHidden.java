@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.navigation;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +21,7 @@ import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.IntegerSetting;
 
 /**
  * Hide the tab bar on the Reels tab only.
@@ -78,6 +80,11 @@ public final class ReelsTabBarHidden {
     private static WeakReference<Activity> screen = new WeakReference<>(null);
     /** The navigation bar last read, for a call that comes before any window can say. */
     private static int lastStrip;
+    /** The bar's height last read while it had one, for a reel sized while the bar is gone. */
+    private static int lastBar;
+    /** Whether that read was with the screen on its side, and whether its room is kept for the next start. */
+    private static boolean lastWide;
+    private static boolean roomKept;
 
     /** Insets standing in for the window's in tests. */
     @Nullable static volatile WindowInsets insetsForTests;
@@ -95,6 +102,9 @@ public final class ReelsTabBarHidden {
         window = new WeakReference<>(null);
         screen = new WeakReference<>(null);
         lastStrip = 0;
+        lastBar = 0;
+        lastWide = false;
+        roomKept = false;
     }
 
     private static void windowFrom(View view) {
@@ -117,6 +127,59 @@ public final class ReelsTabBarHidden {
         if (view != null) strip -= belowContent(view);
         lastStrip = Math.max(0, strip);
         return lastStrip;
+    }
+
+    /**
+     * How much taller the Reels list runs with the bar hidden there: the bar's height, which pads
+     * its tabs up over the phone's navigation bar, less that navigation bar, which the page keeps
+     * ({@link #pageBottomMargin}). Facebook makes the Reels tab's rows before the list is laid out,
+     * at the height the bar leaves, so a row made then needs this much more to fill the list (#566).
+     * Always the room kept: a bar laid out in its window updates it first, and a row made as
+     * Facebook starts, before then, gets the one kept from an earlier start. Facebook lays the bar
+     * out more than once as it starts, so its height of the moment can be short of the room it ends
+     * up taking, and a row made from that stopped short of the bottom on an emulator. 0 with the
+     * switch off, or before any bar was laid out in its window. Never throws.
+     */
+    static int roomFreed() {
+        try {
+            if (!on()) return 0;
+            View bar = window.get();
+            if (bar != null) noteBar(bar);
+            boolean wide = TabBarScrollAway.wide();
+            int room = (wide ? TabBarScrollAway.Stored.WIDE_BAR_ROOM : TabBarScrollAway.Stored.BAR_ROOM).get();
+            Logger.printDebug(() -> "Reels tab bar: frees " + room + (wide ? " on its side" : "")
+                    + ", the bar now " + lastBar + (roomKept ? " in its window" : ""));
+            return room;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+            return 0;
+        }
+    }
+
+    /**
+     * Reads a laid out bar's height, and keeps the room it takes above the navigation bar for the
+     * next start, with the switch off too, so the first start after it's turned on already has it.
+     */
+    private static void noteBar(View bar) {
+        int height = bar.getHeight();
+        if (height <= 0) return;
+        boolean wide = sideways(bar);
+        if (height == lastBar && wide == lastWide && roomKept) return;
+        lastBar = height;
+        lastWide = wide;
+        if (!Utils.settingsReady() || (insetsForTests == null && bar.getRootWindowInsets() == null)) return;
+        int room = Math.max(0, height - navigationStrip());
+        IntegerSetting kept = wide ? TabBarScrollAway.Stored.WIDE_BAR_ROOM : TabBarScrollAway.Stored.BAR_ROOM;
+        if (room > 0 && kept.get() != room) {
+            kept.save(room);
+            Logger.printDebug(() -> "Reels tab bar: takes " + room + " above the navigation bar" + (wide ? " on its side" : ""));
+        }
+        roomKept = true;
+    }
+
+    /** Whether the screen [view] is on is held on its side. */
+    private static boolean sideways(View view) {
+        return view.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
     }
 
     /**
@@ -157,6 +220,7 @@ public final class ReelsTabBarHidden {
         try {
             HookStatus.invoked(FAMILY);
             windowFrom(bar);
+            noteBar(bar);
             barGoes = StartTab.VIDEO.isTab(tab.getClass().getName()) && on();
             if (barGoes) {
                 HookStatus.bound(FAMILY, HOOK);
@@ -206,6 +270,11 @@ public final class ReelsTabBarHidden {
         if (bar == null) return;
         try {
             windowFrom(bar);
+            noteBar(bar);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+        }
+        try {
             if (!lineOff()) return;
             HookStatus.bound(FAMILY, LINE_HOOK);
             // The line beside the bar is laid out after it, so it may not have a size yet.
