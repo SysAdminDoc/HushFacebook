@@ -77,6 +77,8 @@ public class ReelLanguagesTest {
         languages.put(ENGLISH, "en");
         PostLanguagesForTests.guessFrom(languages);
         Settings.KEPT_LANGUAGES.save("en");
+        // A player another test opened would keep the next page's first reel.
+        FollowedReels.forgetViewers();
     }
 
     @After

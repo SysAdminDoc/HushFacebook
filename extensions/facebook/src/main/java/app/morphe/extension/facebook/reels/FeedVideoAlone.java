@@ -317,6 +317,7 @@ public final class FeedVideoAlone {
 
     /** Injection point, first thing in Facebook's Warion step, as a feed video opens its player. Never throws. */
     public static void feedVideoTapped() {
+        FollowedReels.playerOpening();
         try {
             HookStatus.invoked(FAMILY);
             TapToPlay.feedVideoOpening();
@@ -344,6 +345,7 @@ public final class FeedVideoAlone {
      */
     public static void reelsViewerOpening(@Nullable Object origin) {
         SavedChain.viewerOpening(origin == null ? null : origin.toString());
+        FollowedReels.playerOpening();
         try {
             HookStatus.invoked(FAMILY);
             if (origin != null && fromFeed(origin.toString())) TapToPlay.feedVideoOpening();
