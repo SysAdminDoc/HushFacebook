@@ -7,8 +7,10 @@ package app.morphe.extension.facebook.navigation;
 import android.app.Activity;
 import android.app.Application;
 import android.content.res.Configuration;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 
@@ -146,6 +148,8 @@ public final class TabBarScrollAway {
         droppedTop = 0;
         loggedUnder = false;
         reelsList = new WeakReference<>(null);
+        reelsTabList = new WeakReference<>(null);
+        listIdForTests = 0;
     }
 
     /**
@@ -339,8 +343,13 @@ public final class TabBarScrollAway {
                     + " for a screen over the main one, left as Facebook made it");
             return height;
         }
-        boolean tabsOnTop = tabsOnTop();
         boolean shown = onReelsTab();
+        if (!shown && reelsOpenedOverTab() != null) {
+            Logger.printDebug(() -> "Top bars: a Reels row of " + height
+                    + " for reels opened from a post over another tab, left as Facebook made it");
+            return height;
+        }
+        boolean tabsOnTop = tabsOnTop();
         boolean under = shown ? reelUnderBars(tabsOnTop) : reelsWillRunUnderBars(tabsOnTop);
         int dropped = droppedTop;
         // A list not laid out yet runs down past the bar Hide the tab bar on the Reels tab takes
@@ -455,9 +464,66 @@ public final class TabBarScrollAway {
             if (list == null) return 0;
             reelsList = new WeakReference<>(list);
         }
+        if (list.isShown() && onReelsTab()) reelsTabList = new WeakReference<>(list);
         if (list.getWindowVisibility() != View.VISIBLE) return 0;
         int height = list.getHeight() - list.getPaddingTop() - list.getPaddingBottom();
         return height <= 0 ? 0 : height + ReelsStatusBar.roomAbove(list);
+    }
+
+    /** The Reels tab's own list, as last read while that tab showed, held weakly. */
+    static volatile WeakReference<View> reelsTabList = new WeakReference<>(null);
+
+    /** The Reels list's view id for tests, where the patch hasn't filled {@link #reelsListId}. */
+    static volatile int listIdForTests;
+
+    /**
+     * A Reels list on screen in the main screen that isn't the Reels tab's own, or null: Facebook's
+     * reels scroller, which some phones open inside the main screen over Home when a reel in a post
+     * is tapped (a OnePlus 13, #505), where others open a screen of their own. Facebook worked its
+     * rows out from that list, laid out already, so they fit it. The height kept from the Reels tab,
+     * where See-through bars and Rounded tab bar run the list down under the tab bar, made each of
+     * its rows 210 px taller than the list there: every reel slid down over its seek bar, and
+     * Facebook only called a reel fully in view a swipe later, so the seek bar stayed on the reel
+     * before. Facebook makes rows off the main thread too, so a search that meets the view tree
+     * mid-change finds nothing for that row.
+     */
+    @Nullable
+    static View reelsOpenedOverTab() {
+        View tabList = reelsTabList.get();
+        View list = reelsList.get();
+        if (list != tabList && onScreen(list)) return list;
+        int id = reelsListId();
+        if (id == 0) id = listIdForTests;
+        Activity screen = mainScreen.get();
+        Window window = screen == null ? null : screen.getWindow();
+        View decor = window == null ? null : window.peekDecorView();
+        if (id == 0 || decor == null) return null;
+        try {
+            return onScreenWithId(decor, id, tabList);
+        } catch (RuntimeException midChange) {
+            return null;
+        }
+    }
+
+    /** The first view under [view] with [id] that's on screen and isn't [skip], or null. */
+    @Nullable
+    private static View onScreenWithId(View view, int id, @Nullable View skip) {
+        if (view.getVisibility() != View.VISIBLE) return null;
+        if (view.getId() == id && view != skip && onScreen(view)) return view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0, count = group.getChildCount(); i < count; i++) {
+            View child = group.getChildAt(i);
+            View found = child == null ? null : onScreenWithId(child, id, skip);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /** Whether [view] shows on screen now, some part of it inside the window. */
+    private static boolean onScreen(@Nullable View view) {
+        return view != null && view.isAttachedToWindow() && view.isShown()
+                && view.getWindowVisibility() == View.VISIBLE && view.getGlobalVisibleRect(new Rect());
     }
 
     /** The main screen's window height, or 0 when there's no main screen or it isn't laid out. */
