@@ -9,12 +9,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
 import android.net.Uri;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -109,6 +111,29 @@ public class ShareToChatsTest {
                 .putExtra(Intent.EXTRA_STREAM, photo("5.pdf")), app());
         assertTrue("a PDF isn't for the gallery", shared.empty());
         assertTrue(ShareToChats.read(null, app()).empty());
+    }
+
+    @Test
+    public void aShareNamingOneOfFacebooksOwnProvidersIsLeft() {
+        ProviderInfo own = new ProviderInfo();
+        own.packageName = app().getPackageName();
+        own.name = "app.morphe.fixture.OwnFiles";
+        own.authority = "com.example.own.files;com.example.own.cache";
+        own.exported = false;
+        own.applicationInfo = app().getApplicationInfo();
+        shadowOf(app().getPackageManager()).addOrUpdateProvider(own);
+        try {
+            ArrayList<Uri> streams = new ArrayList<>(Arrays.asList(Uri.parse("content://com.example.own.cache/a.jpg"),
+                    Uri.parse("content://0@com.example.own.files/b.jpg"), Uri.parse("content://COM.EXAMPLE.OWN.FILES/c.mp4"),
+                    photo("7")));
+            Intent many = new Intent(Intent.ACTION_SEND_MULTIPLE).setType("image/*")
+                    .putParcelableArrayListExtra(Intent.EXTRA_STREAM, streams);
+            assertEquals("only the other app's photo is saved", Arrays.asList(photo("7")), ShareToChats.read(many, app()).media);
+            assertTrue(ShareToChats.ownProvider(app(), Uri.parse("content://com.example.own.files/d.jpg")));
+            assertFalse(ShareToChats.ownProvider(app(), photo("8")));
+        } finally {
+            shadowOf(app().getPackageManager()).removeProvider(new ComponentName(own.packageName, own.name));
+        }
     }
 
     @Test

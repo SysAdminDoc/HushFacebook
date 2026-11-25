@@ -10,7 +10,9 @@ import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -184,7 +186,7 @@ public final class ShareToChats extends Activity {
         List<String> types = new ArrayList<>();
         for (Uri item : found) {
             // Another app's file address can't be read from here, and a repeat is one file.
-            if (!"content".equals(item.getScheme()) || media.contains(item)) continue;
+            if (!"content".equals(item.getScheme()) || media.contains(item) || ownProvider(context, item)) continue;
             String type = null;
             try {
                 type = context.getContentResolver().getType(item);
@@ -218,6 +220,34 @@ public final class ShareToChats extends Activity {
     private static ArrayList<Uri> streams(Intent shared) {
         if (Build.VERSION.SDK_INT >= 33) return shared.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri.class);
         return shared.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+    }
+
+    /**
+     * Whether [item] names one of this app's own content providers. Facebook can read all of them,
+     * exported or not, so a share naming one would have this screen copy Facebook's private files
+     * into the gallery for whichever app sent it. When the app's providers can't be read, every
+     * address counts as one.
+     */
+    static boolean ownProvider(Context context, Uri item) {
+        String authority = item.getAuthority();
+        if (authority == null) return true;
+        // Android reads "10@authority" as that authority for user 10.
+        authority = authority.substring(authority.lastIndexOf('@') + 1);
+        PackageInfo own;
+        try {
+            own = context.getPackageManager().getPackageInfo(context.getPackageName(),
+                    PackageManager.GET_PROVIDERS | PackageManager.MATCH_DISABLED_COMPONENTS);
+        } catch (Throwable failure) {
+            return true;
+        }
+        if (own.providers == null) return false;
+        for (ProviderInfo provider : own.providers) {
+            if (provider.authority == null) continue;
+            for (String name : provider.authority.split(";")) {
+                if (name.equalsIgnoreCase(authority)) return true;
+            }
+        }
+        return false;
     }
 
     /** Whether [item] is already a gallery entry, so it isn't copied there again. */
