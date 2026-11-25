@@ -12,6 +12,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Keep the keyboard closed when comments open` under Comments and writing opens comments without popping up the keyboard, even on a post with no comments yet. Tap the comment box when you want to write. It starts off. (#594)
 * `Settings language` at the top of Appearance picks the language the Hush settings and messages use, whatever language Facebook is in. Each language is listed in its own words, so English is always easy to find again, and Arabic lays the settings out right to left. `Same as Facebook` keeps them following Facebook. The change shows after Facebook restarts. (#582, #583, #558)
 * The Hush settings and messages now come in French. They follow Facebook's language, or pick `Français` under `Settings language`. (#584)
+* `Show feed reels uncropped` under Reels and Watch shows reels posted in your feed at their own shape. Facebook puts a tall reel in a wider frame and cuts off its sides, so you'd only see the middle of it. A reel taller than your screen stops at the screen's height. It starts off. (#581)
 
 ### Fixed
 

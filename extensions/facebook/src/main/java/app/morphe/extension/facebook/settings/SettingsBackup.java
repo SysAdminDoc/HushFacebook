@@ -340,6 +340,7 @@ public final class SettingsBackup {
             Settings.FILL_REELS,
             Settings.FILL_EVERY_REEL,
             Settings.PLAY_FEED_REELS_WHOLE,
+            Settings.UNCROPPED_FEED_REELS,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.NEWEST_REELS_FIRST,
             Settings.PROFILE_REELS_MOST_VIEWED,

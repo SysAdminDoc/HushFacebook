@@ -355,6 +355,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.PLAY_FEED_REELS_WHOLE,
                     L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "
                             + "repeating a second or two. Tiles drawn after a change pick it up.")));
+            // Asked as each feed reel's frame is shaped, so a change shows on the next reels (#581).
+            reels.addPreference(toggle(context, Settings.UNCROPPED_FEED_REELS,
+                    L10n.t("Reels in your feed show the whole picture at their own shape, instead of cut down to "
+                            + "Facebook's frame. Reels drawn after a change pick it up.")));
         }
         // Show full post text's reel half, a switch of its own since #398, read as each caption starts.
         if (build.contains(PatchFamily.FULL_POST_TEXT)) {

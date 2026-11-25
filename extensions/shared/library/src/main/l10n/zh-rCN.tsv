@@ -3192,3 +3192,5 @@ Keep the keyboard closed when comments open	打开评论时不弹出键盘
 Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	打开评论时不会弹出键盘，即使帖子还没有评论也一样。想写评论时点一下评论框。
 Settings language	设置语言
 Same as Facebook	与 Facebook 相同
+Show feed reels uncropped	动态中的 Reels 不裁剪
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	动态中的 Reels 按原本比例显示完整画面，不再被裁成 Facebook 的框。更改后新显示的 Reels 会生效。

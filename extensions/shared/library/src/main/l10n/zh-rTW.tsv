@@ -3201,3 +3201,5 @@ Keep the keyboard closed when comments open	開啟留言時不彈出鍵盤
 Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	開啟留言時不會彈出鍵盤，即使貼文還沒有留言也一樣。想留言時點一下留言框。
 Settings language	設定語言
 Same as Facebook	與 Facebook 相同
+Show feed reels uncropped	動態消息中的 Reels 不裁切
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	動態消息中的 Reels 會以原本比例顯示完整畫面，不再被裁成 Facebook 的框。變更後繪製的 Reels 才會生效。

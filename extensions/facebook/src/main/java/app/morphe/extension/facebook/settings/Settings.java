@@ -1206,6 +1206,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_play_feed_reels_whole", FALSE);
 
     /**
+     * A reel posted in the feed plays in a frame of its own shape instead of the wider one Facebook
+     * cuts it to ({@link app.morphe.extension.facebook.reels.FeedReelShape}, #581), no taller than
+     * the screen has room for. Off by default. A change shows on reels the feed draws after it.
+     */
+    public static final BooleanSetting UNCROPPED_FEED_REELS =
+            new BooleanSetting("hushfacebook_uncropped_feed_reels", FALSE);
+
+    /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
      * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
      * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,
