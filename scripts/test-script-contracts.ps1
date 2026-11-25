@@ -7357,6 +7357,10 @@ function Invoke-InBuildQueue {
             Assert-True ($now -eq (@($Builds | Sort-Object) -join ', ')) "The $Case changed patches/build/release: $now"
         }
         Copy-Item -LiteralPath $PSScriptRoot -Destination (Join-Path $releaseRepo 'scripts') -Recurse
+        # A release that removes or renames a patch declares it in patch-catalog-compatibility.json
+        # against the real published release. This fixture's published release is its own commit,
+        # so a copied declaration names a baseline it doesn't have.
+        Remove-Item -LiteralPath (Join-Path $releaseRepo 'scripts/patch-catalog-compatibility.json') -ErrorAction SilentlyContinue
         foreach ($results in @(
                 @{ Folder = 'extensions/facebook/build/test-results/testDebugUnitTest'; Suite = 'RuntimeTest'; Quote = '\b(\d+) runtime tests passed\b' },
                 @{ Folder = 'patches/build/test-results/test'; Suite = 'PatchTest'; Quote = '\b(\d+) patch tests passed\b' })) {
