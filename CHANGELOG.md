@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are in the [changelog archive](docs/changelog-archive.md).
 
-## Unreleased
+## 0.25.0 (2026-11-25)
+
+* Hushfacebook v0.25.0 has 128 patches for Facebook 588.0.0.42.55. It needs Morphe Manager 2.7.0 or newer, or morphe-desktop 2.3.0 on a computer. Facebook stays on 588.0.0.42.55, so patch the same build with the same signing key and your settings carry over. Chats inside Facebook can take a background color of your own, `Hide posts from people, Pages and sites` takes groups now, and long videos in the Reels viewer get their side buttons back. The Hush settings follow your phone's light or dark theme and come in Arabic, Bulgarian, Italian and Korean too. `Unlock app icons` is gone.
 
 ### Added
 
