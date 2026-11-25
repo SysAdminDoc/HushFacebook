@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 ### Added
 
 * `Fill every reel` sits under `Fill the screen with reels`. With both on, every reel fills the screen even when that cuts a lot off the sides, so an unfolded foldable or a tablet loses the bars without a pinch on each reel. (#571)
+* The Hush settings now come in Bulgarian too. They follow your phone's language, like the other translations. (#572)
 * The Hush settings now come in Arabic, translated by hamedhani1998. (#549)
 * `Hide posts from people, Pages and sites` takes groups now. Put a group's name or ID on the list, or a link to the group, and posts in that group leave Home, along with friends' shares of them. Handy for a group you're still in but don't want in your feed, since Facebook keeps showing those after you unfollow. A link only works when it has the group's number in it, like facebook.com/groups/1234567890. (#550)
 * `Show saved posts in the row` under `Play saved videos in a row` stops on a saved post instead of skipping it, so you can read it. Swipe up once you're past its end and the next saved video opens, or swipe down at its top to go back to the one before. While there's more of the post to scroll, your swipe just scrolls it. It's off until you turn it on. (#404)

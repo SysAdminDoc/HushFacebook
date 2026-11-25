@@ -158,7 +158,8 @@ public class SettingsL10nTest {
      */
     @Test
     public void inEveryShippedLanguageNothingOnTheScreenStaysEnglish() throws Exception {
-        String[][] languages = {{"ar", "ar"}, {"de", "de"}, {"es", "es"}, {"in-rID", "in"}, {"it", "it"}, {"ko", "ko"},
+        String[][] languages = {{"ar", "ar"}, {"bg", "bg"}, {"de", "de"}, {"es", "es"}, {"in-rID", "in"}, {"it", "it"},
+                {"ko", "ko"},
                 {"pt-rBR", "pt-rbr"}, {"tr", "tr"}, {"vi", "vi"}, {"ru", "ru"}, {"th", "th"}, {"zh-rCN", "zh-rcn"},
                 {"zh-rTW", "zh-rtw"}};
         for (String[] language : languages) {
@@ -243,7 +244,8 @@ public class SettingsL10nTest {
                 + "out its patch.";
         String other = "Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and "
                 + "leave out its patch.";
-        String[][] languages = {{"en", null}, {"ar", "ar"}, {"de", "de"}, {"es", "es"}, {"in-rID", "in"}, {"it", "it"},
+        String[][] languages = {{"en", null}, {"ar", "ar"}, {"bg", "bg"}, {"de", "de"}, {"es", "es"}, {"in-rID", "in"},
+                {"it", "it"},
                 {"ko", "ko"}, {"pt-rBR", "pt-rbr"}, {"tr", "tr"}, {"vi", "vi"}, {"ru", "ru"}, {"th", "th"},
                 {"zh-rCN", "zh-rcn"}, {"zh-rTW", "zh-rtw"}};
         for (String[] language : languages) {
@@ -292,7 +294,7 @@ public class SettingsL10nTest {
                 "Disable Audience Network"));
 
         List<String> repeats = new ArrayList<>();
-        for (String language : new String[]{"en", "ar", "de", "es", "in-rID", "it", "ko", "pt-rBR", "ru", "th", "tr", "vi",
+        for (String language : new String[]{"en", "ar", "bg", "de", "es", "in-rID", "it", "ko", "pt-rBR", "ru", "th", "tr", "vi",
                 "zh-rCN", "zh-rTW"}) {
             RuntimeEnvironment.setQualifiers("+" + language);
             for (PatchFamily family : PatchFamily.values()) {

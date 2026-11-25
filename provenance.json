@@ -512,6 +512,7 @@
       "paths": [
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableAr.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableBg.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableDe.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableEs.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIn.java",
