@@ -1150,6 +1150,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_ai_label", FALSE);
 
     /**
+     * A reel caption's runs of hashtags aren't drawn: the ones ending it, on lines of their own or two
+     * or more in a row. A hashtag that is a word of a sentence stays
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#captionText}, #594). Off by default.
+     * A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_HASHTAGS =
+            new BooleanSetting("hushfacebook_hide_reel_hashtags", FALSE);
+
+    /**
      * The "This is taking a while. Try checking your network connection." message a video shows
      * when it's slow to load isn't shown
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSlowConnectionMessage}, #222).

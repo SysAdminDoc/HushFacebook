@@ -288,6 +288,8 @@ public class ColdStartHooksTest {
         assertFalse("a Made with Edits line taken before the context came off", ReelDeclutter.hideEditsLabel());
         assertNull("a reel's AI label taken before the context came off",
                 ReelDeclutter.filterAiLabel(Arrays.asList(new TypedFeedUnit("XFBFBShortsGenAITransparencyAttribution"))));
+        assertEquals("a reel caption's hashtags taken before the context came off", "Drive #a #b",
+                String.valueOf(ReelDeclutter.captionText("Drive #a #b")));
         assertFalse("a Made with Edits pill taken before the context came off", ReelDeclutter.hideEditsPill());
         assertFalse("a slow connection message posted before the context was held back",
                 ReelDeclutter.hideSlowConnectionMessage());

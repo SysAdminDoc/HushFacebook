@@ -95,7 +95,9 @@ private const val PATCH = "Clean up Reels"
  * thirtieth, also off, keeps the Add friend sheet from opening over a reel someone who isn't your
  * friend shared (#486, see SharedReelFriendSheet.kt); a build without that sheet's runnable keeps it
  * and only warns. A thirty-first, also off, takes the "AI content" label off reels made with AI by
- * leaving it out of the reel's attributions (#574, see ReelAiLabel.kt). With Debug
+ * leaving it out of the reel's attributions (#574, see ReelAiLabel.kt). A thirty-second, also off,
+ * leaves a reel caption's runs of hashtags off where the caption's builder gets it (#594, see
+ * ReelHashtags.kt); a build where that builder can't be found keeps them and only warns. With Debug
  * logging on, it also reports whether a reel that ends
  * is on the player the Reels auto-advance controller holds (see ReelBinding.kt), with no switch.
  *
@@ -112,7 +114,7 @@ val cleanUpReelsPatch = patch(
     name = "Clean up Reels",
     description = "Hides clutter on reels, such as the Follow button, comment previews, Remix and Use template " +
         "buttons and Threads cards or Meta promos between reels, so more of the video shows, and can play each reel once " +
-        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Like, Comment, Repost, Share, Save or speaker button, the line naming the reel's sound or the \"AI content\" label. It can also keep the Reels tab to accounts you follow, open a video you tap in the feed on its own, with no reels after it, do the same for a reel you open from a link or a chat, keep the Add friend pop-up off a reel someone who isn't your friend sent you, play a feed video again right there when you tap Watch again instead of opening Reels, play a video you tap in Saved in the video player instead of Reels, go on to the next reel in Saved instead of a suggested one, keep reels playing without stopping to ask \"Are you still watching?\", fill a tall screen with a reel or a full-screen video instead of leaving black bars around it, with a pinch to see one reel whole, take the UP NEXT bar off the bottom of a video you open from the feed, hide the Fullscreen button under a wide video or the full-screen and picture-in-picture buttons on videos in the feed and search results, stop the \"This is taking a while\" message when a video is slow to load, and play whole reels in the feed's Reels row instead of the same second over and over, or keep the Comment button on reels with comments turned off so you can read them, put Like, Comment, Share and Save back beside long videos, and hide the one-tap Subscribe button some authors get instead of Follow, or Search and the button beside it at the top of a video you open and of the Reels tab, and show when a reel or video was posted, or take \"New for you\" off the line under a reel's author. Its Burn-in guard can fade a reel's buttons, caption and bars when you leave them alone, so they don't burn into the screen. With Turn off HDR brightness patched too, it can show Reels in gray, video and all. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
+        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Like, Comment, Repost, Share, Save or speaker button, the line naming the reel's sound, the \"AI content\" label or the hashtags in its caption. It can also keep the Reels tab to accounts you follow, open a video you tap in the feed on its own, with no reels after it, do the same for a reel you open from a link or a chat, keep the Add friend pop-up off a reel someone who isn't your friend sent you, play a feed video again right there when you tap Watch again instead of opening Reels, play a video you tap in Saved in the video player instead of Reels, go on to the next reel in Saved instead of a suggested one, keep reels playing without stopping to ask \"Are you still watching?\", fill a tall screen with a reel or a full-screen video instead of leaving black bars around it, with a pinch to see one reel whole, take the UP NEXT bar off the bottom of a video you open from the feed, hide the Fullscreen button under a wide video or the full-screen and picture-in-picture buttons on videos in the feed and search results, stop the \"This is taking a while\" message when a video is slow to load, and play whole reels in the feed's Reels row instead of the same second over and over, or keep the Comment button on reels with comments turned off so you can read them, put Like, Comment, Share and Save back beside long videos, and hide the one-tap Subscribe button some authors get instead of Follow, or Search and the button beside it at the top of a video you open and of the Reels tab, and show when a reel or video was posted, or take \"New for you\" off the line under a reel's author. Its Burn-in guard can fade a reel's buttons, caption and bars when you leave them alone, so they don't burn into the screen. With Turn off HDR brightness patched too, it can show Reels in gray, video and all. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
     dependsOn(settingsPatch)
@@ -127,6 +129,12 @@ val cleanUpReelsPatch = patch(
         hideEditsLabel()
         // #574: the "AI content" label, drawn from the reel's attributions wherever Facebook reads them.
         hideAiLabel()
+        // #594: the runs of hashtags in a reel's caption, left off where the caption's builder gets it.
+        try {
+            hideCaptionHashtags()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Hide hashtags in reel captions leaves them in.")
+        }
         // #200: the Reels tab draws the audio line in a row of its own, past the chip list. Looked up
         // once: the hide's early return makes the row stop reading as one, and #357 dates it below.
         val audioLine = reelsTabAudioLine()

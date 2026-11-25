@@ -917,13 +917,29 @@ private fun readsPadding(method: Method) = method.implementation?.instructions?.
 internal fun appClass(type: String) = type.startsWith("L") && !type.startsWith("Ljava/") && !type.startsWith("Landroid/")
 
 /**
- * Finds where an open reel caption gets its dark box. The caption's text is built in the one static
- * method loading [CAPTION_COMPONENT], [CAPTION_ROLE] and [CAPTION_DESCRIPTION] (585 `LX/09Uk;->A01`).
- * It sets one int field, the line limit, on a text builder it makes there and keeps in that register
- * up to the build, the one call handing that builder a [CALLER_CONTEXT] (585 `LX/0IoR;->A1y`). The
- * box goes on through the builder's background style ([findBoxStyle]).
+ * Where a reel caption's text is built: [builder] makes a [builderType] text builder in v[register]
+ * and keeps it there up to the build at [buildIndex], puts the caption into its [text] field at
+ * [textIndex], and sets its line limit [maxLines]. The dark box (#419) and the hashtags (#594) both
+ * start from it.
  */
-internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
+internal class CaptionBuild(
+    val builder: Method,
+    val buildIndex: Int,
+    val register: Int,
+    val builderType: String,
+    val textIndex: Int,
+    val text: FieldReference,
+    val maxLines: FieldReference,
+)
+
+/**
+ * Finds where a reel caption's text is built: the one static method loading [CAPTION_COMPONENT],
+ * [CAPTION_ROLE] and [CAPTION_DESCRIPTION] (585 `LX/09Uk;->A01`). It sets one int field, the line
+ * limit, on a text builder it makes there and keeps in that register up to the build, the one call
+ * handing that builder a [CALLER_CONTEXT] (585 `LX/0IoR;->A1y`). The caption goes into the builder's
+ * one text field in between.
+ */
+internal fun BytecodePatchContext.findCaptionBuild(): CaptionBuild {
     val builders = methodsWithString(CAPTION_COMPONENT).filter {
         AccessFlags.STATIC.isSet(it.accessFlags) && loadsString(it, CAPTION_ROLE) && loadsString(it, CAPTION_DESCRIPTION)
     }
@@ -965,8 +981,9 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
         code[index].opcode == Opcode.IPUT_OBJECT && (code[index] as TwoRegisterInstruction).registerB == register &&
             ((code[index] as ReferenceInstruction).reference as FieldReference).type == CHAR_SEQUENCE
     }
-    val text = texts.singleOrNull()?.let { (code[it] as ReferenceInstruction).reference as FieldReference }
+    val textIndex = texts.singleOrNull()
         ?: refuse("expected $where to put one text into v$register before its line limit, found ${texts.size}")
+    val text = (code[textIndex] as ReferenceInstruction).reference as FieldReference
     val flow = Flow(code, where)
     if (build in flow.targets) refuse("$where jumps straight to where it builds its caption")
     // Dex can lay a block out after the build and jump back from it (the Android 9 build's 09VI does), so
@@ -976,7 +993,18 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     if (leadsToBuild.any { it > build && writes(code[it], register) }) {
         refuse("$where sets v$register again on a way back to its caption's build")
     }
+    return CaptionBuild(builder, build, register, builderType, textIndex, text, maxLines)
+}
 
+/**
+ * Finds where an open reel caption gets its dark box: where its text is built ([findCaptionBuild]),
+ * with the box going on through the builder's background style ([findBoxStyle]).
+ */
+internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
+    val caption = findCaptionBuild()
+    val builder = caption.builder
+    val builderType = caption.builderType
+    val host = builder.definingClass
     val style = findBoxStyle(builderType)
     requireReachable(style, host)
     val extension = classDefByOrNull(CAPTION_BACKDROP) ?: refuse("the extension has no $CAPTION_BACKDROP")
@@ -985,9 +1013,9 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     }
     if (classDefByOrNull(host)!!.methods.any { it.name == BACKDROP_HELPER }) refuse("$host already has $BACKDROP_HELPER")
     return Backdrop(
-        builder, build, register, builderType,
-        "${text.definingClass}->${text.name}:$CHAR_SEQUENCE",
-        "$builderType->${maxLines.name}:I",
+        builder, caption.buildIndex, caption.register, builderType,
+        "${caption.text.definingClass}->${caption.text.name}:$CHAR_SEQUENCE",
+        "$builderType->${caption.maxLines.name}:I",
         style.setter,
         style.background,
         style.emptyStyle,

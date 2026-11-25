@@ -282,6 +282,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_AI_LABEL,
                     L10n.t("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. "
                             + "A change shows from the next reel.")));
+            // Asked each time a reel's caption is built, collapsed or open.
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_HASHTAGS,
+                    L10n.t("Takes the hashtags off reel captions, like the block of tags at the end. A hashtag "
+                            + "that's part of a sentence stays. A change shows from the next reel.")));
             // Asked each time a video stalls long enough for the message, so a change shows right away.
             reels.addPreference(toggle(context, Settings.HIDE_SLOW_CONNECTION_MESSAGE,
                     L10n.t("Stops the \"This is taking a while\" message about your network connection when a video "

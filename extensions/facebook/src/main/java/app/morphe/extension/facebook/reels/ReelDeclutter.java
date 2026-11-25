@@ -175,6 +175,10 @@ public final class ReelDeclutter {
     /** Counted under its own name each time a reel's attribution list is handed over without its AI label. */
     static final String AI_LABEL_ROUTE = "Reel AI label";
 
+    /** Counted under its own name for each reel caption built, and each run of hashtags left off one (#594). */
+    static final String HASHTAGS_ROUTE = "Reel caption hashtags";
+    static final String HASHTAG_RUN = "hashtag run";
+
     /** Counted under its own name each time a video's "Made with Edits" pill is answered as not shown (#314). */
     static final String EDITS_PILL_ROUTE = "Video Edits pill";
     static final String EDITS_PILL = "Made with Edits pill";
@@ -429,6 +433,34 @@ public final class ReelDeclutter {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel AI label", failure);
             Logger.printException(() -> "Reel AI label: could not filter the attributions", failure);
             return null;
+        }
+    }
+
+    /**
+     * Injection point, right after the builder of a reel caption's text is handed the caption (#594),
+     * so the collapsed caption, the open one and its dark box all start from what this answers. The
+     * caption without its hashtag runs while Hide hashtags in reel captions is on ({@link ReelHashtags}),
+     * or the one Facebook gave. Never throws: a failure answers Facebook's caption.
+     *
+     * @param caption the caption Facebook put into the builder, null or empty for a reel without one.
+     */
+    @Nullable
+    public static CharSequence captionText(@Nullable CharSequence caption) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (caption == null || caption.length() == 0) return caption;
+            if (!Utils.settingsReady() || !Settings.HIDE_REEL_HASHTAGS.get()) return caption;
+            FeedFilterCounters.sawList(HASHTAGS_ROUTE, 1);
+            int runs = ReelHashtags.runsLeftOff(caption);
+            if (runs == 0) return caption;
+            CharSequence kept = ReelHashtags.without(caption);
+            FeedFilterCounters.removed(HASHTAGS_ROUTE, runs, HASHTAG_RUN);
+            logOnce(HASHTAGS_ROUTE, () -> "Reel caption hashtags: left off a caption");
+            return kept;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel caption hashtags", failure);
+            Logger.printException(() -> "Reel caption hashtags: could not read the caption", failure);
+            return caption;
         }
     }
 

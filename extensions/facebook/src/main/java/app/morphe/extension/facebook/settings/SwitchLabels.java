@@ -254,6 +254,7 @@ final class SwitchLabels {
         if (setting == Settings.REEL_SPEAKER_ABOVE_MENU) return L10n.t("Move the speaker above the three dots");
         if (setting == Settings.HIDE_REEL_AUDIO_LINE) return L10n.t("Hide the audio line on reels");
         if (setting == Settings.HIDE_REEL_AI_LABEL) return L10n.t("Hide the AI content label on reels");
+        if (setting == Settings.HIDE_REEL_HASHTAGS) return L10n.t("Hide hashtags in reel captions");
         if (setting == Settings.HIDE_SLOW_CONNECTION_MESSAGE) return L10n.t("Hide the slow connection message");
         if (setting == Settings.HIDE_UP_NEXT) return L10n.t("Hide Up next on videos");
         if (setting == Settings.HIDE_REEL_FULLSCREEN_PILL) return L10n.t("Hide the Fullscreen button");
