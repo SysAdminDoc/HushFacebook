@@ -3188,3 +3188,13 @@ Post date after the caption	發佈日期放在說明後
 With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	開啟「在 Reels 上顯示發佈日期」時，日期會放在說明結尾，而不是名稱下方那行（那裡擠著歌曲和其他標籤）。從下一則 Reels 起生效。
 Fill every reel	讓所有 Reels 填滿螢幕
 With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	開啟「讓 Reels 填滿螢幕」時，每則 Reels 都會填滿螢幕，即使邊緣會被裁掉很多。適用於摺疊手機和平板，這些裝置上大多數 Reels 原本會保留黑邊。
+Chat background	聊天背景
+Last chat's background	最近聊天的背景
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	所有聊天中訊息後方區域的色碼（#RRGGBB），例如 #1E3A5F。填兩個色碼，例如 #1E3A5F #6A1B9A，會從一種顏色漸變到另一種。只有這支手機會顯示。留白則使用 Facebook 的背景。
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	僅用於 %1$s 的色碼（#RRGGBB），例如 #1E3A5F。填兩個色碼會從一種顏色漸變到另一種。留白則使用上方的聊天背景。
+Chats keep Facebook's background. Type a color code to change it on this phone only.	聊天維持 Facebook 的背景。輸入色碼即可僅在這支手機上變更。
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	聊天中訊息後方為 %1$s，僅在這支手機上顯示。聊天中的其他人不會收到通知。
+Open a chat, then come back here to give it a color of its own.	先開啟一個聊天，再回到這裡為它設定專屬顏色。
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s 是你最近開啟的聊天，使用上方的聊天背景。輸入色碼即可為它設定專屬顏色。
+%1$s, the last chat you opened, is %2$s.	%1$s 是你最近開啟的聊天，顏色為 %2$s。
+Type one color code, or two for a fade from top to bottom.	輸入一個色碼，或輸入兩個以從上到下漸變。

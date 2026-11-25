@@ -63,8 +63,9 @@ public class SettingsL10nTest {
     /** Text that stays as it is in every language: the product's name and its source's address. */
     private static final Set<String> AS_IS = new LinkedHashSet<>(Arrays.asList(
             "Hushfacebook", "github.com/SysAdminDoc/Hushfacebook",
-            // The Badge, Logo and Selected tab color rows' hint: a color code reads the same in every language.
-            "#2ECC71"));
+            // The Badge, Logo and Selected tab color rows' hint, and the Chat background rows': a color code
+            // reads the same in every language.
+            "#2ECC71", "#1E3A5F"));
 
     @Before
     public void everyPatchIn() {

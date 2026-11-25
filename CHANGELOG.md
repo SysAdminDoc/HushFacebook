@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 ### Added
 
 * `Fill every reel` sits under `Fill the screen with reels`. With both on, every reel fills the screen even when that cuts a lot off the sides, so an unfolded foldable or a tablet loses the bars without a pinch on each reel. (#571)
+* Chats that open inside Facebook can take a background color of your own. Type a color code in `Chat background` under Chats and Messenger and it goes behind the messages in every chat. `Last chat's background` gives the chat you opened last a color of its own. Two codes, like `#0D47A1 #FF6F00`, fade from top to bottom. It covers any theme the chat has, only your phone shows it, and nobody in the chat is told. (#573)
 * The Hush settings now come in Bulgarian too. They follow your phone's language, like the other translations. (#572)
 * The Hush settings now come in Arabic, translated by hamedhani1998. (#549)
 * `Hide posts from people, Pages and sites` takes groups now. Put a group's name or ID on the list, or a link to the group, and posts in that group leave Home, along with friends' shares of them. Handy for a group you're still in but don't want in your feed, since Facebook keeps showing those after you unfollow. A link only works when it has the group's number in it, like facebook.com/groups/1234567890. (#550)

@@ -3184,3 +3184,13 @@ Post date after the caption	Дата на публикуване след опи
 With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	При включено „Показване на датата на публикуване в клиповете“ слага датата в края на описанието вместо под името, където е натясно с песента и другите етикети. Промяната се вижда от следващия клип.
 Fill every reel	Всеки клип на цял екран
 With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	При включено „Клиповете на цял екран“ всеки клип запълва екрана, дори когато това отрязва много от краищата. Направено за сгъваеми телефони и таблети, където повечето клипове иначе остават с празни ленти около тях.
+Chat background	Фон на чатовете
+Last chat's background	Фон на последния чат
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	Код на цвят (#RRGGBB) за мястото зад съобщенията във всеки чат, например #1E3A5F. Два кода, например #1E3A5F #6A1B9A, преливат от единия в другия. Вижда се само на този телефон. Остави празно за фона на Facebook.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	Код на цвят (#RRGGBB) само за %1$s, например #1E3A5F. Два кода преливат от единия в другия. Остави празно и ще се ползва фонът на чатовете по-горе.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	Чатовете запазват фона на Facebook. Въведи код на цвят, за да го промениш само на този телефон.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	Зад съобщенията в чатовете е %1$s, само на този телефон. Никой в чата не разбира.
+Open a chat, then come back here to give it a color of its own.	Отвори чат и се върни тук, за да му дадеш собствен цвят.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, последният чат, който отвори, ползва фона на чатовете по-горе. Въведи код на цвят, за да му дадеш собствен.
+%1$s, the last chat you opened, is %2$s.	%1$s, последният чат, който отвори, е %2$s.
+Type one color code, or two for a fade from top to bottom.	Въведи един код на цвят или два за преливане отгоре надолу.

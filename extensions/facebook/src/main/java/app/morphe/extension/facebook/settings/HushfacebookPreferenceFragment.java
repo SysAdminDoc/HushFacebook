@@ -129,6 +129,8 @@ import app.morphe.extension.facebook.settings.ValueRows.BackgroundRow;
 import app.morphe.extension.facebook.settings.ValueRows.CountRow;
 import app.morphe.extension.facebook.settings.ValueRows.HeaderTextRow;
 import app.morphe.extension.facebook.settings.ValueRows.MarkColorRow;
+import app.morphe.extension.facebook.settings.ValueRows.ChatColorRow;
+import app.morphe.extension.facebook.chats.ChatBackground;
 import app.morphe.extension.facebook.settings.ValueRows.ReactionCeilingRow;
 import app.morphe.extension.facebook.settings.ValueRows.RefreshRateRow;
 import app.morphe.extension.facebook.settings.ValueRows.TextSizeRow;
@@ -2617,6 +2619,83 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             return false;
         });
         return row;
+    }
+
+    /** The key of the last chat's background row, which saves into that chat's line rather than a setting of its own. */
+    static final String LAST_CHAT_BACKGROUND_ROW = "action_last_chat_background";
+
+    /**
+     * Chat background (#573): the color behind the messages of every chat inside Facebook, or with
+     * [lastChat] of the last chat seen, saved into that chat's own line. What's saved is one or two
+     * codes in capitals, blank for Facebook's own. No restart: a chat on screen takes it as it's drawn.
+     */
+    ChatColorRow chatColorRow(Context context, boolean lastChat) {
+        String[] chat = lastChat ? ChatBackground.lastChat() : null;
+        ChatColorRow row = new ChatColorRow(context, lastChat, chat);
+        String title = lastChat ? L10n.t("Last chat's background") : L10n.t("Chat background");
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setHint("#1E3A5F");
+        row.refused = why -> show(new AlertDialog.Builder(row.getContext())
+                .setTitle(title)
+                .setMessage(why)
+                .setPositiveButton(L10n.t("OK"), null));
+        if (!lastChat) {
+            row.setKey(Settings.CHAT_BACKGROUND_COLOR.key);
+            row.setDialogMessage(L10n.t("A color code (#RRGGBB) for the space behind the messages in every chat, like "
+                    + "#1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave "
+                    + "it blank for Facebook's own."));
+            row.setText(Settings.CHAT_BACKGROUND_COLOR.savedValue());
+            row.setOnPreferenceChangeListener((preference, typed) -> {
+                String raw = typed == null ? "" : typed.toString();
+                String clean = ChatBackground.stored(raw);
+                if (clean == null) return false;
+                if (clean.equals(raw)) return true;
+                // Keeps the code as it's saved in place of what was typed, as the Background color row does.
+                ((ChatColorRow) preference).setText(clean);
+                return false;
+            });
+            return row;
+        }
+        row.setKey(LAST_CHAT_BACKGROUND_ROW);
+        row.setPersistent(false);
+        if (chat == null) {
+            row.setEnabled(false);
+            row.setText("");
+            return row;
+        }
+        row.setDialogMessage(L10n.f("A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the "
+                + "other. Leave it blank and it takes the chat background above.", L10n.isolate(chat[1])));
+        row.setText(ChatBackground.ownCode(chat[0]));
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String clean = ChatBackground.stored(typed == null ? "" : typed.toString());
+            if (clean == null) return false;
+            ChatBackground.saveOwnCode(chat[0], clean);
+            ((ChatColorRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** What a Chat background row says for [text], with [chat] the last chat's {key, name} on its row. */
+    static String chatColorSummary(boolean lastChat, @Nullable String[] chat, @Nullable String text) {
+        String stored = ChatBackground.stored(text);
+        boolean blank = stored == null || stored.isEmpty();
+        if (!lastChat) {
+            return blank
+                    ? L10n.t("Chats keep Facebook's background. Type a color code to change it on this phone only.")
+                    : L10n.f("Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.",
+                            L10n.isolate(stored));
+        }
+        if (chat == null) return L10n.t("Open a chat, then come back here to give it a color of its own.");
+        return blank
+                ? L10n.f("%1$s, the last chat you opened, takes the chat background above. Type a color code to give it "
+                        + "its own.", L10n.isolate(chat[1]))
+                : L10n.f("%1$s, the last chat you opened, is %2$s.", L10n.isolate(chat[1]), L10n.isolate(stored));
     }
 
     /** What a Badge and logo colors row says for [text], the code typed there. One it refuses keeps Facebook's own. */

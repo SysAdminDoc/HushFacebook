@@ -431,6 +431,44 @@
       "options": []
     },
     {
+      "name": "Chat background",
+      "description": "Gives chats that open inside Facebook a background color of your own, one for every chat or one for a single chat, or a fade between two. Only your phone shows it. Nobody in the chat is told, and the chat's theme stays as it is for everyone else. Nothing changes until you pick a color in Hushfacebook settings > Chats and Messenger.",
+      "category": "Chats",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings",
+        "Patch"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "588.0.0.42.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "588.0.0.42.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 707615136,
+                "ARMEABI_V7A": 707615135
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Clean up Facebook's chat list",
       "description": "Tidies Chats inside Facebook. One switch empties the row of notes and who's active above your chats, and another removes promotional banners like the one asking you to turn on notifications. A third takes the Meta AI button off the search row and the search screen. Your chats stay. Starts off. Turn on the parts you want in Hushfacebook settings > Chats and Messenger.",
       "category": "Chats",

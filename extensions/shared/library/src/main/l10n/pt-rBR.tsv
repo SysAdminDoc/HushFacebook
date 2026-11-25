@@ -3070,3 +3070,13 @@ Post date after the caption	Data da publicação depois da legenda
 With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	Com "Mostrar a data da publicação nos reels" ligado, coloca a data no fim da legenda em vez de embaixo do nome, onde a música e outros rótulos a apertam. A mudança aparece a partir do próximo reel.
 Fill every reel	Preencher a tela com todos os reels
 With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	Com "Preencher a tela com os reels" ligado, todo reel preenche a tela, mesmo quando isso corta bastante das bordas. Feito para dobráveis e tablets, onde a maioria dos reels ficaria com as faixas pretas.
+Chat background	Fundo das conversas
+Last chat's background	Fundo da última conversa
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	Um código de cor (#RRGGBB) para o espaço atrás das mensagens em todas as conversas, como #1E3A5F. Dois códigos, como #1E3A5F #6A1B9A, fazem uma transição de um para o outro. Só este celular mostra. Deixe em branco para o do Facebook.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	Um código de cor (#RRGGBB) só para %1$s, como #1E3A5F. Dois códigos fazem uma transição de um para o outro. Deixe em branco e ela usa o fundo das conversas acima.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	As conversas mantêm o fundo do Facebook. Digite um código de cor para mudar só neste celular.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	As conversas ficam %1$s atrás das mensagens, só neste celular. Ninguém na conversa fica sabendo.
+Open a chat, then come back here to give it a color of its own.	Abra uma conversa e volte aqui para dar a ela uma cor só dela.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, a última conversa que você abriu, usa o fundo das conversas acima. Digite um código de cor para dar a ela uma cor própria.
+%1$s, the last chat you opened, is %2$s.	%1$s, a última conversa que você abriu, está %2$s.
+Type one color code, or two for a fade from top to bottom.	Digite um código de cor, ou dois para uma transição de cima para baixo.

@@ -69,7 +69,7 @@ final class AppPages {
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.MESSENGER_CARD) || build.contains(PatchFamily.CHAT_LIST)
                 || build.contains(PatchFamily.MESSENGER_ICON) || build.contains(PatchFamily.ORIGINAL_CHAT_MEDIA)
-                || build.contains(PatchFamily.SHARE_TO_CHATS)) {
+                || build.contains(PatchFamily.SHARE_TO_CHATS) || build.contains(PatchFamily.CHAT_BACKGROUND)) {
             PreferenceCategory chats = category(screen, L10n.t("Chats and Messenger"));
             if (build.contains(PatchFamily.MESSENGER_CARD)) {
                 chats.addPreference(toggle(context, Settings.HIDE_GET_MESSENGER_CARD,
@@ -124,6 +124,11 @@ final class AppPages {
                     return true;
                 });
                 chats.addPreference(share);
+            }
+            if (build.contains(PatchFamily.CHAT_BACKGROUND)) {
+                // Two color code rows, no switch: every chat's color, then the last chat's own (#573).
+                chats.addPreference(page.chatColorRow(context, false));
+                chats.addPreference(page.chatColorRow(context, true));
             }
         }
     }

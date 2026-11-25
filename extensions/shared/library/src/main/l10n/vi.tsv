@@ -3184,3 +3184,13 @@ Post date after the caption	Ngày đăng sau chú thích
 With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	Khi bật "Hiện ngày đăng trên reel", ngày đăng nằm ở cuối chú thích thay vì dưới tên, nơi bài hát và các nhãn khác chen chúc. Thay đổi hiện từ reel tiếp theo.
 Fill every reel	Cho mọi Reels lấp đầy màn hình
 With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	Khi bật "Cho Reels lấp đầy màn hình", mọi reel đều lấp đầy màn hình, kể cả khi phải cắt bớt nhiều ở các cạnh. Dành cho máy gập và máy tính bảng, nơi hầu hết reel sẽ vẫn còn dải đen.
+Chat background	Nền đoạn chat
+Last chat's background	Nền đoạn chat gần nhất
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	Mã màu (#RRGGBB) cho khoảng phía sau tin nhắn trong mọi đoạn chat, ví dụ #1E3A5F. Hai mã, ví dụ #1E3A5F #6A1B9A, sẽ chuyển dần từ màu này sang màu kia. Chỉ điện thoại này hiển thị. Để trống để dùng nền của Facebook.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	Mã màu (#RRGGBB) chỉ dành cho %1$s, ví dụ #1E3A5F. Hai mã sẽ chuyển dần từ màu này sang màu kia. Để trống thì đoạn chat dùng nền đoạn chat ở trên.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	Các đoạn chat giữ nền của Facebook. Nhập mã màu để đổi nền chỉ trên điện thoại này.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	Phía sau tin nhắn trong các đoạn chat có màu %1$s, chỉ trên điện thoại này. Không ai trong đoạn chat được báo.
+Open a chat, then come back here to give it a color of its own.	Mở một đoạn chat, rồi quay lại đây để đặt màu riêng cho nó.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, đoạn chat bạn mở gần nhất, đang dùng nền đoạn chat ở trên. Nhập mã màu để đặt màu riêng cho nó.
+%1$s, the last chat you opened, is %2$s.	%1$s, đoạn chat bạn mở gần nhất, có màu %2$s.
+Type one color code, or two for a fade from top to bottom.	Nhập một mã màu, hoặc hai mã để chuyển màu từ trên xuống dưới.

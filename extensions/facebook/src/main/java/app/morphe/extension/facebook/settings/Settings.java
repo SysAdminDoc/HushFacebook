@@ -2586,6 +2586,32 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_share_to_chats", FALSE);
 
     /**
+     * The color behind the messages of every chat inside Facebook, drawn on this phone only (#573,
+     * {@link app.morphe.extension.facebook.chats.ChatBackground}): blank for Facebook's own, one
+     * {@code #RRGGBB} code, or two for a fade from top to bottom. A chat with a color of its own in
+     * {@link #CHAT_BACKGROUNDS} takes that one. Not a switch, and a paused Facebook reads it blank.
+     * A settings file leaves it out for now.
+     */
+    public static final StringSetting CHAT_BACKGROUND_COLOR =
+            new StringSetting("hushfacebook_chat_background_color", "");
+
+    /**
+     * The chats with a color of their own, one {@code <thread key><TAB><code>} line each, the code
+     * kept as {@link #CHAT_BACKGROUND_COLOR}'s is. The keys are this account's chats, so a settings
+     * file leaves it out.
+     */
+    public static final StringSetting CHAT_BACKGROUNDS =
+            new StringSetting("hushfacebook_chat_backgrounds", "");
+
+    /**
+     * The last chat seen inside Facebook, as {@code <thread key><TAB><name on its top bar>}, which the
+     * settings offer a color of its own. Hushfacebook writes it, never a person, and a settings file
+     * leaves it out.
+     */
+    public static final StringSetting CHAT_BACKGROUND_LAST =
+            new StringSetting("hushfacebook_chat_background_last", "");
+
+    /**
      * The Upgrades section of Facebook's Menu, the group Facebook types UPSELL, with its offers.
      * Only that group goes: Settings, Help and support and the rest of the Menu stay. A Menu built
      * before the switch changed keeps the group on screen even though its sections ask again (#184),

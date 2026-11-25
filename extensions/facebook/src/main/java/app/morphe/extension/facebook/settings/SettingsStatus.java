@@ -294,6 +294,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean chatBackground() {
+        return false;
+    }
+
     public static boolean audienceNetwork() {
         return false;
     }

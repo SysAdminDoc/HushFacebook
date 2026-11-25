@@ -3184,3 +3184,13 @@ Post date after the caption	วันที่โพสต์หลังคำ�
 With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	เมื่อเปิด "แสดงวันที่โพสต์ใน Reels" จะแสดงวันที่ท้ายคำบรรยายแทนใต้ชื่อ ซึ่งมีเพลงและป้ายอื่นๆ แย่งที่อยู่ การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
 Fill every reel	ให้ Reels ทุกอันเต็มหน้าจอ
 With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	เมื่อเปิด "ให้ Reels เต็มหน้าจอ" Reels ทุกอันจะเต็มหน้าจอ แม้จะต้องตัดขอบออกไปมาก เหมาะสำหรับมือถือพับได้และแท็บเล็ต ที่ Reels ส่วนใหญ่จะยังมีแถบสีดำอยู่
+Chat background	พื้นหลังแชท
+Last chat's background	พื้นหลังของแชทล่าสุด
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	รหัสสี (#RRGGBB) สำหรับพื้นที่ด้านหลังข้อความในทุกแชท เช่น #1E3A5F ใส่สองรหัส เช่น #1E3A5F #6A1B9A เพื่อไล่สีจากสีหนึ่งไปอีกสีหนึ่ง แสดงเฉพาะบนโทรศัพท์เครื่องนี้ เว้นว่างไว้เพื่อใช้พื้นหลังของ Facebook
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	รหัสสี (#RRGGBB) สำหรับ %1$s เท่านั้น เช่น #1E3A5F ใส่สองรหัสเพื่อไล่สีจากสีหนึ่งไปอีกสีหนึ่ง เว้นว่างไว้เพื่อใช้พื้นหลังแชทด้านบน
+Chats keep Facebook's background. Type a color code to change it on this phone only.	แชทจะใช้พื้นหลังของ Facebook ต่อไป พิมพ์รหัสสีเพื่อเปลี่ยนบนโทรศัพท์เครื่องนี้เท่านั้น
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	ด้านหลังข้อความในแชทเป็นสี %1$s เฉพาะบนโทรศัพท์เครื่องนี้ ไม่มีใครในแชทได้รับแจ้ง
+Open a chat, then come back here to give it a color of its own.	เปิดแชท แล้วกลับมาที่นี่เพื่อตั้งสีเฉพาะให้แชทนั้น
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s ซึ่งเป็นแชทล่าสุดที่คุณเปิด ใช้พื้นหลังแชทด้านบน พิมพ์รหัสสีเพื่อตั้งสีเฉพาะให้
+%1$s, the last chat you opened, is %2$s.	%1$s ซึ่งเป็นแชทล่าสุดที่คุณเปิด เป็นสี %2$s
+Type one color code, or two for a fade from top to bottom.	พิมพ์รหัสสีหนึ่งรหัส หรือสองรหัสเพื่อไล่สีจากบนลงล่าง

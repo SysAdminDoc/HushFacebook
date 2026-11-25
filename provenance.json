@@ -337,6 +337,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/ChatBackground.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/chats/ChatBackgroundPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #573: a hook first in the chat screen fragment's onViewCreated hands the fragment and its root view to the extension, which paints the biggest RecyclerView under the root with a color picked for every chat or for one chat, before each frame, so a theme Facebook sets on it is covered again. Nothing is sent."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/GenAiLabel.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/AiCharacterPosts.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/aidetected/**"

@@ -3184,3 +3184,13 @@ Post date after the caption	캡션 뒤에 게시 날짜 표시
 With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	"릴스에 게시 날짜 표시"가 켜져 있으면 날짜를 이름 아래 대신 캡션 끝에 표시해요. 이름 아래에는 노래와 다른 라벨이 몰려 있어요. 변경 사항은 다음 릴스부터 적용돼요.
 Fill every reel	모든 릴스로 화면 채우기
 With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	"릴스로 화면 채우기"가 켜져 있으면 가장자리가 많이 잘리더라도 모든 릴스가 화면을 가득 채워요. 대부분의 릴스에 검은 여백이 남는 폴더블 폰과 태블릿용이에요.
+Chat background	채팅 배경
+Last chat's background	마지막 채팅 배경
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	모든 채팅에서 메시지 뒤 공간에 쓸 색상 코드(#RRGGBB)예요(예: #1E3A5F). 코드 두 개(예: #1E3A5F #6A1B9A)를 쓰면 한 색에서 다른 색으로 이어져요. 이 휴대폰에서만 보여요. Facebook 기본 배경을 쓰려면 비워 두세요.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	%1$s에만 쓸 색상 코드(#RRGGBB)예요(예: #1E3A5F). 코드 두 개를 쓰면 한 색에서 다른 색으로 이어져요. 비워 두면 위의 채팅 배경을 따라요.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	채팅이 Facebook 배경을 유지해요. 이 휴대폰에서만 바꾸려면 색상 코드를 입력하세요.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	채팅의 메시지 뒤 색상: %1$s. 이 휴대폰에서만 보이며, 채팅 상대에게는 알리지 않아요.
+Open a chat, then come back here to give it a color of its own.	채팅을 연 다음 여기로 돌아와 그 채팅만의 색상을 정하세요.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	마지막으로 연 채팅인 %1$s은(는) 위의 채팅 배경을 따라요. 따로 정하려면 색상 코드를 입력하세요.
+%1$s, the last chat you opened, is %2$s.	마지막으로 연 채팅인 %1$s의 색상: %2$s.
+Type one color code, or two for a fade from top to bottom.	색상 코드를 하나 입력하거나, 위에서 아래로 이어지게 하려면 두 개를 입력하세요.
