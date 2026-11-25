@@ -1141,8 +1141,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_audio_line", FALSE);
 
     /**
-     * The "AI info" label Facebook puts on a reel made with AI isn't drawn, under the caption or in
-     * the reel's info rows ({@link app.morphe.extension.facebook.reels.ReelDeclutter#filterAiLabel}, #574).
+     * The "AI content" or "AI info" label Facebook puts on a reel made with AI isn't drawn, beside the
+     * sound line, under the caption or in the reel's info rows
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#filterAiLabel}, #574).
      * Off by default. A change shows from the next reel.
      */
     public static final BooleanSetting HIDE_REEL_AI_LABEL =

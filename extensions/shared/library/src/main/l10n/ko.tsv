@@ -3185,7 +3185,7 @@ Open a chat, then come back here to give it a color of its own.	채팅을 연 �
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	마지막으로 연 채팅인 %1$s은(는) 위의 채팅 배경을 따라요. 따로 정하려면 색상 코드를 입력하세요.
 %1$s, the last chat you opened, is %2$s.	마지막으로 연 채팅인 %1$s의 색상: %2$s.
 Type one color code, or two for a fade from top to bottom.	색상 코드를 하나 입력하거나, 위에서 아래로 이어지게 하려면 두 개를 입력하세요.
-Hide the AI info label on reels	릴스의 AI 정보 라벨 숨기기
-Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Facebook이 AI로 만들었다고 표시한 릴스에서 "AI 정보" 라벨을 없애요. 변경 사항은 다음 릴스부터 적용돼요.
+Hide the AI content label on reels	릴스의 AI 콘텐츠 라벨 숨기기
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Facebook이 AI로 만들었다고 표시한 릴스에서 "AI 콘텐츠" 또는 "AI 정보" 라벨을 없애요. 변경 사항은 다음 릴스부터 적용돼요.
 The %1$s row will be set to %2$s.	%1$s 항목이 %2$s(으)로 설정돼요.
 The %1$s row will go back to its default.	%1$s 항목이 기본값으로 돌아가요.

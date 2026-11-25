@@ -1662,8 +1662,8 @@ final class L10nTableIn {
                 "Sembunyikan cerita yang disarankan");
         table.put("Hide the 2x popups",
                 "Sembunyikan popup 2x");
-        table.put("Hide the AI info label on reels",
-                "Sembunyikan label info AI di reel");
+        table.put("Hide the AI content label on reels",
+                "Sembunyikan label konten AI di reel");
         table.put("Hide the Ad Center tab",
                 "Sembunyikan tab Pusat Iklan");
         table.put("Hide the Add friend pop-up on shared reels",
@@ -3632,8 +3632,8 @@ final class L10nTableIn {
                 "Menghapus kartu di antara cerita yang mengajakmu membuat cerita, termasuk kartu layar penuh yang mengajakmu melanjutkan cerita dengan foto dari galerimu. Berlaku saat berikutnya kamu membuka cerita.");
         table.put("Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.",
                 "Menghapus pita kosong yang muncul di atas baris teratas listingan di beberapa ponsel, seperti Pixel dengan Android 17.");
-        table.put("Takes the \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
-                "Menghapus label \"Info AI\" dari reel yang ditandai Facebook sebagai dibuat dengan AI. Perubahan terlihat mulai reel berikutnya.");
+        table.put("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
+                "Menghapus label \"Konten AI\" atau \"Info AI\" dari reel yang ditandai Facebook sebagai dibuat dengan AI. Perubahan terlihat mulai reel berikutnya.");
         table.put("Takes the + button for making a post, reel or story out of the top bar. Restart Facebook to see the change.",
                 "Menghapus tombol + untuk membuat postingan, reel, dan cerita dari bilah atas. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.",

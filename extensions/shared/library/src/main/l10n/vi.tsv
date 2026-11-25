@@ -3185,7 +3185,7 @@ Open a chat, then come back here to give it a color of its own.	Mở một đo�
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, đoạn chat bạn mở gần nhất, đang dùng nền đoạn chat ở trên. Nhập mã màu để đặt màu riêng cho nó.
 %1$s, the last chat you opened, is %2$s.	%1$s, đoạn chat bạn mở gần nhất, có màu %2$s.
 Type one color code, or two for a fade from top to bottom.	Nhập một mã màu, hoặc hai mã để chuyển màu từ trên xuống dưới.
-Hide the AI info label on reels	Ẩn nhãn thông tin AI trên reel
-Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Bỏ nhãn "Thông tin về AI" khỏi các reel mà Facebook đánh dấu là làm bằng AI. Thay đổi hiện từ reel tiếp theo.
+Hide the AI content label on reels	Ẩn nhãn nội dung AI trên reel
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Bỏ nhãn "Nội dung AI" hoặc "Thông tin về AI" khỏi các reel mà Facebook đánh dấu là làm bằng AI. Thay đổi hiện từ reel tiếp theo.
 The %1$s row will be set to %2$s.	Mục %1$s sẽ được đặt thành %2$s.
 The %1$s row will go back to its default.	Mục %1$s sẽ trở về mặc định.

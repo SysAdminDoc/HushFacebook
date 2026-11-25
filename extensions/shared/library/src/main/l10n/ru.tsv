@@ -3243,7 +3243,7 @@ Open a chat, then come back here to give it a color of its own.	Откройте
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, последний открытый чат, использует фон чатов выше. Введите код цвета, чтобы задать ему собственный.
 %1$s, the last chat you opened, is %2$s.	%1$s, последний открытый чат, имеет цвет %2$s.
 Type one color code, or two for a fade from top to bottom.	Введите один код цвета или два для перехода сверху вниз.
-Hide the AI info label on reels	Скрывать метку «Информация об ИИ» в Reels
-Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Убирает метку «Информация об ИИ» с Reels, которые Facebook отмечает как созданные с помощью ИИ. Изменение применяется начиная со следующего Reels.
+Hide the AI content label on reels	Скрывать метку «Контент ИИ» в Reels
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Убирает метку «Контент ИИ» или «Информация об ИИ» с Reels, которые Facebook отмечает как созданные с помощью ИИ. Изменение применяется начиная со следующего Reels.
 The %1$s row will be set to %2$s.	В строке «%1$s» будет %2$s.
 The %1$s row will go back to its default.	Строка «%1$s» вернётся к значению по умолчанию.

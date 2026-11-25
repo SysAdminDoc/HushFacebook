@@ -1662,8 +1662,8 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf\u63a8\u8350\u5feb\u62cd");
         table.put("Hide the 2x popups",
                 "\u9690\u85cf 2x \u5f39\u51fa\u63d0\u793a");
-        table.put("Hide the AI info label on reels",
-                "\u9690\u85cf Reels \u4e0a\u7684 AI \u4fe1\u606f\u6807\u7b7e");
+        table.put("Hide the AI content label on reels",
+                "\u9690\u85cf Reels \u4e0a\u7684 AI \u5185\u5bb9\u6807\u7b7e");
         table.put("Hide the Ad Center tab",
                 "\u9690\u85cf\u201c\u5e7f\u544a\u4e2d\u5fc3\u201d\u6807\u7b7e\u9875");
         table.put("Hide the Add friend pop-up on shared reels",
@@ -3632,8 +3632,8 @@ final class L10nTableZh_rCN {
                 "\u53bb\u6389\u5feb\u62cd\u4e4b\u95f4\u9080\u8bf7\u4f60\u53d1\u5feb\u62cd\u7684\u5361\u7247\uff0c\u5305\u62ec\u9080\u8bf7\u4f60\u7528\u56fe\u5e93\u7167\u7247\u7ee7\u7eed\u5feb\u62cd\u7684\u5168\u5c4f\u5361\u7247\u3002\u4e0b\u6b21\u6253\u5f00\u5feb\u62cd\u65f6\u751f\u6548\u3002");
         table.put("Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.",
                 "\u53bb\u6389\u90e8\u5206\u624b\u673a\u5728\u5546\u54c1\u9876\u90e8\u4e00\u884c\u4e0a\u65b9\u663e\u793a\u7684\u7a7a\u767d\u6761\uff0c\u4f8b\u5982 Android 17 \u4e0a\u7684 Pixel\u3002");
-        table.put("Takes the \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
-                "\u53bb\u6389 Facebook \u6807\u8bb0\u4e3a\u7528 AI \u5236\u4f5c\u7684 Reels \u4e0a\u7684\u201cAI \u4fe1\u606f\u201d\u6807\u7b7e\u3002\u66f4\u6539\u4f1a\u4ece\u4e0b\u4e00\u4e2a Reels \u5f00\u59cb\u663e\u793a\u3002");
+        table.put("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
+                "\u53bb\u6389 Facebook \u6807\u8bb0\u4e3a\u7528 AI \u5236\u4f5c\u7684 Reels \u4e0a\u7684\u201cAI \u5185\u5bb9\u201d\u6216\u201cAI \u4fe1\u606f\u201d\u6807\u7b7e\u3002\u66f4\u6539\u4f1a\u4ece\u4e0b\u4e00\u4e2a Reels \u5f00\u59cb\u663e\u793a\u3002");
         table.put("Takes the + button for making a post, reel or story out of the top bar. Restart Facebook to see the change.",
                 "\u4ece\u9876\u680f\u79fb\u9664\u7528\u4e8e\u521b\u5efa\u5e16\u5b50\u3001Reels \u548c\u5feb\u62cd\u7684 + \u6309\u94ae\u3002\u91cd\u542f Facebook \u540e\u53ef\u770b\u5230\u66f4\u6539\u3002");
         table.put("Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.",

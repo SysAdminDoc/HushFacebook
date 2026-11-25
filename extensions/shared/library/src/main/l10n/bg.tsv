@@ -3185,7 +3185,7 @@ Open a chat, then come back here to give it a color of its own.	Отвори ч�
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, последният чат, който отвори, ползва фона на чатовете по-горе. Въведи код на цвят, за да му дадеш собствен.
 %1$s, the last chat you opened, is %2$s.	%1$s, последният чат, който отвори, е %2$s.
 Type one color code, or two for a fade from top to bottom.	Въведи един код на цвят или два за преливане отгоре надолу.
-Hide the AI info label on reels	Скриване на етикета „Информация за ИИ“ в клиповете
-Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Премахва етикета „Информация за ИИ“ от клиповете, които Facebook отбелязва като създадени с ИИ. Промяната се вижда от следващия клип.
+Hide the AI content label on reels	Скриване на етикета „ИИ съдържание“ в клиповете
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Премахва етикета „ИИ съдържание“ или „Информация за ИИ“ от клиповете, които Facebook отбелязва като създадени с ИИ. Промяната се вижда от следващия клип.
 The %1$s row will be set to %2$s.	Редът „%1$s“ ще бъде %2$s.
 The %1$s row will go back to its default.	Редът „%1$s“ ще се върне към стойността по подразбиране.

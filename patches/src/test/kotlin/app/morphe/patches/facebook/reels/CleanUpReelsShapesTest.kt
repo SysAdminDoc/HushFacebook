@@ -406,6 +406,39 @@ class CleanUpReelsShapesTest {
         assertEquals(COPY_OF, body[hook + 3].call)
     }
 
+    /**
+     * The footer's chip row reads the story's own attributions itself, so a reel whose story carries
+     * the GenAI attribution kept its "AI content" button with only the list built on top filtered
+     * (#574). That list is the attribution list's first static call taking the reel first and
+     * answering an ImmutableList: not a void check on the reel ahead of it, nor the copyOf after it.
+     */
+    @Test
+    fun `the story's own attributions are the static list the attribution list starts from`() {
+        val own = "Lfixture/Attributions;->own(Lfixture/Story;Lfixture/Viewer;)$IMMUTABLE_LIST"
+        val list = method(
+            "attributions", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 4, static = false,
+            """
+                const/4 v0, 0x0
+                invoke-static { p1, v0 }, Lfixture/Checks;->notNull(Ljava/lang/Object;I)V
+                invoke-static { p1, v0 }, $own
+                move-result-object v0
+                invoke-static { v0 }, $IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertEquals(own, storyAttributions(list)!!.let { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" })
+        val none = method(
+            "attributions", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 3, static = false,
+            """
+                invoke-static { }, $IMMUTABLE_LIST->of()$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertNull("a list built from nothing of the story's found one", storyAttributions(none))
+    }
+
     @Test
     fun `a chip list with no spare local stops the patch`() {
         val builder = method("build", listOf("Ljava/util/List;"), IMMUTABLE_LIST, 2, static = true,

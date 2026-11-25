@@ -1662,8 +1662,8 @@ final class L10nTableDe {
                 "Vorgeschlagene Stories ausblenden");
         table.put("Hide the 2x popups",
                 "2x-Einblendungen ausblenden");
-        table.put("Hide the AI info label on reels",
-                "KI-Info-Label bei Reels ausblenden");
+        table.put("Hide the AI content label on reels",
+                "KI-Inhalt-Label bei Reels ausblenden");
         table.put("Hide the Ad Center tab",
                 "Werbecenter-Tab ausblenden");
         table.put("Hide the Add friend pop-up on shared reels",
@@ -3632,8 +3632,8 @@ final class L10nTableDe {
                 "Entfernt die Karten zwischen Storys, die dich auffordern, selbst eine zu erstellen, auch die bildschirmf\u00fcllende Karte, die dich bittet, die Story mit Fotos aus deiner Galerie fortzusetzen. Gilt ab dem n\u00e4chsten \u00d6ffnen der Storys.");
         table.put("Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.",
                 "Entfernt den leeren Streifen, den manche Handys \u00fcber der obersten Zeile eines Angebots zeigen, etwa Pixel-Ger\u00e4te mit Android 17.");
-        table.put("Takes the \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
-                "Entfernt das Label \u201eKI-Info\u201c von Reels, die Facebook als mit KI erstellt markiert. Eine \u00c4nderung gilt ab dem n\u00e4chsten Reel.");
+        table.put("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
+                "Entfernt das Label \u201eKI-Inhalt\u201c oder \u201eKI-Info\u201c von Reels, die Facebook als mit KI erstellt markiert. Eine \u00c4nderung gilt ab dem n\u00e4chsten Reel.");
         table.put("Takes the + button for making a post, reel or story out of the top bar. Restart Facebook to see the change.",
                 "Nimmt den Plus-Button zum Erstellen von Beitr\u00e4gen, Reels und Storys aus der oberen Leiste. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.",

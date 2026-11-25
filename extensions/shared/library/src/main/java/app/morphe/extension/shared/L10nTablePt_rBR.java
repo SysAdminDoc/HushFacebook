@@ -1662,8 +1662,8 @@ final class L10nTablePt_rBR {
                 "Ocultar Stories sugeridos");
         table.put("Hide the 2x popups",
                 "Ocultar os avisos de 2x");
-        table.put("Hide the AI info label on reels",
-                "Ocultar o r\u00f3tulo de informa\u00e7\u00f5es de IA nos reels");
+        table.put("Hide the AI content label on reels",
+                "Ocultar o r\u00f3tulo de conte\u00fado de IA nos reels");
         table.put("Hide the Ad Center tab",
                 "Ocultar a aba Central de An\u00fancios");
         table.put("Hide the Add friend pop-up on shared reels",
@@ -3632,8 +3632,8 @@ final class L10nTablePt_rBR {
                 "Tira os cart\u00f5es entre os stories que pedem para voc\u00ea criar um, inclusive o cart\u00e3o em tela cheia que pede para voc\u00ea continuar o story com fotos da sua galeria. Vale a partir da pr\u00f3xima vez que voc\u00ea abrir os stories.");
         table.put("Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.",
                 "Tira a faixa vazia que alguns celulares mostram acima da linha superior de um an\u00fancio, como os Pixel no Android 17.");
-        table.put("Takes the \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
-                "Tira o r\u00f3tulo \"Informa\u00e7\u00f5es de IA\" dos reels que o Facebook marca como feitos com IA. A mudan\u00e7a aparece a partir do pr\u00f3ximo reel.");
+        table.put("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
+                "Tira o r\u00f3tulo \"Conte\u00fado de IA\" ou \"Informa\u00e7\u00f5es de IA\" dos reels que o Facebook marca como feitos com IA. A mudan\u00e7a aparece a partir do pr\u00f3ximo reel.");
         table.put("Takes the + button for making a post, reel or story out of the top bar. Restart Facebook to see the change.",
                 "Tira da barra superior o bot\u00e3o + para criar publica\u00e7\u00f5es, reels e stories. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.",

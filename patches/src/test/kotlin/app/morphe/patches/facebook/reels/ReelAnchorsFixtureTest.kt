@@ -325,6 +325,17 @@ class ReelAnchorsFixtureTest {
                 val lists = holders.distinctBy { it.type }.flatMap { classDef -> classDef.methods.filter(::isAttributionList) }
                 assertEquals("$name: $lists", 1, lists.size)
                 assertTrue("$name: the list has no local besides the one it returns", locals(lists.single()) >= 2)
+                // #574: and the story's own list it starts from, which the footer's chip row reads straight.
+                val found = storyAttributions(lists.single())
+                assertTrue("$name: the attribution list starts from no list of the story's own", found != null)
+                val story = found!!
+                val owner = FixtureDex.classes(bundle, setOf(story.definingClass))[story.definingClass]
+                val own = owner?.methods?.singleOrNull {
+                    it.name == story.name && it.returnType == story.returnType &&
+                        it.parameterTypes.map(CharSequence::toString) == story.parameterTypes.map(CharSequence::toString)
+                }
+                assertTrue("$name: ${story.definingClass}->${story.name} isn't in the APK", own != null)
+                assertTrue("$name: the story's list has no local besides the one it returns", locals(own!!) >= 2)
                 checked[version] = lists.single().definingClass
             }
         }

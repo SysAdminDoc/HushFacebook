@@ -3185,7 +3185,7 @@ Open a chat, then come back here to give it a color of its own.	Apri una chat, p
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, l'ultima chat che hai aperto, usa lo sfondo delle chat qui sopra. Scrivi un codice colore per dargliene uno suo.
 %1$s, the last chat you opened, is %2$s.	%1$s, l'ultima chat che hai aperto, è %2$s.
 Type one color code, or two for a fade from top to bottom.	Scrivi un codice colore, o due per una sfumatura dall'alto in basso.
-Hide the AI info label on reels	Nascondi l'etichetta Info IA sui reel
-Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Toglie l'etichetta "Info IA" dai reel che Facebook segna come creati con l'IA. La modifica si vede dal reel successivo.
+Hide the AI content label on reels	Nascondi l'etichetta Contenuto IA sui reel
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Toglie l'etichetta "Contenuto IA" o "Info IA" dai reel che Facebook segna come creati con l'IA. La modifica si vede dal reel successivo.
 The %1$s row will be set to %2$s.	La riga %1$s verrà impostata su %2$s.
 The %1$s row will go back to its default.	La riga %1$s tornerà al valore predefinito.

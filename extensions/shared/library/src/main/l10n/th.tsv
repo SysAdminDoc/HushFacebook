@@ -3185,7 +3185,7 @@ Open a chat, then come back here to give it a color of its own.	เปิดแ�
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s ซึ่งเป็นแชทล่าสุดที่คุณเปิด ใช้พื้นหลังแชทด้านบน พิมพ์รหัสสีเพื่อตั้งสีเฉพาะให้
 %1$s, the last chat you opened, is %2$s.	%1$s ซึ่งเป็นแชทล่าสุดที่คุณเปิด เป็นสี %2$s
 Type one color code, or two for a fade from top to bottom.	พิมพ์รหัสสีหนึ่งรหัส หรือสองรหัสเพื่อไล่สีจากบนลงล่าง
-Hide the AI info label on reels	ซ่อนป้ายข้อมูล AI บน Reels
-Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	นำป้าย "ข้อมูล AI" ออกจาก Reels ที่ Facebook ระบุว่าสร้างด้วย AI การเปลี่ยนแปลงจะแสดงตั้งแต่ Reel ถัดไป
+Hide the AI content label on reels	ซ่อนป้ายเนื้อหา AI บน Reels
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	นำป้าย "เนื้อหา AI" หรือ "ข้อมูล AI" ออกจาก Reels ที่ Facebook ระบุว่าสร้างด้วย AI การเปลี่ยนแปลงจะแสดงตั้งแต่ Reel ถัดไป
 The %1$s row will be set to %2$s.	แถว %1$s จะถูกตั้งค่าเป็น %2$s
 The %1$s row will go back to its default.	แถว %1$s จะกลับเป็นค่าเริ่มต้น

@@ -6,7 +6,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Added
 
-* `Hide the AI info label on reels` under Reels and Watch takes the "AI info" label off reels Facebook marks as made with AI, under the caption and in the reel's info rows. It starts off. (#574)
+* `Hide the AI content label on reels` under Reels and Watch takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. That covers the button next to the sound line under the author, the label under the caption and the reel's info rows. It starts off. (#574)
 
 ### Fixed
 

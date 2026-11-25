@@ -1662,8 +1662,8 @@ final class L10nTableEs {
                 "Ocultar historias sugeridas");
         table.put("Hide the 2x popups",
                 "Ocultar los avisos de 2x");
-        table.put("Hide the AI info label on reels",
-                "Ocultar la etiqueta de informaci\u00f3n de IA en los reels");
+        table.put("Hide the AI content label on reels",
+                "Ocultar la etiqueta de contenido de IA en los reels");
         table.put("Hide the Ad Center tab",
                 "Ocultar la pesta\u00f1a Centro de anuncios");
         table.put("Hide the Add friend pop-up on shared reels",
@@ -3632,8 +3632,8 @@ final class L10nTableEs {
                 "Quita las tarjetas entre historias que te piden crear una, incluida la tarjeta a pantalla completa que te pide continuar la historia con fotos de tu galer\u00eda. Se aplica la pr\u00f3xima vez que abras las historias.");
         table.put("Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.",
                 "Quita la franja vac\u00eda que algunos tel\u00e9fonos muestran encima de la fila superior de un anuncio, como los Pixel con Android 17.");
-        table.put("Takes the \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
-                "Quita la etiqueta \u00abInformaci\u00f3n de IA\u00bb de los reels que Facebook marca como hechos con IA. Un cambio se ve a partir del siguiente reel.");
+        table.put("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
+                "Quita la etiqueta \u00abContenido de IA\u00bb o \u00abInformaci\u00f3n de IA\u00bb de los reels que Facebook marca como hechos con IA. Un cambio se ve a partir del siguiente reel.");
         table.put("Takes the + button for making a post, reel or story out of the top bar. Restart Facebook to see the change.",
                 "Quita de la barra superior el bot\u00f3n + para crear publicaciones, reels e historias. Reinicia Facebook para ver el cambio.");
         table.put("Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.",

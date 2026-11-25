@@ -8,12 +8,14 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /*
- * The "AI info" label on a reel made with AI (#574). Read from 588, 2026-11-24, arm64; the obfuscated
+ * The "AI content" or "AI info" label on a reel made with AI (#574). Read from 588, 2026-11-24, arm64; the obfuscated
  * names here are for reviewers, the code never writes one down.
  *
  * - A reel's attribution models (its location, tagged people, sound and the rest) come from one
@@ -27,11 +29,16 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   name with a static find (LX/08kw;->A02), which walks the same list.
  * - So one filter at that method's returns takes the label out of all three. The chips under a reel
  *   are a list of their own, built by a different method, which never names the GenAI type.
+ * - The story's own list, the one that method starts from (LX/09On;->A00(LX/09w7;LX/0AHh;), checked
+ *   2026-11-25), is read straight by the footer's chip row too (LX/09HE;->render), which hands it to
+ *   the chip builder. A reel whose story carries the GenAI attribution itself, labeled "AI content",
+ *   kept that button beside its sound line with only the first filter in (seen on the S22 in the
+ *   Reels tab and the viewer a feed reel opens). So that list's returns go through the filter too.
  */
 
 internal const val FILTER_AI_LABEL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->filterAiLabel(Ljava/lang/Object;)[Ljava/lang/Object;"
 
-/** The attribution type Facebook draws as the "AI info" label. */
+/** The attribution type Facebook draws as the "AI content" or "AI info" label. */
 internal const val AI_LABEL_ATTRIBUTION = "XFBFBShortsGenAITransparencyAttribution"
 
 /** The two other attributions the same method adds on its own, which tell it from the label's readers. */
@@ -53,7 +60,19 @@ internal fun isAttributionList(method: Method): Boolean {
     return AI_LABEL_ATTRIBUTION in loaded && loaded.containsAll(ADDED_ATTRIBUTIONS)
 }
 
-/** Every return of the attribution list goes through the extension's AI label filter. */
+/**
+ * The story's own attributions [list] starts from: its first static call that takes the reel, the
+ * list's one argument, first and answers an ImmutableList. Null when it makes none.
+ */
+internal fun storyAttributions(list: Method): MethodReference? {
+    val reel = list.parameterTypes.singleOrNull()?.toString() ?: return null
+    return list.implementation?.instructions
+        ?.filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        ?.mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        ?.firstOrNull { it.returnType == IMMUTABLE_LIST && it.parameterTypes.firstOrNull()?.toString() == reel }
+}
+
+/** Every return of the attribution list, and of the story's own list it starts from, goes through the extension's AI label filter. */
 internal fun BytecodePatchContext.hideAiLabel() {
     val lists = classDefByStrings(AI_LABEL_ATTRIBUTION, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
@@ -62,8 +81,16 @@ internal fun BytecodePatchContext.hideAiLabel() {
         "$PATCH: expected one method adding $AI_LABEL_ATTRIBUTION and ${ADDED_ATTRIBUTIONS.joinToString()} " +
             "to a reel's attributions, found ${lists.size}",
     )
+    val story = storyAttributions(list) ?: throw PatchException(
+        "$PATCH: the reel's attribution list $owner->${list.name} starts from no list of the story's own",
+    )
+    classDefByOrNull(story.definingClass) ?: throw PatchException("$PATCH: ${story.definingClass}, the story's attributions, isn't in this APK")
     mutableClassDefBy(owner).methods.single {
         it.name == list.name && it.returnType == list.returnType &&
             it.parameterTypes.map(CharSequence::toString) == list.parameterTypes.map(CharSequence::toString)
+    }.filterChipsBeforeEveryReturn(FILTER_AI_LABEL)
+    mutableClassDefBy(story.definingClass).methods.single {
+        it.name == story.name && it.returnType == story.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == story.parameterTypes.map(CharSequence::toString)
     }.filterChipsBeforeEveryReturn(FILTER_AI_LABEL)
 }

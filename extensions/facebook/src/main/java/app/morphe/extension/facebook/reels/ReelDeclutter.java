@@ -168,8 +168,8 @@ public final class ReelDeclutter {
     static final String EDITS_LABEL = "Made with Edits";
 
     /**
-     * The GraphQL type of the attribution Facebook draws as a reel's "AI info" label (#574), and the
-     * one Facebook adds itself to a reel its server marks as made with AI.
+     * The GraphQL type of the attribution Facebook draws as a reel's "AI content" or "AI info" label
+     * (#574), and the one Facebook adds itself to a reel its server marks as made with AI.
      */
     static final String AI_LABEL_ATTRIBUTION = "XFBFBShortsGenAITransparencyAttribution";
     /** Counted under its own name each time a reel's attribution list is handed over without its AI label. */
@@ -397,12 +397,14 @@ public final class ReelDeclutter {
     }
 
     /**
-     * Injection point, before each return of the method that hands out a reel's attribution models
-     * (#574). Facebook draws the "AI info" label from the one of type {@link #AI_LABEL_ATTRIBUTION}
-     * in that list: the label under a reel's caption walks the list for it, and the sponsored info
-     * row and the reel's info row look it up by name there. The models to keep, when Hide the AI info
-     * label on reels took that one out, or null to keep the list Facebook built. A model whose type
-     * can't be read stays. Never throws.
+     * Injection point, before each return of the method that hands out a reel's attribution models,
+     * and of the story's own list it starts from (#574). Facebook draws the "AI content" or "AI info"
+     * label from the one of type {@link #AI_LABEL_ATTRIBUTION} in those lists: the footer's chip row
+     * builds its chips from the story's list and draws that one as a button beside the sound line, the
+     * label under a reel's caption walks the full list for it, and the sponsored info row and the
+     * reel's info row look it up by name there. The models to keep, when Hide the AI content label on
+     * reels took that one out, or null to keep the list Facebook built. A model whose type can't be
+     * read stays. Never throws.
      *
      * @param attributions the list Facebook is about to return, an ImmutableList of attribution models.
      */

@@ -280,7 +280,7 @@ final class VideoPages {
                             + "reels. Other info stays. A change shows from the next reel.")));
             // Asked each time Facebook hands out a reel's attributions, which the label is drawn from.
             reels.addPreference(toggle(context, Settings.HIDE_REEL_AI_LABEL,
-                    L10n.t("Takes the \"AI info\" label off reels Facebook marks as made with AI. "
+                    L10n.t("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. "
                             + "A change shows from the next reel.")));
             // Asked each time a video stalls long enough for the message, so a change shows right away.
             reels.addPreference(toggle(context, Settings.HIDE_SLOW_CONNECTION_MESSAGE,
