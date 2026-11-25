@@ -188,16 +188,13 @@ public class HeaderPictureTest {
         assertNotNull(first);
         assertEquals(60, first.getWidth());
         assertSame("read once", first, HeaderPicture.load(RuntimeEnvironment.getApplication()));
-        assertTrue(HeaderPicture.chosen(RuntimeEnvironment.getApplication()));
 
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertNull("paused", HeaderPicture.load(RuntimeEnvironment.getApplication()));
-        assertFalse(HeaderPicture.chosen(RuntimeEnvironment.getApplication()));
         PauseForTests.resume();
 
         assertTrue(copy().delete());
         assertNull("the copy is gone", HeaderPicture.load(RuntimeEnvironment.getApplication()));
-        assertFalse(HeaderPicture.chosen(RuntimeEnvironment.getApplication()));
 
         Files.write(copy().toPath(), "broken".getBytes(StandardCharsets.UTF_8));
         assertNull("a copy that won't decode", HeaderPicture.load(RuntimeEnvironment.getApplication()));

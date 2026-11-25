@@ -1274,15 +1274,6 @@ Turn off haptics	Отключить вибрацию
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Отключает легкую вибрацию Facebook при нажатии и свайпах. Вибрация клавиатуры и телефона не затрагивается.
 Turn off screen transitions	Отключить переходы между экранами
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	Вкладки, меню, фото и экраны, открывающиеся поверх Facebook, появляются сразу, без выезжающей или масштабируемой анимации. Переключение между вкладками свайпом продолжает работать.
-Unlock app icons	Разблокировать значки приложения
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Позволяет выбирать значки приложения, доступные Facebook Plus, на странице значков приложения Facebook. Пункт «Выбрать значок приложения» открывает эту страницу. Выбранный значок сохраняется, даже если выключить настройку, поэтому сначала выберите синий значок, чтобы вернуться к исходному.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	Выбрать значок приложения
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	Открывает страницу значков приложения Facebook, даже если Facebook не показывает ее в разделе «Настройки и конфиденциальность».
-Use the icon at the top of Home	Использовать значок вверху Главной
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	Показывает выбранный значок приложения вверху вкладки «Главная» вместо надписи Facebook. Требуется включить «Разблокировать значки приложения» и выбрать любой значок, кроме синего. Перезапустите Facebook, чтобы увидеть изменения.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	В этой сборке Facebook нет страницы значков приложения.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Картинка в картинке
 # context: summary of that switch

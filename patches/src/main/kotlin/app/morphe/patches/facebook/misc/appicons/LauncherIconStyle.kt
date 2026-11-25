@@ -25,8 +25,8 @@ import javax.xml.parsers.DocumentBuilderFactory
  * themed icons keep working: the plain styles leave the monochrome layer as it is.
  *
  * Every launcher alias in the manifest that shows the plain Facebook icon points at the same
- * mipmap, so the enabled one and the icon choices that reuse it all change. The Facebook Plus
- * icons Unlock app icons opens keep their own looks.
+ * mipmap, so the enabled one and the icon choices that reuse it all change. Facebook's other app
+ * icons keep their own looks.
  */
 
 private const val OPTION = "Hushfacebook settings, Icon style"

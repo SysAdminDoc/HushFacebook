@@ -307,7 +307,7 @@ public final class TopBarButtons {
             HookStatus.invoked(FAMILY);
             if (logo == null || !Utils.settingsReady() || !Settings.HIDE_FACEBOOK_LOGO.get()) return;
             // Alpha keeps the view's size and its long press. The image alpha also survives a later
-            // drawable swap, such as the app icon the Unlock app icons patch dresses the logo with.
+            // drawable swap, such as the words or picture Home header text dresses the logo with.
             if (logo instanceof ImageView) {
                 ((ImageView) logo).setImageAlpha(0);
             } else {

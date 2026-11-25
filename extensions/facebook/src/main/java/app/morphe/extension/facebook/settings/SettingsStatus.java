@@ -258,10 +258,6 @@ public final class SettingsStatus {
         return false;
     }
 
-    public static boolean unlockAppIcons() {
-        return false;
-    }
-
     public static boolean headerText() {
         return false;
     }

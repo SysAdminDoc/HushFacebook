@@ -12,7 +12,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -100,7 +99,6 @@ import app.morphe.extension.facebook.menu.MenuSectionsForTests;
 import app.morphe.extension.facebook.misc.MetaUpsells;
 import app.morphe.extension.facebook.menu.MenuSettingsRow;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
-import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.HeaderText;
 import app.morphe.extension.facebook.misc.LocationPrompts;
 import app.morphe.extension.facebook.misc.ScreenshotDetection;
@@ -322,16 +320,11 @@ public class ColdStartHooksTest {
         assertTrue("a Papaya job before the context was held back", AnalyticsUploads.papayaOn(true));
         assertEquals("a window's secure flag before the context was taken out", 0x2000, Screenshots.layoutFlags(0x2000));
         assertTrue("a tab before the context lost its slide", ScreenTransitionsForTests.slides());
-        assertFalse("the app icon benefit before the context was answered yes", AppIcons.unlocked(AppIcons.BENEFIT));
-        assertFalse("the picker's benefit set before the context was answered yes", AppIcons.entitled(false));
-        assertFalse("an app icon before the context was kept from the update reset",
-                AppIcons.keepsIcon(new ComponentName("com.facebook.katana", AppIcons.LAUNCHER)));
         android.widget.ImageView earlyLogo = new android.widget.ImageView(app);
         android.graphics.drawable.Drawable wordmark = new android.graphics.drawable.ColorDrawable(0xFF0866FF);
         earlyLogo.setImageDrawable(wordmark);
         HeaderText.dress(earlyLogo);
         assertSame("a header built before the context lost Facebook's wordmark", wordmark, earlyLogo.getDrawable());
-        assertFalse("header text before the context kept the app icon out", HeaderText.replacesLogo());
         assertFalse("a picture-in-picture check before the context said yes", PictureInPictureForTests.allowsWithTheFeature());
         assertFalse("the Reels viewer's gate before the context said yes", PictureInPictureForTests.surfaceAllows());
         assertFalse("the Watch viewer's flag before the context said yes", PictureInPictureForTests.immersiveAllows());

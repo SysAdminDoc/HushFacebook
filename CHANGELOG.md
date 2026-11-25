@@ -29,6 +29,10 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Share to Facebook chats` under Chats and Messenger puts `Facebook chats` in Android's share menu, for when your chats are inside Facebook. A photo or video you share there goes to your gallery, and text or a link goes to your clipboard. Then Facebook opens on your chats, so you can pick one and attach it or paste it there. Facebook carries Messenger's own share screens but none of the code behind them, so the share menu had no way into a chat before. It starts off. (#568)
 * `Post date after the caption` under Reels and Watch moves a reel's date to the end of its caption, for when the song, "AI content" and other labels crowd the line under the name. It works with `Show the post date on reels` on, and it starts off. (#490)
 
+### Changed
+
+* `Unlock app icons` is gone, along with its `Use the icon at the top of Home` switch and `Pick an app icon` row.
+
 ### Fixed
 
 * Leaving Facebook while a video you opened full screen from the feed plays puts just the video in the picture-in-picture window again. Facebook kept the window tied to the feed's player, which no longer had the video, so the whole screen shrank into the window with the comment box under it, and it stayed small in a corner after you opened it back up. The same happened with a video opened from a Page's reels. (#495)

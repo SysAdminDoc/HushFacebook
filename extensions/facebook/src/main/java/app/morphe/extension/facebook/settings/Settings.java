@@ -1340,25 +1340,6 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_allow_screenshots", FALSE);
 
     /**
-     * Facebook's Facebook Plus app icons on its App icon page ({@link app.morphe.extension.facebook.misc.AppIcons}).
-     * Starts off. The App icon page reads it each time it opens. An icon picked while it's on is a
-     * launcher alias, so it stays when the switch goes off, unless Facebook's start-up rollback (behind
-     * a server flag, off on the accounts seen so far) puts the blue one back. Facebook's component
-     * manager resets it on the first start after an update, which the switch skips while it's on.
-     */
-    public static final BooleanSetting UNLOCK_APP_ICONS =
-            new BooleanSetting("hushfacebook_unlock_app_icons", FALSE);
-
-    /**
-     * The picked app icon stands in for the Facebook wordmark at the top of Home
-     * ({@link app.morphe.extension.facebook.misc.AppIcons#dressLogo}, #172). Starts off, so Facebook's
-     * wordmark stays. Needs {@link #UNLOCK_APP_ICONS}. Facebook builds the header once, so a change
-     * waits for a restart. It never changes which launcher alias is on.
-     */
-    public static final BooleanSetting USE_APP_ICON_IN_HEADER =
-            new BooleanSetting("hushfacebook_use_app_icon_in_header", FALSE, true, Setting.parent(UNLOCK_APP_ICONS));
-
-    /**
      * Facebook's haptics on its own taps and gestures ({@link app.morphe.extension.facebook.misc.Haptics}).
      * Starts off.
      */

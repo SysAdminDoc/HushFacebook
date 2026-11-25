@@ -881,6 +881,28 @@ public class SettingsBackupTest {
     }
 
     /**
+     * A file saved while Unlock app icons was in Hushfacebook still imports: its two switches are
+     * names this build doesn't know, so they're counted and left out, and every other value comes in.
+     */
+    @Test
+    public void aFileWithTheRemovedAppIconSwitchesStillImportsTheRest() throws Exception {
+        JSONObject file = new JSONObject(SettingsBackup.create());
+        file.getJSONObject("settings").put(Settings.HIDE_SPONSORED_REELS.key, false);
+        int before = SettingsBackup.parse(file.toString()).unknown;
+        file.getJSONObject("settings")
+                .put("hushfacebook_unlock_app_icons", true)
+                .put("hushfacebook_use_app_icon_in_header", true);
+        SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file.toString());
+        assertEquals("the two removed switches are unknown names", before + 2, snapshot.unknown);
+        assertEquals(1, snapshot.changes().size());
+        assertEquals(1, SettingsBackup.apply(snapshot));
+        assertFalse(Settings.HIDE_SPONSORED_REELS.savedValue());
+        String again = SettingsBackup.create();
+        assertFalse(again, again.contains("hushfacebook_unlock_app_icons"));
+        assertFalse(again, again.contains("hushfacebook_use_app_icon_in_header"));
+    }
+
+    /**
      * The folder goes out as the name the saves use and comes back only as one: a value the
      * sanitizer would change, or that isn't text, refuses the whole file, so a file can't point
      * the saves at a path or hide them.

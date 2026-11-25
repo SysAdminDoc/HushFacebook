@@ -257,8 +257,6 @@ public enum PatchFamily {
             Settings.HIDE_DATA_MODE_BANNER, Settings.HIDE_FREE_MODE_BANNER),
     SCREEN_TRANSITIONS(FamilyNames.SCREEN_TRANSITIONS, "turnOffScreenTransitions", null,
             Settings.TURN_OFF_SCREEN_TRANSITIONS),
-    APP_ICONS(FamilyNames.APP_ICONS, "unlockAppIcons", null,
-            Settings.UNLOCK_APP_ICONS, Settings.USE_APP_ICON_IN_HEADER),
     // No switch: the typed text is the choice, and Pause makes it read blank, Facebook's wordmark.
     HEADER_TEXT(FamilyNames.HEADER_TEXT, "headerText", Settings.HEADER_TEXT),
     EXTERNAL_BROWSER(FamilyNames.EXTERNAL_BROWSER, "externalBrowser", null,

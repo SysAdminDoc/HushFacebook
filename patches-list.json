@@ -4716,44 +4716,6 @@
       "options": []
     },
     {
-      "name": "Unlock app icons",
-      "description": "Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page (Menu > Settings and privacy > App icon), so your home screen icon can be any of them. A second switch, Use the icon at the top of Home, puts your pick at the top of Home too. Both start off. Turn them on in Hushfacebook settings > Appearance.",
-      "category": "Theme",
-      "use": true,
-      "dependencies": [
-        "Hushfacebook settings",
-        "Patch"
-      ],
-      "compatiblePackages": {
-        "com.facebook.katana": [
-          "588.0.0.42.55"
-        ]
-      },
-      "compatibility": [
-        {
-          "name": "Facebook",
-          "packageName": "com.facebook.katana",
-          "description": null,
-          "appIconColor": 550655,
-          "signatures": [
-            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
-            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
-          ],
-          "targets": [
-            {
-              "version": "588.0.0.42.55",
-              "experimental": false,
-              "versionCodes": {
-                "ARM64_V8A": 707615136,
-                "ARMEABI_V7A": 707615135
-              }
-            }
-          ]
-        }
-      ],
-      "options": []
-    },
-    {
       "name": "Upload Stories in HD",
       "description": "Videos you post to your Story ask Facebook for its high upload quality instead of standard, so they can come out sharper. Starts off. Turn it on in Hushfacebook settings > Stories.",
       "category": "Stories",

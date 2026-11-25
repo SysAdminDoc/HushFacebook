@@ -1250,15 +1250,6 @@ Turn off haptics	停用觸覺回饋
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	停止 Facebook 在點按或滑動時產生的輕微震動。鍵盤與手機本身的震動不受影響。
 Turn off screen transitions	停用畫面轉場動畫
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	分頁、選單、相片與疊加在 Facebook 上的畫面會立即顯示，不再滑入或縮放。仍可滑動切換分頁。
-Unlock app icons	解鎖應用程式圖示
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	允許在 Facebook 的「應用程式圖示」頁面選擇原本限定 Facebook Plus 使用的圖示。「選擇應用程式圖示」可開啟該頁面。停用後仍會保留所選圖示，如要還原，請先選回藍色圖示。
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	選擇應用程式圖示
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	開啟 Facebook 的「應用程式圖示」頁面，即使該帳號的「設定和隱私」未列出此頁面也可使用。
-Use the icon at the top of Home	在首頁頂端使用所選圖示
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	在首頁頂端顯示你選擇的應用程式圖示，取代 Facebook 文字標誌。需要啟用「解鎖應用程式圖示」並選擇藍色以外的圖示。重新啟動 Facebook 後生效。
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	此 Facebook 建置版本沒有「應用程式圖示」頁面。
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	子母畫面
 # context: summary of that switch

@@ -1246,15 +1246,6 @@ Turn off haptics	Tắt rung phản hồi
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Ngừng các rung nhẹ Facebook tạo ra khi bạn nhấn hoặc vuốt. Rung của bàn phím và điện thoại không bị ảnh hưởng.
 Turn off screen transitions	Tắt hiệu ứng chuyển màn hình
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	Các tab, Menu, ảnh và màn hình mở đè lên Facebook xuất hiện ngay thay vì trượt hay phóng to vào. Vuốt giữa các tab vẫn hoạt động.
-Unlock app icons	Mở khóa biểu tượng ứng dụng
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Cho phép bạn chọn các biểu tượng ứng dụng Facebook dành riêng cho Facebook Plus, trên trang Biểu tượng ứng dụng của Facebook. Dòng Chọn biểu tượng ứng dụng mở trang đó. Lựa chọn của bạn vẫn giữ nếu bạn tắt mục này, vì vậy hãy chọn biểu tượng màu xanh dương trước để quay lại.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	Chọn biểu tượng ứng dụng
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	Mở trang Biểu tượng ứng dụng của Facebook, kể cả với tài khoản mà Facebook không hiện trang này trong Cài đặt & quyền riêng tư.
-Use the icon at the top of Home	Dùng biểu tượng ở đầu Trang chủ
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	Hiển thị biểu tượng ứng dụng bạn đã chọn ở đầu Trang chủ thay cho chữ Facebook. Cần bật Mở khóa biểu tượng ứng dụng và chọn biểu tượng khác màu xanh dương. Khởi động lại Facebook để thấy thay đổi.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	Bản Facebook này không có trang Biểu tượng ứng dụng.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Hình trong hình
 # context: summary of that switch

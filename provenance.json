@@ -1508,13 +1508,12 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AppIcons.java",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/UnlockAppIconsAnchors.kt",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/UnlockAppIconsPatch.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/LogoDressSite.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: Unlock app icons, based on the idea of HushMessenger's patch with the same name and traced here on Facebook 582 for issues #109 and #160. The subscription benefit provider is found by the strings SUBSBenefitDataProvider and subs_active_benefits. Its one (String)Z instance method checks a benefit name against its Set. The hook goes first and answers true for CUSTOM_APP_ICON while the switch is on. The App icon page's (Set)V callback also loads CUSTOM_APP_ICON and calls Set.contains. Its answer passes through the extension. The Home header hook follows Facebook's stock wordmark load and replaces that drawable with the explicitly enabled non-default launcher alias."
+      "changes": "Written for Hushfacebook, traced on Facebook 582. AppIcons finds the launcher entry that's on, LoginActivity or one of its app icon aliases, for the intents the patches send (#119). LogoDressSite finds the Home header's logo after the settings patch gives it its touch listener, right after the builder loads Facebook's stock wordmark, where Home header text and the top bar's logo switch hook."
     },
     {
       "paths": [
@@ -1583,7 +1582,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook, for issue #230: Home header text. The hook sits at the same site Unlock app icons uses, right after the Home header's builder loads Facebook's stock wordmark, and hands the logo to HeaderText. That swaps the wordmark for a drawable that draws the saved words at the wordmark's height, in bold sans serif, through the color filter the header gives its wordmark, so the words follow Facebook's light and dark colors. A picture picked in the settings is shrunk to at most 1024 by 256 pixels with ImageDecoder, kept as a PNG in Facebook's files by HeaderPicture, and drawn at the wordmark's height in its own colors in place of the words. A pre-draw listener puts the words or the picture back when Facebook loads its wordmark again, and the picked app icon steps aside while there are either."
+      "changes": "Written for Hushfacebook, for issue #230: Home header text. The hook sits at the logo site in LogoDressSite.kt, right after the Home header's builder loads Facebook's stock wordmark, and hands the logo to HeaderText. That swaps the wordmark for a drawable that draws the saved words at the wordmark's height, in bold sans serif, through the color filter the header gives its wordmark, so the words follow Facebook's light and dark colors. A picture picked in the settings is shrunk to at most 1024 by 256 pixels with ImageDecoder, kept as a PNG in Facebook's files by HeaderPicture, and drawn at the wordmark's height in its own colors in place of the words. A pre-draw listener puts the words or the picture back when Facebook loads its wordmark again."
     },
     {
       "paths": [

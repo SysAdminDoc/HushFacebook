@@ -308,19 +308,6 @@ final class HushfacebookPages {
                             + "zooming in. Swiping between tabs still works.")));
         }
         subheading(appearance, L10n.t("App icon and header"));
-        if (build.contains(PatchFamily.APP_ICONS)) {
-            // The App icon page asks as it opens. A picked icon is a launcher alias, so it outlives the switch.
-            appearance.addPreference(toggle(context, Settings.UNLOCK_APP_ICONS,
-                    L10n.t("Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. "
-                            + "The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the "
-                            + "blue one first to go back.")));
-            // Facebook builds the Home header once, so a change waits for a restart. Needs the unlock above.
-            appearance.addPreference(toggle(context, Settings.USE_APP_ICON_IN_HEADER,
-                    L10n.t("Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs "
-                            + "Unlock app icons and a pick other than the blue one. Restart Facebook to see the change."))
-                    .needs(Settings.UNLOCK_APP_ICONS));
-            appearance.addPreference(AppIconScreen.row(context));
-        }
         if (build.contains(PatchFamily.HEADER_TEXT)) {
             // Facebook builds the Home header once, so a change waits for a restart.
             appearance.addPreference(HushfacebookPreferenceFragment.headerTextRow(context));

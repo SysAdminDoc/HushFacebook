@@ -1246,15 +1246,6 @@ Turn off haptics	Dokunsal titreşimi kapat
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Facebook'un dokunma veya kaydırma sırasında yaptığı küçük titreşimleri durdurur. Klavyenizin ve telefonunuzun titreşimleri etkilenmez.
 Turn off screen transitions	Ekran geçişlerini kapat
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	Sekmeler, Menü, fotoğraflar ve Facebook'un üzerinde açılan ekranlar kayarak ya da yakınlaşarak gelmek yerine hemen görünür. Sekmeler arasında kaydırma yine çalışır.
-Unlock app icons	Uygulama simgelerinin kilidini aç
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Facebook'un Facebook Plus'a ayırdığı uygulama simgelerini, Facebook'un Uygulama simgesi sayfasında seçmenizi sağlar. Uygulama simgesi seç satırı bu sayfayı açar. Bunu kapatsanız da seçiminiz kalır, geri dönmek için önce mavi olanı seçin.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	Uygulama simgesi seç
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	Facebook'un Uygulama simgesi sayfasını, Facebook'un Ayarlar ve gizlilik'te göstermediği hesaplarda da açar.
-Use the icon at the top of Home	Ana sayfanın üstünde simgeyi kullan
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	Seçtiğin uygulama simgesini Facebook yazısı yerine ana sayfanın üstünde gösterir. Uygulama simgelerinin kilidini aç ayarı ve maviden farklı bir seçim gerekir. Değişikliği görmek için Facebook'u yeniden başlat.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	Bu Facebook sürümünde Uygulama simgesi sayfası yok.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Pencere içinde pencere
 # context: summary of that switch

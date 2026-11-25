@@ -9,7 +9,6 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
-import app.morphe.patches.facebook.misc.appicons.DRESS_LOGO
 import app.morphe.patches.facebook.misc.appicons.dressLogoAfter
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
@@ -34,8 +33,7 @@ import java.io.File
 /**
  * Home header text's one hook on every declared Facebook build (#230): after the settings patch
  * sends the logo's touch listener through its stand-in, the text call goes in right after the stock
- * wordmark load, with the logo's register. With Unlock app icons in the build too, both calls follow
- * that load and the stock load stays first.
+ * wordmark load, with the logo's register.
  */
 class HomeHeaderTextFixtureTest {
     @Test
@@ -83,20 +81,6 @@ class HomeHeaderTextFixtureTest {
         assertEquals("$name: the header text call", DRESS_HEADER, dressed[site.stockLoad + 1].call())
         assertEquals("$name: the header text call is static range", Opcode.INVOKE_STATIC_RANGE, dressed[site.stockLoad + 1].opcode)
         assertEquals("$name: the logo is handed over", listOf(logo), dressed[site.stockLoad + 1].registers())
-
-        // With Unlock app icons applied first, its call does not hide the stock load from the text's search.
-        val both = PatchContexts.of(listOf(bar)).mutableClassDefBy(WORDMARK_NAVIGATION_BAR).findMutableMethodOf(logoBuilder)
-        both.sendToStandIn(touch, LOGO_TOUCH_STAND_IN)
-        val iconSite = logoDressSite(both)
-        both.dressLogoAfter(iconSite)
-        val textSite = logoDressSite(both, PATCH)
-        assertEquals("$name: both find the same stock load", iconSite, textSite)
-        both.dressLogoAfter(textSite, DRESS_HEADER)
-        val stacked = both.implementation!!.instructions.toList()
-        assertEquals("$name: two header calls added", original.size + 2, stacked.size)
-        assertEquals("$name: the stock wordmark loads before both", stockLoad, stacked[textSite.stockLoad].call())
-        assertEquals("$name: then the header text", DRESS_HEADER, stacked[textSite.stockLoad + 1].call())
-        assertEquals("$name: then the picked icon, which steps aside for text", DRESS_LOGO, stacked[textSite.stockLoad + 2].call())
     }
 
     private fun Instruction.registers(): List<Int> = when (this) {

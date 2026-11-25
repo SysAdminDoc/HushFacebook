@@ -1055,7 +1055,6 @@ Leave calls and chats to Messenger	اترك المكالمات والمحادث�
 Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.	مغادرة فيسبوك لا تفتح النافذة. اضغط على الصورة داخل الصورة من قائمة المزيد في الريل (النقاط الثلاث) عندما تريد واحدة.
 Left alone: %s	تاركًا كما هو: %s
 Let each post come back once	السماح لكل منشور بالعودة مرة واحدة
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	يتيح لك اختيار أيقونات التطبيقات التي يحتفظ بها فيسبوك لـ Facebook Plus، على صفحة أيقونة التطبيق في فيسبوك. صف اختيار أيقونة التطبيق يفتح تلك الصفحة. اختيار remains if you turn this off, so pick the blue one first to go back.
 Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.	يتيح لك التقاط لقطات شاشة وتسجيلات للشاشة على الصفحات التي يحظر فيها فيسبوك ذلك. أعد فتح صفحة مفتوحة بالفعل.
 Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	يتيح لك كتابة القواعد في بحث Marketplace. ضع كلمة بين علامتي تنصيص، مثل "كلمة"، للاحتفاظ فقط بالعناوين التي تحتويها، ضع ناقصًا أمامها، مثل -كلمة، لإخفاء العناوين التي تحتويها، وأضف in:place للاحتفاظ بالإعلانات في ذلك المكان.
 Licenses	التراخيص
@@ -1279,7 +1278,6 @@ Opening supported links is off for this app in Android's settings. Tap to turn i
 Opening the video to save it	فتح الفيديو لحفظه
 Opens a GitHub report with your versions and settings filled in. Add what happened.	يفتح تقرير GitHub مع إصداراتك وإعداداتك محشوّة. أضف ما حدث.
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	يفتح المحادثات في تطبيق Messenger بدلاً من داخل فيسبوك، بما في ذلك زر الرسائل على الملف الشخصي، بينما Messenger مثبت وممكّن. بدون Messenger، تبقى المحادثات في فيسبوك. أعد تشغيل فيسبوك بعد تغييره.
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	يفتح صفحة أيقونة تطبيق فيسبوك، حتى على الحسابات التي لا يسرد فيها فيسبوكها في الإعدادات والخصوصية.
 Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Off by default, since it hasn't been tried on a real account yet.	يفتح الريلز والفيديوهات في وضع فيسبوك النظيف، الذي يخفي الأزرار على الجانب. ما زلت قادرًا على مغادرة الوضع النظيف كالمعتاد. متوقف افتراضيًا، لأنه لم يُجرَّب على حساب حقيقي بعد.
 Opt-out read: %1$s. Triggered read: %2$s.	قراءة إلغاء الاشتراك: %1$s. قراءة محفزة: %2$s.
 Orange	برتقالي
@@ -1314,7 +1312,6 @@ Photos are named %1$s.	تُسمى الصور %1$s.
 Photos go to %1$s.	تذهب الصور إلى %1$s.
 Photos will go in a subfolder named %1$s.	ستذهب الصور إلى مجلد فرعي اسمه %1$s.
 Photos will go in the save folder itself.	ستذهب الصور إلى مجلد الحفظ نفسه.
-Pick an app icon	اختر أيقونة تطبيق
 Pick Custom color again to change it.	اختر لونًا مخصصًا مرة أخرى لتغييره.
 Pick one each time	اختر واحدًا في كل مرة
 Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	اختر واحدًا في كل مرة. تفتح التفاعلات بإصبعك، لذا اسحب إلى واحدة واتركها، أو اتركها وانقر على واحدة. نقر في أي مكان آخر يغلقها.
@@ -1643,7 +1640,6 @@ Shows only friends and followed Pages in the Stories tray. Applies when Facebook
 Shows only people's stories in the Stories tray, without the Pages you follow. Applies when Facebook next loads the tray.	يُظهر فقط قصص الأشخاص في درج القصص، دون الصفحات التي تتابعها. يُطبّق عندما يحمّل فيسبوك الدرج في المرة التالية.
 Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	يُظهر فقط منشورات كتبها أصدقاؤك ويخفي الصفحات والمجموعات والإعلانات والمنشورات المقترحة وريلز الخلاصة. منشور لا يستطيع معرفة كاتبه يبقى. شغّل %1$s أيضًا لأحدث المنشورات أولاً.
 Shows Save photo on every photo you open, even where saving is turned off, and saves the biggest size. Off or paused, Facebook decides again.	يُظهر حفظ صورة على كل صورة تفتحها، حتى حيث يكون الحفظ متوقفًا، ويحفظها بأكبر حجم. متوقف أو متوقف مؤقتًا، فيسبوك يقرر مرة أخرى.
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	يُظهر أيقونة التطبيق التي اخترتها في أعلى الرئيسية بدلاً من كلمة فيسبوك. يحتاج إلغاء تأمين أيقونات التطبيقات واختيار غير الأزرق. أعد تشغيل فيسبوك لترى التغيير.
 Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	يُظهر تبويب الخلاصات مباشرة على منشوراته، دون صف العنوان أو الفلاتر. أعد تشغيل فيسبوك لترى التغيير.
 Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	يُظهر أرقام الأصدقاء والمتابعين والمتابعة التي تكتبها أدناه على ملفك الشخصي الخاص، على هذا الهاتف فقط. الملفات الشخصية الأخرى وأرقام فيسبوك الحقيقية لا تُمس. يُطبّق في المرة التالية التي تفتح فيها ملفك الشخصي.
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	يُظهر تاريخ المنشور أسفل اسم الناشر بدلاً من تفاصيل فيسبوك المتناوبة، التي قد تصبح فارغة على بعض الهواتف.
@@ -1917,7 +1913,6 @@ They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off
 Thin line seek bar	شريط تقدم بخط رفيع
 This build can't run the Messenger link test.	هذا الإصدار لا يستطيع تشغيل اختبار رابط Messenger.
 This build has no notification sound to save.	هذا الإصدار من فيسبوك ليس به صوت إشعار لحفظه.
-This Facebook build has no App icon page.	هذا الإصدار من فيسبوك ليس به صفحة أيقونة تطبيق.
 This Facebook build has no Whitehat settings screen.	هذا الإصدار من فيسبوك ليس به شاشة إعدادات Whitehat.
 This list needs more room than it has. Shorten it, then save again.	هذه القائمة تحتاج مساحة أكثر مما لديها. اختصرها، ثم احفظ مرة أخرى.
 this person	هذا الشخص
@@ -1963,7 +1958,6 @@ Undo	تراجع
 Undo the reset	التراجع عن إعادة الضبط
 Unfollow	إلغاء المتابعة
 Unlock	إلغاء القفل
-Unlock app icons	إلغاء تأمين أيقونات التطبيقات
 Unlock Facebook	إلغاء قفل فيسبوك
 Until I leave the page	حتى أغادر الصفحة
 Until you clear it	حتى تمسحها
@@ -1973,7 +1967,6 @@ Updates	التحديثات
 Upload Stories in HD	رفع القصص بدقة HD
 Usage statistics uploads	رفع إحصائيات الاستخدام
 Use the Hushfacebook logo	استخدام شعار Hushfacebook
-Use the icon at the top of Home	استخدام الأيقونة في أعلى الرئيسية
 Use the order below. A choice made on a post lasts until restart. Links to comments keep Facebook's order.	استخدام الترتيب أدناه. اختيار يتم على منشور يستمر حتى إعادة التشغيل. روابط التعليقات تحتفظ بترتيب فيسبوك.
 Use the phone's emoji	استخدام رموز الهاتف
 Use the system font	استخدام خط النظام

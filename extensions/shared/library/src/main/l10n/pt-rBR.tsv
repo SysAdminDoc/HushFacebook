@@ -1132,15 +1132,6 @@ Turn off haptics	Desativar a vibração tátil
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Para as pequenas vibrações que o Facebook faz quando você toca ou desliza. As do teclado e do celular não mudam.
 Turn off screen transitions	Desativar as transições de tela
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	As abas, o Menu, as fotos e as telas que abrem sobre o Facebook aparecem na hora, sem deslizar nem dar zoom. Deslizar entre abas continua funcionando.
-Unlock app icons	Desbloquear ícones do app
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Permite escolher os ícones que o Facebook reserva para o Facebook Plus, na página Ícone do app do Facebook. A linha Escolher um ícone do app abre essa página. Sua escolha continua se você desativar isto, então escolha o azul antes para voltar.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	Escolher um ícone do app
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	Abre a página Ícone do app do Facebook, mesmo em contas em que o Facebook não a mostra em Configurações e privacidade.
-Use the icon at the top of Home	Usar o ícone no topo do Início
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	Mostra o ícone do app que você escolheu no topo do Início no lugar do logotipo de texto do Facebook. Precisa de Desbloquear ícones do app e de uma escolha diferente do azul. Reinicie o Facebook para ver a mudança.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	Esta versão do Facebook não tem a página Ícone do app.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Picture-in-picture
 # context: summary of that switch

@@ -1246,15 +1246,6 @@ Turn off haptics	햅틱 끄기
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	탭하거나 스와이프할 때 Facebook이 내는 작은 진동을 멈춰요. 키보드와 휴대폰 진동에는 영향이 없어요.
 Turn off screen transitions	화면 전환 효과 끄기
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	탭, 메뉴, 사진, Facebook 위에 열리는 화면이 밀려 들어오거나 확대되지 않고 바로 나타나요. 탭 사이를 스와이프하는 기능은 그대로 작동해요.
-Unlock app icons	앱 아이콘 잠금 해제
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Facebook의 앱 아이콘 페이지에서 Facebook Plus 전용 앱 아이콘을 선택할 수 있어요. "앱 아이콘 선택" 항목으로 그 페이지를 열 수 있어요. 이 스위치를 꺼도 선택한 아이콘은 유지되므로, 원래대로 돌아가려면 먼저 파란색 아이콘을 선택하세요.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	앱 아이콘 선택
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	설정 및 개인정보에 표시되지 않는 계정에서도 Facebook의 앱 아이콘 페이지를 열어요.
-Use the icon at the top of Home	홈 상단에 아이콘 사용
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	홈 상단에 Facebook 로고 글자 대신 선택한 앱 아이콘을 표시해요. "앱 아이콘 잠금 해제"가 켜져 있고 파란색이 아닌 아이콘을 선택해야 해요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	이 Facebook 빌드에는 앱 아이콘 페이지가 없어요.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	PIP 모드
 # context: summary of that switch
