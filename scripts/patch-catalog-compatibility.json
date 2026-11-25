@@ -1,0 +1,12 @@
+{
+  "baselineVersion": "0.24.0",
+  "baselineCommit": "e82b05bbc7a0f663785cddd5fcaedeae642998f2",
+  "candidateVersion": "0.25.0",
+  "changes": [
+    {
+      "before": { "name": "Unlock app icons", "use": true },
+      "after": null,
+      "migrationNote": "Your other patch choices in Morphe Manager stay as they were. This selection reset only covers the removed patch, so no manual re-selection is needed."
+    }
+  ]
+}

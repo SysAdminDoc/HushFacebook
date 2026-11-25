@@ -33,7 +33,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Changed
 
-* `Unlock app icons` is gone, along with its `Use the icon at the top of Home` switch and `Pick an app icon` row.
+* `Unlock app icons` is gone, along with its `Use the icon at the top of Home` switch and `Pick an app icon` row. Your other patch choices in Morphe Manager stay as they were. This selection reset only covers the removed patch, so no manual re-selection is needed.
 
 ### Fixed
 
