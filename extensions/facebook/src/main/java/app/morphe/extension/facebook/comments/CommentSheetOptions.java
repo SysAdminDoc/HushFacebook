@@ -32,11 +32,14 @@ import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.reels.ReactionHold;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.SettingsStatus;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BooleanSetting;
+import app.morphe.extension.shared.settings.LongSetting;
+import app.morphe.extension.shared.settings.Setting;
 
 /**
  * Comment sheet options: the comment box without its GIF and sticker buttons, Like without the
@@ -317,6 +320,39 @@ public final class CommentSheetOptions {
     /** The class of the screen created or resumed last, or null before the first. */
     @Nullable
     private static volatile String screenInFront;
+
+    /**
+     * How long, in milliseconds, an UP NEXT pill seen in the Shorts viewer keeps the band there
+     * Facebook's (#585): two weeks.
+     */
+    static final long UP_NEXT_REMEMBERED_MS = 14L * 24 * 60 * 60 * 1000;
+
+    /** How often, at most, a pill seen again is written down: once a minute. */
+    static final long UP_NEXT_NOTED_EVERY_MS = 60_000L;
+
+    /** Whether this build carries the UP NEXT pill's hook, or null to ask the build. A test sets it. */
+    @Nullable
+    static volatile Boolean upNextPillHookForTests;
+
+    /** The time now, in milliseconds, or null for the clock. A test sets it. */
+    @Nullable
+    static volatile Long nowForTests;
+
+    /**
+     * When Facebook last showed its UP NEXT pill with the Shorts viewer in front, or 0 for never
+     * (#585). Hushfacebook's own state, kept while paused and never in a settings file. A class of
+     * its own, so nothing here loads a setting before the context is set.
+     */
+    static final class UpNextSeen {
+        static final LongSetting AT = new LongSetting("hushfacebook_up_next_pill_seen", 0L, false, false);
+
+        static {
+            Setting.keepWhenPaused(AT);
+        }
+
+        private UpNextSeen() {
+        }
+    }
 
     private static boolean watchingScreens;
 
@@ -824,14 +860,50 @@ public final class CommentSheetOptions {
 
     /**
      * Whether the band stays Facebook's for the UP NEXT pill: in the Shorts viewer, while Hide Up
-     * next is off. Facebook lays that pill over the comment bar, in its band (S22 588, 2026-11-23:
-     * "Add a comment" at 2105 to 2274 under "UP NEXT:" at 2147, the seek bar at 2048 to 2166 above
-     * both). Given to the video, the band took the caption down and the seek bar under the pill
-     * (#552), so the video, its caption and its seek bar stay where Facebook puts them, with the
-     * pill where the comment bar was.
+     * next is off, once the pill has shown there in the last {@link #UP_NEXT_REMEMBERED_MS}.
+     * Facebook lays that pill over the comment bar, in its band (S22 588, 2026-11-23: "Add a
+     * comment" at 2105 to 2274 under "UP NEXT:" at 2147, the seek bar at 2048 to 2166 above both).
+     * Given to the video, the band took the caption down and the seek bar under the pill (#552), so
+     * the video, its caption and its seek bar stay where Facebook puts them, with the pill where the
+     * comment bar was. Not every account gets the pill, though, and kept for one that never shows,
+     * the band left the seek bar over an empty strip (#585). The list sizes the videos before any
+     * pill shows, so a pill seen once decides for the viewers after it. A build without the pill's
+     * hook (Clean up Reels) can't see one, and keeps the band whenever Hide Up next is off.
      */
     private static boolean bandKeptForUpNext() {
-        return shortsScreenInFront() && !Settings.HIDE_UP_NEXT.get();
+        if (!shortsScreenInFront() || Settings.HIDE_UP_NEXT.get()) return false;
+        if (!upNextPillHook()) return true;
+        long seen = UpNextSeen.AT.get();
+        return seen > 0 && now() - seen < UP_NEXT_REMEMBERED_MS;
+    }
+
+    /**
+     * Called by Clean up Reels each time Facebook shows its UP NEXT pill rather than Hide Up next
+     * hiding it (#585). With a full-screen player in front that's written down, at most once a
+     * minute, so the Shorts viewer keeps the band the pill sits in from its next video list on.
+     */
+    public static void upNextPillShown() {
+        try {
+            if (!Utils.settingsReady() || !shortsScreenInFront()) return;
+            long now = now();
+            long seen = UpNextSeen.AT.get();
+            if (seen > 0 && now >= seen && now - seen < UP_NEXT_NOTED_EVERY_MS) return;
+            UpNextSeen.AT.save(now);
+            if (seen == 0) Logger.printDebug(() -> "Hide the video comment box: Up next shows in the Shorts viewer, so its band stays");
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Hide the video comment box: could not note the Up next pill", failure);
+        }
+    }
+
+    /** Whether this build carries the UP NEXT pill's hook, which comes with Clean up Reels. */
+    private static boolean upNextPillHook() {
+        Boolean forced = upNextPillHookForTests;
+        return forced != null ? forced : SettingsStatus.reelDeclutter();
+    }
+
+    private static long now() {
+        Long forced = nowForTests;
+        return forced != null ? forced : System.currentTimeMillis();
     }
 
     /**

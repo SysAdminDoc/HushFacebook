@@ -22,6 +22,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import app.morphe.extension.facebook.ads.MarketplaceListingAge;
+import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.download.PostDetails;
 import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -848,12 +849,15 @@ public final class ReelDeclutter {
      * video and the one over a card that isn't a video. True when the pill is one of those and the
      * switch is on: the container is hidden and Facebook returns before it shows it. Any other pill,
      * the 2x speed one included, and any pill once the switch is off, gets a container this hid shown
-     * again first, since Facebook only shows what's inside it. Never throws: false shows the pill.
+     * again first, since Facebook only shows what's inside it. An UP NEXT pill that shows is told to
+     * Hide the video comment box, whose band keeps room for it only where it shows (#585). Never
+     * throws: false shows the pill.
      */
     public static boolean hideUpNextPill(@Nullable View pill, @Nullable Integer kind, int peekKind, int nextKind) {
         boolean upNext = kind != null && (kind == peekKind || kind == nextKind);
         if (!upNext || !hidesUpNext(UP_NEXT_PILL, "Up next: pill not shown")) {
             showHiddenPill(pill);
+            if (upNext) CommentSheetOptions.upNextPillShown();
             return false;
         }
         try {

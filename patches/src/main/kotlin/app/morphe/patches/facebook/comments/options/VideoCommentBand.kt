@@ -68,6 +68,9 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * extension takes the seek bar down only while a full-screen player screen (ImmersiveActivity) is
  * in front. There 588 lays the UP NEXT pill over the comment bar, in its band, so while Hide Up
  * next is off the band stays Facebook's, the video's and the seek bar's both, and the pill keeps it.
+ * Not every account gets that pill (#585), so with Clean up Reels in the build, whose pill hook
+ * tells the extension when one shows, the band stays only once a pill has shown in that viewer
+ * within the last two weeks.
  *
  * The videos' height comes from the viewer's list root (`LX/0BXZ;->BJw`, which logs
  * onRenderVideoHomeRootComponent), the one caller of the kept Kotlin function [VDD_SLOT_HEIGHT],
