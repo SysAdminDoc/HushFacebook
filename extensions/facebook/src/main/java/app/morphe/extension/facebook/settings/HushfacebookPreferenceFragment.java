@@ -149,9 +149,11 @@ import app.morphe.extension.facebook.settings.ValueRows.StartTabRow;
 import app.morphe.extension.facebook.settings.ValueRows.SubfolderRow;
 import app.morphe.extension.facebook.settings.ValueRows.SurfaceQualityRow;
 import app.morphe.extension.facebook.settings.ValueRows.SourcesRow;
+import app.morphe.extension.facebook.settings.ValueRows.SettingsLanguageRow;
 import app.morphe.extension.facebook.settings.ValueRows.TranslateToRow;
 import app.morphe.extension.facebook.settings.ValueRows.WordsRow;
 import app.morphe.extension.shared.L10n;
+import app.morphe.extension.shared.L10nLanguages;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BaseSettings;
@@ -1438,6 +1440,32 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         row.setEntries(entries);
         row.setEntryValues(values);
         row.setValue(Settings.TRANSLATE_TO.savedValue());
+        return row;
+    }
+
+    /**
+     * Settings language (#582): the language Facebook runs in first, then English and every table,
+     * each named in itself, so the way back reads whatever was picked. A pick owes a restart.
+     */
+    static SettingsLanguageRow settingsLanguageRow(Context context) {
+        SettingsLanguageRow row = new SettingsLanguageRow(context);
+        row.setKey(BaseSettings.SETTINGS_LANGUAGE.key);
+        row.setTitle(L10n.t("Settings language"));
+        row.setDialogTitle(L10n.t("Settings language"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        List<String> tags = L10nLanguages.tags();
+        CharSequence[] entries = new CharSequence[tags.size() + 1];
+        CharSequence[] values = new CharSequence[tags.size() + 1];
+        entries[0] = L10n.t("Same as Facebook");
+        values[0] = "";
+        for (int i = 0; i < tags.size(); i++) {
+            // Each language's own name, never translated, so it reads the same way round in any layout.
+            entries[i + 1] = L10n.isolate(L10nLanguages.name(tags.get(i)));
+            values[i + 1] = tags.get(i);
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(BaseSettings.SETTINGS_LANGUAGE.savedValue());
         return row;
     }
 
@@ -3324,6 +3352,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((FeedsSubtabRow) listPreference).showSummary();
         } else if (listPreference instanceof TranslateToRow) {
             ((TranslateToRow) listPreference).showSummary();
+        } else if (listPreference instanceof SettingsLanguageRow) {
+            ((SettingsLanguageRow) listPreference).showSummary();
         } else if (listPreference instanceof HomeFeedRow) {
             ((HomeFeedRow) listPreference).showSummary();
         } else if (listPreference instanceof CommentOrderRow) {

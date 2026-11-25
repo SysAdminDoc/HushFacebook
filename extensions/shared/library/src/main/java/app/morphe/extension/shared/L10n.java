@@ -12,6 +12,8 @@ package app.morphe.extension.shared;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.LocaleList;
+import android.text.TextUtils;
+import android.view.View;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -294,10 +296,16 @@ public final class L10n {
      * Every tag worth trying, in the order the phone asks for them, each one most specific
      * first, so a table for "pt-rbr" wins over one for "pt". Android resolves a string
      * resource against the whole language list rather than the first entry alone, and reading
-     * the table by hand has to do the same or a second choice language never shows.
+     * the table by hand has to do the same or a second choice language never shows. A language
+     * picked under Settings language (#582) answers alone, whatever Facebook runs in.
      */
     public static List<String> tags(Context context) {
         List<String> tags = new ArrayList<>(4);
+        String picked = L10nLanguages.picked();
+        if (picked != null) {
+            tags.add(picked);
+            return tags;
+        }
         for (Locale locale : locales(context)) {
             String language = locale.getLanguage().toLowerCase(Locale.ROOT);
             if (language.isEmpty()) {
@@ -321,6 +329,18 @@ public final class L10n {
             tags.add(Locale.getDefault().getLanguage().toLowerCase(Locale.ROOT));
         }
         return tags;
+    }
+
+    /**
+     * Whether Hushfacebook's own screens read right to left: the picked language's way under
+     * Settings language (#582), or else the way [context] lays out, as Facebook's own screens do.
+     * Arabic picked on an English Facebook mirrors, and English picked on an Arabic one doesn't.
+     */
+    public static boolean rightToLeft(Context context) {
+        if (L10nLanguages.picked() != null) {
+            return TextUtils.getLayoutDirectionFromLocale(textLocale(context)) == View.LAYOUT_DIRECTION_RTL;
+        }
+        return context != null && context.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
     }
 
     private static final String SIMPLIFIED_CHINESE = "zh-rcn";

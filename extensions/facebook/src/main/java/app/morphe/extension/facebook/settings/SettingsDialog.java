@@ -181,6 +181,8 @@ public final class SettingsDialog extends DialogFragment {
         HeaderColumn root = new HeaderColumn(getContext());
         column = root;
         root.setBackgroundColor(background());
+        // The picked Settings language's way, so English on an Arabic phone reads left to right (#582).
+        root.setLayoutDirection(rightToLeft() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
 
         LinearLayout bar = new LinearLayout(getContext());
         bar.setOrientation(LinearLayout.HORIZONTAL);
@@ -612,8 +614,8 @@ public final class SettingsDialog extends DialogFragment {
                 getResources().getDisplayMetrics()));
     }
 
-    /** Whether the phone's language reads right to left, so the way back points right. */
+    /** Whether these screens read right to left (the picked language's way, or the phone's), so the way back points right. */
     private boolean rightToLeft() {
-        return getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        return L10n.rightToLeft(getContext());
     }
 }

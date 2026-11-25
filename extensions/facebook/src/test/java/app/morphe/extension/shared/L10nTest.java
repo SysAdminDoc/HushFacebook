@@ -16,6 +16,7 @@ import android.content.ContextWrapper;
 import android.content.res.Configuration;
 import android.os.LocaleList;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,10 +24,17 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+
+import app.morphe.extension.shared.settings.BaseSettings;
+import app.morphe.extension.shared.settings.HushfacebookPause;
+import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * How the catalog picks a language: the phone's list in order, a region falling back to its
@@ -419,6 +427,84 @@ public class L10nTest {
         } finally {
             resources.updateConfiguration(before, resources.getDisplayMetrics());
         }
+    }
+
+    /**
+     * Settings language (#582): a picked table answers whatever Facebook runs in, with its own list
+     * word and capitals, and English picked reads English on a German Facebook. Blank, or a pick the
+     * bundle has no table for, goes back to Facebook's languages.
+     */
+    @Test
+    public void aPickedLanguageAnswersWhateverFacebookRunsIn() {
+        Context english = in(Locale.US);
+        Context german = in(Locale.GERMANY);
+        BaseSettings.SETTINGS_LANGUAGE.save("de");
+        assertEquals(table("de").get(KEY), L10n.t(english, KEY));
+        assertEquals("a, b und c", L10n.join(english, Arrays.asList("a", "b", "c")));
+        assertEquals(Arrays.asList("de"), L10n.tags(english));
+        BaseSettings.SETTINGS_LANGUAGE.save("tr");
+        assertEquals("\u0130ndir", L10n.capitalize(english, "indir"));
+        BaseSettings.SETTINGS_LANGUAGE.save("pt-rbr");
+        assertEquals(table("pt-rbr").get(KEY), L10n.t(german, KEY));
+        BaseSettings.SETTINGS_LANGUAGE.save("en");
+        assertEquals(KEY, L10n.t(german, KEY));
+        assertEquals(Locale.ENGLISH, L10n.textLocale(german));
+        BaseSettings.SETTINGS_LANGUAGE.save("xx");
+        assertEquals(table("de").get(KEY), L10n.t(german, KEY));
+        BaseSettings.SETTINGS_LANGUAGE.save("");
+        assertEquals(table("de").get(KEY), L10n.t(german, KEY));
+        assertEquals(KEY, L10n.t(english, KEY));
+    }
+
+    /** A pick waits until settings may be read, and stays while Hushfacebook is paused. */
+    @Test
+    public void aPickWaitsForSettingsAndOutlastsAPause() {
+        BaseSettings.SETTINGS_LANGUAGE.save("de");
+        SettingsContextRule.beforeThePauseIsDecided(() -> assertEquals(KEY, L10n.t(in(Locale.US), KEY)));
+        SettingsContextRule.withoutContext(() -> assertEquals(KEY, L10n.t(in(Locale.US), KEY)));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        try {
+            assertEquals(table("de").get(KEY), L10n.t(in(Locale.US), KEY));
+        } finally {
+            PauseForTests.resume();
+        }
+    }
+
+    /** The list offers English and every table, each named in its own language and none twice. */
+    @Test
+    public void everyLanguageThePickerOffersIsNamedInItself() {
+        List<String> expected = new ArrayList<>();
+        expected.add("en");
+        expected.addAll(Arrays.asList(L10nTranslations.LANGUAGES));
+        assertEquals(expected, L10nLanguages.tags());
+        Set<String> names = new HashSet<>();
+        for (String tag : L10nLanguages.tags()) {
+            String name = L10nLanguages.name(tag);
+            assertNotEquals(tag + " has no name of its own", tag, name);
+            assertTrue(tag + " shares its name with another", names.add(name));
+        }
+        assertEquals("English", L10nLanguages.name("en"));
+        assertEquals("Deutsch", L10nLanguages.name("de"));
+    }
+
+    /** The picked language decides which way these screens read; with no pick, the phone does. */
+    @Test
+    public void thePickedLanguageDecidesWhichWayTheScreensRead() {
+        Context english = in(Locale.US);
+        Context arabic = in(new Locale("ar", "EG"));
+        assertFalse(L10n.rightToLeft(english));
+        assertTrue(L10n.rightToLeft(arabic));
+        BaseSettings.SETTINGS_LANGUAGE.save("ar");
+        assertTrue(L10n.rightToLeft(english));
+        BaseSettings.SETTINGS_LANGUAGE.save("en");
+        assertFalse(L10n.rightToLeft(arabic));
+        BaseSettings.SETTINGS_LANGUAGE.save("de");
+        assertFalse(L10n.rightToLeft(arabic));
+    }
+
+    @After
+    public void forgetThePick() {
+        BaseSettings.SETTINGS_LANGUAGE.resetToDefault();
     }
 
     private static Map<String, String> table(String language) {

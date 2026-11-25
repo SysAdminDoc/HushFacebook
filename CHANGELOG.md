@@ -10,6 +10,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Save files to Downloads` puts a PDF, document or other file you download from a post in your phone's Downloads folder, where a file manager can open it. Facebook kept those in a folder no file manager could reach. It's on by default. (#590)
 * `Hide hashtags in reel captions` under Reels and Watch takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays where it is. It starts off. (#594)
 * `Keep the keyboard closed when comments open` under Comments and writing opens comments without popping up the keyboard, even on a post with no comments yet. Tap the comment box when you want to write. It starts off. (#594)
+* `Settings language` at the top of Appearance picks the language the Hush settings and messages use, whatever language Facebook is in. Each language is listed in its own words, so English is always easy to find again, and Arabic lays the settings out right to left. `Same as Facebook` keeps them following Facebook. The change shows after Facebook restarts. (#582, #583, #558)
 
 ### Fixed
 

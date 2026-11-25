@@ -15,6 +15,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.mark;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.subheading;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.accentRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.settingsLanguageRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.textSizeRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.toggle;
 
@@ -181,6 +182,8 @@ final class HushfacebookPages {
             Set<PatchFamily> build) {
         PreferenceCategory appearance = category(screen, L10n.t("Appearance"));
         subheading(appearance, L10n.t("Text and emoji"));
+        // Every build has it: the language these screens and Hushfacebook's messages come out in (#582).
+        appearance.addPreference(settingsLanguageRow(context));
         // The settings entry's own, so every build has it. 100% is Facebook as it ships.
         appearance.addPreference(textSizeRow(context));
         if (build.contains(PatchFamily.SYSTEM_FONT)) {

@@ -1245,6 +1245,39 @@ final class ValueRows {
         }
     }
 
+    /** Settings language (#582), with the picked language's name under the title. */
+    static final class SettingsLanguageRow extends PlainSummaryList {
+        SettingsLanguageRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            CharSequence chosen = getEntry();
+            setSummary(chosen == null ? L10n.t("Same as Facebook") : chosen);
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
     static final class FeedsSubtabRow extends PlainSummaryList {
         FeedsSubtabRow(Context context) {
             super(context);

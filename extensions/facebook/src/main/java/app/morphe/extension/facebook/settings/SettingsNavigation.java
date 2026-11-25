@@ -917,7 +917,7 @@ final class SettingsNavigation extends BaseAdapter {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) row.setStateDescription(L10n.t(open ? "Expanded" : "Collapsed"));
         View arrow = row.findViewWithTag(ScreenColors.CHEVRON);
         if (arrow != null) {
-            boolean rtl = row.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+            boolean rtl = L10n.rightToLeft(row.getContext());
             arrow.setRotation((open ? -90 : 90) * (rtl ? -1 : 1));
         }
         TextView title = row.findViewById(android.R.id.title);
