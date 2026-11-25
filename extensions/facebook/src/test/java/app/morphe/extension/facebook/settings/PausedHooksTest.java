@@ -748,6 +748,8 @@ public class PausedHooksTest {
                 },
                 // And "Made with Edits" under the caption.
                 ReelDeclutter::hideEditsLabel,
+                // A reel's "AI info" label, left out of its attributions (#574).
+                () -> ReelDeclutter.filterAiLabel(Arrays.asList(new TypedFeedUnit("XFBFBShortsGenAITransparencyAttribution"))) != null,
                 // And the "Made with Edits" pill over a feed video (#314).
                 ReelDeclutter::hideEditsPill,
                 // A stalled video's slow connection message.

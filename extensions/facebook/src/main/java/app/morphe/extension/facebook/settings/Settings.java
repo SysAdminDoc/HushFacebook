@@ -1141,6 +1141,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_audio_line", FALSE);
 
     /**
+     * The "AI info" label Facebook puts on a reel made with AI isn't drawn, under the caption or in
+     * the reel's info rows ({@link app.morphe.extension.facebook.reels.ReelDeclutter#filterAiLabel}, #574).
+     * Off by default. A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_AI_LABEL =
+            new BooleanSetting("hushfacebook_hide_reel_ai_label", FALSE);
+
+    /**
      * The "This is taking a while. Try checking your network connection." message a video shows
      * when it's slow to load isn't shown
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSlowConnectionMessage}, #222).

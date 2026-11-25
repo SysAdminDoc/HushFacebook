@@ -25,6 +25,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.value.ImmutableStringEncodedValue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -358,6 +359,51 @@ class CleanUpReelsShapesTest {
         }
         val goto = body.indexOfFirst { it.opcode == Opcode.GOTO }
         assertEquals("the goto skipped the filter", returns.last() - 6, builder.target(goto))
+    }
+
+    /**
+     * A reel's attribution list (#574) is told from the "AI info" label's readers, which name the
+     * GenAI type alone, and from the chip builder, which takes a list in, and its returns go through
+     * the AI label filter, not the chip filter.
+     */
+    @Test
+    fun `the attribution list is matched and its returns go through the AI label filter`() {
+        val adds = (listOf(AI_LABEL_ATTRIBUTION) + ADDED_ATTRIBUTIONS).joinToString("\n") { "const-string v1, \"$it\"" }
+        val list = method(
+            "attributions", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 4, static = false,
+            """
+                $adds
+                invoke-static { }, $IMMUTABLE_LIST->of()$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertTrue(isAttributionList(list))
+        val reader = method(
+            "label", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 3, static = false,
+            """
+                const-string v1, "$AI_LABEL_ATTRIBUTION"
+                invoke-static { }, $IMMUTABLE_LIST->of()$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertFalse("a reader naming the GenAI type alone matched", isAttributionList(reader))
+        val chips = method(
+            "chips", listOf(IMMUTABLE_LIST), IMMUTABLE_LIST, 3, static = true,
+            """
+                $adds
+                return-object p0
+            """,
+        )
+        assertFalse("the chip builder matched", isAttributionList(chips))
+
+        list.filterChipsBeforeEveryReturn(FILTER_AI_LABEL)
+        val body = list.body()
+        val hook = body.indexOfFirst { it.opcode == Opcode.RETURN_OBJECT } - 6
+        assertEquals(FILTER_AI_LABEL, body[hook].call)
+        assertTrue("the chip filter went in too", body.none { it is ReferenceInstruction && it.call == FILTER_CHIPS })
+        assertEquals(COPY_OF, body[hook + 3].call)
     }
 
     @Test

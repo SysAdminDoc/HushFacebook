@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ## Unreleased
 
+### Added
+
+* `Hide the AI info label on reels` under Reels and Watch takes the "AI info" label off reels Facebook marks as made with AI, under the caption and in the reel's info rows. It starts off. (#574)
+
 ### Fixed
 
 * **Tooling:** The device walk can put back a settings backup that an older build wrote while it still had a patch this one dropped. On 0.25.0 the S22 kept a backup holding the two `Unlock app icons` switches, and the walk failed its restore check because no restore can bring back a switch the build no longer has. Any switch the installed build still lists has to come back exactly as it was.

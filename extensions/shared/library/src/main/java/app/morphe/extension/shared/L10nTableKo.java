@@ -18,7 +18,7 @@ final class L10nTableKo {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4304);
+        Map<String, String> table = new HashMap<>(4308);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -1662,6 +1662,8 @@ final class L10nTableKo {
                 "\ucd94\ucc9c \uc2a4\ud1a0\ub9ac \uc228\uae30\uae30");
         table.put("Hide the 2x popups",
                 "2\ubc30\uc18d \ud31d\uc5c5 \uc228\uae30\uae30");
+        table.put("Hide the AI info label on reels",
+                "\ub9b4\uc2a4\uc758 AI \uc815\ubcf4 \ub77c\ubca8 \uc228\uae30\uae30");
         table.put("Hide the Ad Center tab",
                 "\uad11\uace0 \uc13c\ud130 \ud0ed \uc228\uae30\uae30");
         table.put("Hide the Add friend pop-up on shared reels",
@@ -1776,11 +1778,11 @@ final class L10nTableKo {
                 "\ub313\uae00 \uc785\ub825\ub780 \uc704\uc758 \uc120 \uc228\uae30\uae30");
         table.put("Hide the live video comment bar",
                 "\ub77c\uc774\ube0c \ubc29\uc1a1 \ub313\uae00 \ubc14 \uc228\uae30\uae30");
-        table.put("Hide the new comments pop-up",
-                "\uc0c8 \ub313\uae00 \ud31d\uc5c5 \uc228\uae30\uae30");
     }
 
     private static void fill14(Map<String, String> table) {
+        table.put("Hide the new comments pop-up",
+                "\uc0c8 \ub313\uae00 \ud31d\uc5c5 \uc228\uae30\uae30");
         table.put("Hide the notes and active now row",
                 "\ub178\ud2b8 \ubc0f \ud604\uc7ac \ud65c\ub3d9 \uc911 \uc904 \uc228\uae30\uae30");
         table.put("Hide the pull down to lock hint",
@@ -1899,11 +1901,11 @@ final class L10nTableKo {
                 "Facebook\uc774 AI\ub85c \ub9cc\ub4e4\uc5c8\ub2e4\uace0 \ud45c\uc2dc\ud55c \ub9b4\uc2a4\uc640 Watch \ub3d9\uc601\uc0c1\uc744 \uc228\uaca8\uc694. \uc791\uc131\uc790\ub9cc \ud45c\uc2dc\ud55c \uac83\uc740 \uadf8\ub300\ub85c \ub0a8\uc544\uc694. \uc544\uc9c1 \uc2e4\uc81c \uacc4\uc815\uc5d0\uc11c \ud14c\uc2a4\ud2b8\ud558\uc9c0 \uc54a\uc544\uc11c \uae30\ubcf8\uc801\uc73c\ub85c \uaebc\uc838 \uc788\uc5b4\uc694.");
         table.put("Hides rows of reels between posts, and the reels Facebook adds where your feed ends.",
                 "\uac8c\uc2dc\ubb3c \uc0ac\uc774\uc758 \ub9b4\uc2a4 \uc904\uacfc \ud53c\ub4dc \ub05d\uc5d0 Facebook\uc774 \ucd94\uac00\ud558\ub294 \ub9b4\uc2a4\ub97c \uc228\uaca8\uc694.");
-        table.put("Hides short posts shown as big text on a colored background.",
-                "\ubc30\uacbd\uc0c9 \uc704\uc5d0 \ud070 \uae00\uc528\ub85c \ud45c\uc2dc\ub418\ub294 \uc9e7\uc740 \uac8c\uc2dc\ubb3c\uc744 \uc228\uaca8\uc694.");
     }
 
     private static void fill15(Map<String, String> table) {
+        table.put("Hides short posts shown as big text on a colored background.",
+                "\ubc30\uacbd\uc0c9 \uc704\uc5d0 \ud070 \uae00\uc528\ub85c \ud45c\uc2dc\ub418\ub294 \uc9e7\uc740 \uac8c\uc2dc\ubb3c\uc744 \uc228\uaca8\uc694.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "\ub9b4\uc2a4\uc758 \ud06c\ub9ac\uc5d0\uc774\ud130 \uc774\ub984 \uc544\ub798\uc5d0 \uc788\ub294 \"\uc218\uc218\ub8cc \uc9c0\uae09 \ub300\uc0c1\" \ud45c\uc2dc\ub97c \uc228\uaca8\uc694.");
         table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
@@ -2022,11 +2024,11 @@ final class L10nTableKo {
                 "\ud53c\ub4dc \ud0ed\uc758 \"\uc804\uccb4\"\ucc98\ub7fc \ud314\ub85c\uc6b0\ud558\ub294 \uce5c\uad6c, \uadf8\ub8f9, \ud398\uc774\uc9c0\uc758 \ucd5c\uc2e0 \uac8c\uc2dc\ubb3c\uc744 \ud648\uc5d0 \ud45c\uc2dc\ud558\uac70\ub098, \uc544\ub798\uc5d0\uc11c \uc120\ud0dd\ud55c \ud544\ud130\ub97c \uc801\uc6a9\ud574\uc694. \ud53c\ub4dc \ud0ed\uc758 \ud544\ud130\ub294 \ubc14\ub00c\uc9c0 \uc54a\uc544\uc694.");
         table.put("Home shows the same posts as All in the Feeds tab.",
                 "\ud648\uc5d0 \ud53c\ub4dc \ud0ed\uc758 \"\uc804\uccb4\"\uc640 \uac19\uc740 \uac8c\uc2dc\ubb3c\uc774 \ud45c\uc2dc\ub3fc\uc694.");
-        table.put("Home, Feeds, Video and Reels open again in %1$d minute.",
-                "\ud648, \ud53c\ub4dc, \ub3d9\uc601\uc0c1, \ub9b4\uc2a4\uac00 %1$d\ubd84 \ud6c4\uc5d0 \ub2e4\uc2dc \uc5f4\ub824\uc694.");
     }
 
     private static void fill16(Map<String, String> table) {
+        table.put("Home, Feeds, Video and Reels open again in %1$d minute.",
+                "\ud648, \ud53c\ub4dc, \ub3d9\uc601\uc0c1, \ub9b4\uc2a4\uac00 %1$d\ubd84 \ud6c4\uc5d0 \ub2e4\uc2dc \uc5f4\ub824\uc694.");
         table.put("Home, Feeds, Video and Reels open again in %1$d minutes.",
                 "\ud648, \ud53c\ub4dc, \ub3d9\uc601\uc0c1, \ub9b4\uc2a4\uac00 %1$d\ubd84 \ud6c4\uc5d0 \ub2e4\uc2dc \uc5f4\ub824\uc694.");
         table.put("Home, Feeds, Video and Reels open again in under a minute.",
@@ -2145,11 +2147,11 @@ final class L10nTableKo {
                 "Instagram\uc774 facebook.com \ub9c1\ud06c\ub97c \uac00\uc838\uac00\uba74 \uc774 \uc571\uc758 \ub9c1\ud06c \uc2a4\uc704\uce58\uac00 \ub2e4\uc2dc \uaebc\uc838\uc694. \ud0ed\ud55c \ub2e4\uc74c \uac70\uae30\uc5d0\uc11c \"\uc9c0\uc6d0\ub418\ub294 \ub9c1\ud06c \uc5f4\uae30\"\ub97c \ub044\uace0(\ucd5c\uc2e0 Android\uc5d0\uc11c\ub294 \"\ube0c\ub77c\uc6b0\uc800\uc5d0\uc11c\" \uc120\ud0dd), \uc704\uc758 \"\uc9c0\uc6d0\ub418\ub294 \ub9c1\ud06c\"\ub97c \ub2e4\uc2dc \ud655\uc778\ud558\uc138\uc694.");
         table.put("Instagram's settings didn't open. Open App info from Instagram's icon, then Open by default.",
                 "Instagram \uc124\uc815\uc774 \uc5f4\ub9ac\uc9c0 \uc54a\uc558\uc5b4\uc694. Instagram \uc544\uc774\ucf58\uc5d0\uc11c \uc571 \uc815\ubcf4\ub97c \uc5f0 \ub2e4\uc74c \"\uae30\ubcf8\uc73c\ub85c \uc5f4\uae30\"\ub97c \uc5ec\uc138\uc694.");
-        table.put("Interested",
-                "\uad00\uc2ec \uc788\uc74c");
     }
 
     private static void fill17(Map<String, String> table) {
+        table.put("Interested",
+                "\uad00\uc2ec \uc788\uc74c");
         table.put("Invites to events stop showing up in your notifications.",
                 "\uc774\ubca4\ud2b8 \ucd08\ub300\uac00 \ub354 \uc774\uc0c1 \uc54c\ub9bc\uc5d0 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc544\uc694.");
         table.put("It targets Facebook %1$s.",
@@ -2268,11 +2270,11 @@ final class L10nTableKo {
                 "\uadf8\ub8f9\uc758 \ub9c1\ud06c \uac8c\uc2dc\ubb3c");
         table.put("Link posts in search results",
                 "\uac80\uc0c9 \uacb0\uacfc\uc758 \ub9c1\ud06c \uac8c\uc2dc\ubb3c");
-        table.put("Link posts on Home",
-                "\ud648\uc758 \ub9c1\ud06c \uac8c\uc2dc\ubb3c");
     }
 
     private static void fill18(Map<String, String> table) {
+        table.put("Link posts on Home",
+                "\ud648\uc758 \ub9c1\ud06c \uac8c\uc2dc\ubb3c");
         table.put("Link posts on profiles and Pages",
                 "\ud504\ub85c\ud544 \ubc0f \ud398\uc774\uc9c0\uc758 \ub9c1\ud06c \uac8c\uc2dc\ubb3c");
         table.put("Link reels on the Reels tab",
@@ -2391,11 +2393,11 @@ final class L10nTableKo {
                 "\uba54\uc2e0\uc800 \uc124\uc815\uc774 \uc5f4\ub9ac\uc9c0 \uc54a\uc558\uc5b4\uc694. \uba54\uc2e0\uc800 \uc544\uc774\ucf58\uc5d0\uc11c \uc571 \uc815\ubcf4\ub97c \uc5f0 \ub2e4\uc74c \"\uae30\ubcf8\uc73c\ub85c \uc5f4\uae30\"\ub97c \uc5ec\uc138\uc694.");
         table.put("Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.",
                 "\uba54\uc2e0\uc800, Facebook Lite, Business Suite, Workplace\ub97c \uc774 Facebook\uacfc \ud568\uaed8 \uc124\uce58\ud560 \uc218 \uc788\uc5b4\uc694. \uacf5\uc720 \uad8c\ud55c\uc774 \ub354 \uc774\uc0c1 \ucda9\ub3cc\ud558\uc9c0 \uc54a\uc544\uc694.");
-        table.put("Meta App Manager",
-                "Meta App Manager");
     }
 
     private static void fill19(Map<String, String> table) {
+        table.put("Meta App Manager",
+                "Meta App Manager");
         table.put("Meta App Manager can claim Facebook's web addresses for itself, so their links skip this app. Tap, turn off Open supported links there, then recheck Supported links above.",
                 "Meta App Manager\uac00 Facebook \uc6f9 \uc8fc\uc18c\ub97c \uac00\uc838\uac00\uc11c \ud574\ub2f9 \ub9c1\ud06c\uac00 \uc774 \uc571\uc744 \uac74\ub108\ub6f8 \uc218 \uc788\uc5b4\uc694. \ud0ed\ud55c \ub2e4\uc74c \uac70\uae30\uc5d0\uc11c \"\uc9c0\uc6d0\ub418\ub294 \ub9c1\ud06c \uc5f4\uae30\"\ub97c \ub044\uace0, \uc704\uc758 \"\uc9c0\uc6d0\ub418\ub294 \ub9c1\ud06c\"\ub97c \ub2e4\uc2dc \ud655\uc778\ud558\uc138\uc694.");
         table.put("Meta App Manager's settings didn't open. Find it in Android's app list with system apps shown, then Open by default.",
@@ -2514,11 +2516,11 @@ final class L10nTableKo {
                 "\uc774 \uc571\uc5d0 \uc120\ud0dd\ub41c Facebook \uc6f9 \uc8fc\uc18c\uac00 \uc5c6\uc5b4\uc11c \ud574\ub2f9 \ub9c1\ud06c\uac00 \ub2e4\ub978 \uacf3\uc5d0\uc11c \uc5f4\ub824\uc694. Android \uc124\uc815\uc5d0\uc11c \uc120\ud0dd\ud558\ub824\uba74 \ud0ed\ud558\uc138\uc694.");
         table.put("None picked yet.",
                 "\uc544\uc9c1 \uc120\ud0dd\ud55c \ud56d\ubaa9\uc774 \uc5c6\uc5b4\uc694.");
-        table.put("None picked, so posts in %s stay.",
-                "\uc120\ud0dd\ud55c \uc5b8\uc5b4\uac00 \uc5c6\uc5b4\uc11c %s \uac8c\uc2dc\ubb3c\uc774 \uadf8\ub300\ub85c \ub0a8\uc544\uc694.");
     }
 
     private static void fill20(Map<String, String> table) {
+        table.put("None picked, so posts in %s stay.",
+                "\uc120\ud0dd\ud55c \uc5b8\uc5b4\uac00 \uc5c6\uc5b4\uc11c %s \uac8c\uc2dc\ubb3c\uc774 \uadf8\ub300\ub85c \ub0a8\uc544\uc694.");
         table.put("None picked. Hides posts and cards by Facebook's own type name, as Debug logging records it.",
                 "\uc120\ud0dd\ud55c \ud56d\ubaa9\uc774 \uc5c6\uc5b4\uc694. \ub514\ubc84\uadf8 \ub85c\uadf8\uc5d0 \uae30\ub85d\ub418\ub294 Facebook \uc790\uccb4 \uc720\ud615 \uc774\ub984\uc73c\ub85c \uac8c\uc2dc\ubb3c\uacfc \uce74\ub4dc\ub97c \uc228\uaca8\uc694.");
         table.put("None picked. Posts in every language can be translated.",
@@ -2637,11 +2639,11 @@ final class L10nTableKo {
                 "\uba54\uc2e0\uc800\uc5d0\uc11c \ucc44\ud305 \uc5f4\uae30");
         table.put("Open comments at",
                 "\ub313\uae00 \uc5f4\ub9bc \ub192\uc774");
-        table.put("Open every reply thread",
-                "\ubaa8\ub4e0 \ub2f5\uae00 \ud3bc\uce58\uae30");
     }
 
     private static void fill21(Map<String, String> table) {
+        table.put("Open every reply thread",
+                "\ubaa8\ub4e0 \ub2f5\uae00 \ud3bc\uce58\uae30");
         table.put("Open feed videos on their own",
                 "\ud53c\ub4dc \ub3d9\uc601\uc0c1 \ub2e8\ub3c5\uc73c\ub85c \uc5f4\uae30");
         table.put("Open full screen videos centered",
@@ -2760,11 +2762,11 @@ final class L10nTableKo {
                 "\uc0ac\uc9c4 \uc774\ub984\uc740 %1$s \ud615\uc2dd\uc774\uc5d0\uc694.");
         table.put("Photos go to %1$s.",
                 "\uc0ac\uc9c4\uc774 %1$s\uc5d0 \uc800\uc7a5\ub3fc\uc694.");
-        table.put("Photos will go in a subfolder named %1$s.",
-                "\uc0ac\uc9c4\uc774 %1$s \ud558\uc704 \ud3f4\ub354\uc5d0 \uc800\uc7a5\ub3fc\uc694.");
     }
 
     private static void fill22(Map<String, String> table) {
+        table.put("Photos will go in a subfolder named %1$s.",
+                "\uc0ac\uc9c4\uc774 %1$s \ud558\uc704 \ud3f4\ub354\uc5d0 \uc800\uc7a5\ub3fc\uc694.");
         table.put("Photos will go in the save folder itself.",
                 "\uc0ac\uc9c4\uc774 \uc800\uc7a5 \ud3f4\ub354\uc5d0 \ubc14\ub85c \uc800\uc7a5\ub3fc\uc694.");
         table.put("Pick Custom color again to change it.",
@@ -2883,11 +2885,11 @@ final class L10nTableKo {
                 "\uc2a4\ud53c\ucee4 \ubc84\ud2bc\uc744 \ub9b4\uc2a4 \uc606\ucabd \ubc84\ud2bc \uc5f4\uc758 \uc810 3\uac1c \ubc14\ub85c \uc704\uc5d0 \ub193\uc544\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \ub2e4\uc74c \ub9b4\uc2a4\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("Puts your words or Facebook's logo back at the top of Home. Restart Facebook to see the change.",
                 "\ud648 \uc0c1\ub2e8\uc5d0 \ub0b4 \ubb38\uad6c\ub098 Facebook \ub85c\uace0\ub97c \ub2e4\uc2dc \ud45c\uc2dc\ud574\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc744 \ubcf4\ub824\uba74 Facebook\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uc138\uc694.");
-        table.put("Putting your settings back",
-                "\uc124\uc815\uc744 \ub418\ub3cc\ub9ac\ub294 \uc911");
     }
 
     private static void fill23(Map<String, String> table) {
+        table.put("Putting your settings back",
+                "\uc124\uc815\uc744 \ub418\ub3cc\ub9ac\ub294 \uc911");
         table.put("Quality settings",
                 "\ud654\uc9c8 \uc124\uc815");
         table.put("Quality, format and file names",
@@ -3006,11 +3008,11 @@ final class L10nTableKo {
                 "\uc2dc\uccad\ud55c \ub9b4\uc2a4, \ub3d9\uc601\uc0c1, \uc2a4\ud1a0\ub9ac\ub97c \ucd5c\uc2e0\uc21c\uc73c\ub85c \ubcf4\uc5ec \uc918\uc694. \ub2e4\uc2dc \uc5f4\ub824\uba74 \ud0ed\ud558\uc138\uc694.");
         table.put("Refresh rate",
                 "\ud654\uba74 \uc8fc\uc0ac\uc728");
-        table.put("Regular",
-                "\ubcf4\ud1b5");
     }
 
     private static void fill24(Map<String, String> table) {
+        table.put("Regular",
+                "\ubcf4\ud1b5");
         table.put("Remember what you watch",
                 "\uc2dc\uccad\ud55c \ud56d\ubaa9 \uae30\uc5b5");
         table.put("Reminders to finish setting up a Facebook account stop. Login and security alerts still come through.",
@@ -3129,11 +3131,11 @@ final class L10nTableKo {
                 "\uc800\uc7a5\uc774 \ucde8\uc18c\ub428");
         table.put("Save crashes to Downloads",
                 "\ub2e4\uc6b4\ub85c\ub4dc \ud3f4\ub354\uc5d0 \uc624\ub958 \uae30\ub85d \uc800\uc7a5");
-        table.put("Save folder",
-                "\uc800\uc7a5 \ud3f4\ub354");
     }
 
     private static void fill25(Map<String, String> table) {
+        table.put("Save folder",
+                "\uc800\uc7a5 \ud3f4\ub354");
         table.put("Save full report",
                 "\uc804\uccb4 \ubcf4\uace0\uc11c \uc800\uc7a5");
         table.put("Save on",
@@ -3252,11 +3254,11 @@ final class L10nTableKo {
                 "\uc2a4\ud1a0\ub9ac \ud0d0\uc0c9 \ub9c9\ub300");
         table.put("Seek bar on the bottom edge",
                 "\uc544\ub798\ucabd \uac00\uc7a5\uc790\ub9ac\uc5d0 \ud0d0\uc0c9 \ub9c9\ub300");
-        table.put("Seen posts forgotten.",
-                "\ubcf8 \uac8c\uc2dc\ubb3c \uae30\ub85d\uc744 \uc9c0\uc6e0\uc5b4\uc694.");
     }
 
     private static void fill26(Map<String, String> table) {
+        table.put("Seen posts forgotten.",
+                "\ubcf8 \uac8c\uc2dc\ubb3c \uae30\ub85d\uc744 \uc9c0\uc6e0\uc5b4\uc694.");
         table.put("Select part of a post's text",
                 "\uac8c\uc2dc\ubb3c \ud14d\uc2a4\ud2b8 \uc77c\ubd80 \uc120\ud0dd");
         table.put("Select text",
@@ -3375,11 +3377,11 @@ final class L10nTableKo {
                 "\uac80\uc0c9\uc5d0 \ub3d9\uc601\uc0c1 \ud45c\uc2dc");
         table.put("Show View profile on Marketplace sellers",
                 "\ub9c8\ucf13\ud50c\ub808\uc774\uc2a4 \ud310\ub9e4\uc790\uc5d0 \ud504\ub85c\ud544 \ubcf4\uae30 \ud45c\uc2dc");
-        table.put("Show a reel's time",
-                "\ub9b4\uc2a4 \uc2dc\uac04 \ud45c\uc2dc");
     }
 
     private static void fill27(Map<String, String> table) {
+        table.put("Show a reel's time",
+                "\ub9b4\uc2a4 \uc2dc\uac04 \ud45c\uc2dc");
         table.put("Show all settings as a list",
                 "\ubaa8\ub4e0 \uc124\uc815\uc744 \ubaa9\ub85d\uc73c\ub85c \ubcf4\uae30");
         table.put("Show every reaction on comments",
@@ -3498,11 +3500,11 @@ final class L10nTableKo {
                 "\ud53c\ub4dc \ub3d9\uc601\uc0c1 \uc18d\ub3c4 \ubc84\ud2bc");
         table.put("Speed on finished live videos",
                 "\uc885\ub8cc\ub41c \ub77c\uc774\ube0c \ubc29\uc1a1 \uc18d\ub3c4 \uc870\uc808");
-        table.put("Sports",
-                "\uc2a4\ud3ec\uce20");
     }
 
     private static void fill28(Map<String, String> table) {
+        table.put("Sports",
+                "\uc2a4\ud3ec\uce20");
         table.put("Start this download?",
                 "\ub2e4\uc6b4\ub85c\ub4dc\ub97c \uc2dc\uc791\ud560\uae4c\uc694?");
         table.put("Start-up fix for x86 phones",
@@ -3621,15 +3623,17 @@ final class L10nTableKo {
                 "\uce5c\uad6c\uac00 \uac10\uc815 \ud45c\ud604\uc744 \ub0a8\uacbc\uc744 \ub54c Facebook\uc774 \uc0ac\uc9c4\uc774\ub098 \ub3d9\uc601\uc0c1 \uc704\uc5d0 \ud45c\uc2dc\ud558\ub294, \uac10\uc815 \ud45c\ud604\uc774 \ubd99\uc740 \uce5c\uad6c \uc0ac\uc9c4\uc744 \uc5c6\uc560\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \uc774\ud6c4\uc5d0 \ud45c\uc2dc\ub418\ub294 \uac8c\uc2dc\ubb3c\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.",
                 "\ub204\uad70\uac00 \ub313\uae00\uc744 \uc785\ub825 \uc911\uc774\ub77c\ub294 \uc904\uc744 \uc5c6\uc560\uc694. \ub0b4 \uc785\ub825 \uc911 \ud45c\uc2dc\ub294 \uac1c\uc778\uc815\ubcf4\uc758 \ubcc4\ub3c4 \uc2a4\uc704\uce58\uc5d0\uc11c \uc124\uc815\ud574\uc694.");
-        table.put("Takes away the line under a post that names who reacted, like \"Name and others reacted\". A change shows on the posts drawn after it.",
-                "\"\uc774\ub984 \ub2d8 \uc678 \uc5ec\ub7ec \uba85\uc774 \uac10\uc815 \ud45c\ud604\uc744 \ub0a8\uacbc\uc2b5\ub2c8\ub2e4\"\ucc98\ub7fc \uac10\uc815 \ud45c\ud604\uc744 \ub0a8\uae34 \uc0ac\ub78c\uc744 \uc54c\ub824 \uc8fc\ub294 \uac8c\uc2dc\ubb3c \uc544\ub798 \uc904\uc744 \uc5c6\uc560\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \uc774\ud6c4\uc5d0 \ud45c\uc2dc\ub418\ub294 \uac8c\uc2dc\ubb3c\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Takes away the line under a post that names who reacted, like \"Name and others reacted\". A change shows on the posts drawn after it.",
+                "\"\uc774\ub984 \ub2d8 \uc678 \uc5ec\ub7ec \uba85\uc774 \uac10\uc815 \ud45c\ud604\uc744 \ub0a8\uacbc\uc2b5\ub2c8\ub2e4\"\ucc98\ub7fc \uac10\uc815 \ud45c\ud604\uc744 \ub0a8\uae34 \uc0ac\ub78c\uc744 \uc54c\ub824 \uc8fc\ub294 \uac8c\uc2dc\ubb3c \uc544\ub798 \uc904\uc744 \uc5c6\uc560\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \uc774\ud6c4\uc5d0 \ud45c\uc2dc\ub418\ub294 \uac8c\uc2dc\ubb3c\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("Takes out the cards between stories that ask you to make one, including the full screen card that asks you to continue the story with photos from your gallery. Applies the next time you open stories.",
                 "\uac24\ub7ec\ub9ac \uc0ac\uc9c4\uc73c\ub85c \uc2a4\ud1a0\ub9ac\ub97c \uc774\uc5b4 \uac00\ub77c\ub294 \uc804\uccb4 \ud654\uba74 \uce74\ub4dc\ub97c \ud3ec\ud568\ud574, \uc2a4\ud1a0\ub9ac \uc0ac\uc774\uc5d0 \ud45c\uc2dc\ub418\ub294 \uc2a4\ud1a0\ub9ac \ub9cc\ub4e4\uae30 \uc694\uccad \uce74\ub4dc\ub97c \uc5c6\uc560\uc694. \ub2e4\uc74c\uc5d0 \uc2a4\ud1a0\ub9ac\ub97c \uc5f4 \ub54c \uc801\uc6a9\ub3fc\uc694.");
         table.put("Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.",
                 "Android 17\uc758 Pixel\ucc98\ub7fc \uc77c\ubd80 \ud734\ub300\ud3f0\uc5d0\uc11c \ud310\ub9e4\uae00 \ub9e8 \uc704 \uc904 \uc704\uc5d0 \ud45c\uc2dc\ub418\ub294 \ube48 \ub760\ub97c \uc5c6\uc560\uc694.");
+        table.put("Takes the \"AI info\" label off reels Facebook marks as made with AI. A change shows from the next reel.",
+                "Facebook\uc774 AI\ub85c \ub9cc\ub4e4\uc5c8\ub2e4\uace0 \ud45c\uc2dc\ud55c \ub9b4\uc2a4\uc5d0\uc11c \"AI \uc815\ubcf4\" \ub77c\ubca8\uc744 \uc5c6\uc560\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \ub2e4\uc74c \ub9b4\uc2a4\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("Takes the + button for making a post, reel or story out of the top bar. Restart Facebook to see the change.",
                 "\uc0c1\ub2e8 \ubc14\uc5d0\uc11c \uac8c\uc2dc\ubb3c, \ub9b4\uc2a4, \uc2a4\ud1a0\ub9ac\ub97c \ub9cc\ub4dc\ub294 + \ubc84\ud2bc\uc744 \uc5c6\uc560\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc744 \ubcf4\ub824\uba74 Facebook\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uc138\uc694.");
         table.put("Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.",
@@ -3742,13 +3746,13 @@ final class L10nTableKo {
                 "\ud30c\uc77c\uc5d0 \uac19\uc740 \uc124\uc815\uc774 \ub450 \ubc88 \ub4e4\uc5b4 \uc788\uc5b4\uc11c Hushfacebook\uc774 \uc5b4\ub5a4 \uac12\uc744 \uc368\uc57c \ud560\uc9c0 \uc54c \uc218 \uc5c6\uc5b4\uc694. \ubcc0\uacbd\ub41c \ub0b4\uc6a9\uc740 \uc5c6\uc5b4\uc694.");
         table.put("That font file is over %1$d MB. Your emoji didn't change.",
                 "\uae00\uaf34 \ud30c\uc77c\uc774 %1$dMB\ub97c \ub118\uc5b4\uc694. \uc774\ubaa8\ud2f0\ucf58\uc740 \ubc14\ub00c\uc9c0 \uc54a\uc558\uc5b4\uc694.");
+    }
+
+    private static void fill30(Map<String, String> table) {
         table.put("That font file is over %1$d MB. Your font didn't change.",
                 "\uae00\uaf34 \ud30c\uc77c\uc774 %1$dMB\ub97c \ub118\uc5b4\uc694. \uae00\uaf34\uc740 \ubc14\ub00c\uc9c0 \uc54a\uc558\uc5b4\uc694.");
         table.put("That font has no emoji in it. Your emoji didn't change.",
                 "\uc774 \uae00\uaf34\uc5d0\ub294 \uc774\ubaa8\ud2f0\ucf58\uc774 \uc5c6\uc5b4\uc694. \uc774\ubaa8\ud2f0\ucf58\uc740 \ubc14\ub00c\uc9c0 \uc54a\uc558\uc5b4\uc694.");
-    }
-
-    private static void fill30(Map<String, String> table) {
         table.put("That isn't a .ttf or .otf font file. Your emoji didn't change.",
                 ".ttf \ub610\ub294 .otf \uae00\uaf34 \ud30c\uc77c\uc774 \uc544\ub2c8\uc5d0\uc694. \uc774\ubaa8\ud2f0\ucf58\uc740 \ubc14\ub00c\uc9c0 \uc54a\uc558\uc5b4\uc694.");
         table.put("That isn't a .ttf or .otf font file. Your font didn't change.",
@@ -3865,13 +3869,13 @@ final class L10nTableKo {
                 "\uc5b4\ub450\uc6b4 \uc0c1\uc790\uc758 \uac00\uc7a5\uc790\ub9ac\uac00 \ub0a0\uce74\ub86d\uac8c \ub05d\ub098\uc9c0 \uc54a\uace0 \ubd80\ub4dc\ub7fd\uac8c \ud750\ub824\uc838\uc694. \ubcc0\uacbd \uc0ac\ud56d\uc740 \ub2e4\uc74c \ub9b4\uc2a4\ub098 \uc2a4\ud1a0\ub9ac\ubd80\ud130 \uc801\uc6a9\ub3fc\uc694.");
         table.put("The date",
                 "\ub0a0\uc9dc");
+    }
+
+    private static void fill31(Map<String, String> table) {
         table.put("The diagnostic report couldn't be copied. Try again.",
                 "\uc9c4\ub2e8 \ubcf4\uace0\uc11c\ub97c \ubcf5\uc0ac\ud558\uc9c0 \ubabb\ud588\uc5b4\uc694. \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.");
         table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
                 "\uc544\uc9c1 \uc9c4\ub2e8 \ubcf4\uace0\uc11c\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.");
-    }
-
-    private static void fill31(Map<String, String> table) {
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "\uc9c4\ub2e8 \ubcf4\uace0\uc11c\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.");
         table.put("The download ended before the whole file arrived. Try again.",
@@ -3988,13 +3992,13 @@ final class L10nTableKo {
                 "\uc587\uc740 \uc120 \ud0d0\uc0c9 \ub9c9\ub300");
         table.put("This Facebook build has no Whitehat settings screen.",
                 "\uc774 Facebook \ube4c\ub4dc\uc5d0\ub294 Whitehat \uc124\uc815 \ud654\uba74\uc774 \uc5c6\uc5b4\uc694.");
+    }
+
+    private static void fill32(Map<String, String> table) {
         table.put("This build can't mark notifications as read.",
                 "\uc774 \ube4c\ub4dc\uc5d0\uc11c\ub294 \uc54c\ub9bc\uc744 \uc77d\uc74c\uc73c\ub85c \ud45c\uc2dc\ud560 \uc218 \uc5c6\uc5b4\uc694.");
         table.put("This build can't run the Messenger link test.",
                 "\uc774 \ube4c\ub4dc\uc5d0\uc11c\ub294 \uba54\uc2e0\uc800 \uc5f0\uacb0 \ud14c\uc2a4\ud2b8\ub97c \uc2e4\ud589\ud560 \uc218 \uc5c6\uc5b4\uc694.");
-    }
-
-    private static void fill32(Map<String, String> table) {
         table.put("This build has no notification sound to save.",
                 "\uc774 \ube4c\ub4dc\uc5d0\ub294 \uc800\uc7a5\ud560 \uc54c\ub9bc\uc74c\uc774 \uc5c6\uc5b4\uc694.");
         table.put("This list needs more room than it has. Shorten it, then save again.",
@@ -4111,13 +4115,13 @@ final class L10nTableKo {
                 "\uc2dc\uc2a4\ud15c \uae00\uaf34 \uc0ac\uc6a9");
         table.put("Use your fingerprint, face or screen lock to open it.",
                 "\uc9c0\ubb38, \uc5bc\uad74 \ub610\ub294 \ud654\uba74 \uc7a0\uae08\uc73c\ub85c \uc5ec\uc138\uc694.");
+    }
+
+    private static void fill33(Map<String, String> table) {
         table.put("Use your phone's font",
                 "\ud734\ub300\ud3f0 \uae00\uaf34 \uc0ac\uc6a9");
         table.put("Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.",
                 "Hushfacebook\uc744 \ud328\uce58\ud560 \ub54c \uc9c0\uc815\ud55c \uc0c9(%1$s)\uc744 \uc0ac\uc6a9\ud574\uc694. \ubc14\uafb8\ub824\uba74 \uc0c9\uc0c1 \ucf54\ub4dc\ub97c \uc785\ub825\ud558\uc138\uc694.");
-    }
-
-    private static void fill33(Map<String, String> table) {
         table.put("Uses Facebook's own white. Type a color code to change it.",
                 "Facebook \uae30\ubcf8 \ud770\uc0c9\uc744 \uc0ac\uc6a9\ud574\uc694. \ubc14\uafb8\ub824\uba74 \uc0c9\uc0c1 \ucf54\ub4dc\ub97c \uc785\ub825\ud558\uc138\uc694.");
         table.put("Version",
@@ -4234,13 +4238,13 @@ final class L10nTableKo {
                 "\ubc30\uacbd\ud654\uba74 \uac15\uc870 \uc0c9\uc0c1");
         table.put("Watch again at the end of a feed video plays it again right there, instead of opening it in Reels.",
                 "\ud53c\ub4dc \ub3d9\uc601\uc0c1\uc774 \ub05d\ub0a0 \ub54c \"\ub2e4\uc2dc \ubcf4\uae30\"\ub97c \ub204\ub974\uba74 \ub9b4\uc2a4\uc5d0\uc11c \uc5f4\ub9ac\uc9c0 \uc54a\uace0 \uadf8 \uc790\ub9ac\uc5d0\uc11c \ub2e4\uc2dc \uc7ac\uc0dd\ub3fc\uc694.");
+    }
+
+    private static void fill34(Map<String, String> table) {
         table.put("Watch history",
                 "\uc2dc\uccad \uae30\ub85d");
         table.put("Watch history isn't available in this build.",
                 "\uc774 \ube4c\ub4dc\uc5d0\uc11c\ub294 \uc2dc\uccad \uae30\ub85d\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\uc5b4\uc694.");
-    }
-
-    private static void fill34(Map<String, String> table) {
         table.put("Watch history shortcut",
                 "\uc2dc\uccad \uae30\ub85d \ubc14\ub85c\uac00\uae30");
         table.put("Weight loss ads",
@@ -4357,13 +4361,13 @@ final class L10nTableKo {
                 "%1$d\ucd08 \ud6c4\uc5d0 \uc5f4 \uc218 \uc788\uc5b4\uc694.");
         table.put("You have the newest Hushfacebook release.",
                 "\ucd5c\uc2e0 Hushfacebook \ubc84\uc804\uc744 \uc0ac\uc6a9\ud558\uace0 \uc788\uc5b4\uc694.");
+    }
+
+    private static void fill35(Map<String, String> table) {
         table.put("You paused Hushfacebook.",
                 "Hushfacebook\uc744 \uc77c\uc2dc \uc815\uc9c0\ud588\uc5b4\uc694.");
         table.put("Your break is over.",
                 "\ud734\uc2dd\uc774 \ub05d\ub0ac\uc5b4\uc694.");
-    }
-
-    private static void fill35(Map<String, String> table) {
         table.put("Your controls are active.",
                 "\uc124\uc815\uc774 \uc801\uc6a9\ub418\uace0 \uc788\uc5b4\uc694.");
         table.put("Your font",

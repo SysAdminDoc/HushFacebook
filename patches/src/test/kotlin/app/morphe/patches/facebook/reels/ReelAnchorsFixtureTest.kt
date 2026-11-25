@@ -308,6 +308,30 @@ class ReelAnchorsFixtureTest {
     }
 
     /**
+     * A reel's attribution list (#574), found the way the patch finds it: the one method among the
+     * classes naming the "AI info" label's type that adds it and the other two attributions itself,
+     * with a local besides the list for the filter's answer at every return.
+     */
+    @Test
+    fun `every declared build has one reel attribution list, with a local for its hook`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableMapOf<String, String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, AI_LABEL_ATTRIBUTION)
+                assertTrue("$name: only ${holders.size} classes name $AI_LABEL_ATTRIBUTION", holders.size >= 2)
+                val lists = holders.distinctBy { it.type }.flatMap { classDef -> classDef.methods.filter(::isAttributionList) }
+                assertEquals("$name: $lists", 1, lists.size)
+                assertTrue("$name: the list has no local besides the one it returns", locals(lists.single()) >= 2)
+                checked[version] = lists.single().definingClass
+            }
+        }
+        assertEquals("a declared build went unchecked: $checked", versions.toSet(), checked.keys)
+    }
+
+    /**
      * The "Made with Edits" pill over a feed video (#314), found the way the patch finds it: a static
      * boolean asking the Edits getter, with a local for its hook. 588 has exactly one on each build.
      */

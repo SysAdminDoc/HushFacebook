@@ -167,6 +167,14 @@ public final class ReelDeclutter {
     static final String EDITS_ROUTE = "Reel Edits line";
     static final String EDITS_LABEL = "Made with Edits";
 
+    /**
+     * The GraphQL type of the attribution Facebook draws as a reel's "AI info" label (#574), and the
+     * one Facebook adds itself to a reel its server marks as made with AI.
+     */
+    static final String AI_LABEL_ATTRIBUTION = "XFBFBShortsGenAITransparencyAttribution";
+    /** Counted under its own name each time a reel's attribution list is handed over without its AI label. */
+    static final String AI_LABEL_ROUTE = "Reel AI label";
+
     /** Counted under its own name each time a video's "Made with Edits" pill is answered as not shown (#314). */
     static final String EDITS_PILL_ROUTE = "Video Edits pill";
     static final String EDITS_PILL = "Made with Edits pill";
@@ -384,6 +392,40 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel chips", failure);
             Logger.printException(() -> "Reel chips: could not filter the list", failure);
+            return null;
+        }
+    }
+
+    /**
+     * Injection point, before each return of the method that hands out a reel's attribution models
+     * (#574). Facebook draws the "AI info" label from the one of type {@link #AI_LABEL_ATTRIBUTION}
+     * in that list: the label under a reel's caption walks the list for it, and the sponsored info
+     * row and the reel's info row look it up by name there. The models to keep, when Hide the AI info
+     * label on reels took that one out, or null to keep the list Facebook built. A model whose type
+     * can't be read stays. Never throws.
+     *
+     * @param attributions the list Facebook is about to return, an ImmutableList of attribution models.
+     */
+    public static Object[] filterAiLabel(Object attributions) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!(attributions instanceof List)) return null;
+            List<?> list = (List<?>) attributions;
+            if (list.isEmpty() || !Utils.settingsReady() || !Settings.HIDE_REEL_AI_LABEL.get()) return null;
+            List<Object> kept = new ArrayList<>(list.size());
+            for (Object attribution : list) {
+                if (attribution == null) return null;
+                if (AI_LABEL_ATTRIBUTION.equals(FeedFilter.typeName(attribution))) continue;
+                kept.add(attribution);
+            }
+            if (kept.size() == list.size()) return null;
+            FeedFilterCounters.sawList(AI_LABEL_ROUTE, list.size());
+            FeedFilterCounters.removed(AI_LABEL_ROUTE, list.size() - kept.size(), AI_LABEL_ATTRIBUTION);
+            logOnce(AI_LABEL_ROUTE, () -> "Reel AI label: left out of the reel's attributions");
+            return kept.toArray();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel AI label", failure);
+            Logger.printException(() -> "Reel AI label: could not filter the attributions", failure);
             return null;
         }
     }

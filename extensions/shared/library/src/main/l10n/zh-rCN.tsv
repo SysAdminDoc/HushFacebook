@@ -3180,3 +3180,5 @@ Open a chat, then come back here to give it a color of its own.	先打开一个�
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s 是你最近打开的聊天，使用上方的聊天背景。输入颜色代码即可为它设置专属颜色。
 %1$s, the last chat you opened, is %2$s.	%1$s 是你最近打开的聊天，颜色为 %2$s。
 Type one color code, or two for a fade from top to bottom.	输入一个颜色代码，或输入两个以从上到下渐变。
+Hide the AI info label on reels	隐藏 Reels 上的 AI 信息标签
+Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	去掉 Facebook 标记为用 AI 制作的 Reels 上的“AI 信息”标签。更改会从下一个 Reels 开始显示。

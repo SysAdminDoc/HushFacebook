@@ -278,6 +278,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_AUDIO_LINE,
                     L10n.t("Takes the line with the reel's sound, \"Original audio\" or a song, off the bottom of "
                             + "reels. Other info stays. A change shows from the next reel.")));
+            // Asked each time Facebook hands out a reel's attributions, which the label is drawn from.
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_AI_LABEL,
+                    L10n.t("Takes the \"AI info\" label off reels Facebook marks as made with AI. "
+                            + "A change shows from the next reel.")));
             // Asked each time a video stalls long enough for the message, so a change shows right away.
             reels.addPreference(toggle(context, Settings.HIDE_SLOW_CONNECTION_MESSAGE,
                     L10n.t("Stops the \"This is taking a while\" message about your network connection when a video "

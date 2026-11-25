@@ -3185,3 +3185,5 @@ Open a chat, then come back here to give it a color of its own.	Bir sohbet açı
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	Son açtığınız sohbet olan %1$s, yukarıdaki sohbet arka planını kullanıyor. Kendi rengini vermek için bir renk kodu yazın.
 %1$s, the last chat you opened, is %2$s.	Son açtığınız sohbet olan %1$s: %2$s.
 Type one color code, or two for a fade from top to bottom.	Bir renk kodu yazın ya da yukarıdan aşağıya geçiş için iki tane.
+Hide the AI info label on reels	Reels'te yapay zeka bilgisi etiketini gizle
+Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Facebook'un yapay zekayla yapıldı olarak işaretlediği reels'lerden "Yapay zeka bilgisi" etiketini kaldırır. Değişiklik bir sonraki reel'den itibaren görünür.

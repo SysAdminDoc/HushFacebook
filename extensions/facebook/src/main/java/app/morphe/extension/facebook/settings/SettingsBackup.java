@@ -320,6 +320,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_SOUND_BUTTON,
             Settings.REEL_SPEAKER_ABOVE_MENU,
             Settings.HIDE_REEL_AUDIO_LINE,
+            Settings.HIDE_REEL_AI_LABEL,
             Settings.HIDE_SLOW_CONNECTION_MESSAGE,
             Settings.HIDE_UP_NEXT,
             Settings.HIDE_REEL_FULLSCREEN_PILL,

@@ -89,6 +89,7 @@ public class ReelDeclutterTest {
         Settings.REEL_SPEAKER_ABOVE_MENU.resetToDefault();
         ReelDeclutter.sideSpeaker(null);
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
+        Settings.HIDE_REEL_AI_LABEL.resetToDefault();
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
         Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.HIDE_REEL_FULLSCREEN_PILL.resetToDefault();
@@ -204,6 +205,43 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_AUDIO_LINE.save(false);
         assertArrayEquals("turning the switch off didn't bring the audio line back", new Object[]{song, location},
                 ReelDeclutter.filterChips(Arrays.asList(remix, song, location)));
+    }
+
+    /**
+     * A reel's "AI info" label (#574) leaves its attributions only while its own switch is on: the
+     * chips switch leaves it, every other attribution stays in the order it came, and it comes back
+     * paused, before the settings are ready and once the switch is off again.
+     */
+    @Test
+    public void theAiLabelLeavesTheAttributionsOnlyWhileItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_REEL_AI_LABEL.defaultValue);
+        TypedFeedUnit ai = chip(ReelDeclutter.AI_LABEL_ATTRIBUTION);
+        TypedFeedUnit song = chip(SONG);
+        TypedFeedUnit location = chip(LOCATION);
+        TypedFeedUnit.Unreadable unreadable = new TypedFeedUnit.Unreadable();
+        assertNull("the chips switch took the AI label", ReelDeclutter.filterAiLabel(Arrays.asList(song, ai, location)));
+
+        Settings.HIDE_REEL_CHIPS.save(false);
+        Settings.HIDE_REEL_AI_LABEL.save(true);
+        assertArrayEquals(new Object[]{unreadable, song, location},
+                ReelDeclutter.filterAiLabel(Arrays.asList(unreadable, song, ai, location)));
+        assertArrayEquals(new Object[0], ReelDeclutter.filterAiLabel(Collections.singletonList(ai)));
+        assertNull("a reel without the label got a new list", ReelDeclutter.filterAiLabel(Arrays.asList(song, location)));
+        assertNull(ReelDeclutter.filterAiLabel(Collections.emptyList()));
+        assertNull("not a list", ReelDeclutter.filterAiLabel(new Object()));
+        assertNull(ReelDeclutter.filterAiLabel(null));
+        assertNull("a null model got dropped", ReelDeclutter.filterAiLabel(Arrays.asList(ai, null)));
+        assertEquals(ReelDeclutter.AI_LABEL_ROUTE + ": 2 lists, 5 items, 2 removed. Last reason: "
+                        + ReelDeclutter.AI_LABEL_ATTRIBUTION + ". Removed: " + ReelDeclutter.AI_LABEL_ATTRIBUTION + " 2",
+                line(ReelDeclutter.AI_LABEL_ROUTE));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("the AI label went while paused", ReelDeclutter.filterAiLabel(Arrays.asList(song, ai)));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertNull("the AI label went before the settings were ready",
+                ReelDeclutter.filterAiLabel(Arrays.asList(song, ai))));
+        Settings.HIDE_REEL_AI_LABEL.save(false);
+        assertNull("turning the switch off didn't bring the AI label back", ReelDeclutter.filterAiLabel(Arrays.asList(song, ai)));
     }
 
     /**

@@ -2260,3 +2260,5 @@ Open a chat, then come back here to give it a color of its own.	افتح محا�
 %1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s، آخر محادثة فتحتها، تأخذ خلفية المحادثات أعلاه. اكتب رمز لون لتمنحها لونًا خاصًا بها.
 %1$s, the last chat you opened, is %2$s.	%1$s، آخر محادثة فتحتها، لونها %2$s.
 Type one color code, or two for a fade from top to bottom.	اكتب رمز لون واحدًا، أو رمزين لتدرّج من الأعلى إلى الأسفل.
+Hide the AI info label on reels	إخفاء تسمية "معلومات الذكاء الاصطناعي" على ريلز
+Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	يزيل تسمية "معلومات الذكاء الاصطناعي" من الريلز التي يحددها فيسبوك على أنها مصنوعة بالذكاء الاصطناعي. يظهر التغيير من الريل التالي.
