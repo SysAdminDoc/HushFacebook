@@ -11,6 +11,7 @@ package app.morphe.extension.shared;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Application;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.ClipData;
@@ -559,6 +560,11 @@ public class Utils {
         // destroyed rather than finishing.
         if (appContext instanceof Activity activity && getActivity() != activity) {
             setActivity(activity);
+        }
+        // Facebook sets its own language after this runs, and a configuration change behind its
+        // back can put the phone's in its place; each fresh screen notes Facebook's (#584).
+        if (appContext instanceof Application application) {
+            L10n.watchFacebooksLanguages(application);
         }
 
         AppLanguage language = BaseSettings.MORPHE_LANGUAGE.get();

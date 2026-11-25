@@ -9,17 +9,22 @@
  */
 package app.morphe.extension.shared;
 
+import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.os.LocaleList;
 import android.text.TextUtils;
 import android.view.View;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,6 +62,20 @@ public final class L10n {
     }
 
     private static volatile Table cached;
+
+    /** Facebook's languages and the phone's, as both stood when a Facebook screen last started fresh. */
+    private static final class Noted {
+        final List<Locale> facebook;
+        final List<Locale> phone;
+
+        Noted(List<Locale> facebook, List<Locale> phone) {
+            this.facebook = facebook;
+            this.phone = phone;
+        }
+    }
+
+    private static volatile Noted noted;
+    private static WeakReference<Application> watched;
 
     /** The tag of the accented pseudo-locale, en-XA, the way {@link #tags} writes it. */
     static final String ACCENTED = "en-rxa";
@@ -383,23 +402,102 @@ public final class L10n {
      */
     private static List<Locale> locales(Context context) {
         try {
-            Context application = context == null ? null : context.getApplicationContext();
-            Context source = application != null ? application : context;
-            Resources resources = source == null ? null : source.getResources();
-            if (resources != null) {
-                LocaleList list = resources.getConfiguration().getLocales();
-                List<Locale> found = new ArrayList<>(list.size());
-                for (int index = 0; index < list.size(); index++) {
-                    found.add(list.get(index));
-                }
-                if (!found.isEmpty()) {
-                    return found;
-                }
+            List<Locale> found = applicationLocales(context);
+            if (!found.isEmpty()) {
+                return facebooksUnlessReset(found);
             }
         } catch (Throwable ignored) {
             // No context yet, or none with resources: the default locale still answers.
         }
         return Collections.singletonList(Locale.getDefault());
+    }
+
+    /** The application's languages in order, or none when there is no context with resources. */
+    private static List<Locale> applicationLocales(Context context) {
+        Context application = context == null ? null : context.getApplicationContext();
+        Context source = application != null ? application : context;
+        Resources resources = source == null ? null : source.getResources();
+        return resources == null ? Collections.emptyList() : list(resources.getConfiguration().getLocales());
+    }
+
+    private static List<Locale> list(LocaleList languages) {
+        List<Locale> found = new ArrayList<>(languages.size());
+        for (int index = 0; index < languages.size(); index++) {
+            found.add(languages.get(index));
+        }
+        return found;
+    }
+
+    private static List<Locale> phoneLocales() {
+        return list(Resources.getSystem().getConfiguration().getLocales());
+    }
+
+    /**
+     * [found], unless it's the phone's languages standing in for Facebook's own (#584). Every
+     * configuration change sets the application back to the phone's languages, and Facebook sets
+     * its own again only from a screen of its that is showing: a change made and undone while it
+     * sits in the background (a fold and unfold, a night mode round trip, another app's rotation)
+     * leaves the phone's there while Facebook's text stays in its own language. When [found]
+     * matches the phone's and the phone's are still what they were when a Facebook screen last
+     * started, Facebook's own as noted then answer instead. A phone whose languages changed since
+     * reads [found], so Facebook set to follow the phone moves with it.
+     */
+    private static List<Locale> facebooksUnlessReset(List<Locale> found) {
+        Noted last = noted;
+        if (last == null || last.facebook.equals(found) || !found.equals(last.phone)) return found;
+        return found.equals(phoneLocales()) ? last.facebook : found;
+    }
+
+    /**
+     * Watches [application]'s screens once per application: each one created and then started
+     * notes the languages Facebook set for it (#584). A screen that only comes back from the
+     * background is skipped, since it comes back with whatever the configuration was left at.
+     */
+    public static synchronized void watchFacebooksLanguages(Application application) {
+        if (application == null) return;
+        WeakReference<Application> last = watched;
+        if (last != null && last.get() == application) return;
+        watched = new WeakReference<>(application);
+        application.registerActivityLifecycleCallbacks(new FreshScreens());
+    }
+
+    /** Notes the application's languages beside the phone's, as a freshly started screen has them. */
+    static void noteFacebooksLanguages(Context context) {
+        try {
+            List<Locale> facebook = applicationLocales(context);
+            if (!facebook.isEmpty()) noted = new Noted(facebook, phoneLocales());
+        } catch (Throwable ignored) {
+            // Nothing noted keeps the configuration's languages answering, as before.
+        }
+    }
+
+    /** Tests start with nothing noted. */
+    static void forgetFacebooksLanguages() {
+        noted = null;
+    }
+
+    private static final class FreshScreens implements Application.ActivityLifecycleCallbacks {
+        private final Map<Activity, Boolean> created = new WeakHashMap<>();
+
+        @Override
+        public void onActivityCreated(Activity activity, Bundle state) {
+            created.put(activity, Boolean.TRUE);
+        }
+
+        @Override
+        public void onActivityStarted(Activity activity) {
+            if (created.remove(activity) != null) noteFacebooksLanguages(activity);
+        }
+
+        @Override public void onActivityResumed(Activity activity) { }
+        @Override public void onActivityPaused(Activity activity) { }
+        @Override public void onActivityStopped(Activity activity) { }
+        @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
+
+        @Override
+        public void onActivityDestroyed(Activity activity) {
+            created.remove(activity);
+        }
     }
 
     /** The phone's first choice decides: a pseudo-locale second in the list is never reached. */

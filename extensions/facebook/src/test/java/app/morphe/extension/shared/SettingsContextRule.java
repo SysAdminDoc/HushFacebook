@@ -41,6 +41,8 @@ import org.robolectric.RuntimeEnvironment;
 public final class SettingsContextRule extends ExternalResource {
     @Override
     protected void before() {
+        // Languages a screen in an earlier test noted are that test's Facebook, not this one's.
+        L10n.forgetFacebooksLanguages();
         Utils.setContext(RuntimeEnvironment.getApplication());
         // Robolectric hands every test method a fresh application and preference cache, but
         // Setting's store is a static captured when its class first loaded in this sandbox,

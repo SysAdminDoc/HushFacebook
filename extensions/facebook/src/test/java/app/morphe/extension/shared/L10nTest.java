@@ -11,17 +11,22 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.LocaleList;
 
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
@@ -510,9 +515,62 @@ public class L10nTest {
         assertFalse(L10n.rightToLeft(arabic));
     }
 
+    /**
+     * #584: a configuration change made and undone while Facebook sat in the background puts the
+     * phone's languages back on the application, while Facebook's text stays in its own. The
+     * languages a fresh screen started with answer then. A screen back from the background doesn't
+     * change that, a fresh one in the phone's languages does, and so does a phone set to new ones.
+     */
+    @Test
+    @SuppressWarnings("deprecation")
+    public void facebooksLanguageOutlastsAConfigurationPutBackToThePhones() {
+        Application app = RuntimeEnvironment.getApplication();
+        Resources resources = app.getResources();
+        Resources system = Resources.getSystem();
+        Configuration before = new Configuration(resources.getConfiguration());
+        Configuration phoneBefore = new Configuration(system.getConfiguration());
+        assertEquals("the phone reads English here", "en", phoneBefore.getLocales().get(0).getLanguage());
+        L10n.watchFacebooksLanguages(app);
+        try {
+            setLocales(resources, before, Locale.GERMANY);
+            try (ActivityController<Activity> screen = Robolectric.buildActivity(Activity.class).create().start().resume()) {
+                assertEquals(table("de").get(KEY), L10n.t(app, KEY));
+
+                setLocales(resources, before, phoneBefore.getLocales().get(0));
+                assertEquals("the phone's languages put back stand in for Facebook's German",
+                        table("de").get(KEY), L10n.t(app, KEY));
+                screen.pause().stop().restart().start().resume();
+                assertEquals("a screen back from the background notes nothing",
+                        table("de").get(KEY), L10n.t(app, KEY));
+            }
+
+            try (ActivityController<Activity> following = Robolectric.buildActivity(Activity.class).create().start()) {
+                assertEquals("a fresh screen in the phone's languages: Facebook follows the phone", KEY, L10n.t(app, KEY));
+            }
+
+            setLocales(resources, before, Locale.GERMANY);
+            try (ActivityController<Activity> german = Robolectric.buildActivity(Activity.class).create().start()) {
+                setLocales(system, phoneBefore, Locale.FRANCE);
+                setLocales(resources, before, Locale.FRANCE);
+                assertEquals("a phone set to new languages since reads them", table("fr").get(KEY), L10n.t(app, KEY));
+            }
+        } finally {
+            system.updateConfiguration(phoneBefore, system.getDisplayMetrics());
+            resources.updateConfiguration(before, resources.getDisplayMetrics());
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void setLocales(Resources resources, Configuration base, Locale locale) {
+        Configuration changed = new Configuration(base);
+        changed.setLocales(new LocaleList(locale));
+        resources.updateConfiguration(changed, resources.getDisplayMetrics());
+    }
+
     @After
     public void forgetThePick() {
         BaseSettings.SETTINGS_LANGUAGE.resetToDefault();
+        L10n.forgetFacebooksLanguages();
     }
 
     private static Map<String, String> table(String language) {
