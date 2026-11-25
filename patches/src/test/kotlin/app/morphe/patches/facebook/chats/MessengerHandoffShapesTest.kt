@@ -14,6 +14,8 @@ import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.notifications.BUILDER_PARAMETER
+import app.morphe.patches.facebook.notifications.MARK_ALL_CLICK
+import app.morphe.patches.facebook.notifications.MARK_ALL_READ
 import app.morphe.patches.facebook.notifications.SHOW_START
 import app.morphe.patches.facebook.notifications.TRAY_MANAGER
 import app.morphe.patches.facebook.notifications.TRAY_NOTIFICATION
@@ -209,6 +211,36 @@ internal object HandoffShapes {
     /** The builder the post method takes, holding the push, and the push with its type. */
     val trayBuilder = classDef(TRAY_BUILDER, fields = listOf(instanceField(TRAY_BUILDER, "push", TRAY_NOTIFICATION)))
     val trayNotification = classDef(TRAY_NOTIFICATION, fields = listOf(instanceField(TRAY_NOTIFICATION, TYPE_FIELD, STRING)))
+
+    const val MARK_ALL_CONTROLLER = "Lfixture/NotificationsController;"
+    const val SESSION_LOOKUP = "Lfixture/SessionLookup;"
+    const val SESSION_SOURCE = "Lfixture/SessionSource;"
+    const val SESSION_HOLDER = "Lfixture/SessionHolder;"
+
+    /**
+     * What Block promotional notifications' Mark all as read row also takes from a build: the
+     * notifications controller, made from nothing, whose (FbUserSession, Context)V logs MAAR_CLICK,
+     * and a Context-to-session lookup that asks one interface and ends with a static call.
+     */
+    fun markAllRead(): List<ClassDef> {
+        val ask = ImmutableMethodReference(SESSION_SOURCE, "holder", listOf(PUSH_CONTEXT), SESSION_HOLDER)
+        val end = ImmutableMethodReference(SESSION_LOOKUP, "session", listOf(SESSION_HOLDER), PUSH_SESSION)
+        return listOf(
+            classDef(MARK_ALL_CONTROLLER,
+                method(MARK_ALL_CONTROLLER, "<init>", emptyList(), "V", 1, listOf(returnVoid)),
+                method(MARK_ALL_CONTROLLER, "markAll", listOf(PUSH_SESSION, PUSH_CONTEXT), "V", 4,
+                    listOf(string(0, MARK_ALL_CLICK), returnVoid))),
+            classDef(SESSION_LOOKUP,
+                method(SESSION_LOOKUP, "lookup", listOf(PUSH_CONTEXT), PUSH_SESSION, 2, listOf(
+                    ImmutableInstruction21c(Opcode.SGET_OBJECT, 0, ImmutableFieldReference(SESSION_LOOKUP, "source", SESSION_SOURCE)),
+                    ImmutableInstruction35c(Opcode.INVOKE_INTERFACE, 2, 0, 1, 0, 0, 0, ask),
+                    ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+                    ImmutableInstruction35c(Opcode.INVOKE_STATIC, 1, 0, 0, 0, 0, 0, end),
+                    ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+                    ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
+                ), static = true)),
+        )
+    }
 
     /** Every class of the made-up Facebook, [leaveOut] left out and [extra] added. */
     fun classes(leaveOut: Set<String> = emptySet(), extra: List<ClassDef> = emptyList()): List<ClassDef> =
@@ -461,7 +493,7 @@ class MessengerHandoffShapesTest {
      */
     @Test
     fun `with Block promotional notifications too, both ask in the push tray before Facebook posts`() {
-        val context = build()
+        val context = build(extra = HandoffShapes.markAllRead() + ExtensionDex.classDef(MARK_ALL_READ))
         blockPromotionalNotificationsPatch.execute(context)
         openMessengerFromTopBarPatch.execute(context)
         val post = context.mutableClassDefBy(TRAY_MANAGER).methods.single()
