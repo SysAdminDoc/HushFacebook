@@ -102,6 +102,7 @@ public final class FamilyNames {
     public static final String REEL_DOWNLOAD = "Download any reel";
     public static final String VIDEO_DOWNLOAD = "Download any video";
     public static final String PHOTO_DOWNLOAD = "Download any photo";
+    public static final String FILE_DOWNLOADS = "Save files to Downloads";
     public static final String START_TAB = "Open on a chosen tab";
     public static final String FOLLOWING_HOME = "Following feed on Home";
     public static final String MARKETPLACE_ONLY = "Marketplace only";

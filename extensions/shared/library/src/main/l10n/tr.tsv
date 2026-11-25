@@ -3189,3 +3189,5 @@ Hide the AI content label on reels	Reels'te yapay zeka içeriği etiketini gizle
 Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Facebook'un yapay zekayla yapıldı olarak işaretlediği reels'lerden "Yapay zeka içeriği" veya "Yapay zeka bilgisi" etiketini kaldırır. Değişiklik bir sonraki reel'den itibaren görünür.
 The %1$s row will be set to %2$s.	%1$s satırı %2$s olarak ayarlanacak.
 The %1$s row will go back to its default.	%1$s satırı varsayılanına dönecek.
+Save files to Downloads	Dosyaları İndirilenler'e kaydet
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	Bir gönderiden indirdiğin PDF, belge veya başka bir dosya telefonunun İndirilenler klasörüne gider ve orada bir dosya yöneticisi onu açabilir. Kapalıyken Facebook onu hiçbir dosya yöneticisinin erişemediği bir yerde tutar.

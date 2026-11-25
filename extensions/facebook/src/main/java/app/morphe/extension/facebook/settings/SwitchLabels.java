@@ -369,6 +369,7 @@ final class SwitchLabels {
         if (setting == Settings.POST_MENU_PHOTO_SAVE) return L10n.t("Save photo in post menus");
         if (setting == Settings.POST_MENU_PHOTO_SEARCH) return L10n.t("Search photo in post menus");
         if (setting == Settings.MARKETPLACE_PHOTO_SAVE) return L10n.t("Long press to save Marketplace photos");
+        if (setting == Settings.SAVE_FILES_TO_DOWNLOADS) return L10n.t("Save files to Downloads");
         if (setting == Settings.OPEN_IN_ANOTHER_APP) return L10n.t("Open videos in another app");
         if (setting == Settings.POST_MENU_DOWNLOAD_FIRST) return L10n.t("Download first in post menus");
         if (setting == Settings.DOWNLOAD_COMPATIBLE) return L10n.t("Save videos other apps can open");

@@ -480,6 +480,7 @@ public final class SettingsBackup {
             Settings.POST_MENU_PHOTO_SAVE,
             Settings.POST_MENU_PHOTO_SEARCH,
             Settings.MARKETPLACE_PHOTO_SAVE,
+            Settings.SAVE_FILES_TO_DOWNLOADS,
             Settings.OPEN_IN_ANOTHER_APP,
             Settings.POST_MENU_DOWNLOAD_FIRST,
             Settings.DOWNLOAD_COMPATIBLE,

@@ -70,6 +70,7 @@ import app.morphe.extension.facebook.download.ClipboardLinkForTests;
 import app.morphe.extension.facebook.download.CommentGifForTests;
 import app.morphe.extension.facebook.download.CommentPhotoForTests;
 import app.morphe.extension.facebook.download.CommentVideoForTests;
+import app.morphe.extension.facebook.download.FileDownloadsForTests;
 import app.morphe.extension.facebook.download.ListingPhotoForTests;
 import app.morphe.extension.facebook.download.MediaDownload;
 import app.morphe.extension.facebook.download.PhotoMenuItemForTests;
@@ -1011,6 +1012,8 @@ public class PausedHooksTest {
                 CommentGifForTests::addsARow,
                 CommentPhotoForTests::addsARow,
                 ListingPhotoForTests::keepsTheAddress));
+        // A file downloaded from a post goes to the Downloads folder.
+        probes.put(PatchFamily.FILE_DOWNLOADS, Collections.singletonList(FileDownloadsForTests::movesAFile));
         // A start from the launcher icon asks Facebook for the chosen tab.
         probes.put(PatchFamily.START_TAB, Collections.singletonList(StartTabRouteForTests::routes));
         // Home's request for its feed goes out for the most recent feed.

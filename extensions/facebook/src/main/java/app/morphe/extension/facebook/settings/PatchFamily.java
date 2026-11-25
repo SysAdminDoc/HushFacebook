@@ -276,6 +276,10 @@ public enum PatchFamily {
     PHOTO_DOWNLOAD(FamilyNames.PHOTO_DOWNLOAD, "photoDownload", null,
             Settings.DOWNLOAD_PHOTOS, Settings.POST_MENU_PHOTO_SAVE, Settings.POST_MENU_PHOTO_SEARCH,
             Settings.MARKETPLACE_PHOTO_SAVE),
+    // Not a media download: it only picks the folder Facebook's own file download goes to, so it
+    // reads none of DOWNLOAD_SWITCHES and stays out of DOWNLOADS.
+    FILE_DOWNLOADS(FamilyNames.FILE_DOWNLOADS, "fileDownloads", null,
+            Settings.SAVE_FILES_TO_DOWNLOADS),
     START_TAB(FamilyNames.START_TAB, "startTab", null,
             Settings.OPEN_ON_CHOSEN_TAB),
     FOLLOWING_HOME(FamilyNames.FOLLOWING_HOME, "followingHome", null,

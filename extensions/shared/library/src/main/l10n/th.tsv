@@ -3189,3 +3189,5 @@ Hide the AI content label on reels	ซ่อนป้ายเนื้อหา
 Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	นำป้าย "เนื้อหา AI" หรือ "ข้อมูล AI" ออกจาก Reels ที่ Facebook ระบุว่าสร้างด้วย AI การเปลี่ยนแปลงจะแสดงตั้งแต่ Reel ถัดไป
 The %1$s row will be set to %2$s.	แถว %1$s จะถูกตั้งค่าเป็น %2$s
 The %1$s row will go back to its default.	แถว %1$s จะกลับเป็นค่าเริ่มต้น
+Save files to Downloads	บันทึกไฟล์ลงในโฟลเดอร์ดาวน์โหลด
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	ไฟล์ PDF เอกสาร หรือไฟล์อื่นที่คุณดาวน์โหลดจากโพสต์จะไปอยู่ในโฟลเดอร์ดาวน์โหลดของโทรศัพท์ ซึ่งแอปจัดการไฟล์เปิดได้ หากปิด Facebook จะเก็บไฟล์ไว้ในที่ที่แอปจัดการไฟล์เข้าไม่ถึง

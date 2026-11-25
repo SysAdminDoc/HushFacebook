@@ -3139,6 +3139,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_marketplace_photo_save", FALSE);
 
     /**
+     * A PDF, document or other file downloaded from a post goes to the phone's public Downloads
+     * folder, where a file manager can open it ({@link app.morphe.extension.facebook.download.FileDownloads},
+     * #590). Off, it stays in DownloadManager's private cache as Facebook leaves it. Starts on, as
+     * the report asked: a file nobody can find helps nobody. The key never spells "downloads":
+     * SettingsBackupTest plants that word in a value no settings file may carry.
+     */
+    public static final BooleanSetting SAVE_FILES_TO_DOWNLOADS =
+            new BooleanSetting("hushfacebook_save_files_to_download_folder", TRUE);
+
+    /**
      * Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of
      * its options list (issue #151). Facebook's sheet keeps the rows it tags itself above them, and
      * on photo posts that list is the More options page. The row under a post has no room for a

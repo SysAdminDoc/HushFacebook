@@ -370,6 +370,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean fileDownloads() {
+        return false;
+    }
+
     public static boolean startTab() {
         return false;
     }

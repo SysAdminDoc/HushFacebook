@@ -2096,6 +2096,16 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #497: Fold long text. The patch finds the feed post text builder by its cut's shape, the line limit it calls (a static int method taking the user session and the story that reads the line limit's config key), the config factory it builds the cut with (a static (II) call whose answer the cut takes), the one maker in the line limit's class that calls both, and the comment sheet's cut config by its CommentBodyTruncationUtil trace string. Each line limit goes through the extension right after it lands, and each config call hands its characters and lines through it first, at the call's label so every jump to the call lands on the hook. The extension answers Facebook's own numbers unless Fold long posts or Fold long comments names a line count, and for posts while Show full post text is on."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/FileDownloads.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/file/SaveFilesToDownloadsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #590 from Facebook 588: the one method logging that a file's address isn't http or https makes a DownloadManager request from the address and enqueues it with no destination, so the file stayed in DownloadManager's private cache. Right after the request's constructor, the request and the address go to the extension, which while the switch is on points the request at the public Downloads folder under the address's last segment, cleaned by the save folder's rules and cut to 200 bytes of UTF-8 with its ending kept."
     }
   ]
 }

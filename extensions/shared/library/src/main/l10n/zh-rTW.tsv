@@ -3193,3 +3193,5 @@ Hide the AI content label on reels	隱藏 Reels 的 AI 內容標籤
 Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	移除 Facebook 標示為使用 AI 製作的 Reels 上的「AI 內容」或「AI 資訊」標籤。從下一則 Reels 起生效。
 The %1$s row will be set to %2$s.	%1$s 將設為 %2$s。
 The %1$s row will go back to its default.	%1$s 將恢復為預設值。
+Save files to Downloads	將檔案儲存到下載資料夾
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	你從貼文下載的 PDF、文件或其他檔案會存到手機的下載資料夾，檔案管理工具可以開啟它。關閉時，Facebook 會把它放在檔案管理工具無法存取的地方。

@@ -3247,3 +3247,5 @@ Hide the AI content label on reels	Скрывать метку «Контент 
 Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Убирает метку «Контент ИИ» или «Информация об ИИ» с Reels, которые Facebook отмечает как созданные с помощью ИИ. Изменение применяется начиная со следующего Reels.
 The %1$s row will be set to %2$s.	В строке «%1$s» будет %2$s.
 The %1$s row will go back to its default.	Строка «%1$s» вернётся к значению по умолчанию.
+Save files to Downloads	Сохранять файлы в «Загрузки»
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	PDF, документ или другой файл, который вы скачиваете из публикации, попадает в папку «Загрузки» на телефоне, где его откроет файловый менеджер. Если функция выключена, Facebook хранит его там, куда не добраться ни одному файловому менеджеру.

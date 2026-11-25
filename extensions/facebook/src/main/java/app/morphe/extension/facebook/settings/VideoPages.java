@@ -729,8 +729,9 @@ final class VideoPages {
      */
     @Nullable
     static PreferenceCategory downloads(PreferenceScreen screen, Context context, Set<PatchFamily> build) {
-        if (build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.REEL_DOWNLOAD)
-                || build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PHOTO_DOWNLOAD)) {
+        boolean media = build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.REEL_DOWNLOAD)
+                || build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PHOTO_DOWNLOAD);
+        if (media || build.contains(PatchFamily.FILE_DOWNLOADS)) {
             PreferenceCategory downloads = category(screen, L10n.t("Downloads"));
             if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_VIDEOS,
@@ -759,6 +760,14 @@ final class VideoPages {
                 downloads.addPreference(toggle(context, Settings.MARKETPLACE_PHOTO_SAVE,
                         L10n.t("With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.")));
             }
+            if (build.contains(PatchFamily.FILE_DOWNLOADS)) {
+                downloads.addPreference(toggle(context, Settings.SAVE_FILES_TO_DOWNLOADS,
+                        L10n.t("A PDF, document or other file you download from a post goes to your phone's Downloads "
+                                + "folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.")));
+            }
+            // The rows below shape a video or photo save, which a build with only Save files to
+            // Downloads doesn't have.
+            if (!media) return downloads;
             // Every save reads these, a story's and a reel's as much as a feed video's, so they're here
             // whichever download patch is in, the compatible ones above the quality they keep within.
             downloads.addPreference(toggle(context, Settings.ASK_BEFORE_DOWNLOAD,
