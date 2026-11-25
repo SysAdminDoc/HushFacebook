@@ -34,8 +34,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
@@ -81,6 +83,13 @@ public class StorySeenButtonTest {
     /** The eye's top-left in the window. */
     private static int[] eyeAt(ImageView eye) {
         return new int[] {Math.round(eye.getLeft() + eye.getTranslationX()), Math.round(eye.getTop() + eye.getTranslationY())};
+    }
+
+    private static String statusLine() {
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.STORY_SEEN + ":")) return line;
+        }
+        return "";
     }
 
     private static void frame(Activity activity) {
@@ -379,6 +388,53 @@ public class StorySeenButtonTest {
         assertTrue(eye.performClick());
         assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
         assertEquals(Collections.singletonList("100/c1"), sent);
+        controller.pause().stop().destroy();
+    }
+
+    /**
+     * Issue #557: a reaction tells the story's owner you saw it, so it marks the card like a tap on
+     * the eye. On the card on screen it goes out at once and the eye dims; a reaction sent while the
+     * viewer is on another card only marks it; and with the eye's switch off nothing is marked.
+     */
+    @Test
+    public void aReactionMarksTheStorySeenAndDimsTheEye() {
+        HookStatus.clear();
+        Settings.MARK_STORIES_SEEN.save(true);
+        List<String> sent = new ArrayList<>();
+        StorySeenButton.sendNow = (account, card) -> sent.add(account + "/" + card);
+        ActivityController<StoryViewerActivity> controller = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        StoryViewerActivity viewer = controller.get();
+        StorySeenButton.activityResumed(viewer);
+        StorySeenButton.onActive("c1");
+        StorySeenButton.onCard(StorySeenForTests.ACCOUNT, null, "c1");
+        ShadowLooper.idleMainLooper();
+        ImageView eye = eyeIn(viewer);
+        assertNotNull(eye);
+        assertEquals("Mark as seen", eye.getContentDescription());
+
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c1");
+        ShadowLooper.idleMainLooper();
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
+        assertEquals("the reaction's card wasn't sent at once", Collections.singletonList("100/c1"), sent);
+        assertEquals("Marked as seen", eye.getContentDescription());
+        assertFalse("the eye stayed tappable after a reaction", eye.isEnabled());
+        assertTrue(statusLine(), statusLine().contains(StorySeenButton.REACTED + " 1"));
+
+        // A second reaction on the same story changes nothing and counts nothing new.
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c1");
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
+        assertTrue(statusLine(), statusLine().contains(StorySeenButton.REACTED + " 1"));
+
+        // Not the card on screen: marked, and it goes with the next batch instead.
+        sent.clear();
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c9");
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c9"));
+        assertTrue("sent a card that isn't on screen: " + sent, sent.isEmpty());
+
+        // The eye's switch off: a reaction marks nothing.
+        Settings.MARK_STORIES_SEEN.save(false);
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c5");
+        assertEquals(StoryMarks.State.UNMARKED, StorySeen.MARKS.state("100", "c5"));
         controller.pause().stop().destroy();
     }
 

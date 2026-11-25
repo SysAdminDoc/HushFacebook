@@ -109,6 +109,9 @@ public final class StorySeenButton {
     /** What Hook status counts each time the story is held and the eye hides with Facebook's header. */
     static final String HELD = "eye hidden while held";
 
+    /** What Hook status counts each time a reaction marks the story it went to as seen (#557). */
+    static final String REACTED = "story marked seen by a reaction";
+
     /** The card on screen: the account it's viewed on, its id and the story viewer it was named for. */
     static final class Shown {
         final String account;
@@ -260,6 +263,35 @@ public final class StorySeenButton {
             held = now;
             if (now) HookStatus.counted(FamilyNames.STORY_SEEN, HELD);
             Utils.runOnMainThreadNowOrLater(StorySeenButton::follow);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, HOOK, failure);
+        }
+    }
+
+    /**
+     * Injected first thing where Facebook's story viewer sends a quick reaction, with the session,
+     * the bucket and the card. A reaction tells the story's owner you saw it anyway, so it marks
+     * the card as a tap on the eye does: sent at once while it's the card on screen, and the eye
+     * dims (#557). Only with the eye's switch on. Never throws.
+     */
+    public static void reacted(@Nullable Object session, @Nullable Object bucket, @Nullable Object card) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_SEEN);
+            if (card == null || !switchedOn()) return;
+            String id = cardIds.apply(card);
+            if (id == null || id.isEmpty()) return;
+            String account;
+            synchronized (known) {
+                account = known.get(id);
+            }
+            if (account == null) account = StorySeen.account(session);
+            if (account == null) return;
+            Active current = active;
+            boolean onScreen = current != null && id.equals(current.card);
+            boolean fresh = StorySeen.MARKS.state(account, id) == StoryMarks.State.UNMARKED;
+            if (StorySeen.MARKS.mark(account, id) == StoryMarks.State.MARKED && onScreen) sendNow.test(account, id);
+            if (fresh) HookStatus.counted(FamilyNames.STORY_SEEN, REACTED);
+            Utils.runOnMainThread(StorySeenButton::refresh);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, HOOK, failure);
         }

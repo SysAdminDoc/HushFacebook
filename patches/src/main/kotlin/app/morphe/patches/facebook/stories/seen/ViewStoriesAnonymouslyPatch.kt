@@ -36,6 +36,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * tells the button which card is on screen. A third hook, where Facebook's story controllers make a card the
  * active one, keeps the button on that card. Two more give the button a card as soon as it's active,
  * before it plays, and the story card's state, so the eye hides while the story is held (#150).
+ * One more goes first in the viewer's reaction send: a reaction shows the owner you saw the story
+ * anyway, so the story is marked seen as if the eye were tapped (#557).
  *
  * Facebook greys a ring only once its servers take the report, so a fourth hook in the seen helper
  * hears each card queued, and a fifth each story bucket Facebook builds, and the extension
@@ -186,6 +188,11 @@ val viewStoriesAnonymouslyPatch = patch(
                 throw PatchException("$PATCH: $owner->$field isn't public in a public class, so the extension can't read it")
             }
         }
+        // The reaction send (#557) is looked for, not required: a build that moves it keeps every other
+        // part, and a reaction there just doesn't mark its story.
+        val reaction = classDefByStrings(REACTION_NAME, StringComparisonType.EQUALS)
+            .flatMap { owner -> owner.methods.filter(::isReactionSend) }
+            .singleOrNull()
         val sendStub = stub(STORY_SEEN, SEND_STUB, "V")
         val cardIdStub = stub(STORY_SEEN_BUTTON, CARD_ID_STUB, "Ljava/lang/String;")
         val eyeStubMethods = listOf(LONG_PRESSED_STUB to "Z", HELPER_SESSION_STUB to "Ljava/lang/Object;")
@@ -208,6 +215,7 @@ val viewStoriesAnonymouslyPatch = patch(
         mutableClassDefBy(activationOwner.type).methods.single { it.sameAs(activation) }.reportActive(store)
         mutableClassDefBy(later.listener.type).methods.single { it.sameAs(later.constructor) }.reportCardLater()
         for ((owner, update) in updates) mutableClassDefBy(owner.type).methods.single { it.sameAs(update) }.reportState()
+        reaction?.let { send -> mutableClassDefBy(send.definingClass).methods.single { it.sameAs(send) }.reportReaction() }
         mutableClassDefBy(REGULAR_BUCKET).methods.single { it.sameAs(marking.constructor) }.hearBucketMade()
         mutableClassDefBy(STORY_BUCKET).methods.single { it.sameAs(marking.buckets.hasUnwatched) }.answerWatchedFirst()
         mutableClassDefBy(REGULAR_BUCKET).methods.single { it.sameAs(marking.buckets.override) }.answerWatchedFirst()
