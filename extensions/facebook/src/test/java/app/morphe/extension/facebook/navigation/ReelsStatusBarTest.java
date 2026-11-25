@@ -205,6 +205,42 @@ public class ReelsStatusBarTest {
         assertEquals(BAR, HiddenStatusBar.topInset(content, BAR));
     }
 
+    /**
+     * #587: Facebook taken out of the recent apps with the Reels tab open kept its process (HONOR,
+     * Android 16), and the next main screen opened on Home while Facebook held its first tab bar
+     * restyle back. The strip stayed closed for it, and Home ran up under the status bar.
+     */
+    @Test
+    public void aNewMainScreenForgetsTheReelsTabTheLastOneShowed() {
+        TabBarScrollAway.mainScreenCreated(main);
+        ReelsTabBarHidden.tabShown(tabBar, new WatchTab());
+        assertEquals(0, HiddenStatusBar.topInset(content, BAR));
+
+        Activity next = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
+        ((FbMainTabActivity) next).currentTab = new FeedTab();
+        TabBarScrollAway.mainScreenCreated(next);
+        ReelsStatusBar.frame(tabBar);
+        assertEquals("Home on the new main screen keeps its strip", BAR,
+                HiddenStatusBar.topInset(next.findViewById(android.R.id.content), BAR));
+        assertFalse(ReelsStatusBar.closed());
+
+        ReelsTabBarHidden.tabShown(tabBar, new WatchTab());
+        assertEquals("its own Reels tab still closes it", 0,
+                HiddenStatusBar.topInset(next.findViewById(android.R.id.content), BAR));
+    }
+
+    /** #587 again, in a build whose start-up hook never reports the new main screen. */
+    @Test
+    public void aMainScreenNobodyReportedStartsOverToo() {
+        ReelsTabBarHidden.tabShown(tabBar, new WatchTab());
+        assertEquals(0, HiddenStatusBar.topInset(content, BAR));
+
+        Activity next = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
+        assertEquals("the new main screen pads for the bar", BAR,
+                HiddenStatusBar.topInset(next.findViewById(android.R.id.content), BAR));
+        assertFalse(ReelsStatusBar.closed());
+    }
+
     @Test
     public void hideTheStatusBarStillClosesItsOwnStrip() {
         ReelsTabBarHidden.tabShown(tabBar, new WatchTab());

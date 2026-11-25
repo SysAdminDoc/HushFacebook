@@ -12,6 +12,8 @@ import android.view.WindowInsets;
 
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -30,7 +32,8 @@ import app.morphe.extension.shared.settings.Setting;
  * header below the status bar. Another tab, the switch off, the tabs at the top or Hushfacebook
  * paused open the strip again. Facebook only pads for the status bar again when the window's insets
  * are handed out, so each change asks for that once, from the tab bar as a tab shows and from the
- * see-through bars' frame pass for a switch flipped or a pause.
+ * see-through bars' frame pass for a switch flipped or a pause. The tab read belongs to one main
+ * screen, and a new one starts over ({@link #mainScreenCreated}, #587).
  */
 public final class ReelsStatusBar {
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
@@ -49,6 +52,9 @@ public final class ReelsStatusBar {
     private static volatile boolean closed;
     /** The state the window's insets were last asked again for, so each change asks once. */
     private static volatile boolean asked;
+    /** The main screen the state above belongs to, and whether there's been one this process. */
+    private static volatile WeakReference<Activity> screenRead = new WeakReference<>(null);
+    private static volatile boolean seenScreen;
     /** The status bar's height, in place of the window's, for tests; -1 reads the window. */
     static volatile int statusBarForTests = -1;
 
@@ -69,6 +75,29 @@ public final class ReelsStatusBar {
     /** Whether the strip behind the status bar is closed over the Reels tab now. */
     static boolean closed() {
         return closed;
+    }
+
+    /**
+     * Called from {@link TabBarScrollAway#mainScreenCreated} as a new main screen [screen] is created:
+     * the tab the last one showed isn't this one's (#587). Taking Facebook out of the recent apps with
+     * the Reels tab open can leave its process running, and the next main screen opens on Home while
+     * Facebook holds its first tab bar restyle back, so the strip stayed closed and Home ran up under
+     * the status bar, as if it had gone full screen, until another tab was picked.
+     */
+    static void mainScreenCreated(@Nullable Activity screen) {
+        if (screen != null) forgetTab(screen);
+    }
+
+    /** The state read for an earlier main screen goes, and [screen] is the one it's read for now. */
+    private static void forgetTab(Activity screen) {
+        boolean had = told || reels || closed || asked;
+        screenRead = new WeakReference<>(screen);
+        seenScreen = true;
+        reels = false;
+        told = false;
+        closed = false;
+        asked = false;
+        if (had) Logger.printDebug(() -> "Reels status bar: a new main screen, the tab the last one showed is forgotten");
     }
 
     /**
@@ -122,6 +151,16 @@ public final class ReelsStatusBar {
                 || content.getRootView() != window.peekDecorView()) {
             return top;
         }
+        // A build without the start tab's hook never reports a new main screen, so a main screen
+        // other than the one the state was read for is one here, once there's been one (#587).
+        if (screenRead.get() != screen) {
+            if (seenScreen) {
+                forgetTab(screen);
+            } else {
+                screenRead = new WeakReference<>(screen);
+                seenScreen = true;
+            }
+        }
         boolean close = reels && wanted();
         if (close != closed) {
             Logger.printDebug(() -> "Reels status bar: Facebook's " + top + " px for the status bar answered "
@@ -174,6 +213,8 @@ public final class ReelsStatusBar {
         told = false;
         closed = false;
         asked = false;
+        screenRead = new WeakReference<>(null);
+        seenScreen = false;
         statusBarForTests = -1;
     }
 }

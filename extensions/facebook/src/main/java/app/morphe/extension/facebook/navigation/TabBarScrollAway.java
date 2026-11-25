@@ -166,6 +166,7 @@ public final class TabBarScrollAway {
     static void mainScreenCreated(Activity screen) {
         mainScreen = new WeakReference<>(screen);
         frontScreen = new WeakReference<>(screen);
+        ReelsStatusBar.mainScreenCreated(screen);
         if (screen != null) watchScreens(screen.getApplication());
     }
 
