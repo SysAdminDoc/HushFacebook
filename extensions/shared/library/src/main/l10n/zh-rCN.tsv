@@ -3182,3 +3182,5 @@ Open a chat, then come back here to give it a color of its own.	先打开一个�
 Type one color code, or two for a fade from top to bottom.	输入一个颜色代码，或输入两个以从上到下渐变。
 Hide the AI info label on reels	隐藏 Reels 上的 AI 信息标签
 Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	去掉 Facebook 标记为用 AI 制作的 Reels 上的“AI 信息”标签。更改会从下一个 Reels 开始显示。
+The %1$s row will be set to %2$s.	%1$s 将设为 %2$s。
+The %1$s row will go back to its default.	%1$s 将恢复为默认值。

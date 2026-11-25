@@ -2262,3 +2262,5 @@ Open a chat, then come back here to give it a color of its own.	افتح محا�
 Type one color code, or two for a fade from top to bottom.	اكتب رمز لون واحدًا، أو رمزين لتدرّج من الأعلى إلى الأسفل.
 Hide the AI info label on reels	إخفاء تسمية "معلومات الذكاء الاصطناعي" على ريلز
 Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	يزيل تسمية "معلومات الذكاء الاصطناعي" من الريلز التي يحددها فيسبوك على أنها مصنوعة بالذكاء الاصطناعي. يظهر التغيير من الريل التالي.
+The %1$s row will be set to %2$s.	سيُضبط صف %1$s إلى %2$s.
+The %1$s row will go back to its default.	سيعود صف %1$s إلى قيمته الافتراضية.

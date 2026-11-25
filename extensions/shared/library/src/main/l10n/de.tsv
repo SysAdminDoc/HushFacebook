@@ -3187,3 +3187,5 @@ Open a chat, then come back here to give it a color of its own.	Öffne einen Cha
 Type one color code, or two for a fade from top to bottom.	Gib einen Farbcode ein, oder zwei für einen Verlauf von oben nach unten.
 Hide the AI info label on reels	KI-Info-Label bei Reels ausblenden
 Takes the "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Entfernt das Label „KI-Info“ von Reels, die Facebook als mit KI erstellt markiert. Eine Änderung gilt ab dem nächsten Reel.
+The %1$s row will be set to %2$s.	Die Zeile %1$s wird auf %2$s gesetzt.
+The %1$s row will go back to its default.	Die Zeile %1$s geht auf ihren Standardwert zurück.

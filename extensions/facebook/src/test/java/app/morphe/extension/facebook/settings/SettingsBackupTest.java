@@ -163,20 +163,6 @@ public class SettingsBackupTest {
         out.put("hushfacebook_header_picture",
                 "it names the picture at the top of Home, whose shrunk copy only this install holds. A settings file "
                         + "can't carry the picture itself, and the name alone would point at nothing on another phone.");
-        out.put("hushfacebook_stories_tray_size",
-                "it is a width in dp picked for this phone's screen, which reads differently on another phone.");
-        out.put("hushfacebook_see_through_opacity",
-                "it is picked by eye for this phone's screen, and the same number reads darker on an AMOLED one.");
-        out.put("hushfacebook_text_box_darkness",
-                "it is picked by eye for this phone's screen, like See-through opacity, and the same number reads "
-                        + "darker on an AMOLED one.");
-        out.put("hushfacebook_burn_in_level",
-                "it is picked by eye for this phone's screen, like Box darkness, and how much a dimmed button can "
-                        + "show before it burns in differs between screens.");
-        out.put("hushfacebook_tab_bar_width",
-                "it is a size picked for this phone's screen, which reads differently on another phone.");
-        out.put("hushfacebook_tab_bar_height",
-                "it is a size picked for this phone's screen, which reads differently on another phone.");
         out.put("hushfacebook_in_app_proxy",
                 "it names a proxy on this phone or its network, often a VLESS app's local port. On a phone "
                         + "without that proxy, Facebook couldn't connect at all.");
@@ -296,6 +282,12 @@ public class SettingsBackupTest {
         Settings.HEADER_TEXT_FONT.resetToDefault();
         Settings.ACCENT_CUSTOM.resetToDefault();
         Settings.LOGO_EMOJI.resetToDefault();
+        Settings.STORIES_TRAY_SIZE.resetToDefault();
+        Settings.BURN_IN_LEVEL.resetToDefault();
+        Settings.SEE_THROUGH_OPACITY.resetToDefault();
+        Settings.TAB_BAR_WIDTH.resetToDefault();
+        Settings.TAB_BAR_HEIGHT.resetToDefault();
+        Settings.TEXT_BOX_DARKNESS.resetToDefault();
         Settings.SEEN_MENU_TILES.resetToDefault();
         Settings.SEEN_SHARE_ITEMS.resetToDefault();
         Settings.HIDDEN_POST_MENU_ITEMS.resetToDefault();
@@ -343,7 +335,7 @@ public class SettingsBackupTest {
         for (Setting<?> setting : SettingsBackup.VALUES) {
             assertFalse(setting.key + " is carried and kept out at once", VALUES_STAY_OUT.containsKey(setting.key));
         }
-        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDDEN_FEED_TYPES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.REEL_CLEAN_RETURN, Settings.BURN_IN_GUARD, Settings.BURN_IN_WAIT, Settings.GRAY_REELS_OVER, Settings.REEL_POST_DATE_STYLE, Settings.REELS_ORDER, Settings.HOLD_REACTION, Settings.COMMENTS_HEIGHT, Settings.RECENTLY_WATCHED_KEEP, Settings.HIDDEN_SHARE_ITEMS, Settings.HIDDEN_POST_MENU_ITEMS, Settings.HIDDEN_MENU_TILES, Settings.HOME_FEED, Settings.TAB_ORDER, Settings.AMOLED_BACKGROUND, Settings.AMOLED_LIGHT_BACKGROUND, Settings.HEADER_TEXT, Settings.HEADER_TEXT_FONT, Settings.SEEN_POSTS_KEEP, Settings.FOLD_POST_TEXT, Settings.FOLD_COMMENTS, Settings.FOLD_REEL_CAPTIONS, Settings.SAVE_TO,
+        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDDEN_FEED_TYPES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.STORIES_TRAY_SIZE, Settings.REEL_CLEAN_RETURN, Settings.BURN_IN_GUARD, Settings.BURN_IN_WAIT, Settings.BURN_IN_LEVEL, Settings.GRAY_REELS_OVER, Settings.REEL_POST_DATE_STYLE, Settings.REELS_ORDER, Settings.HOLD_REACTION, Settings.COMMENTS_HEIGHT, Settings.RECENTLY_WATCHED_KEEP, Settings.HIDDEN_SHARE_ITEMS, Settings.HIDDEN_POST_MENU_ITEMS, Settings.HIDDEN_MENU_TILES, Settings.HOME_FEED, Settings.TAB_ORDER, Settings.SEE_THROUGH_OPACITY, Settings.TAB_BAR_WIDTH, Settings.TAB_BAR_HEIGHT, Settings.AMOLED_BACKGROUND, Settings.AMOLED_LIGHT_BACKGROUND, Settings.HEADER_TEXT, Settings.HEADER_TEXT_FONT, Settings.SEEN_POSTS_KEEP, Settings.FOLD_POST_TEXT, Settings.FOLD_COMMENTS, Settings.FOLD_REEL_CAPTIONS, Settings.TEXT_BOX_DARKNESS, Settings.SAVE_TO,
                 Settings.SAVE_FOLDER, Settings.VIDEO_SUBFOLDER, Settings.PHOTO_SUBFOLDER, Settings.DOWNLOAD_QUALITY,
                 Settings.FILENAME_TEMPLATE, Settings.PHOTO_FILENAME_TEMPLATE, Settings.DOWNLOAD_ACTION, Settings.SEND_TO_APP,
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
@@ -1575,6 +1567,86 @@ public class SettingsBackupTest {
     }
 
     /**
+     * The rows that take a typed number (#589: Bar opacity came back as its default after a reinstall
+     * and an import) go out and come back as their rows store them. A blank goes back to the row's
+     * default, an older file without them leaves them alone, and a value no row would store refuses
+     * the whole file.
+     */
+    @Test
+    public void theNumberRowsRoundTripAsTheirRowsStoreThem() throws Exception {
+        Settings.SEE_THROUGH_OPACITY.save("40");
+        Settings.TEXT_BOX_DARKNESS.save("85");
+        Settings.BURN_IN_LEVEL.save("10");
+        Settings.TAB_BAR_WIDTH.save("90");
+        Settings.TAB_BAR_HEIGHT.save("120");
+        Settings.STORIES_TRAY_SIZE.save("72");
+        String file = SettingsBackup.create();
+        JSONObject carried = new JSONObject(file).getJSONObject("settings");
+        assertEquals("40", carried.get(Settings.SEE_THROUGH_OPACITY.key));
+        assertEquals("85", carried.get(Settings.TEXT_BOX_DARKNESS.key));
+        assertEquals("10", carried.get(Settings.BURN_IN_LEVEL.key));
+        assertEquals("90", carried.get(Settings.TAB_BAR_WIDTH.key));
+        assertEquals("120", carried.get(Settings.TAB_BAR_HEIGHT.key));
+        assertEquals("72", carried.get(Settings.STORIES_TRAY_SIZE.key));
+        for (StringSetting number : SettingsBackup.NUMBERS) number.resetToDefault();
+
+        SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+        assertEquals(6, snapshot.numberChanges().size());
+        assertEquals(6, SettingsBackup.apply(snapshot));
+        assertEquals("40", Settings.SEE_THROUGH_OPACITY.savedValue());
+        assertEquals("85", Settings.TEXT_BOX_DARKNESS.savedValue());
+        assertEquals("10", Settings.BURN_IN_LEVEL.savedValue());
+        assertEquals("90", Settings.TAB_BAR_WIDTH.savedValue());
+        assertEquals("120", Settings.TAB_BAR_HEIGHT.savedValue());
+        assertEquals("72", Settings.STORIES_TRAY_SIZE.savedValue());
+        assertEquals("a file read back is the file", file, SettingsBackup.create());
+        assertEquals(0, SettingsBackup.parse(file).changes().size());
+        assertEquals("The Bar opacity row will be set to 40.",
+                SettingsBackupPreference.numberSentence(SettingsBackup.OPACITY, "40"));
+        assertEquals("The Box darkness row will go back to its default.",
+                SettingsBackupPreference.numberSentence(SettingsBackup.BOX_DARKNESS, ""));
+        for (StringSetting number : SettingsBackup.NUMBERS) SettingsBackupPreference.numberTitle(number);
+
+        // A number saved some other way goes out as its row would keep it, or blank past its field.
+        Settings.SEE_THROUGH_OPACITY.save(" 040 ");
+        Settings.TAB_BAR_WIDTH.save("1234");
+        JSONObject cleaned = new JSONObject(SettingsBackup.create()).getJSONObject("settings");
+        assertEquals("40", cleaned.get(Settings.SEE_THROUGH_OPACITY.key));
+        assertEquals("", cleaned.get(Settings.TAB_BAR_WIDTH.key));
+        Settings.SEE_THROUGH_OPACITY.save("40");
+        Settings.TAB_BAR_WIDTH.save("90");
+
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"040", " 40", "40 ", "4O", "-5", "1000", "12.5", 40, true, JSONObject.NULL}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(Settings.SEE_THROUGH_OPACITY.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the Bar opacity " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        JSONObject blank = new JSONObject(file);
+        blank.getJSONObject("settings").put(Settings.SEE_THROUGH_OPACITY.key, "");
+        assertEquals(1, SettingsBackup.apply(SettingsBackup.parse(blank.toString())));
+        assertEquals("", Settings.SEE_THROUGH_OPACITY.savedValue());
+
+        Settings.SEE_THROUGH_OPACITY.save("55");
+        JSONObject older = new JSONObject(file);
+        older.getJSONObject("settings").remove(Settings.SEE_THROUGH_OPACITY.key);
+        SettingsBackup.apply(SettingsBackup.parse(older.toString()));
+        assertEquals("55", Settings.SEE_THROUGH_OPACITY.savedValue());
+
+        Bundle state = snapshot.toBundle();
+        assertEquals("40", SettingsBackup.Snapshot.fromBundle(state).numbers.get(SettingsBackup.OPACITY));
+        state.putString(Settings.SEE_THROUGH_OPACITY.key, "040");
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).numbers.get(SettingsBackup.OPACITY));
+    }
+
+    /**
      * The share sheet items to hide go out and come back as their row stores them, a type this
      * build doesn't name included, so a newer Facebook's survive the trip. A file can clear the
      * list, an older file leaves it alone, the types Facebook offered on this phone stay on it, and
@@ -1765,6 +1837,7 @@ public class SettingsBackupTest {
         assertTrue("the share items stop within a type of their room",
                 shareItems.length() > ShareSheetItems.MAX_HIDDEN_CHARS - 20);
         Settings.HIDDEN_SHARE_ITEMS.save(shareItems);
+        for (StringSetting number : SettingsBackup.NUMBERS) number.save("999");
         String file = SettingsBackup.create();
         int size = file.getBytes(StandardCharsets.UTF_8).length;
         assertTrue("a file of " + size + " bytes", size <= SettingsBackup.MAX_BYTES);

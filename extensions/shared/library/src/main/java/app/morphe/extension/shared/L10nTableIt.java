@@ -18,7 +18,7 @@ final class L10nTableIt {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4308);
+        Map<String, String> table = new HashMap<>(4312);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3775,6 +3775,10 @@ final class L10nTableIt {
                 "Quel file di impostazioni \u00e8 stato scritto da una versione di Hushfacebook pi\u00f9 recente di questa. Non \u00e8 stato modificato nulla.");
         table.put("The \"new comments\" bubble no longer pops up while you read comments. New comments still show in the list.",
                 "La bolla \"nuovi commenti\" non compare pi\u00f9 mentre leggi i commenti. I nuovi commenti compaiono comunque nell'elenco.");
+        table.put("The %1$s row will be set to %2$s.",
+                "La riga %1$s verr\u00e0 impostata su %2$s.");
+        table.put("The %1$s row will go back to its default.",
+                "La riga %1$s torner\u00e0 al valore predefinito.");
         table.put("The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.",
                 "La casella Aggiungi un commento sotto un video a schermo intero scompare. Le caselle dei commenti sui post restano.");
         table.put("The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.",
@@ -3865,13 +3869,13 @@ final class L10nTableIt {
                 "I riquadri scuri sono neri al %1$s percento.");
         table.put("The dark boxes are %1$s percent black. Type a number to change it.",
                 "I riquadri scuri sono neri al %1$s percento. Scrivi un numero per cambiarlo.");
+    }
+
+    private static void fill31(Map<String, String> table) {
         table.put("The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.",
                 "I riquadri scuri sfumano ai bordi invece di finire netti. La modifica si vede dal reel o dalla storia successivi.");
         table.put("The date",
                 "La data");
-    }
-
-    private static void fill31(Map<String, String> table) {
         table.put("The diagnostic report couldn't be copied. Try again.",
                 "Impossibile copiare il report diagnostico. Riprova.");
         table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
@@ -3988,13 +3992,13 @@ final class L10nTableIt {
                 "Non ci sono dati diagnostici da ripristinare.");
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Si scelgono in Morphe Manager quando applichi le patch, e Pausa non le disattiva. Applica di nuovo le patch per cambiarle.");
+    }
+
+    private static void fill32(Map<String, String> table) {
         table.put("Thin line seek bar",
                 "Barra di scorrimento a linea sottile");
         table.put("This Facebook build has no Whitehat settings screen.",
                 "Questa build di Facebook non ha la schermata delle impostazioni Whitehat.");
-    }
-
-    private static void fill32(Map<String, String> table) {
         table.put("This build can't mark notifications as read.",
                 "Questa build non pu\u00f2 segnare le notifiche come lette.");
         table.put("This build can't run the Messenger link test.",
@@ -4111,13 +4115,13 @@ final class L10nTableIt {
                 "Usa l'ordine qui sotto. Una scelta fatta su un post vale fino al riavvio. I link ai commenti mantengono l'ordine di Facebook.");
         table.put("Use the phone's emoji",
                 "Usa le emoji del telefono");
+    }
+
+    private static void fill33(Map<String, String> table) {
         table.put("Use the system font",
                 "Usa il font di sistema");
         table.put("Use your fingerprint, face or screen lock to open it.",
                 "Usa l'impronta, il volto o il blocco schermo per aprirlo.");
-    }
-
-    private static void fill33(Map<String, String> table) {
         table.put("Use your phone's font",
                 "Usa il font del telefono");
         table.put("Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.",
@@ -4234,13 +4238,13 @@ final class L10nTableIt {
                 "In attesa della barra delle schede di Facebook. Solo Eventi si applicher\u00e0 quando Facebook la crea.");
         table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
                 "In attesa della barra delle schede di Facebook. Solo Marketplace si applicher\u00e0 quando Facebook la crea.");
+    }
+
+    private static void fill34(Map<String, String> table) {
         table.put("Wallpaper accent",
                 "Colore dello sfondo");
         table.put("Watch again at the end of a feed video plays it again right there, instead of opening it in Reels.",
                 "Guarda di nuovo alla fine di un video del feed lo riproduce di nuovo l\u00ec, invece di aprirlo in Reels.");
-    }
-
-    private static void fill34(Map<String, String> table) {
         table.put("Watch history",
                 "Cronologia visualizzazioni");
         table.put("Watch history isn't available in this build.",
@@ -4357,13 +4361,13 @@ final class L10nTableIt {
                 "Puoi anche scrivere \"parola\", -parola o in:luogo direttamente nella casella di ricerca.");
         table.put("You can open it in %1$d second.",
                 "Puoi aprirlo tra %1$d secondo.");
+    }
+
+    private static void fill35(Map<String, String> table) {
         table.put("You can open it in %1$d seconds.",
                 "Puoi aprirlo tra %1$d secondi.");
         table.put("You have the newest Hushfacebook release.",
                 "Hai la versione pi\u00f9 recente di Hushfacebook.");
-    }
-
-    private static void fill35(Map<String, String> table) {
         table.put("You paused Hushfacebook.",
                 "Hai messo in pausa Hushfacebook.");
         table.put("Your break is over.",

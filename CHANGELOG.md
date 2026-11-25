@@ -10,6 +10,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* `Export settings` now saves the numbers you type into `Bar opacity`, `Box darkness`, `Dim to`, `Tab bar width`, `Tab bar height` and `Round picture size`. They used to be left out, so after a reinstall and an import Bar opacity was back at its default. The import preview says what each one will be set to. (#589)
 * **Tooling:** The device walk can put back a settings backup that an older build wrote while it still had a patch this one dropped. On 0.25.0 the S22 kept a backup holding the two `Unlock app icons` switches, and the walk failed its restore check because no restore can bring back a switch the build no longer has. Any switch the installed build still lists has to come back exactly as it was.
 * **Tooling:** A device walk passes when `Pinch to zoom` or `Photo carousel` sits idle, and the same goes for `Remove the gap above Marketplace listings`. Each one only runs when Facebook happens to serve a feed video, a photo carousel or a Marketplace gap. The S22 baseline from 0.24.0 counted all of them as runs, so a feed with no video failed the walk. The S22 baseline is now the one the 0.25.0 walk wrote.
 
