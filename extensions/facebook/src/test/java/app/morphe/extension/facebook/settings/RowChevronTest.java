@@ -74,6 +74,7 @@ public class RowChevronTest {
             "Video subfolder", "Photo subfolder",
             "Video file name", "Photo file name", "When you tap Download", "App to send to", "Share sheet items to hide", "Supported links", "Meta App Manager", "Messenger", "Instagram",
             "Quiet hours start", "Quiet hours end", "Lock after", "In-app proxy", "Burn-in guard", "Dim after", "Dim to", "Back to Clean mode", "Show the post date as", "Box darkness",
+            "Chat background", "Last chat's background",
             "Friends shown", "Followers shown", "Following shown", "Round picture size",
             "Bar opacity", "Tab bar width", "Tab bar height", "Refresh rate", "3-dot menu items to hide",
             "Ads in the feed", "Ads on profiles", "Ads in Stories", "Ads in Reels", "Ads in search results",

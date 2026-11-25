@@ -194,6 +194,14 @@ public class SettingsBackupTest {
                 "it records the 3-dot menu rows this install's Facebook showed, which the hook writes, not a choice.");
         out.put("hushfacebook_seen_menu_tiles",
                 "it records the Menu tiles this install's Facebook showed, which the hook writes, not a choice.");
+        out.put("hushfacebook_chat_background_color",
+                "it waits for the settings file format to carry a one or two color code (#573), with its check "
+                        + "for a code that reads as a color.");
+        out.put("hushfacebook_chat_backgrounds",
+                "it lists this account's chats by their keys, other people's ids among them, which a shared "
+                        + "settings file shouldn't show.");
+        out.put("hushfacebook_chat_background_last",
+                "it records the last chat this install opened, which the hook writes, not a choice.");
         out.put("hushfacebook_reset_undo",
                 "it is the settings file Undo the reset puts back, which Reset settings writes, not a choice.");
         return Collections.unmodifiableMap(out);
