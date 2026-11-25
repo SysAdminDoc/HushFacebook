@@ -1767,7 +1767,7 @@ public class HushfacebookPreferenceFragmentTest {
             ListPreference row = (ListPreference) page.findPreference(BaseSettings.SETTINGS_LANGUAGE.key);
             assertNotNull("no Settings language row", row);
             assertEquals("Settings language", String.valueOf(row.getTitle()));
-            assertEquals(Arrays.asList("", "en", "ar", "bg", "de", "es", "in", "it", "ko", "pt-rbr", "ru", "th", "tr",
+            assertEquals(Arrays.asList("", "en", "ar", "bg", "de", "es", "fr", "in", "it", "ko", "pt-rbr", "ru", "th", "tr",
                     "vi", "zh-rcn", "zh-rtw"), texts(row.getEntryValues()));
             List<String> entries = texts(row.getEntries());
             assertEquals("Same as Facebook", entries.get(0));

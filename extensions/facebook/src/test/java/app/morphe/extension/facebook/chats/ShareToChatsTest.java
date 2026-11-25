@@ -62,7 +62,7 @@ public class ShareToChatsTest {
 
     /** The languages Hushfacebook carries tables for, as resource qualifiers. */
     private static final List<String> LANGUAGES = Arrays.asList(
-            "ar", "bg", "de", "es", "in", "it", "ko", "pt-rBR", "ru", "th", "tr", "vi", "zh-rCN", "zh-rTW");
+            "ar", "bg", "de", "es", "fr", "in", "it", "ko", "pt-rBR", "ru", "th", "tr", "vi", "zh-rCN", "zh-rTW");
 
     @After
     public void restore() {

@@ -176,8 +176,8 @@ public final class L10n {
 
     /**
      * The plural category {@code count} takes in the language the text comes out in. Read from
-     * the phone's first language instead, a French phone reading English called 0 "one", as
-     * French does, and got the English singular for no items.
+     * the phone's first language instead, an Armenian phone reading English calls 0 "one", as
+     * Armenian does, and gets the English singular for no items.
      */
     static String pluralCategory(Context context, long count) {
         Locale locale = textLocale(context);
@@ -191,8 +191,8 @@ public final class L10n {
 
     /**
      * Numbers the way the phone writes them, in whichever language the text came out in: a
-     * phone set to French reads "4,2 MB" inside an English sentence, as it would in any app
-     * with no French. A translation that fails to format falls back to the English.
+     * phone set to Dutch reads "4,2 MB" inside an English sentence, as it would in any app
+     * with no Dutch. A translation that fails to format falls back to the English.
      */
     private static String format(Context context, String translated, String english, Object... args) {
         try {
@@ -221,7 +221,7 @@ public final class L10n {
 
     /**
      * "a", "a and b", "a, b, and c", in the language the text came out in. Joined with the
-     * phone's language instead, a French phone with no French table would read "a, b et c"
+     * phone's language instead, a Dutch phone with no Dutch table would read "a, b en c"
      * inside an English sentence.
      */
     public static String join(Context context, List<? extends CharSequence> items) {

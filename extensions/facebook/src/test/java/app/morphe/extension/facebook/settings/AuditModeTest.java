@@ -229,11 +229,11 @@ public class AuditModeTest {
         Configuration previous = new Configuration(resources.getConfiguration());
         try {
             Configuration requested = new Configuration(previous);
-            requested.setLocales(new LocaleList(Locale.FRANCE, Locale.GERMANY));
+            requested.setLocales(new LocaleList(new Locale("nl", "NL"), Locale.GERMANY));
             resources.updateConfiguration(requested, resources.getDisplayMetrics());
             folder.mkdirs();
 
-            // French has no table, so the application's second language supplies the title.
+            // Dutch has no table, so the application's second language supplies the title.
             String title = L10n.t(context, "News feed");
             assertEquals("Newsfeed", title);
             AuditMode.pageShown(context, "News feed", title, Collections.singletonList("News feed"), 8);
@@ -242,11 +242,11 @@ public class AuditModeTest {
             assertEquals(3, recorded.getInt("schema"));
             assertEquals("News feed", recorded.getString("route"));
             assertEquals("Newsfeed", recorded.getString("title"));
-            assertEquals("fr-FR", recorded.getString("locale"));
+            assertEquals("nl-NL", recorded.getString("locale"));
             JSONArray tags = recorded.getJSONArray("localeTags");
             assertEquals(4, tags.length());
-            assertEquals("fr-rfr", tags.getString(0));
-            assertEquals("fr", tags.getString(1));
+            assertEquals("nl-rnl", tags.getString(0));
+            assertEquals("nl", tags.getString(1));
             assertEquals("de-rde", tags.getString(2));
             assertEquals("de", tags.getString(3));
         } finally {

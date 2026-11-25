@@ -47,10 +47,12 @@ public class L10nTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     private static final String KEY = "Hide sponsored posts";
+    /** A language with no table, which writes four point two as 4,2. */
+    private static final Locale DUTCH = new Locale("nl", "NL");
 
     @Test
     public void everyLanguageTheBundleCarriesHasATableWithTheKey() {
-        assertEquals(Arrays.asList("ar", "bg", "de", "es", "in", "it", "ko", "pt-rbr", "ru", "th", "tr", "vi", "zh-rcn",
+        assertEquals(Arrays.asList("ar", "bg", "de", "es", "fr", "in", "it", "ko", "pt-rbr", "ru", "th", "tr", "vi", "zh-rcn",
                 "zh-rtw"),
                 Arrays.asList(L10nTranslations.LANGUAGES));
         for (String language : L10nTranslations.LANGUAGES) {
@@ -58,7 +60,7 @@ public class L10nTest {
             assertNotNull(language, table);
             assertTrue(language + " has no row for " + KEY, table.containsKey(KEY));
         }
-        assertNull("a language with no table has a table", L10nTranslations.of("fr"));
+        assertNull("a language with no table has a table", L10nTranslations.of("nl"));
     }
 
     @Test
@@ -111,13 +113,13 @@ public class L10nTest {
     public void chineseChoicesKeepTheLanguageListsOrderAndEnglishStopsTheSearch() {
         Locale traditional = chinese("Hant", "CN");
         Locale simplified = chinese("Hans", "TW");
-        assertEquals(table("zh-rtw").get(KEY), L10n.t(in(Locale.FRANCE, traditional, simplified), KEY));
-        assertEquals(table("zh-rcn").get(KEY), L10n.t(in(Locale.FRANCE, simplified, traditional), KEY));
+        assertEquals(table("zh-rtw").get(KEY), L10n.t(in(DUTCH, traditional, simplified), KEY));
+        assertEquals(table("zh-rcn").get(KEY), L10n.t(in(DUTCH, simplified, traditional), KEY));
         assertEquals(table("zh-rtw").get(KEY), L10n.t(in(Locale.JAPAN, Locale.TAIWAN), KEY));
-        assertEquals(table("de").get(KEY), L10n.t(in(Locale.FRANCE, Locale.GERMANY, traditional), KEY));
+        assertEquals(table("de").get(KEY), L10n.t(in(DUTCH, Locale.GERMANY, traditional), KEY));
         assertEquals(KEY, L10n.t(in(Locale.US, traditional), KEY));
-        assertEquals(KEY, L10n.t(in(Locale.FRANCE, Locale.US, traditional), KEY));
-        assertEquals(table("zh-rtw").get(KEY), L10n.t(in(Locale.FRANCE, traditional, Locale.US), KEY));
+        assertEquals(KEY, L10n.t(in(DUTCH, Locale.US, traditional), KEY));
+        assertEquals(table("zh-rtw").get(KEY), L10n.t(in(DUTCH, traditional, Locale.US), KEY));
     }
 
     @Test
@@ -136,16 +138,16 @@ public class L10nTest {
                 + "leave out its patch.";
         String other = "Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again "
                 + "and leave out its patch.";
-        Context traditional = in(Locale.FRANCE, chinese("Hant", "CN"));
-        assertEquals(Locale.FRANCE, L10n.locale(traditional));
+        Context traditional = in(DUTCH, chinese("Hant", "CN"));
+        assertEquals(DUTCH, L10n.locale(traditional));
         assertEquals(Locale.TAIWAN, L10n.textLocale(traditional));
         assertEquals("other", L10n.pluralCategory(traditional, 1));
-        assertEquals(String.format(Locale.FRANCE, table("zh-rtw").get(other), "x"),
+        assertEquals(String.format(DUTCH, table("zh-rtw").get(other), "x"),
                 L10n.quantity(traditional, 1, one, other, "x"));
-        Context simplified = in(Locale.FRANCE, chinese("Hans", "TW"));
+        Context simplified = in(DUTCH, chinese("Hans", "TW"));
         assertEquals(Locale.CHINA, L10n.textLocale(simplified));
         assertEquals("other", L10n.pluralCategory(simplified, 1));
-        assertEquals(String.format(Locale.FRANCE, table("zh-rcn").get(other), "x"),
+        assertEquals(String.format(DUTCH, table("zh-rcn").get(other), "x"),
                 L10n.quantity(simplified, 1, one, other, "x"));
         Context englishFirst = in(Locale.US, Locale.TAIWAN);
         assertEquals(Locale.ENGLISH, L10n.textLocale(englishFirst));
@@ -164,10 +166,10 @@ public class L10nTest {
     @Test
     public void aSecondLanguageAnswersWhenTheFirstHasNoTable() {
         // Android reads string resources down the whole list, and so does the catalog.
-        assertEquals(table("de").get(KEY), L10n.t(in(Locale.FRANCE, Locale.GERMANY), KEY));
+        assertEquals(table("de").get(KEY), L10n.t(in(DUTCH, Locale.GERMANY), KEY));
         assertEquals("the first language with a table wins", table("es").get(KEY),
                 L10n.t(in(Locale.JAPAN, new Locale("es", "ES"), Locale.GERMANY), KEY));
-        assertEquals(Arrays.asList("fr-rfr", "fr", "de-rde", "de"), L10n.tags(in(Locale.FRANCE, Locale.GERMANY)));
+        assertEquals(Arrays.asList("nl-rnl", "nl", "de-rde", "de"), L10n.tags(in(DUTCH, Locale.GERMANY)));
     }
 
     /**
@@ -178,10 +180,10 @@ public class L10nTest {
     @Test
     public void englishAnswersWhereThePhoneListsIt() {
         assertEquals(KEY, L10n.t(in(Locale.US, Locale.GERMANY), KEY));
-        assertEquals(KEY, L10n.t(in(Locale.FRANCE, Locale.US, Locale.GERMANY), KEY));
+        assertEquals(KEY, L10n.t(in(DUTCH, Locale.US, Locale.GERMANY), KEY));
         assertEquals("the English list word, not German's", "a, b, and c",
                 L10n.join(in(Locale.US, Locale.GERMANY), Arrays.asList("a", "b", "c")));
-        assertEquals(table("de").get(KEY), L10n.t(in(Locale.FRANCE, Locale.GERMANY, Locale.US), KEY));
+        assertEquals(table("de").get(KEY), L10n.t(in(DUTCH, Locale.GERMANY, Locale.US), KEY));
     }
 
     /** Portugal's Portuguese first and Brazil's second: the Brazilian table answers. */
@@ -199,11 +201,11 @@ public class L10nTest {
      */
     @Test
     public void aSecondLanguagesTextTakesItsOwnListWordAndPluralRule() {
-        assertEquals("a, b und c", L10n.join(in(Locale.FRANCE, Locale.GERMANY), Arrays.asList("a", "b", "c")));
-        Context indonesianSecond = in(Locale.FRANCE, new Locale("in", "ID"));
-        // French calls 1 "one"; Indonesian has no such form.
+        assertEquals("a, b und c", L10n.join(in(DUTCH, Locale.GERMANY), Arrays.asList("a", "b", "c")));
+        Context indonesianSecond = in(DUTCH, new Locale("in", "ID"));
+        // Dutch calls 1 "one"; Indonesian has no such form.
         assertEquals("other", L10n.pluralCategory(indonesianSecond, 1));
-        assertEquals("one", L10n.pluralCategory(in(Locale.FRANCE, Locale.US), 1));
+        assertEquals("one", L10n.pluralCategory(in(DUTCH, Locale.US), 1));
     }
 
     @Test
@@ -219,15 +221,15 @@ public class L10nTest {
     /** A format's numbers come out the phone's way even when its sentence is English. */
     @Test
     public void aFormatWritesItsNumbersThePhonesWay() {
-        assertEquals("4,2 MB", L10n.f(in(Locale.FRANCE), "%1$.1f MB", 4.2));
+        assertEquals("4,2 MB", L10n.f(in(DUTCH), "%1$.1f MB", 4.2));
         assertEquals("4.2 MB", L10n.f(in(Locale.US), "%1$.1f MB", 4.2));
     }
 
     @Test
     public void englishAndEveryLanguageWithNoTableReadTheEnglish() {
         assertEquals(KEY, L10n.t(in(Locale.US), KEY));
-        assertEquals(KEY, L10n.t(in(Locale.FRANCE), KEY));
-        assertEquals(KEY, L10n.t(in(Locale.JAPAN, Locale.FRANCE), KEY));
+        assertEquals(KEY, L10n.t(in(DUTCH), KEY));
+        assertEquals(KEY, L10n.t(in(Locale.JAPAN, DUTCH), KEY));
         // A string nobody translated is its own English, never an empty label.
         assertEquals("Not a key of any table", L10n.t(in(Locale.GERMANY), "Not a key of any table"));
         assertEquals("", L10n.t(in(Locale.GERMANY), ""));
@@ -244,9 +246,9 @@ public class L10nTest {
         String german = table("de").get("Saved to %1$s");
         assertNotNull(german);
         assertEquals(String.format(german, "Movies/Facebook"), L10n.f(in(Locale.GERMANY), "Saved to %1$s", "Movies/Facebook"));
-        // Numbers are written the phone's way even in English: a French phone reads 4,2.
-        assertEquals("4,2 MB of 9 MB", L10n.f(in(Locale.FRANCE), "%1$s of %2$s",
-                String.format(L10n.locale(in(Locale.FRANCE)), "%.1f MB", 4.2), "9 MB"));
+        // Numbers are written the phone's way even in English: a Dutch phone reads 4,2.
+        assertEquals("4,2 MB of 9 MB", L10n.f(in(DUTCH), "%1$s of %2$s",
+                String.format(L10n.locale(in(DUTCH)), "%.1f MB", 4.2), "9 MB"));
     }
 
     @Test
@@ -259,11 +261,12 @@ public class L10nTest {
         assertEquals("a, b y c", L10n.join(in(new Locale("es", "ES")), three));
         assertEquals("a, b ve c", L10n.join(in(new Locale("tr", "TR")), three));
         assertEquals("a, b e c", L10n.join(in(new Locale("pt", "BR")), three));
+        assertEquals("a, b et c", L10n.join(in(Locale.FRANCE), three));
         // Android calls Indonesian "in", which ICU knows as "id".
         String indonesian = L10n.join(in(new Locale("in", "ID")), three);
         assertTrue(indonesian, indonesian.contains(" dan c"));
-        // A French phone has no French table, so the sentence is English and so is its "and".
-        assertEquals("a, b, and c", L10n.join(in(Locale.FRANCE), three));
+        // A Dutch phone has no Dutch table, so the sentence is English and so is its "and".
+        assertEquals("a, b, and c", L10n.join(in(DUTCH), three));
     }
 
     @Test
@@ -297,10 +300,15 @@ public class L10nTest {
         Context indonesian = in(new Locale("in", "ID"));
         assertEquals("other", L10n.pluralCategory(indonesian, 1));
         assertEquals(String.format(table("in").get(other), "x"), L10n.quantity(indonesian, 1, one, other, "x"));
-        // The form follows the language the text is in: French calls 0 "one", English doesn't, and
-        // a French phone reads English here.
-        assertEquals("other", L10n.pluralCategory(in(Locale.FRANCE), 0));
-        assertEquals(String.format(other, "x"), L10n.quantity(in(Locale.FRANCE), 0, one, other, "x"));
+        // The form follows the language the text is in: Armenian calls 0 "one", English doesn't, and
+        // an Armenian phone reads English here.
+        Locale armenian = new Locale("hy", "AM");
+        assertEquals("one", android.icu.text.PluralRules.forLocale(armenian).select(0));
+        assertEquals("other", L10n.pluralCategory(in(armenian), 0));
+        assertEquals(String.format(other, "x"), L10n.quantity(in(armenian), 0, one, other, "x"));
+        // French has a table, so its 0 takes the French one row, as French counts.
+        assertEquals("one", L10n.pluralCategory(in(Locale.FRANCE), 0));
+        assertEquals(String.format(table("fr").get(one), "x"), L10n.quantity(in(Locale.FRANCE), 0, one, other, "x"));
         // A language with a form English lacks keeps it as a |category row of the other form.
         Map<String, String> polish = new java.util.HashMap<>();
         polish.put(other, "o");

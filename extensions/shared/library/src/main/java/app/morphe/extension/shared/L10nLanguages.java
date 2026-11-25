@@ -36,6 +36,7 @@ public final class L10nLanguages {
         NAMES.put("bg", "\u0411\u044a\u043b\u0433\u0430\u0440\u0441\u043a\u0438");
         NAMES.put("de", "Deutsch");
         NAMES.put("es", "Espa\u00f1ol");
+        NAMES.put("fr", "Fran\u00e7ais");
         NAMES.put("in", "Bahasa Indonesia");
         NAMES.put("it", "Italiano");
         NAMES.put("ko", "\ud55c\uad6d\uc5b4");

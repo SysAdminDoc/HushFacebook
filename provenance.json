@@ -534,6 +534,7 @@
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableBg.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableDe.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableEs.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableFr.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIn.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIt.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableKo.java",
