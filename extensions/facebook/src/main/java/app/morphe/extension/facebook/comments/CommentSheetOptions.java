@@ -336,6 +336,12 @@ public final class CommentSheetOptions {
     /** Counted each time the emoji row is kept out from over the comment box. */
     static final String EMOJI_ROW_HIDDEN = "Comment emoji row kept out";
 
+    /** The member the report names once the comments' params have asked whether the keyboard opens first (#594). */
+    static final String KEYBOARD = "keyboard as comments open";
+
+    /** Counted each time comments that would open with the keyboard up are opened with it closed. */
+    static final String KEYBOARD_KEPT_CLOSED = "Comments opened with the keyboard closed";
+
     /** The member the report names once the comment box has set its background (#344). */
     static final String BOX_LINE = "line over the comment box";
 
@@ -567,6 +573,26 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "comment emoji row", failure);
             return false;
+        }
+    }
+
+    /**
+     * The hook, as the params comments open with are built (#594): Facebook's pick of whether the
+     * keyboard comes up as the comments first load, which it makes for a Comment tap and for a post
+     * with no comments yet. While the switch is on the answer is no, so the comments open with the
+     * keyboard closed and a tap on the comment box opens it. Off, paused, or before the settings are
+     * ready, Facebook's pick stands.
+     */
+    public static boolean keyboardOnFirstLoad(boolean show) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, KEYBOARD);
+            if (!show || !Utils.settingsReady() || !Settings.KEEP_COMMENT_KEYBOARD_CLOSED.get()) return show;
+            HookStatus.counted(FAMILY, KEYBOARD_KEPT_CLOSED);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comment keyboard", failure);
+            return show;
         }
     }
 

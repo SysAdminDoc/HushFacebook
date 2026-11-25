@@ -1704,6 +1704,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_emoji_row", FALSE);
 
     /**
+     * Comments open with the keyboard closed, even where Facebook would open it for the first
+     * comment (#594, {@link app.morphe.extension.facebook.comments.CommentSheetOptions#keyboardOnFirstLoad}).
+     * A tap on the comment box still opens it. Off by default. A change shows the next time comments open.
+     */
+    public static final BooleanSetting KEEP_COMMENT_KEYBOARD_CLOSED =
+            new BooleanSetting("hushfacebook_keep_comment_keyboard_closed", FALSE);
+
+    /**
      * The comment box comes without the thin line along its top (#344,
      * {@link app.morphe.extension.facebook.comments.CommentSheetOptions}). Off by default. A
      * change shows on the next comment box built.

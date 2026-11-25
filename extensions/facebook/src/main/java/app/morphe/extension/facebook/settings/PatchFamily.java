@@ -208,7 +208,7 @@ public enum PatchFamily {
             Settings.HIDE_VIDEO_COMMENT_COMPOSER, Settings.HIDE_LIVE_COMMENT_BAR, Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES,
             Settings.HIDE_POST_COMMENT_PREVIEWS, Settings.HIDE_COMMENT_DOWNVOTE_BUTTON,
             Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_REPLY_BUTTON, Settings.HIDE_COMMENTER_BADGES,
-            Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE,
+            Settings.HIDE_COMMENT_EMOJI_ROW, Settings.KEEP_COMMENT_KEYBOARD_CLOSED, Settings.HIDE_COMMENT_BOX_LINE,
             Settings.HIDE_COMMENT_BOX,
             Settings.COMMENT_BLOCK_BUTTON, Settings.REACTOR_BLOCK_BUTTON, Settings.FILTER_COMMENT_SEARCH),
     // Open comments at is a list, Facebook's height, full or half (#179); the rest are switches.

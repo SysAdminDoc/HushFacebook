@@ -80,6 +80,7 @@ public class CommentSheetOptionsTest {
         Settings.LIKE_ONLY.resetToDefault();
         Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS.resetToDefault();
         Settings.HIDE_COMMENT_EMOJI_ROW.resetToDefault();
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.resetToDefault();
         Settings.HIDE_COMMENT_BOX_LINE.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         Settings.HIDE_COMMENT_BOX.resetToDefault();
@@ -141,6 +142,22 @@ public class CommentSheetOptionsTest {
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() -> assertFalse("the emoji row went before the settings were ready",
                 CommentSheetOptions.holdsEmojiRow()));
+    }
+
+    @Test
+    public void theKeyboardStaysClosedOnlyUnderItsOwnSwitch() {
+        Settings.HIDE_COMMENT_EMOJI_ROW.save(true);
+        assertTrue("the emoji row switch kept the keyboard closed", CommentSheetOptions.keyboardOnFirstLoad(true));
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.save(true);
+        assertFalse("the keyboard still came up", CommentSheetOptions.keyboardOnFirstLoad(true));
+        assertFalse("comments that open without the keyboard got it", CommentSheetOptions.keyboardOnFirstLoad(false));
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.KEYBOARD_KEPT_CLOSED + " 1", statusLine());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("a paused Hushfacebook kept the keyboard closed", CommentSheetOptions.keyboardOnFirstLoad(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertTrue("the keyboard stayed closed before the settings were ready",
+                CommentSheetOptions.keyboardOnFirstLoad(true)));
     }
 
     /** Facebook's top border: the line's color filling the box, the box's color over it, 3 px down. */

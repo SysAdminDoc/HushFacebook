@@ -165,6 +165,7 @@ final class SwitchLabels {
         if (setting == Settings.LIKE_ONLY) return L10n.t("Like only");
         if (setting == Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS) return L10n.t("Hide GIF and sticker buttons");
         if (setting == Settings.HIDE_COMMENT_EMOJI_ROW) return L10n.t("Hide the emoji row on comments");
+        if (setting == Settings.KEEP_COMMENT_KEYBOARD_CLOSED) return L10n.t("Keep the keyboard closed when comments open");
         if (setting == Settings.HIDE_COMMENT_BOX_LINE) return L10n.t("Hide the line over the comment box");
         if (setting == Settings.HIDE_COMMENT_BOX) return L10n.t("Hide the comment box");
         if (setting == Settings.HIDE_VIDEO_COMMENT_COMPOSER) return L10n.t("Hide the video comment box");

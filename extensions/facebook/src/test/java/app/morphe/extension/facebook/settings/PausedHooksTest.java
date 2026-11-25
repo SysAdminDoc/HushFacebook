@@ -1132,6 +1132,8 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.incomingTypers(3) == 0,
                 () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty(),
                 CommentSheetOptions::holdsEmojiRow,
+                // Comments open with the keyboard closed (#594).
+                () -> !CommentSheetOptions.keyboardOnFirstLoad(true),
                 () -> {
                     // The bar along the bottom of a live video is held gone (#537).
                     View bar = new View(RuntimeEnvironment.getApplication());

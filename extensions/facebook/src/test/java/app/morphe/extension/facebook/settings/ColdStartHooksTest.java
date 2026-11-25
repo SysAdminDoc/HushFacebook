@@ -460,6 +460,8 @@ public class ColdStartHooksTest {
                 CommentSheetOptions.holdsPostComments(CommentSheetOptions.INLINE_COMMENTS));
         assertFalse("a comment drawn before the context lost its dislike",
                 CommentSheetOptions.holdsCommentDislike());
+        assertTrue("comments opened before the context kept the keyboard closed",
+                CommentSheetOptions.keyboardOnFirstLoad(true));
         assertFalse("a comment drawn before the context lost Reply",
                 CommentSheetOptions.holdsCommentReply(CommentSheetOptions.REPLY_PLUGIN));
         assertFalse("a comment drawn before the context lost its commenter's badge",
