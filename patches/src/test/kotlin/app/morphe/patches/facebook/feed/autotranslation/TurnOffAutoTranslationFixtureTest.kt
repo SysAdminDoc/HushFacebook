@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -38,9 +39,19 @@ import org.junit.Test
  * register. The comment body's See translation handler, built once in its render with the click id
  * its event method checks, goes to the body's added link helper right after it lands, and the body
  * gains that helper and the tap helper that reads the comment's state and dispatches the click.
- * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * And the two Reels queries naming skip_ucs_caption_translation reach GraphQlQueryParamSet's setter
+ * of a named Boolean, straight or through a setter that hands it on, and that setter's name and
+ * value go to the extension first (#579). Reads the fixture bundles from
+ * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class TurnOffAutoTranslationFixtureTest {
+    private companion object {
+        /** The Reels queries' variable that keeps the server from translating a reel's caption (#579), as 588 names it. */
+        const val SKIP_CAPTION_TRANSLATION = "skip_ucs_caption_translation"
+        const val QUERY_HOOK =
+            "Lapp/morphe/extension/facebook/feed/AutoTranslation;->queryFlag(Ljava/lang/String;Ljava/lang/Boolean;)Ljava/lang/Boolean;"
+    }
+
     private class Anchors(
         val enumClass: ClassDef,
         val models: List<ClassDef>,
@@ -49,7 +60,22 @@ class TurnOffAutoTranslationFixtureTest {
         val outlined: Collection<ClassDef>,
         val commentEnum: ClassDef,
         val commentBodies: List<ClassDef>,
+        /**
+         * #579: the Reels query classes that name the caption translation variable, the query variables'
+         * setter of a named Boolean they reach, and the classes of every such setter they call.
+         */
+        val queryHolders: List<ClassDef>,
+        val querySetter: MethodReference,
+        val setterClasses: Collection<ClassDef>,
     )
+
+    /** The instance calls in [methods] that take a name and a Boolean and return nothing. */
+    private fun namedBooleanCalls(methods: List<Method>): List<MethodReference> = methods
+        .flatMap { it.implementation?.instructions?.toList().orEmpty() }
+        .filter { it.opcode == Opcode.INVOKE_VIRTUAL || it.opcode == Opcode.INVOKE_VIRTUAL_RANGE }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter { it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "Ljava/lang/Boolean;") }
+        .distinctBy { it.toString() }
 
     private fun anchors(bundle: java.io.File): Anchors {
         val name = bundle.name
@@ -73,7 +99,24 @@ class TurnOffAutoTranslationFixtureTest {
         val bodies = FixtureDex.classesHolding(bundle, COMMENT_TOGGLE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         assertTrue("$name: no class loads \"$COMMENT_TOGGLE\"", bodies.isNotEmpty())
         val outlined = FixtureDex.classes(bundle, footers.single().methods.flatMap(::handedTo).toSet()).values
-        return Anchors(enums.single(), models, footers.single(), outlined, commentEnums.single(), bodies)
+        val queryHolders = FixtureDex.classesHolding(bundle, SKIP_CAPTION_TRANSLATION).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        // 588: the Reels tab's query (VideoHomeQuery$ReelsTabQueryString) and the one for reels opened elsewhere.
+        assertEquals("$name: classes naming $SKIP_CAPTION_TRANSLATION", 2, queryHolders.size)
+        val calls = namedBooleanCalls(queryHolders.flatMap { it.methods }.filter { holdsString(it, SKIP_CAPTION_TRANSLATION) })
+        // 588: the param set's own setter, called straight by one query, and the other query builder's, which hands it on.
+        val onParamSet = calls.filter { it.definingClass == "Lcom/facebook/graphql/query/GraphQlQueryParamSet;" }
+        assertEquals("$name: GraphQlQueryParamSet setters of a named Boolean the Reels queries call", 1, onParamSet.size)
+        val setter = onParamSet.single()
+        val setterClasses = FixtureDex.classes(bundle, calls.map { it.definingClass }.toSet()).values
+        assertEquals("$name: classes of the setters", calls.map { it.definingClass }.toSet().size, setterClasses.size)
+        for (other in calls.filter { it != setter }) {
+            val method = setterClasses.single { it.type == other.definingClass }.methods.single {
+                it.name == other.name && it.parameterTypes.map(CharSequence::toString) == other.parameterTypes.map(CharSequence::toString)
+            }
+            assertTrue("$name: $other hands its variable to $setter",
+                namedBooleanCalls(listOf(method)).any { it.toString() == setter.toString() })
+        }
+        return Anchors(enums.single(), models, footers.single(), outlined, commentEnums.single(), bodies, queryHolders, setter, setterClasses)
     }
 
     /** The classes of the static methods [caller] calls that return what it returns and take its first parameter first. */
@@ -131,8 +174,13 @@ class TurnOffAutoTranslationFixtureTest {
                 assertEquals("$name: models with a translation_type getter", 1, anchors.models.size)
                 val context = PatchContexts.of(
                     anchors.models + anchors.enumClass + anchors.footer + anchors.outlined + anchors.commentEnum + anchors.commentBodies +
-                        ExtensionDex.classDef(SETTINGS_STATUS),
+                        anchors.queryHolders + anchors.setterClasses + ExtensionDex.classDef(SETTINGS_STATUS),
                 )
+                val setterMethod = anchors.setterClasses.single { it.type == anchors.querySetter.definingClass }.methods.single {
+                    it.name == anchors.querySetter.name && it.returnType == "V" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "Ljava/lang/Boolean;")
+                }
+                val setterBefore = setterMethod.implementation!!.instructions.toList()
                 val getter = context.findTranslationTypeGetter()
                 val reads = context.findCaptionReads()
                 assertEquals("$name: caption reads", 2, reads.size)
@@ -249,6 +297,20 @@ class TurnOffAutoTranslationFixtureTest {
                 assertEquals("$linkWhere: one click dispatched", 1, tapCode.count {
                     (it as? ReferenceInstruction)?.reference?.toString() == link.dispatch.toString()
                 })
+
+                // #579: the setter of the Reels queries' variables hands the name and value to the extension
+                // first, and sets the answer.
+                val setterWhere = "$name ${anchors.querySetter}"
+                val setterCode = patched(context, setterMethod).implementation!!.instructions.toList()
+                assertEquals("$setterWhere: two instructions in", setterBefore.size + 2, setterCode.size)
+                val thisRegister = setterMethod.implementation!!.registerCount - 3
+                assertEquals("$setterWhere: the hook call", Opcode.INVOKE_STATIC_RANGE, setterCode[0].opcode)
+                assertEquals("$setterWhere: the hook", QUERY_HOOK, (setterCode[0] as ReferenceInstruction).reference.toString())
+                assertEquals("$setterWhere: the name and value handed over", 2, (setterCode[0] as RegisterRangeInstruction).registerCount)
+                assertEquals("$setterWhere: from the name's register", thisRegister + 1, (setterCode[0] as RegisterRangeInstruction).startRegister)
+                assertEquals("$setterWhere: the answer", Opcode.MOVE_RESULT_OBJECT, setterCode[1].opcode)
+                assertEquals("$setterWhere: lands in the value's register", thisRegister + 2, (setterCode[1] as OneRegisterInstruction).registerA)
+                assertEquals("$setterWhere: then the setter as before", setterBefore[0].opcode, setterCode[2].opcode)
 
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "autoTranslation" }
                 assertEquals("$name: SettingsStatus.autoTranslation() isn't switched on", 1,

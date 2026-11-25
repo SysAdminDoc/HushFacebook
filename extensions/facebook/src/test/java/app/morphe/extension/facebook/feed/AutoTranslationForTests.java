@@ -40,4 +40,9 @@ public final class AutoTranslationForTests {
     public static boolean keepsTheCaption() {
         return !AutoTranslation.captionAutoTranslates(true);
     }
+
+    /** True when a Reels query asks the server for its captions as written (#579). */
+    public static boolean asksForCaptionsAsWritten() {
+        return Boolean.TRUE.equals(AutoTranslation.queryFlag("skip_ucs_caption_translation", Boolean.FALSE));
+    }
 }

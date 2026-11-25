@@ -614,12 +614,13 @@ public class PausedHooksTest {
         probes.put(PatchFamily.PHOTO_CAROUSEL, Arrays.asList(() -> PhotoCarousel.carousel(0),
                 () -> PhotoCarousel.skipLayout("com.facebook.feedplugins.attachments.album.PhotoLayoutFramePlugin")));
         // A post marked for automatic translation reads as one to translate on request, the reels
-        // footer hears a caption can't be translated by itself, so it asks for nothing, an
-        // auto-translated comment reads as one shown as written, and a comment's See translation
-        // handler is tapped once the main thread is free.
+        // footer hears a caption can't be translated by itself, so it asks for nothing, a Reels
+        // query asks the server for captions as written, an auto-translated comment reads as one
+        // shown as written, and a comment's See translation handler is tapped once the main thread
+        // is free.
         probes.put(PatchFamily.AUTO_TRANSLATION, Arrays.asList(AutoTranslationForTests::keepsThePost,
-                AutoTranslationForTests::keepsTheCaption, AutoTranslationForTests::keepsTheComment,
-                TranslateCommentsForTests::tapsTheLink));
+                AutoTranslationForTests::keepsTheCaption, AutoTranslationForTests::asksForCaptionsAsWritten,
+                AutoTranslationForTests::keepsTheComment, TranslateCommentsForTests::tapsTheLink));
         // The Feeds tab's yes to a title row is answered as a no, its filters go to a container
         // that's never on screen, and its posts get no room for them. The room follows what the
         // tab did with its filters, so that probe builds a tab first.

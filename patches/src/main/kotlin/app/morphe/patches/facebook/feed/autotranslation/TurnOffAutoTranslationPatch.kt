@@ -12,11 +12,13 @@ import app.morphe.patcher.patch.patch
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.enableStatus
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.executeBytecode
 import app.morphe.util.findMutableMethodOf
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -59,6 +61,16 @@ internal const val CAPTION_TRIGGER = "updateState:FbShortsViewerFooterComponent.
  */
 internal const val CAPTION_TRANSLATABLE_KEY = 143667788L
 
+/**
+ * The Reels queries' variable that tells Facebook's server not to translate a reel's caption before
+ * it sends the reel (#579). Facebook sets it false unless a server test turns it on.
+ */
+internal const val CAPTION_TRANSLATION_PARAM = "skip_ucs_caption_translation"
+/** The variables of a GraphQL query, a name Facebook keeps. */
+internal const val QUERY_PARAM_SET = "Lcom/facebook/graphql/query/GraphQlQueryParamSet;"
+internal const val QUERY_FLAG_HOOK =
+    "$AUTO_TRANSLATION_EXTENSION->queryFlag(Ljava/lang/String;Ljava/lang/Boolean;)Ljava/lang/Boolean;"
+
 /** Three constants of the comment's translation type enum, kept as the enum's names. */
 internal const val AUTO_TRANSLATE = "AUTO_TRANSLATE"
 internal const val MACHINE_TRANSLATION = "MACHINE_TRANSLATION"
@@ -86,6 +98,16 @@ internal const val COMMENT_TOGGLE = "updateState:CommentBodyComponent.updateIsTr
  * [CAPTION_TRIGGER] (581 `LX/Au4;` A1A and A1F, 580 `LX/Av9;` A1F and A1K, 577 `LX/AxP;` A1N and
  * A1K). Each read goes through the extension, which answers false while the switch is on, so no
  * request is made and the caption keeps its own words.
+ *
+ * Reels the server translates (#579): the Reels tab's query and the one for reels opened from
+ * elsewhere both send [CAPTION_TRANSLATION_PARAM], false unless a server test sets it, and with it
+ * false the server can send some reels with their caption already translated, which no footer
+ * request decides. Both queries set it through the query variables' setter of a named Boolean
+ * (588 `GraphQlQueryParamSet->A03(String, Boolean)`), one straight and one through a builder's
+ * setter that hands it on, found among the calls of the methods that hold the variable's name.
+ * Every boolean variable of every query goes through that setter, so the
+ * extension answers this one variable alone: true while the switch is on. A build without the
+ * variable keeps the rest of the patch and only warns.
  *
  * Comments (#372): the comment body (CommentBodyComponent, 585 arm64 `LX/0AA5;`) reads the comment's
  * own translation type, an enum of AUTO_TRANSLATE, MACHINE_TRANSLATION and ORIGINAL, in two places.
@@ -123,6 +145,12 @@ val turnOffAutoTranslationPatch = patch(
         reads.forEach { hookCaptionRead(it) }
         comments.forEach { hookCommentTypeRead(it) }
         hookCommentTranslationLink(link)
+        // #579: and the Reels queries' variable that keeps the server from translating a caption itself.
+        try {
+            hookQueryFlag(findQueryFlagSetter())
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a reel caption the server translates still arrives translated.")
+        }
         enableStatus("autoTranslation")
     }
 }
@@ -330,6 +358,63 @@ internal fun BytecodePatchContext.hookCaptionRead(read: CaptionRead) {
         """
             invoke-static/range { v${read.register} .. v${read.register} }, $CAPTION_HOOK
             move-result v${read.register}
+        """,
+    )
+}
+
+/** The parameter types of the setter of a boolean query variable: the variable's name and its value. */
+private val QUERY_FLAG_PARAMETERS = listOf("Ljava/lang/String;", "Ljava/lang/Boolean;")
+
+/** The calls in [method] to an instance method taking a name and a Boolean and returning nothing. */
+internal fun queryFlagCalls(method: Method): List<MethodReference> =
+    method.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
+        if (instruction.opcode != Opcode.INVOKE_VIRTUAL && instruction.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return@mapNotNull null
+        val call = (instruction as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
+        call.takeIf { it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == QUERY_FLAG_PARAMETERS }
+    }
+
+private fun BytecodePatchContext.methodOf(call: MethodReference): Method =
+    classDefByOrNull(call.definingClass)?.methods?.firstOrNull { MethodUtil.methodSignaturesMatch(it, call) }
+        ?: refuse("$call isn't in the APK")
+
+/**
+ * The setter the Reels queries give [CAPTION_TRANSLATION_PARAM] to: in the methods that load the
+ * variable's name, the one instance method of [QUERY_PARAM_SET] they call with a name and a
+ * Boolean. 588's Reels tab query calls it through a builder's setter that only hands the variable
+ * on, and the other query calls it straight. Refuses unless there's one such method, it has code,
+ * and every other setter of a named Boolean those methods call hands its variable to it, so it sees
+ * them all. Changes nothing.
+ */
+internal fun BytecodePatchContext.findQueryFlagSetter(): Method {
+    val holders = classDefByStrings(CAPTION_TRANSLATION_PARAM, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .distinctBy { it.type }
+        .flatMap { holder -> holder.methods.filter { holdsString(it, CAPTION_TRANSLATION_PARAM) } }
+    if (holders.isEmpty()) refuse("no method loads \"$CAPTION_TRANSLATION_PARAM\"")
+    val calls = holders.flatMap(::queryFlagCalls).distinctBy { it.toString() }
+    val onParamSet = calls.filter { it.definingClass == QUERY_PARAM_SET }
+    val call = onParamSet.singleOrNull() ?: refuse(
+        "the methods loading \"$CAPTION_TRANSLATION_PARAM\" call ${onParamSet.size} setters of a named Boolean " +
+            "on $QUERY_PARAM_SET, expected one",
+    )
+    for (other in calls.filter { it.toString() != call.toString() }) {
+        if (queryFlagCalls(methodOf(other)).none { it.toString() == call.toString() }) {
+            refuse("$other doesn't hand its variable to $call")
+        }
+    }
+    val method = methodOf(call)
+    if (method.implementation == null || AccessFlags.STATIC.isSet(method.accessFlags)) refuse("$call has no code of its own")
+    return method
+}
+
+/** The setter's name and value go through the extension first, and its answer is the value set. */
+internal fun BytecodePatchContext.hookQueryFlag(setter: Method) {
+    val method = mutableClassDefBy(setter.definingClass).findMutableMethodOf(setter)
+    method.addInstructions(
+        0,
+        """
+            invoke-static/range { p1 .. p2 }, $QUERY_FLAG_HOOK
+            move-result-object p2
         """,
     )
 }
