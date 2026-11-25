@@ -544,9 +544,10 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
                 if (setting != null) {
                     updatePreference(pref, setting, syncSettingValue, applySettingToPreference);
-                } else if (BaseSettings.DEBUG.savedValue() && (pref instanceof SwitchPreference
+                } else if (BaseSettings.DEBUG.savedValue() && pref.isPersistent() && (pref instanceof SwitchPreference
                         || pref instanceof EditTextPreference || pref instanceof ListPreference)) {
-                    // Probably a typo in the patches preference declaration.
+                    // Probably a typo in the patches preference declaration. A row that isn't
+                    // persistent saves somewhere of its own, so it has no setting to find (#587).
                     Logger.printException(() -> "Preference key has no setting: " + key);
                 }
             }
