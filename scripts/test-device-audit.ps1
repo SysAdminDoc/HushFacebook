@@ -646,6 +646,11 @@ try {
     Assert-That (-not (Test-AuditSettingsRestored $olderBackup (New-TestBackup ([ordered]@{ hide_ads = $true; hide_reels = $false; unknown = $false })) $defaultsShape)) 'A switch the defaults never listed passed.'
     Assert-That (-not (Test-AuditSettingsRestored '{}' '{}' $defaultsShape)) 'A snapshot without settings passed.'
     Assert-That (Test-AuditSettingsRestored $olderBackup (New-TestBackup ([ordered]@{ hide_ads = $true; hide_reels = $false; added_later = $false })) $defaultsShape) 'A correct older-backup restore failed.'
+    # A backup from a build that still had a since-removed patch holds its switch; the installed
+    # build's defaults don't list it, so its absence after the restore is right.
+    $removedPatchBackup = New-TestBackup ([ordered]@{ hide_ads = $true; hide_reels = $false; removed_icons = $true })
+    Assert-That (Test-AuditSettingsRestored $removedPatchBackup (New-TestBackup ([ordered]@{ hide_ads = $true; hide_reels = $false; added_later = $false })) $defaultsShape) "A removed patch's switch failed the restore."
+    Assert-That (-not (Test-AuditSettingsRestored $removedPatchBackup (New-TestBackup ([ordered]@{ hide_ads = $true; added_later = $false })) $defaultsShape)) "A removed patch's switch let a missing live switch pass."
 
     # A before.json with no locale/theme snapshot beside it, as an older audit build or the settings
     # tool leaves one, is adopted: a dated copy of the folder first, the current locale and theme,

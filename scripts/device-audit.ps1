@@ -72,8 +72,12 @@ param(
     [string[]]$Off = @(),
     [string]$Expectations = (Join-Path $PSScriptRoot 'device-audit-expectations.json'),
     # Families that run only when Facebook serves something the walk can't make appear: a
-    # sponsored post on the profile, a new-reels badge on the Reels tab.
-    [string[]]$MayIdle = @('Hide sponsored profile posts', 'Hide the Reels tab dot'),
+    # sponsored post on the profile, a new-reels badge on the Reels tab, a carousel row, a feed
+    # video or carousel photo under a swipe's first finger (Pinch to zoom), a Marketplace gap. The
+    # 0.24.0 S22 baseline was written with only the first two, so a walk whose feed served no video
+    # failed on Pinch to zoom (2026-11-25).
+    [string[]]$MayIdle = @('Hide sponsored profile posts', 'Hide the Reels tab dot', 'Photo carousel', 'Pinch to zoom',
+        'Remove the gap above Marketplace listings'),
     [switch]$WriteBaseline,
     [switch]$SkipWalk,
     [switch]$SkipPages,
@@ -788,8 +792,10 @@ function ConvertFrom-AuditJsonTable([string]$Json) {
     return , (& $toTable ($Json | ConvertFrom-Json))
 }
 
-# Whether $Restored puts back every switch $Original holds, and holds each switch $Original has
-# no entry for (one added after the build that wrote it) at its value in $Defaults.
+# Whether $Restored puts back every switch $Original holds that the installed build still has, and
+# holds each switch $Original has no entry for (one added after the build that wrote it) at its
+# value in $Defaults. A switch $Defaults doesn't list either went with a removed patch, so no
+# restore can bring it back (0.25.0's walk over a 0.24.0 backup holding Unlock app icons' two).
 function Test-AuditSettingsRestored([string]$Original, [string]$Restored, [string]$Defaults) {
     try {
         $before = ConvertFrom-AuditJsonTable $Original
@@ -803,7 +809,10 @@ function Test-AuditSettingsRestored([string]$Original, [string]$Restored, [strin
         if ((ConvertTo-Json -InputObject $before[$field] -Compress) -cne (ConvertTo-Json -InputObject $after[$field] -Compress)) { return $false }
     }
     foreach ($key in $before.settings.Keys) {
-        if (-not $after.settings.ContainsKey($key)) { return $false }
+        if (-not $after.settings.ContainsKey($key)) {
+            if ($reset.settings.ContainsKey($key)) { return $false }
+            continue
+        }
         if ((ConvertTo-Json -InputObject $before.settings[$key] -Compress) -cne (ConvertTo-Json -InputObject $after.settings[$key] -Compress)) { return $false }
     }
     foreach ($key in $after.settings.Keys) {
