@@ -503,7 +503,7 @@ public class PatchFamilyTest {
                         + "hushfacebook_saved_videos_in_player=off, hushfacebook_saved_videos_in_order=off, "
                         + "hushfacebook_saved_videos_stay_on_end=off, hushfacebook_saved_posts_in_row=off, "
                         + "hushfacebook_skip_still_watching=off, hushfacebook_fill_reels=off, "
-                        + "hushfacebook_play_feed_reels_whole=off)",
+                        + "hushfacebook_fill_every_reel=off, hushfacebook_play_feed_reels_whole=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DECLUTTER), false).get(0));
         // Share sheet items is set by its list, and its group switch is saved beside it.
         Settings.HIDE_SHARE_GROUP_BUTTONS.save(true);

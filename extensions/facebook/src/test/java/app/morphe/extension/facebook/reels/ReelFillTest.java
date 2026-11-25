@@ -52,6 +52,7 @@ public class ReelFillTest {
     public void restore() {
         PauseForTests.resume();
         Settings.FILL_REELS.resetToDefault();
+        Settings.FILL_EVERY_REEL.resetToDefault();
         HookStatus.clear();
     }
 
@@ -97,6 +98,39 @@ public class ReelFillTest {
                 ReelFill.worthFilling(wide, SCREEN_WIDTH, SCREEN_WIDTH * 9 / 16, SCREEN_WIDTH, SCREEN_HEIGHT));
         assertFalse("a portrait reel filled a landscape player",
                 ReelFill.worthFilling(REEL, SCREEN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH));
+    }
+
+    /**
+     * An unfolded foldable's inner screen, about 5:6 upright (#571). A 9:16 reel there would lose about
+     * a third of its width, more than {@link ReelFill#MOST_CUT}, so only Fill every reel fills it, and
+     * only while Fill the screen with reels is on. What isn't a full-screen reel still keeps its picture.
+     */
+    @Test
+    @Config(qualifiers = "w906dp-h1088dp-port-mdpi")
+    public void fillEveryReelFillsAReelOnAFoldable() {
+        assertFalse("Fill every reel starts on", Settings.FILL_EVERY_REEL.defaultValue);
+        DisplayMetrics screen = Resources.getSystem().getDisplayMetrics();
+        int width = screen.widthPixels;
+        int height = screen.heightPixels;
+        assertTrue("not a foldable's screen: " + width + "x" + height, width > 0.75 * height && width < height);
+        Settings.FILL_REELS.save(true);
+        assertFalse("a reel losing a third of its width filled without Fill every reel",
+                ReelFill.fills(REEL, width, height, ReelFill.FIT, 0));
+
+        Settings.FILL_EVERY_REEL.save(true);
+        assertTrue("Fill every reel left a foldable's reel fitted", ReelFill.fills(REEL, width, height, ReelFill.FIT, 0));
+        assertTrue("Fill every reel left a reel above a tab bar fitted",
+                ReelFill.fills(REEL, width, height - 120, ReelFill.FIT, 0));
+        assertFalse("Fill every reel filled a square video", ReelFill.fills(1.0, width, height, ReelFill.FIT, 0));
+        assertFalse("Fill every reel filled a landscape video in an upright player",
+                ReelFill.fills(16.0 / 9.0, width, height, ReelFill.FIT, 0));
+        assertFalse("Fill every reel filled a feed-sized player", ReelFill.fills(REEL, width, height / 2, ReelFill.FIT, 0));
+        assertFalse("Fill every reel filled an endless aspect",
+                ReelFill.fills(Double.POSITIVE_INFINITY, height, width, ReelFill.FIT, 0));
+
+        Settings.FILL_REELS.save(false);
+        assertFalse("Fill every reel filled with Fill the screen with reels off",
+                ReelFill.fills(REEL, width, height, ReelFill.FIT, 0));
     }
 
     /** What isn't a full-screen portrait reel keeps its whole picture. */

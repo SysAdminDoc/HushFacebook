@@ -267,6 +267,7 @@ final class SwitchLabels {
         if (setting == Settings.SAVED_POSTS_IN_ROW) return L10n.t("Show saved posts in the row");
         if (setting == Settings.SKIP_STILL_WATCHING) return L10n.t("Skip \"Are you still watching?\"");
         if (setting == Settings.FILL_REELS) return L10n.t("Fill the screen with reels");
+        if (setting == Settings.FILL_EVERY_REEL) return L10n.t("Fill every reel");
         if (setting == Settings.PLAY_FEED_REELS_WHOLE) return L10n.t("Play whole reels in the feed's Reels row");
         if (setting == Settings.DONT_SEND_REEL_WATCH_HISTORY) return L10n.t("Don't send reel watch history");
         if (setting == Settings.NEWEST_REELS_FIRST) return L10n.t("Sort loaded reels");

@@ -334,6 +334,7 @@ public final class SettingsBackup {
             Settings.SAVED_POSTS_IN_ROW,
             Settings.SKIP_STILL_WATCHING,
             Settings.FILL_REELS,
+            Settings.FILL_EVERY_REEL,
             Settings.PLAY_FEED_REELS_WHOLE,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.NEWEST_REELS_FIRST,

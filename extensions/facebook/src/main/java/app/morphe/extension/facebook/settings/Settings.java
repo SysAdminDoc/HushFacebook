@@ -1274,6 +1274,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_fill_reels", FALSE);
 
     /**
+     * Fill every reel: while {@link #FILL_REELS} is on, a reel fills the screen however much of its
+     * picture that cuts off, not only up to {@link app.morphe.extension.facebook.reels.ReelFill#MOST_CUT},
+     * for foldables and tablets where most reels would keep their bars (#571). Off by default. Asked
+     * each time a player view is sized, so a change shows on the next reel.
+     */
+    public static final BooleanSetting FILL_EVERY_REEL =
+            new BooleanSetting("hushfacebook_fill_every_reel", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

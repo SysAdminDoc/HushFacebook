@@ -339,6 +339,10 @@ final class VideoPages {
                     L10n.t("Reels and full-screen videos that would leave black bars fill the screen instead, with "
                             + "a little cut off the edges. Pinch in on a reel to see all of it, or pinch out to fill "
                             + "it again.")));
+            // Asked each time a player view is sized, like the switch above, which it needs (#571).
+            reels.addPreference(toggle(context, Settings.FILL_EVERY_REEL,
+                    L10n.t("With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot "
+                            + "off the edges. Made for foldables and tablets, where most reels would keep their bars.")));
             // Asked as each tile of the feed's Reels row is drawn, so a change shows on the next tiles.
             reels.addPreference(toggle(context, Settings.PLAY_FEED_REELS_WHOLE,
                     L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "
