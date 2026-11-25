@@ -57,6 +57,13 @@ public final class ReelFill {
     /** How much of the screen's height a container needs to count as full screen. */
     static final double FULL_HEIGHT = 0.75;
 
+    /**
+     * How much wider than tall a container can be and still hold a portrait reel upright. An unfolded
+     * foldable's inner screen is nearly square, so once the status and tab bars are taken off, its Reels
+     * container can come out a little wider than tall (#583).
+     */
+    static final double SQUARE_SLACK = 1.2;
+
     private ReelFill() {
     }
 
@@ -111,14 +118,15 @@ public final class ReelFill {
 
     /**
      * Whether a {@code width} by {@code height} box is about the screen's size held {@code upright}
-     * (taller than wide) or turned: its short side at least {@link #FULL_WIDTH} of the screen's short
-     * side and its long side at least {@link #FULL_HEIGHT} of the screen's long side, which leaves room
-     * for a tab bar. The screen's own way up doesn't matter.
+     * (taller than wide, or up to {@link #SQUARE_SLACK} wider than tall) or turned (wider than tall):
+     * its width upright, or its height turned, at least {@link #FULL_WIDTH} of the screen's short side,
+     * and its other side at least {@link #FULL_HEIGHT} of the screen's long side, which leaves room for
+     * a tab bar. The screen's own way up doesn't matter.
      */
     static boolean fullScreen(boolean upright, int width, int height, int screenWidth, int screenHeight) {
-        if (upright ? height <= width : width <= height) return false;
-        int across = Math.min(width, height);
-        int along = Math.max(width, height);
+        if (upright ? height * SQUARE_SLACK <= width : width <= height) return false;
+        int across = upright ? width : height;
+        int along = upright ? height : width;
         return across >= FULL_WIDTH * Math.min(screenWidth, screenHeight)
                 && along >= FULL_HEIGHT * Math.max(screenWidth, screenHeight);
     }
