@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* With `See-through bars` or `Rounded tab bar` on, the first reel on the Reels tab no longer jumps as it starts. Its name, caption and buttons sat behind the tab bar for a moment before moving up. With `Keep the progress bar` on, the time and seek bar then jumped up once more, and that happened on the first reel after an ad too. (#594)
 * With `See-through bars` on and the tab bar at the bottom, Facebook no longer opens full screen after you take it out of your recent apps while the Reels tab is showing. Some phones keep Facebook running in the background then, and Home came back running up under the clock and battery until you picked another tab. (#587)
 * With `Debug logging` on, opening the Hush settings no longer pops up a "Preference key has no setting" error for `Last chat's background`. That row saves its color with the chat, so nothing was wrong with it. (#587)
 * On phones where a reel you open from a post plays on top of Home, each reel no longer slides down over its seek bar with `See-through bars` and `Rounded tab bar` on, and the seek bar follows the reel you're on instead of the one before it. (#505)

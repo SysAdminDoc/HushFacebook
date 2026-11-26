@@ -429,11 +429,40 @@ public final class TabBarScrollAway {
     /** The Reels list last found, held weakly, so each row doesn't search the main screen again. */
     static volatile WeakReference<View> reelsList = new WeakReference<>(null);
 
-    /** The Reels list last found while it's shown, or null. */
+    /**
+     * The Reels list while it's shown, or null. One not found yet, or no longer in the window, is
+     * looked up by its id: as the Reels tab first opens, Facebook makes the first rows ahead, before
+     * its list is in the window, and the next row only as the second reel loads, about a second and
+     * a half later. Until then {@link ReelDetailsLift} had no list, so the first reel's name, caption
+     * and buttons sat behind the see-through tab bar and jumped up 200 px a moment later (#594).
+     */
     @Nullable
     static View reelsListShown() {
         View list = reelsList.get();
+        if (list == null || !list.isAttachedToWindow()) list = findReelsList();
         return list != null && list.isAttachedToWindow() && list.isShown() ? list : null;
+    }
+
+    /**
+     * The Reels list by its id in the main screen, remembered when found, or null. Facebook makes
+     * rows off the main thread too and reads the list there itself, so a search that meets the view
+     * tree mid-change finds nothing.
+     */
+    @Nullable
+    private static View findReelsList() {
+        int id = reelsListId();
+        if (id == 0) id = listIdForTests;
+        Activity screen = mainScreen.get();
+        if (id == 0 || screen == null) return null;
+        View list;
+        try {
+            list = screen.findViewById(id);
+        } catch (RuntimeException midChange) {
+            Logger.printDebug(() -> "Top bars: the Reels list couldn't be read: " + midChange);
+            return null;
+        }
+        if (list != null) reelsList = new WeakReference<>(list);
+        return list;
     }
 
     /**
@@ -452,17 +481,8 @@ public final class TabBarScrollAway {
     static int reelsListHeight() {
         View list = reelsList.get();
         if (list == null || !list.isAttachedToWindow()) {
-            int id = reelsListId();
-            Activity screen = mainScreen.get();
-            if (id == 0 || screen == null) return 0;
-            try {
-                list = screen.findViewById(id);
-            } catch (RuntimeException midChange) {
-                Logger.printDebug(() -> "Top bars: the Reels list couldn't be read: " + midChange);
-                return 0;
-            }
+            list = findReelsList();
             if (list == null) return 0;
-            reelsList = new WeakReference<>(list);
         }
         if (list.isShown() && onReelsTab()) reelsTabList = new WeakReference<>(list);
         if (list.getWindowVisibility() != View.VISIBLE) return 0;

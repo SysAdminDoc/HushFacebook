@@ -194,6 +194,25 @@ public final class TranslucentBars {
     /** Each main screen's window and its bars. */
     static final Map<View, Bars> WINDOWS = new WeakHashMap<>();
 
+    /**
+     * Until when, in uptime ms, each frame looks for the host of Facebook's video controls, after a
+     * reel's scrubber was mounted or took a reel (#594). The stretch looks once a second, so the
+     * Reels tab's host was found up to a second after a reel's time showed: the time and seek bar sat
+     * where the reel bar's own lift put them, then jumped about 30 px up when the host was lifted to
+     * the tab bar's rows, closer to the caption. That happened on the first reel and on the first one
+     * after an ad.
+     */
+    private static volatile long controlsDueUntil;
+
+    /** A reel's scrubber was mounted or took a reel: look for its controls' host on every frame for a while. Never throws. */
+    public static void controlsMounted() {
+        controlsDueUntil = SystemClock.uptimeMillis() + RESCAN_MS;
+    }
+
+    static void forgetControlsDueForTests() {
+        controlsDueUntil = 0;
+    }
+
     private TranslucentBars() {
     }
 
@@ -951,9 +970,10 @@ public final class TranslucentBars {
                     stretchLooked = true;
                     int edge = laidOutTop(anchor);
                     reachUnder(bar, edge, rows.height(), height, now);
-                    controls.find(under(bar), edge, height);
+                    if (controls.find(under(bar), edge, height)) controlsDueUntil = 0;
                 } else if (tabsBelow) {
                     stretchWaits = true;
+                    if (now < controlsDueUntil && controls.find(under(bar), laidOutTop(anchor), height)) controlsDueUntil = 0;
                 }
                 if (!seeThrough) continue;
                 View under = blurs ? underNow(bar, rows) : null;

@@ -56,6 +56,7 @@ public class ReelDetailsLiftTest {
         Settings.TRANSLUCENT_BARS.resetToDefault();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
         TabBarScrollAway.forgetBuilt();
+        TabBarScrollAway.mainScreenCreated(null);
         HookStatus.clear();
     }
 
@@ -182,6 +183,28 @@ public class ReelDetailsLiftTest {
         assertEquals("Facebook's place back with the switch off", 0f, reels.shown.details.getTranslationY(), 0f);
         assertEquals(0f, reels.next.details.getTranslationY(), 0f);
         assertTrue(screen.bars.details.held.isEmpty());
+    }
+
+    /**
+     * #594: as the Reels tab first opens, Facebook makes the first rows before the list is in the
+     * window, and no row read the list until the second reel loaded. The first reel's name, caption
+     * and buttons sat behind the tab bar until then and jumped up a moment after showing. The list
+     * is found by its id on the first frame now.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aListNoRowHasReadYetIsFoundOnTheFirstFrame() {
+        Settings.TRANSLUCENT_BARS.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        Reels reels = new Reels(screen, 1600);
+        TabBarScrollAway.reelsList = new WeakReference<>(null);
+        reels.list.setId(0x7f0a2358);
+        TabBarScrollAway.listIdForTests = 0x7f0a2358;
+        TabBarScrollAway.mainScreenCreated(screen.activity);
+
+        screen.bars.update();
+        assertEquals("lifted on the first frame", -160f, reels.shown.details.getTranslationY(), 0f);
+        assertSame("and remembered", reels.list, TabBarScrollAway.reelsList.get());
     }
 
     @Test
