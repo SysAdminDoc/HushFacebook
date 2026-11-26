@@ -42,7 +42,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>With the switch off, a Messenger under Meta's own package name that carries none of Meta's
  * certificates, as HushMessenger installed in place of Meta's does, is opened the same way (#292).
  * Facebook hands the tap only to a Meta-signed Messenger, so it turned that one down and the icon did
- * nothing.
+ * nothing. A copy of Facebook with a copy of Messenger installed beside Meta's opens the copy too
+ * ({@link #passesOverCopy}, #595): Facebook would hand that tap to Meta's Messenger.
  *
  * <p>It fails open: with the switch off and Meta's Messenger or none, a pause, settings that aren't ready, a long press (Facebook
  * has its own use for that), no Messenger with a launcher entry, a start Messenger turns down, or
@@ -61,6 +62,15 @@ public final class MessengerIcon {
 
     /** Counted when, with the switch off, a tap opened a re-signed Messenger Facebook would turn down. */
     static final String OPENED_RESIGNED = "opened a re-signed Messenger";
+
+    /**
+     * Counted when, with the switch off, a copy of Facebook opened a copy of Messenger where Facebook
+     * would have opened Meta's Messenger installed beside it (#595).
+     */
+    static final String OPENED_COPY = "opened the Messenger copy over Meta's";
+
+    /** Facebook's own package name. Running under any other, this is a copy of Facebook (#595). */
+    static final String FACEBOOK = "com.facebook.katana";
 
     /** Counted when the switch was on but no enabled Messenger had a launcher entry to start. */
     static final String NO_MESSENGER = "no Messenger to open";
@@ -179,11 +189,19 @@ public final class MessengerIcon {
             HookStatus.invoked(FamilyNames.MESSENGER_ICON);
             if (context == null) return false;
             if (!Utils.settingsReady()) return false;
-            // With the switch off the tap is Facebook's, unless the Messenger it hands the tap to is
-            // re-signed: Facebook turns that one down and the icon does nothing (#292).
-            boolean resigned = !Settings.OPEN_MESSENGER_APP.get();
-            if (resigned && !FamilySignatureTrust.isResigned(context.getPackageManager(), MessengerCard.MESSENGER)) {
-                return false;
+            // With the switch off the tap is Facebook's, unless it would hand the tap to the wrong
+            // Messenger: a re-signed one, which Facebook turns down so the icon does nothing (#292),
+            // or, in a copy of Facebook, Meta's Messenger with a copy of Messenger right beside it (#595).
+            String opened = OPENED;
+            if (!Settings.OPEN_MESSENGER_APP.get()) {
+                PackageManager packages = context.getPackageManager();
+                if (FamilySignatureTrust.isResigned(packages, MessengerCard.MESSENGER)) {
+                    opened = OPENED_RESIGNED;
+                } else if (passesOverCopy(packages, context.getPackageName())) {
+                    opened = OPENED_COPY;
+                } else {
+                    return false;
+                }
             }
             if (longPress || heldPressJustLifted(SystemClock.uptimeMillis())) {
                 countDecline(LONG_PRESS);
@@ -205,7 +223,7 @@ public final class MessengerIcon {
                         () -> "Messenger didn't start (" + kind + "). Facebook's Chats opens instead.", null);
                 return false;
             }
-            HookStatus.counted(FamilyNames.MESSENGER_ICON, resigned ? OPENED_RESIGNED : OPENED);
+            HookStatus.counted(FamilyNames.MESSENGER_ICON, opened);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.MESSENGER_ICON, "Messenger icon", failure);
@@ -221,16 +239,41 @@ public final class MessengerIcon {
      * task of its own too: HushMessenger installed beside Meta's apps takes another package name
      * ({@code com.facebook.orca.hush} unless the user picks one) and keeps Messenger's class names.
      * Facebook sees launcher entries through its manifest's plain launcher query.
+     *
+     * <p>A copy of Facebook, running under another package name than {@link #FACEBOOK} as Clone
+     * install makes it, goes with a copy of Messenger: there the copy comes first and Meta's
+     * Messenger only when there's no copy (#595). Someone who cloned both apps wants the two copies
+     * talking to each other, and the original Messenger opened from the cloned Facebook instead.
      */
     @Nullable
     static Intent messengerLaunch(PackageManager packages, @Nullable String self) {
+        if (isFacebookCopy(self)) {
+            Intent copy = copyLaunch(packages, self);
+            if (copy != null) return copy;
+        }
         Intent launch = packages.getLaunchIntentForPackage(MessengerCard.MESSENGER);
         return launch != null ? launch : copyLaunch(packages, self);
     }
 
     /**
+     * Whether Facebook, running as [self], would pass over a copy of Messenger with the switch off:
+     * [self] is a copy of Facebook, and Meta's Messenger, which Facebook hands the tap to, is
+     * installed beside a copy. Without Meta's Messenger, Facebook opens its own Chats, and that stays.
+     */
+    static boolean passesOverCopy(PackageManager packages, @Nullable String self) {
+        return isFacebookCopy(self) && packages.getLaunchIntentForPackage(MessengerCard.MESSENGER) != null
+                && copyLaunch(packages, self) != null;
+    }
+
+    /** Whether [self], the running app's package, is a copy of Facebook under another name. */
+    static boolean isFacebookCopy(@Nullable String self) {
+        return self != null && !self.isEmpty() && !FACEBOOK.equals(self);
+    }
+
+    /**
      * The launcher entry of a Messenger installed under another package name, or null: the first
-     * one, not [self]'s, whose activity is one of Messenger's classes, in a task of its own.
+     * one, not [self]'s and not Meta's Messenger itself, whose activity is one of Messenger's
+     * classes, in a task of its own.
      */
     @Nullable
     static Intent copyLaunch(PackageManager packages, @Nullable String self) {
@@ -240,7 +283,8 @@ public final class MessengerIcon {
         for (ResolveInfo entry : entries) {
             ActivityInfo activity = entry == null ? null : entry.activityInfo;
             if (activity == null || activity.packageName == null || activity.name == null) continue;
-            if (activity.packageName.equals(self) || !activity.name.startsWith(MessengerCard.MESSENGER + ".")) continue;
+            if (activity.packageName.equals(self) || activity.packageName.equals(MessengerCard.MESSENGER)
+                    || !activity.name.startsWith(MessengerCard.MESSENGER + ".")) continue;
             return new Intent(home).setClassName(activity.packageName, activity.name).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
         return null;
