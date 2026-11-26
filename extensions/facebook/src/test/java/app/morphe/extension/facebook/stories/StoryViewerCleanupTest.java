@@ -108,6 +108,62 @@ public class StoryViewerCleanupTest {
         assertTrue(statusLine(), statusLine().contains(StoryViewerCleanup.TIME_LINE_SHOWN + " 1"));
     }
 
+    /**
+     * #563, "Sometimes working": a Page's story with an attachment label got the label alone, since
+     * Facebook builds that line before it gets to the time. With the switch on, the time goes after
+     * the label with Facebook's dot; off, paused or before the settings are ready, the label stays alone.
+     */
+    @Test
+    public void aStoryLabelGetsTheTimeOnlyWithTheSwitchOn() {
+        assertFalse("off, a label got the time", StoryViewerCleanup.showsTimeBesideLabel());
+        Settings.HIDE_STORY_CREDITS.save(true);
+        assertFalse("another switch gave a label the time", StoryViewerCleanup.showsTimeBesideLabel());
+        Settings.SHOW_STORY_TIME.save(true);
+        assertTrue("on, a label stayed without the time", StoryViewerCleanup.showsTimeBesideLabel());
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertFalse("paused, a label got the time", StoryViewerCleanup.showsTimeBesideLabel());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("a label got the time before the settings were ready", StoryViewerCleanup.showsTimeBesideLabel()));
+
+        String dot = " " + (char) 0x2022 + " ";
+        assertEquals("Shared a post" + dot + "10h", StoryViewerCleanup.withTime("Shared a post", "10h").toString());
+        assertEquals("no time", "Shared a post", StoryViewerCleanup.withTime("Shared a post", null).toString());
+        assertEquals("an empty time", "Shared a post", StoryViewerCleanup.withTime("Shared a post", "").toString());
+        assertEquals("no label", "10h", StoryViewerCleanup.withTime("", "10h").toString());
+        assertNull(StoryViewerCleanup.withTime(null, null));
+        assertTrue(statusLine(), statusLine().contains(StoryViewerCleanup.TIME_BESIDE_LABEL + " 1"));
+    }
+
+    /**
+     * #563, "Sometimes working": a shared post or a reel in a Page's story shows a subtitle beside the
+     * name ("NDTV", "View full reel") that never has the time. With the switch on the time goes after
+     * it with Facebook's dot, once; off, paused or before the settings are ready, nothing changes.
+     */
+    @Test
+    public void aStorySubtitleGetsTheTimeOnceOnlyWithTheSwitchOn() {
+        assertFalse("off, a subtitle got the time", StoryViewerCleanup.showsTimeInSubtitle());
+        Settings.HIDE_STORY_CREDITS.save(true);
+        assertFalse("another switch gave a subtitle the time", StoryViewerCleanup.showsTimeInSubtitle());
+        Settings.SHOW_STORY_TIME.save(true);
+        assertTrue("on, a subtitle stayed without the time", StoryViewerCleanup.showsTimeInSubtitle());
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertFalse("paused, a subtitle got the time", StoryViewerCleanup.showsTimeInSubtitle());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("a subtitle got the time before the settings were ready", StoryViewerCleanup.showsTimeInSubtitle()));
+
+        String dot = " " + (char) 0x2022 + " ";
+        assertEquals("View full reel" + dot + "3h", StoryViewerCleanup.subtitleWithTime("View full reel", "3h").toString());
+        assertEquals("already timed", "Aaj Tak" + dot + "3h",
+                StoryViewerCleanup.subtitleWithTime("Aaj Tak" + dot + "3h", "3h").toString());
+        assertEquals("no time", "NDTV", StoryViewerCleanup.subtitleWithTime("NDTV", null).toString());
+        assertEquals("an empty time", "NDTV", StoryViewerCleanup.subtitleWithTime("NDTV", "").toString());
+        assertEquals("an empty subtitle got the time alone", "", StoryViewerCleanup.subtitleWithTime("", "3h").toString());
+        assertNull("no subtitle got the time alone", StoryViewerCleanup.subtitleWithTime(null, "3h"));
+        assertTrue(statusLine(), statusLine().contains(StoryViewerCleanup.TIME_IN_SUBTITLE + " 1"));
+    }
+
     private static String statusLine() {
         for (String line : HookStatus.report()) {
             if (line.startsWith(FamilyNames.STORY_VIEWER_CLEANUP + ":")) return line;
