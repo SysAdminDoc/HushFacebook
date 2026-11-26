@@ -81,6 +81,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS.resetToDefault();
         Settings.HIDE_COMMENT_EMOJI_ROW.resetToDefault();
         Settings.KEEP_COMMENT_KEYBOARD_CLOSED.resetToDefault();
+        Settings.KEEP_COMMENTS_CLOSED_ON_TEXT_TAP.resetToDefault();
         Settings.HIDE_COMMENT_BOX_LINE.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         Settings.HIDE_COMMENT_BOX.resetToDefault();
@@ -179,6 +180,27 @@ public class CommentSheetOptionsTest {
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() -> assertFalse("the keyboard was skipped before the settings were ready",
                 CommentSheetOptions.suppressKeyboard(false)));
+    }
+
+    /**
+     * A tap on a post's text (#594) opens its comments with flyout context 5 on 588, the Comment
+     * button with 3 (the S22, 2026-11-26). Under the switch only the text tap stays closed.
+     */
+    @Test
+    public void onlyATapOnAPostsTextStaysClosedAndOnlyUnderItsOwnSwitch() {
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.save(true);
+        assertFalse("the keyboard switch kept a text tap's comments closed", CommentSheetOptions.keepsCommentsClosed(5));
+        Settings.KEEP_COMMENTS_CLOSED_ON_TEXT_TAP.save(true);
+        assertTrue("a tap on the post's text still opened comments", CommentSheetOptions.keepsCommentsClosed(5));
+        assertFalse("the Comment button stopped opening comments", CommentSheetOptions.keepsCommentsClosed(3));
+        assertFalse("a sheet with no context stayed closed", CommentSheetOptions.keepsCommentsClosed(null));
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 4, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.TEXT_TAP_KEPT_CLOSED + " 1", statusLine());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook kept a text tap's comments closed", CommentSheetOptions.keepsCommentsClosed(5));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("a text tap's comments stayed closed before the settings were ready",
+                CommentSheetOptions.keepsCommentsClosed(5)));
     }
 
     /** Facebook's top border: the line's color filling the box, the box's color over it, 3 px down. */

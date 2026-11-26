@@ -1127,6 +1127,8 @@ final class FeedPages {
                     L10n.t("The row of emoji over the comment box goes away. You can still type emoji from your keyboard.")));
             comments.addPreference(toggle(context, Settings.KEEP_COMMENT_KEYBOARD_CLOSED,
                     L10n.t("Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.")));
+            comments.addPreference(toggle(context, Settings.KEEP_COMMENTS_CLOSED_ON_TEXT_TAP,
+                    L10n.t("A tap on a post's text no longer opens its comments. The Comment button still does.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_BOX_LINE,
                     L10n.t("The thin line along the top of the comment box goes away.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_BOX,

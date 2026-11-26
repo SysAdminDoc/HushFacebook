@@ -3312,6 +3312,8 @@ Hide hashtags in reel captions	Скрывать хештеги в подпися
 Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	Убирает хештеги из подписей Reels, например блок тегов в конце. Хештег, который входит в предложение, остаётся. Изменение применяется начиная со следующего Reels.
 Keep the keyboard closed when comments open	Не открывать клавиатуру при открытии комментариев
 Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	Комментарии открываются без всплывающей клавиатуры, даже у публикации, где ещё нет комментариев. Нажмите на поле комментария, когда захотите написать.
+Post text doesn't open comments	Текст публикации не открывает комментарии
+A tap on a post's text no longer opens its comments. The Comment button still does.	Нажатие на текст публикации больше не открывает её комментарии. Кнопка «Комментировать» по-прежнему их открывает.
 Settings language	Язык настроек
 Same as Facebook	Как в Facebook
 Show feed reels uncropped	Показывать Reels в Ленте без обрезки

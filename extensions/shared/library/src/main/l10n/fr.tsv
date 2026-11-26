@@ -3254,6 +3254,8 @@ Hide hashtags in reel captions	Masquer les hashtags dans les légendes des reels
 Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	Retire les hashtags des légendes des reels, comme le bloc de tags à la fin. Un hashtag qui fait partie d'une phrase reste. Un changement s'applique à partir du reel suivant.
 Keep the keyboard closed when comments open	Garder le clavier fermé à l'ouverture des commentaires
 Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	Les commentaires s'ouvrent sans faire apparaître le clavier, même sur une publication sans commentaire. Touchez la zone de commentaire quand vous voulez écrire.
+Post text doesn't open comments	Le texte d'une publication n'ouvre pas les commentaires
+A tap on a post's text no longer opens its comments. The Comment button still does.	Toucher le texte d'une publication n'ouvre plus ses commentaires. Le bouton Commenter les ouvre toujours.
 Settings language	Langue des paramètres
 Same as Facebook	Comme Facebook
 Show feed reels uncropped	Afficher les reels du fil sans recadrage

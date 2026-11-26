@@ -3254,6 +3254,8 @@ Hide hashtags in reel captions	릴스 설명의 해시태그 숨기기
 Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	릴스 설명에서 끝에 몰려 있는 태그 같은 해시태그를 없애요. 문장의 일부인 해시태그는 그대로 둬요. 변경 사항은 다음 릴스부터 적용돼요.
 Keep the keyboard closed when comments open	댓글을 열 때 키보드 닫아 두기
 Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	아직 댓글이 없는 게시물에서도 키보드가 올라오지 않고 댓글이 열려요. 글을 쓰고 싶을 때 댓글 입력란을 누르세요.
+Post text doesn't open comments	게시물 글을 눌러도 댓글 열지 않기
+A tap on a post's text no longer opens its comments. The Comment button still does.	게시물 글을 눌러도 더 이상 댓글이 열리지 않아요. 댓글 달기 버튼은 그대로 댓글을 열어요.
 Settings language	설정 언어
 Same as Facebook	Facebook과 같게
 Show feed reels uncropped	피드 릴스를 자르지 않고 보기

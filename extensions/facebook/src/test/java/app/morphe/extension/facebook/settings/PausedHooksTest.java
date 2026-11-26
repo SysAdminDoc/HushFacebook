@@ -1140,6 +1140,8 @@ public class PausedHooksTest {
                 CommentSheetOptions::holdsEmojiRow,
                 // Comments open with the keyboard closed (#594).
                 () -> !CommentSheetOptions.keyboardOnFirstLoad(true),
+                // A tap on a post's text, flyout context 5, leaves its comments closed (#594).
+                () -> CommentSheetOptions.keepsCommentsClosed(5),
                 () -> {
                     // The bar along the bottom of a live video is held gone (#537).
                     View bar = new View(RuntimeEnvironment.getApplication());

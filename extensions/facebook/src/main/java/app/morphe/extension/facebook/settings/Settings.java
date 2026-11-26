@@ -1745,6 +1745,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_comment_keyboard_closed", FALSE);
 
     /**
+     * A tap on a feed post's text no longer opens its comments (#594,
+     * {@link app.morphe.extension.facebook.comments.CommentSheetOptions#keepsCommentsClosed}). The
+     * Comment button still does. Off by default. A change shows on the next tap.
+     */
+    public static final BooleanSetting KEEP_COMMENTS_CLOSED_ON_TEXT_TAP =
+            new BooleanSetting("hushfacebook_keep_comments_closed_on_text_tap", FALSE);
+
+    /**
      * The comment box comes without the thin line along its top (#344,
      * {@link app.morphe.extension.facebook.comments.CommentSheetOptions}). Off by default. A
      * change shows on the next comment box built.

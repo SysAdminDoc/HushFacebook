@@ -384,6 +384,19 @@ public final class CommentSheetOptions {
     /** Counted each time comments are set to keep the keyboard closed even when the post has none yet. */
     static final String EMPTY_KEYBOARD_KEPT_CLOSED = "Comments set to skip the keyboard on posts with none";
 
+    /** The member the report names once a comment sheet has asked whether it opens (#594). */
+    static final String TEXT_TAP = "comments opened from a post's text";
+
+    /** Counted each time a tap on a post's text leaves its comments closed. */
+    static final String TEXT_TAP_KEPT_CLOSED = "Post text tap kept from opening comments";
+
+    /**
+     * The flyout context the comment sheet opens with on a tap on a feed post's text. Read on 588
+     * from Facebook's own log of each sheet it opens (the S22, 2026-11-26): 5 for the post's text,
+     * 3 for the Comment button.
+     */
+    static final int POST_TEXT_CONTEXT = 5;
+
     /** The member the report names once the comment box has set its background (#344). */
     static final String BOX_LINE = "line over the comment box";
 
@@ -655,6 +668,30 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "comment keyboard on posts with no comments", failure);
             return suppress;
+        }
+    }
+
+    /**
+     * The hook, first thing as Facebook opens a comment sheet from the feed (#594), handed the
+     * sheet's flyout context: what was tapped to open it. Yes for a tap on a post's text while the
+     * switch is on, and the sheet doesn't open, the way Facebook leaves it closed itself when it
+     * can't show one. The Comment button, a comment count and everything else open as before. Off,
+     * paused, before the settings are ready, or on a failure, the sheet opens.
+     *
+     * @param flyoutContext the sheet's flyout context, or null when Facebook gave none.
+     */
+    public static boolean keepsCommentsClosed(@Nullable Integer flyoutContext) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, TEXT_TAP);
+            Logger.printDebug(() -> "Comment sheet opening, flyout context " + flyoutContext);
+            if (flyoutContext == null || flyoutContext != POST_TEXT_CONTEXT || !Utils.settingsReady()
+                    || !Settings.KEEP_COMMENTS_CLOSED_ON_TEXT_TAP.get()) return false;
+            HookStatus.counted(FAMILY, TEXT_TAP_KEPT_CLOSED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comments from a post's text", failure);
+            return false;
         }
     }
 

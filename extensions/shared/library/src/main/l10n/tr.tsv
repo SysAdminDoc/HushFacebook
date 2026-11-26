@@ -3254,6 +3254,8 @@ Hide hashtags in reel captions	Reels açıklamalarındaki hashtag'leri gizle
 Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	Reels açıklamalarındaki hashtag'leri, sondaki etiket grubu gibi, kaldırır. Bir cümlenin parçası olan hashtag kalır. Değişiklik bir sonraki reel'den itibaren görünür.
 Keep the keyboard closed when comments open	Yorumlar açılınca klavyeyi kapalı tut
 Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	Yorumlar, henüz yorumu olmayan bir gönderide bile klavye açılmadan açılır. Yazmak istediğinde yorum kutusuna dokun.
+Post text doesn't open comments	Gönderi metni yorumları açmasın
+A tap on a post's text no longer opens its comments. The Comment button still does.	Bir gönderinin metnine dokunmak artık yorumlarını açmaz. Yorum Yap düğmesi hâlâ açar.
 Settings language	Ayarlar dili
 Same as Facebook	Facebook ile aynı
 Show feed reels uncropped	Akıştaki reels'leri kırpmadan göster
