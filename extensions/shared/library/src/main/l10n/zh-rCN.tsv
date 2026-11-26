@@ -1853,6 +1853,10 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Picture-in-picture button	画中画按钮
 # context: summary of that switch; "the window" is the small picture-in-picture window
 Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	在已准备好小窗口的 Reels 或视频左侧边缘显示一个小按钮。点按它可立即打开小窗口。需开启“画中画”。
+# context: switch title under Picture-in-picture on the Playback page; on, when a reel ends in the small picture-in-picture window, the next reel plays there
+Next reel in the window	在小窗口播放下一个 Reels
+# context: summary of that switch; "the window" is the small picture-in-picture window
+When a reel in the picture-in-picture window ends, the next reel from Reels plays in the window instead of the same one again. Works with Picture-in-picture on.	画中画小窗口里的 Reels 结束后，会在小窗口播放 Reels 的下一个，而不是重复播放同一个。需开启“画中画”。
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	在后台继续播放
 Next reel in the background	在后台播放下一个 Reels

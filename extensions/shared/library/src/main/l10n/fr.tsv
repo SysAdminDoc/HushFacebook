@@ -1858,6 +1858,10 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Picture-in-picture button	Bouton Picture-in-picture
 # context: summary of that switch; "the window" is the small picture-in-picture window
 Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	Affiche un petit bouton sur le bord gauche d'un reel ou d'une vidéo dont la fenêtre est prête. Touchez-le pour ouvrir la fenêtre tout de suite. Fonctionne avec Picture-in-picture activé.
+# context: switch title under Picture-in-picture on the Playback page; on, when a reel ends in the small picture-in-picture window, the next reel plays there
+Next reel in the window	Reel suivant dans la fenêtre
+# context: summary of that switch; "the window" is the small picture-in-picture window
+When a reel in the picture-in-picture window ends, the next reel from Reels plays in the window instead of the same one again. Works with Picture-in-picture on.	Quand un reel se termine dans la fenêtre Picture-in-picture, le reel suivant de Reels est lu dans la fenêtre au lieu du même. Fonctionne avec Picture-in-picture activé.
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	Continuer la lecture en arrière-plan
 Next reel in the background	Reel suivant en arrière-plan

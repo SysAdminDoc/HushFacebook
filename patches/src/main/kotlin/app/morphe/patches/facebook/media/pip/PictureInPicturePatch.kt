@@ -118,6 +118,15 @@ internal const val SET_ASIDE = "$PICTURE_IN_PICTURE->setAside()Z"
 internal const val VIEWER_CONTAINER = "reels_pip_container"
 internal const val VIEWER_CONFIG = "Lcom/facebook/video/reels/pip/ui/ReelsPipViewerConfig;"
 internal const val FRAGMENT_ACTIVITY = "Landroidx/fragment/app/FragmentActivity;"
+internal const val FRAGMENT = "Landroidx/fragment/app/Fragment;"
+
+/** The tag of the window viewer's fragment, which Facebook looks it up by as the window closes. */
+internal const val VIEWER_FRAGMENT = "REELS_PIP_FRAGMENT"
+internal const val WINDOW_NEXT_REEL = "Lapp/morphe/extension/facebook/media/WindowNextReel;"
+internal const val CLOSE_VIEWER_STUB = "closeViewer"
+internal const val OPEN_VIEWER_STUB = "openViewer"
+internal const val CLOSE_VIEWER_HELPER = "hushCloseViewer"
+internal const val OPEN_VIEWER_HELPER = "hushOpenViewer"
 
 internal const val VIEWER_ID = "$PICTURE_IN_PICTURE->viewerId(${ACTIVITY}I)I"
 
@@ -301,11 +310,25 @@ val pictureInPicturePatch = patch(
         applyViewerId(opening)
         applyTopicFlag(topic)
         applyHome(home)
+        // Found once: the restore below changes the show it's found by.
+        val restore = try {
+            findScreenRestore(opening)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a reel back from the window may show Facebook's switcher button " +
+                "and a reel in the window can't go on to the next one.")
+            null
+        }
         // Showing the screen back from the window as it was (#126); the window works without it.
-        try {
-            applyScreenRestore(findScreenRestore(opening))
+        if (restore != null) try {
+            applyScreenRestore(restore)
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so a reel back from the window may show Facebook's switcher button.")
+        }
+        // The window going on to the next reel (#578); without it a reel in the window plays over and over, as Facebook has it.
+        if (restore != null) try {
+            fillWindowViewer(findWindowViewerClose(restore.shower), opening)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a reel in the window can't go on to the next one.")
         }
         // A page started while a reel floats gets a task of its own (#126); the window works without it.
         try {
@@ -1271,6 +1294,109 @@ internal fun BytecodePatchContext.applyScreenRestore(restore: ScreenRestore) {
     }
     shower.replaceInstruction(show, "invoke-static { v${registers.registerC}, v${registers.registerD} }, $SHOWN_AGAIN")
 }
+
+/**
+ * Facebook's close of the window viewer as the window closes, in [owner]: the screen's fragment
+ * manager, its look-up of the fragment tagged [VIEWER_FRAGMENT] and the call the fragment found is
+ * removed by. 588: `getSupportFragmentManager()LX/00aq;`, `LX/00aq;->A0R(String)`, `LX/07cy;->A0x`.
+ */
+internal class ViewerClose(val owner: String, val manager: MethodReference, val find: MethodReference, val remove: MethodReference)
+
+private val INVOKES = setOf(
+    Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE,
+    Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE,
+)
+
+/**
+ * In [shower], the method that shows the screen again as the window closes (588 `LX/0dvf;->A07`),
+ * the fragment manager it asks the screen for before looking up [VIEWER_FRAGMENT], that look-up, and
+ * the static call after it taking the fragment and the manager. Changes nothing.
+ */
+internal fun findWindowViewerClose(shower: Method): ViewerClose {
+    val code = shower.implementation?.instructions?.toList().orEmpty()
+    val tag = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == VIEWER_FRAGMENT }
+    val where = "${shower.definingClass}->${shower.name}"
+    if (tag < 0) refuse("$where doesn't look up \"$VIEWER_FRAGMENT\"")
+    fun callAt(at: Int): MethodReference? =
+        if (code[at].opcode in INVOKES) (code[at] as ReferenceInstruction).reference as? MethodReference else null
+    val manager = (tag - 1 downTo 0).firstNotNullOfOrNull { at ->
+        callAt(at)?.takeIf { it.definingClass == FRAGMENT_ACTIVITY && it.name == "getSupportFragmentManager" && it.parameterTypes.isEmpty() }
+    } ?: refuse("$where asks the screen for no fragment manager before looking up \"$VIEWER_FRAGMENT\"")
+    val findAt = (tag + 1 until code.size).firstOrNull { at ->
+        callAt(at)?.let { it.definingClass == manager.returnType && it.parameterList() == listOf(STRING_TYPE) && it.returnType == FRAGMENT } == true
+    } ?: refuse("$where looks \"$VIEWER_FRAGMENT\" up in no (String) Fragment call of ${manager.returnType}")
+    if (code[findAt].opcode != Opcode.INVOKE_VIRTUAL) refuse("$where looks \"$VIEWER_FRAGMENT\" up by ${code[findAt].opcode}")
+    val remove = (findAt + 1 until code.size).firstNotNullOfOrNull { at ->
+        callAt(at)?.takeIf {
+            code[at].opcode == Opcode.INVOKE_STATIC && it.parameterList() == listOf(FRAGMENT, manager.returnType) && it.returnType == "V"
+        }
+    } ?: refuse("$where removes the fragment it found through no static (Fragment, ${manager.returnType}) call")
+    return ViewerClose(shower.definingClass, manager, callAt(findAt)!!, remove)
+}
+
+/**
+ * Fills the extension's window viewer stubs. [CLOSE_VIEWER_STUB] closes the viewer as Facebook does as
+ * the window closes, through a helper on [close]'s class, true when there was one; [OPEN_VIEWER_STUB]
+ * opens it with a config the extension makes, through [opening] and a helper on its class. Both
+ * helpers sit in Facebook's own classes, so the calls are theirs to make (#578).
+ */
+internal fun BytecodePatchContext.fillWindowViewer(close: ViewerClose, opening: Method) {
+    if (!AccessFlags.STATIC.isSet(opening.accessFlags)) refuse("${opening.definingClass}->${opening.name} isn't static")
+    val closing = """
+        check-cast p0, $FRAGMENT_ACTIVITY
+        invoke-virtual { p0 }, ${close.manager}
+        move-result-object v0
+        const-string v1, "$VIEWER_FRAGMENT"
+        invoke-virtual { v0, v1 }, ${close.find}
+        move-result-object v1
+        if-eqz v1, :none
+        invoke-static { v1, v0 }, ${close.remove}
+        const/4 v0, 0x1
+        return v0
+        :none
+        const/4 v0, 0x0
+        return v0
+    """
+    mutableClassDefBy(close.owner).methods.add(helper(close.owner, CLOSE_VIEWER_HELPER, listOf(ACTIVITY), 3, closing, "Z"))
+    val opens = """
+        check-cast p0, $FRAGMENT_ACTIVITY
+        check-cast p1, $VIEWER_CONFIG
+        invoke-static { p0, p1 }, ${opening.definingClass}->${opening.name}($FRAGMENT_ACTIVITY$VIEWER_CONFIG)V
+        const/4 p0, 0x1
+        return p0
+    """
+    mutableClassDefBy(opening.definingClass).methods.add(
+        helper(opening.definingClass, OPEN_VIEWER_HELPER, listOf(ACTIVITY, OBJECT_TYPE), 2, opens, "Z"),
+    )
+    val stubs = mutableClassDefBy(WINDOW_NEXT_REEL).methods
+    val closeStub = stubs.singleOrNull {
+        it.name == CLOSE_VIEWER_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" && it.shape() == listOf(ACTIVITY)
+    } ?: refuse("$WINDOW_NEXT_REEL has no static boolean $CLOSE_VIEWER_STUB(Activity)")
+    val openStub = stubs.singleOrNull {
+        it.name == OPEN_VIEWER_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+            it.shape() == listOf(ACTIVITY, OBJECT_TYPE)
+    } ?: refuse("$WINDOW_NEXT_REEL has no static boolean $OPEN_VIEWER_STUB(Activity, Object)")
+    // The answer goes back in p0, which the stub has handed over by then.
+    closeStub.addInstructions(
+        0,
+        """
+            invoke-static { p0 }, ${close.owner}->$CLOSE_VIEWER_HELPER($ACTIVITY)Z
+            move-result p0
+            return p0
+        """,
+    )
+    openStub.addInstructions(
+        0,
+        """
+            invoke-static { p0, p1 }, ${opening.definingClass}->$OPEN_VIEWER_HELPER($ACTIVITY$OBJECT_TYPE)Z
+            move-result p0
+            return p0
+        """,
+    )
+}
+
+private const val STRING_TYPE = "Ljava/lang/String;"
+private const val OBJECT_TYPE = "Ljava/lang/Object;"
 
 private const val ANDROID_CONTEXT = "Landroid/content/Context;"
 private const val ANDROID_INTENT = "Landroid/content/Intent;"

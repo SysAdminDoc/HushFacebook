@@ -21,6 +21,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * Each switch under `Turned off lately` in `Switches that are on` has a trash button now. Tap it and that switch leaves the list for good and stays off, so the ones you're done with stop piling up there. (#577)
 * `Blur strength` sits under `Bar opacity` and sets how much the see-through bars blur the feed behind them. 0 turns the blur off and leaves the feed sharp, and you can go up to 300 for three times the usual blur. Leave it blank and it stays as it was. It's saved with `Export settings` too. (#596)
 * `Glass tab bar` under the tab bar settings gives the `Rounded tab bar` pill a thin light edge and a soft shadow, and the highlight behind the tab you're on slides across to the next one you pick. With animations turned off on your phone it just jumps there. It starts off. (#596)
+* `Next reel in the window` under `Video and audio` plays the next reel from Reels in the picture-in-picture window when the one there ends, so the window doesn't loop the same reel over and over. It works with `Picture-in-picture` on and starts off. (#578)
 
 ### Fixed
 

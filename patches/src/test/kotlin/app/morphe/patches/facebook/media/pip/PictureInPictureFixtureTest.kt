@@ -56,7 +56,8 @@ import java.io.File
  * into a disarm, both answered through the extension in their own registers. And the viewer
  * opening's hide of each view of the screen, heard by the extension first, and the one method that
  * shows them again, through the extension (#126). And the video view stub making the window
- * handler's own call for the armed player's view (#495).
+ * handler's own call for the armed player's view (#495). And the window viewer's close by its tag and
+ * its opening again, through helpers in Facebook's own classes the extension's stubs call (#578).
  */
 class PictureInPictureFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -251,7 +252,15 @@ class PictureInPictureFixtureTest {
                 assertNotNull("$name: ${listener.type} keeps no single player that its end-of-video step reads", endRead)
 
                 val context = PatchContexts.of((listOf(util, holder, owner, runnable, topic, homeClass, paramsClass, listener) + viewers + listOf(
-                    ExtensionDex.classDef(PICTURE_IN_PICTURE), ExtensionDex.classDef(SETTINGS_STATUS))).distinctBy { it.type })
+                    ExtensionDex.classDef(PICTURE_IN_PICTURE), ExtensionDex.classDef(SETTINGS_STATUS),
+                    ExtensionDex.classDef(WINDOW_NEXT_REEL))).distinctBy { it.type })
+                // #578: the window's viewer is closed by its tag, as Facebook closes it with the window.
+                val viewerClose = findWindowViewerClose(shower)
+                assertEquals("$name: the close asks the screen for its fragment manager", FRAGMENT_ACTIVITY, viewerClose.manager.definingClass)
+                assertEquals("$name: the close finds a fragment", FRAGMENT, viewerClose.find.returnType)
+                assertEquals("$name: the close finds it in the screen's manager", viewerClose.manager.returnType, viewerClose.find.definingClass)
+                assertEquals("$name: the removal takes the fragment and the manager", listOf(FRAGMENT, viewerClose.manager.returnType),
+                    viewerClose.remove.parameterTypes.map(CharSequence::toString))
                 pictureInPicturePatch.execute(context)
 
                 val patched = context.mutableClassDefBy(check.definingClass).methods.single {
@@ -448,6 +457,22 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: the view and visibility handed over", listOf(shownView.registerC, shownView.registerD),
                     listOf(showing.registerC, showing.registerD))
                 assertEquals("$name: the rest of Facebook's handler", originalShower.size, shown.size)
+
+                // #578: the extension's stubs close the window's viewer and open it again through helpers in Facebook's classes.
+                val closeHelper = context.mutableClassDefBy(shower.definingClass).methods.single { it.name == CLOSE_VIEWER_HELPER }.code()
+                assertEquals("$name: the close helper's calls", listOf(viewerClose.manager, viewerClose.find, viewerClose.remove).map { it.toString() },
+                    closeHelper.mapNotNull { it.call }.map { it.toString() })
+                val openHelper = context.mutableClassDefBy(opening.definingClass).methods.single { it.name == OPEN_VIEWER_HELPER }.code()
+                assertEquals("$name: the open helper opens as Facebook does", listOf("${opening.definingClass}->${opening.name}"),
+                    openHelper.mapNotNull { it.call }.map { "${it.definingClass}->${it.name}" })
+                val stubs = context.mutableClassDefBy(WINDOW_NEXT_REEL).methods
+                for ((stub, helper) in listOf(
+                    CLOSE_VIEWER_STUB to "${shower.definingClass}->$CLOSE_VIEWER_HELPER",
+                    OPEN_VIEWER_STUB to "${opening.definingClass}->$OPEN_VIEWER_HELPER",
+                )) {
+                    val call = stubs.single { it.name == stub }.code()[0].call
+                    assertEquals("$name: $stub's first call", helper, call?.let { "${it.definingClass}->${it.name}" })
+                }
 
                 val resumed = patchedOf(resume).code()
                 val swapped = resumed[resumeAt + 1] as RegisterRangeInstruction

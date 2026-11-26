@@ -713,6 +713,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_BUTTON,
                         L10n.t("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open "
                                 + "the window right away. Works with Picture-in-picture on.")));
+                // Asked as each reel in the window ends, so a change counts from the next one.
+                playback.addPreference(toggle(context, Settings.NEXT_REEL_IN_WINDOW,
+                        L10n.t("When a reel in the picture-in-picture window ends, the next reel from Reels plays in the window "
+                                + "instead of the same one again. Works with Picture-in-picture on.")));
             }
             if (build.contains(PatchFamily.BACKGROUND_PLAY)) {
                 // Asked on each stop of a Facebook screen, so a change counts from the next time you leave.

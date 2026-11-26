@@ -1900,6 +1900,10 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Picture-in-picture button	Кнопка «Картинка в картинке»
 # context: summary of that switch; "the window" is the small picture-in-picture window
 Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	Показывает небольшую кнопку у левого края Reels или видео, чтобы быстро открыть плавающее окно. Нажмите ее, чтобы сразу открыть окно. Работает при включенной функции «Картинка в картинке».
+# context: switch title under Picture-in-picture on the Playback page; on, when a reel ends in the small picture-in-picture window, the next reel plays there
+Next reel in the window	Следующий ролик Reels в окне
+# context: summary of that switch; "the window" is the small picture-in-picture window
+When a reel in the picture-in-picture window ends, the next reel from Reels plays in the window instead of the same one again. Works with Picture-in-picture on.	Когда ролик Reels в окне «Картинка в картинке» заканчивается, вместо повтора в окне включается следующий ролик из Reels. Работает при включенной функции «Картинка в картинке».
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	Продолжать воспроизведение в фоне
 Next reel in the background	Следующий ролик Reels в фоне

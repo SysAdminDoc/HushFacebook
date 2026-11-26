@@ -451,6 +451,7 @@ public final class SettingsBackup {
             Settings.PICTURE_IN_PICTURE,
             Settings.PICTURE_IN_PICTURE_FROM_MENU,
             Settings.PICTURE_IN_PICTURE_BUTTON,
+            Settings.NEXT_REEL_IN_WINDOW,
             Settings.KEEP_PLAYING_IN_BACKGROUND,
             Settings.NEXT_REEL_IN_BACKGROUND,
             Settings.BACKGROUND_PLAY_BUTTON,

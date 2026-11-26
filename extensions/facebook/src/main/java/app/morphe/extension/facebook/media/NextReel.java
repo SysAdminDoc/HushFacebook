@@ -206,6 +206,7 @@ public final class NextReel {
     /** First thing in the player's binder: the player, its origin and the reel's rich params. */
     public static void bound(Object player, Object origin, Object params) {
         try {
+            if (origin != null && BackgroundPlay.reelsOrigin(origin)) WindowNextReel.seen(player);
             if (params == null || origin == null || !on()) return;
             binds++;
             if (!BackgroundPlay.reelsOrigin(origin)) return;
@@ -677,6 +678,15 @@ public final class NextReel {
      */
     @Nullable
     static ViewGroup pagerIn(Activity screen) {
+        return pagerIn(screen, false);
+    }
+
+    /**
+     * The Reels viewer's pager in [screen], as {@link #pagerIn(Activity)}, looking through gone views
+     * too when [hidden] says so: the picture-in-picture window's viewer hides the whole screen (#578).
+     */
+    @Nullable
+    static ViewGroup pagerIn(Activity screen, boolean hidden) {
         Window window = screen.getWindow();
         View decor = window == null ? null : window.peekDecorView();
         if (decor == null) return null;
@@ -686,7 +696,7 @@ public final class NextReel {
         while (!pending.isEmpty() && seen++ < MAX_VIEWS) {
             View view = pending.poll();
             // A stopped screen's decor is INVISIBLE (S22, 588), so only a gone view is passed over.
-            if (view.getVisibility() == View.GONE || !(view instanceof ViewGroup)) continue;
+            if ((!hidden && view.getVisibility() == View.GONE) || !(view instanceof ViewGroup)) continue;
             ViewGroup group = (ViewGroup) view;
             if (group.getHeight() > 0 && isList(group) && group.canScrollVertically(1) && holdsAPage(group)) return group;
             for (int i = 0; i < group.getChildCount(); i++) pending.add(group.getChildAt(i));

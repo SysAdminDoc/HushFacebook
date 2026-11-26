@@ -358,6 +358,7 @@ final class SwitchLabels {
         if (setting == Settings.PICTURE_IN_PICTURE) return L10n.t("Picture-in-picture");
         if (setting == Settings.PICTURE_IN_PICTURE_FROM_MENU) return L10n.t("Only from a reel's More menu");
         if (setting == Settings.PICTURE_IN_PICTURE_BUTTON) return L10n.t("Picture-in-picture button");
+        if (setting == Settings.NEXT_REEL_IN_WINDOW) return L10n.t("Next reel in the window");
         if (setting == Settings.KEEP_PLAYING_IN_BACKGROUND) return L10n.t("Keep playing in the background");
         if (setting == Settings.NEXT_REEL_IN_BACKGROUND) return L10n.t("Next reel in the background");
         if (setting == Settings.BACKGROUND_PLAY_BUTTON) return L10n.t("Background play button in the window");

@@ -299,6 +299,8 @@ public final class PictureInPicture {
     /** The player whose video last reached its end, and when. */
     private static WeakReference<Object> ended = new WeakReference<>(null);
     private static long endedAt = -LOOP_MS;
+    /** The aspect, wide to one high, of the video {@link #shape} last ran for, 0 for none known. */
+    static volatile double lastAspect;
 
     /** Goes up with each arming and disarm, so a later look can tell whether Facebook did either. */
     private static int armings;
@@ -1031,7 +1033,9 @@ public final class PictureInPicture {
     /** The hook, right after Facebook's end-of-video step reads its player. */
     public static void playerEnded(Object player) {
         try {
-            if (player != null) noteEnded(player, SystemClock.uptimeMillis());
+            if (player == null) return;
+            noteEnded(player, SystemClock.uptimeMillis());
+            WindowNextReel.ended(player);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "video end", failure);
         }
@@ -1045,6 +1049,36 @@ public final class PictureInPicture {
     /** Whether [player]'s video reached its end just before [now]. */
     private static synchronized boolean justEnded(Object player, long now) {
         return player == ended.get() && now - endedAt < LOOP_MS;
+    }
+
+    /** The armed screen while it floats in the window with [player] the reel in it and the switch on, else null. */
+    @Nullable
+    static synchronized Activity windowScreen(Object player) {
+        Activity screen = armedScreen.get();
+        if (screen == null || player == null || player != current.get() || !on()) return null;
+        return screen.isInPictureInPictureMode() && !screen.isFinishing() ? screen : null;
+    }
+
+    /**
+     * [player] is the reel in the window from now on, armed again for it as a swipe arms it. False,
+     * with nothing changed, when nothing is armed, and when the reel has a shape the window doesn't
+     * take. {@link #lastAspect} then holds its video's aspect, as the arming read it.
+     */
+    static boolean armForWindow(Object player) {
+        Object[] arguments;
+        Object was;
+        synchronized (PictureInPicture.class) {
+            if (armedScreen.get() == null || arming == null || player == null || !on()) return false;
+            arguments = arming;
+            was = current.get();
+            current = new WeakReference<>(player);
+        }
+        lastAspect = 0;
+        if (rearm(arguments, player)) return true;
+        synchronized (PictureInPicture.class) {
+            if (current.get() == player) current = new WeakReference<>(was);
+        }
+        return false;
     }
 
     /** Facebook just set auto-enter itself, on or off, so nothing is held any more. */
@@ -1122,6 +1156,8 @@ public final class PictureInPicture {
             synchronized (PictureInPicture.class) {
                 lastPlayed = new WeakReference<>(player);
             }
+            // The next reel the window waits for once its reel ended is armed by Next reel in the window (#578).
+            if (anotherReel(player) && WindowNextReel.seen(player)) return;
             if (anotherReel(player) && onAnotherScreen(player)) {
                 HookStatus.counted(FAMILY, OTHER_SCREEN);
                 Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays on another screen, left out");
@@ -1207,6 +1243,7 @@ public final class PictureInPicture {
     @Nullable
     public static Rational shape(double aspect) {
         try {
+            lastAspect = aspect;
             if (!(aspect > 0)) return new Rational(9, 16);
             int thousandths = (int) ((float) aspect * 1000f);
             float ratio = thousandths / 1000f;
@@ -1434,6 +1471,8 @@ public final class PictureInPicture {
             ended = new WeakReference<>(null);
             endedAt = -LOOP_MS;
             lastPlayed = new WeakReference<>(null);
+            lastAspect = 0;
         }
+        WindowNextReel.forget();
     }
 }

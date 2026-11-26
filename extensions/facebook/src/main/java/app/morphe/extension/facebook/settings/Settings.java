@@ -2392,6 +2392,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_pip_button", FALSE);
 
     /**
+     * With Picture-in-picture on, a reel that ends in the window hands on to the next reel from
+     * Reels, which plays there in its place (#578,
+     * {@link app.morphe.extension.facebook.media.WindowNextReel}). Starts off. Off, paused or with
+     * Picture-in-picture off, the reel in the window plays over and over, as Facebook has it.
+     */
+    public static final BooleanSetting NEXT_REEL_IN_WINDOW =
+            new BooleanSetting("hushfacebook_next_reel_in_window", FALSE);
+
+    /**
      * A video you started keeps its sound after you leave Facebook, in Facebook's own background
      * player with its notification ({@link app.morphe.extension.facebook.media.BackgroundPlay}). Off
      * by default: it keeps a player going once Facebook is out of sight, which not everyone wants.
