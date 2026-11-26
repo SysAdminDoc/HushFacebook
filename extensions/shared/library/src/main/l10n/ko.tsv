@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Facebook의 실제 숫자가 표시돼요. 원하는 숫자를 표시하려면 입력하세요.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	이 휴대폰에서 내 프로필에 표시되는 숫자: %1$s.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	친구 목록 추적
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	내 프로필 > 친구 > 모든 친구 목록을 끝까지 스크롤할 때마다 이 휴대폰에 사본을 보관하고, 지난번 이후로 목록에서 사라진 사람을 알려 줘요. 나를 친구에서 삭제한 사람, 내가 친구에서 삭제한 사람, 계정을 닫은 사람이 모두 같은 방식으로 표시돼요. 아무것도 휴대폰 밖으로 나가지 않아요.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	더 이상 목록에 없는 친구
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	친구 목록을 끝까지 스크롤했을 때는 있었지만 다음번에는 없던 사람들이에요. 누르면 프로필이 열려요.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook이 친구 %1$d명의 사본을 보관했어요. 다음에 목록을 끝까지 스크롤하면 더 이상 목록에 없는 사람을 알려 줘요.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s님이 더 이상 친구 목록에 없어요.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	더 이상 친구 목록에 없음: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	더 이상 친구 목록에 없음: %1$s 외 %2$d명.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	여기서는 프로필을 열 수 없어요.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	이름 없는 사람
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	%1$s~%2$s 사이에 사라짐
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	아직 친구 목록 사본이 없어요.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	목록을 마지막으로 끝까지 읽은 날: %1$s, 친구 %2$d명.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	아직 아무도 없어요. 친구 목록 추적을 켜고 가끔 프로필 > 친구 > 모든 친구를 끝까지 스크롤하세요. 두 번 읽는 사이에 사라진 사람이 여기에 표시돼요.
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	둥근 스토리 영역
 # context: summary of that switch

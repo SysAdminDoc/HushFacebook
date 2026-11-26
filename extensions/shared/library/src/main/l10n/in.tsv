@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Angka asli Facebook ditampilkan. Ketik angka untuk menampilkan angka Anda sendiri.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Profil Anda menampilkan %1$s di ponsel ini.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	Pantau daftar teman Anda
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	Setiap kali Anda menggulir daftar Anda sendiri di Profil > Teman > Semua teman sampai akhir, salinannya disimpan di ponsel ini dan Anda diberi tahu siapa yang sudah tidak ada di sana sejak terakhir kali. Seseorang yang membatalkan pertemanan dengan Anda, seseorang yang pertemanannya Anda batalkan, dan akun yang ditutup tampil dengan cara yang sama. Tidak ada yang keluar dari ponsel Anda.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	Teman yang tidak lagi ada di daftar Anda
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	Orang yang ada di daftar teman Anda saat Anda menggulirnya sampai akhir dan tidak ada lagi di kali berikutnya. Ketuk salah satunya untuk membuka profilnya.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook menyimpan salinan %1$d teman Anda. Lain kali Anda menggulir daftar sampai akhir, Anda akan diberi tahu siapa yang tidak lagi ada di sana.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s tidak lagi ada di daftar teman Anda.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	Tidak lagi ada di daftar teman Anda: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	Tidak lagi ada di daftar teman Anda: %1$s dan %2$d lainnya.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	Profilnya tidak bisa dibuka di sini.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	Seseorang tanpa nama
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	Hilang antara %1$s dan %2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	Belum ada salinan daftar teman Anda.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	Daftar Anda terakhir dibaca sampai akhir pada %1$s, dengan %2$d teman.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	Belum ada siapa pun. Dengan Pantau daftar teman Anda aktif, sesekali gulir Profil > Teman > Semua teman sampai akhir. Siapa pun yang hilang di antara dua pembacaan itu muncul di sini.
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	Baris cerita bulat
 # context: summary of that switch

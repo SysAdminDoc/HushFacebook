@@ -2127,6 +2127,34 @@ Your own words at the top of Home instead of the Facebook logo, up to %1$d chara
 Your phone couldn't put this video together. Try another Download quality.	هاتفك لم يستطع تجميع هذا الفيديو معًا. جرّب جودة تنزيل أخرى.
 Your phone couldn't write the file. Check your free space and try again.	هاتفك لم يستطع كتابة الملف. تحقق من المساحة الفارغة وحاول مرة أخرى.
 Your profile shows %1$s on this phone.	ملفك الشخصي يعرض %1$s على هذا الهاتف.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	تتبّع قائمة أصدقائك
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	في كل مرة تمرّر فيها قائمتك الخاصة في الملف الشخصي > الأصدقاء > كل الأصدقاء حتى نهايتها، يحتفظ بنسخة على هذا الهاتف ويخبرك بمن لم يعد فيها منذ المرة السابقة. من ألغى صداقتك ومن ألغيت صداقته والحساب المغلق تظهر كلها بالطريقة نفسها. لا يغادر أي شيء هاتفك.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	أصدقاء لم يعودوا في قائمتك
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	أشخاص كانوا في قائمة أصدقائك مرةً مرّرتها فيها حتى النهاية ولم يكونوا فيها في المرة التالية. اضغط على أحدهم لفتح ملفه الشخصي.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	احتفظ Hushfacebook بنسخة من أصدقائك وعددهم %1$d. في المرة القادمة التي تمرّر فيها القائمة حتى نهايتها، سيخبرك بمن لم يعد فيها.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s لم يعد في قائمة أصدقائك.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	لم يعودوا في قائمة أصدقائك: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	لم يعودوا في قائمة أصدقائك: %1$s و%2$d آخرون.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	لا يمكن فتح ملفه الشخصي هنا.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	شخص بلا اسم
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	غادر بين %1$s و%2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	لا توجد نسخة من قائمة أصدقائك بعد.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	آخر مرة قُرئت فيها قائمتك حتى نهايتها كانت في %1$s، وفيها %2$d صديقًا.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	لا أحد بعد. مع تشغيل تتبّع قائمة أصدقائك، مرّر الملف الشخصي > الأصدقاء > كل الأصدقاء حتى النهاية من حين لآخر. أي شخص يختفي منها بين قراءتين يظهر هنا.
 Your settings already match a new install.	إعداداتك بالفعل تطابق تثبيتًا جديدًا.
 Your settings already match that file, so nothing will change.	إعداداتك بالفعل تطابق ذلك الملف، لذلك لن يتغير شيء.
 Your settings are back the way they were before the reset.	إعداداتك عادت كما كانت قبل إعادة الضبط.

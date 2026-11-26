@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Đang hiện số thật của Facebook. Nhập chữ số để hiện số của bạn.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Hồ sơ của bạn hiện %1$s trên điện thoại này.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	Theo dõi danh sách bạn bè của bạn
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	Mỗi lần bạn cuộn danh sách của chính mình trong Trang cá nhân > Bạn bè > Tất cả bạn bè đến cuối, một bản sao được lưu trên điện thoại này và bạn sẽ biết ai không còn trong đó kể từ lần trước. Người đã hủy kết bạn với bạn, người bạn đã hủy kết bạn và tài khoản đã đóng đều hiện giống nhau. Không có gì rời khỏi điện thoại của bạn.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	Bạn bè không còn trong danh sách của bạn
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	Những người có trong danh sách bạn bè của bạn vào một lần bạn cuộn đến cuối và không còn ở lần sau. Nhấn vào một người để mở trang cá nhân của họ.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook đã lưu bản sao %1$d người bạn của bạn. Lần tới khi bạn cuộn danh sách đến cuối, bạn sẽ biết ai không còn trong đó.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s không còn trong danh sách bạn bè của bạn.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	Không còn trong danh sách bạn bè của bạn: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	Không còn trong danh sách bạn bè của bạn: %1$s và %2$d người khác.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	Không mở được trang cá nhân của họ ở đây.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	Một người không có tên
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	Rời đi trong khoảng %1$s đến %2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	Chưa có bản sao danh sách bạn bè của bạn.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	Danh sách của bạn được đọc đến cuối lần gần nhất vào %1$s, với %2$d người bạn.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	Chưa có ai. Khi bật Theo dõi danh sách bạn bè của bạn, thỉnh thoảng hãy cuộn Trang cá nhân > Bạn bè > Tất cả bạn bè đến cuối. Ai biến mất giữa hai lần đọc đó sẽ hiện ở đây.
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	Thanh tin tròn
 # context: summary of that switch

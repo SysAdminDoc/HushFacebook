@@ -671,6 +671,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_profile_gifts", FALSE);
 
     /**
+     * Keep track of your friends list ({@link app.morphe.extension.facebook.profile.FriendList}, #597):
+     * each time your own All friends list is scrolled to its end, it's kept on this phone, and anyone
+     * on the copy before who isn't on the new one goes on Friends no longer on your list. Starts off.
+     */
+    public static final BooleanSetting FRIEND_LIST_WATCH =
+            new BooleanSetting("hushfacebook_friend_list_watch", FALSE);
+
+    /**
      * Friends, followers and following counts of your own profile that you type yourself, shown on this
      * phone only ({@link app.morphe.extension.facebook.profile.LocalProfileCounts}, #280). Starts off.
      * Read each time Facebook lays the profile out, so a change shows the next time a profile opens.

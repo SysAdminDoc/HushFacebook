@@ -856,6 +856,17 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/FriendList.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/settings/FriendsGoneScreen.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/profile/FriendListPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: who's no longer on your friends list. In Facebook 588 Profile > Friends > All friends is one section naming itself AllFriendListContentSection, for your own list and anyone else's. Its build method, the one holding AllFriendListContentSectionSpec, reads one boolean of the section, whether the list is your own. Its event method handles the list's load in the case holding all_friends_list: it casts the section and asks the load for the PaginableList of everyone loaded so far. The patch hands the section to the extension right after that cast and the list right after it's read, and fills in the names of the own-list flag and of the event method's other flag, true while the list's search is empty. The extension keeps your own unsearched list once it has no next page, by each row's id and name read with getString and the field names' hashCodes, and lists anyone on the kept copy who isn't on the next one."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/LocalProfileCounts.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/profile/LocalProfileCountsPatch.kt"
       ],

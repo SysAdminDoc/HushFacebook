@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Показва се истинският брой от Facebook. Въведи цифри, за да покажеш свой.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Профилът ти показва %1$s на този телефон.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	Следене на списъка ти с приятели
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	Всеки път, когато превъртиш собствения си списък в Профил > Приятели > Всички приятели до края, пази копие на този телефон и ти казва кой вече не е в него от предишния път. Някой, който те е премахнал от приятели, някой, когото ти си премахнал, и закрит профил се показват по един и същи начин. Нищо не напуска телефона ти.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	Приятели, които вече не са в списъка ти
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	Хора, които бяха в списъка ти с приятели веднъж, когато го превъртя до края, и ги нямаше следващия път. Докосни някого, за да отвориш профила му.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook запази копие на твоите %1$d приятели. Следващия път, когато превъртиш списъка до края, ще ти каже кой вече не е в него.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s вече не е в списъка ти с приятели.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	Вече не са в списъка ти с приятели: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	Вече не са в списъка ти с приятели: %1$s и още %2$d.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	Профилът не може да се отвори тук.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	Някой без име
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	Изчезнал между %1$s и %2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	Все още няма копие на списъка ти с приятели.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	Списъкът ти беше прочетен до края за последно на %1$s, с %2$d приятели.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	Още няма никого. С включено „Следене на списъка ти с приятели“ превъртай от време на време Профил > Приятели > Всички приятели до края. Всеки, който отпадне между две такива прочитания, се появява тук.
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	Кръгла лента с истории
 # context: summary of that switch

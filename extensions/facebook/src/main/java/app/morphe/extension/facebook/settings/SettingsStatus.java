@@ -110,6 +110,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean friendList() {
+        return false;
+    }
+
     public static boolean postActionButtons() {
         return false;
     }

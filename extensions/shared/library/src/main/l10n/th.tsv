@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	แสดงตัวเลขจริงของ Facebook พิมพ์ตัวเลขเพื่อแสดงตัวเลขที่คุณกำหนดเอง
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	โปรไฟล์ของคุณจะแสดง %1$s บนโทรศัพท์เครื่องนี้
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	ติดตามรายชื่อเพื่อนของคุณ
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	ทุกครั้งที่คุณเลื่อนรายชื่อของคุณเองใน โปรไฟล์ > เพื่อน > เพื่อนทั้งหมด จนสุด จะเก็บสำเนาไว้ในโทรศัพท์เครื่องนี้และบอกคุณว่าใครไม่อยู่ในรายชื่อแล้วตั้งแต่ครั้งก่อน คนที่เลิกเป็นเพื่อนกับคุณ คนที่คุณเลิกเป็นเพื่อนด้วย และบัญชีที่ปิดไปแล้วจะแสดงแบบเดียวกันทั้งหมด ไม่มีข้อมูลใดออกจากโทรศัพท์ของคุณ
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	เพื่อนที่ไม่อยู่ในรายชื่อของคุณแล้ว
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	คนที่อยู่ในรายชื่อเพื่อนของคุณครั้งหนึ่งที่คุณเลื่อนจนสุด แต่ไม่อยู่ในครั้งถัดไป แตะเพื่อเปิดโปรไฟล์ของคนนั้น
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook เก็บสำเนาเพื่อน %1$d คนของคุณไว้แล้ว ครั้งหน้าที่คุณเลื่อนรายชื่อจนสุด จะบอกว่าใครไม่อยู่ในรายชื่อแล้ว
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s ไม่อยู่ในรายชื่อเพื่อนของคุณแล้ว
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	ไม่อยู่ในรายชื่อเพื่อนของคุณแล้ว: %1$s
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	ไม่อยู่ในรายชื่อเพื่อนของคุณแล้ว: %1$s และอีก %2$d คน
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	เปิดโปรไฟล์ของคนนี้ที่นี่ไม่ได้
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	คนที่ไม่มีชื่อ
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	หายไประหว่าง %1$s ถึง %2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	ยังไม่มีสำเนารายชื่อเพื่อนของคุณ
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	อ่านรายชื่อของคุณจนสุดครั้งล่าสุดเมื่อ %1$s มีเพื่อน %2$d คน
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	ยังไม่มีใคร เมื่อเปิด ติดตามรายชื่อเพื่อนของคุณ ไว้ ให้เลื่อน โปรไฟล์ > เพื่อน > เพื่อนทั้งหมด จนสุดเป็นครั้งคราว ใครที่หายไประหว่างการอ่านสองครั้งจะแสดงที่นี่
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	ถาดสตอรี่แบบวงกลม
 # context: summary of that switch

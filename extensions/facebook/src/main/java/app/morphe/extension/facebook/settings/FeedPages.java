@@ -175,6 +175,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.SPONSORED_PROFILE_POSTS)
                 || build.contains(PatchFamily.PROFILE_NOTES)
                 || build.contains(PatchFamily.LOCAL_PROFILE_COUNTS)
+                || build.contains(PatchFamily.FRIEND_LIST)
                 || build.contains(PatchFamily.POST_ACTION_BUTTONS)
                 || build.contains(PatchFamily.AFFILIATE_LINKS)
                 || build.contains(PatchFamily.POST_WORDS)
@@ -465,6 +466,15 @@ final class FeedPages {
                 feed.addPreference(HushfacebookPreferenceFragment.countRow(context, LocalProfileCounts.Count.FRIENDS));
                 feed.addPreference(HushfacebookPreferenceFragment.countRow(context, LocalProfileCounts.Count.FOLLOWERS));
                 feed.addPreference(HushfacebookPreferenceFragment.countRow(context, LocalProfileCounts.Count.FOLLOWING));
+            }
+            // Read each time your All friends list is scrolled to its end (#597). The list stays usable
+            // with the switch off, since what's on it was found before.
+            if (build.contains(PatchFamily.FRIEND_LIST)) {
+                feed.addPreference(toggle(context, Settings.FRIEND_LIST_WATCH,
+                        L10n.t("Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on "
+                                + "this phone and tells you who's no longer on it since the time before. Someone who unfriended "
+                                + "you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.")));
+                feed.addPreference(FriendsGoneScreen.row(page, context));
             }
             if (build.contains(PatchFamily.RETURN_REFRESH)) {
                 feed.addPreference(toggle(context, Settings.BLOCK_RETURN_REFRESH,

@@ -116,6 +116,7 @@ import app.morphe.extension.facebook.navigation.HiddenTabsForTests;
 import app.morphe.extension.facebook.navigation.ReelsTabForTests;
 import app.morphe.extension.facebook.navigation.StartTabRouteForTests;
 import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
+import app.morphe.extension.facebook.profile.FriendListForTests;
 import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.profile.ProfileNotesForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
@@ -422,6 +423,7 @@ public class ColdStartHooksTest {
         assertFalse(PlayerSourcesForTests.recordsAVideoPlayer());
         assertFalse("a screen resumed before the context read the clipboard", ClipboardLinkForTests.readsTheClipboard());
         assertFalse("a file download before the context went to Downloads", FileDownloadsForTests.movesAFile());
+        assertFalse("a friends list read before the context was kept", FriendListForTests.keepsAList());
         assertFalse("a start before the context asked Facebook for a tab", StartTabRouteForTests.routes());
         assertFalse("a tab bar built before the context lost Home", MarketplaceOnlyForTests.hidesHome());
         assertFalse("a feed warm-up before the context was skipped", MarketplaceOnlyForTests.skipsFeedPrefetch());

@@ -139,6 +139,8 @@ public enum PatchFamily {
             Settings.HIDE_PROFILE_NOTES, Settings.HIDE_PROFILE_GIFTS),
     LOCAL_PROFILE_COUNTS(FamilyNames.LOCAL_PROFILE_COUNTS, "localProfileCounts", null,
             Settings.LOCAL_PROFILE_COUNTS),
+    FRIEND_LIST(FamilyNames.FRIEND_LIST, "friendList", null,
+            Settings.FRIEND_LIST_WATCH),
     POST_ACTION_BUTTONS(FamilyNames.POST_ACTION_BUTTONS, "postActionButtons", null,
             Settings.POST_SAVE_BUTTON, Settings.POST_DOWNLOAD_BUTTON, Settings.HIDE_POST_LIKE_BUTTON,
             Settings.HIDE_POST_COMMENT_BUTTON, Settings.HIDE_POST_REPOST_BUTTON, Settings.HIDE_POST_SHARE_BUTTON,

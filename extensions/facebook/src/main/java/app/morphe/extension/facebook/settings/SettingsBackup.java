@@ -268,6 +268,7 @@ public final class SettingsBackup {
             Settings.HIDE_PROFILE_NOTES,
             Settings.HIDE_PROFILE_GIFTS,
             Settings.LOCAL_PROFILE_COUNTS,
+            Settings.FRIEND_LIST_WATCH,
             Settings.POST_SAVE_BUTTON,
             Settings.POST_DOWNLOAD_BUTTON,
             Settings.HIDE_POST_LIKE_BUTTON,

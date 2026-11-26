@@ -169,6 +169,7 @@ import app.morphe.extension.facebook.navigation.ReelsTabForTests;
 import app.morphe.extension.facebook.navigation.TabBadgesForTests;
 import app.morphe.extension.facebook.navigation.StartTabRouteForTests;
 import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
+import app.morphe.extension.facebook.profile.FriendListForTests;
 import app.morphe.extension.facebook.profile.ProfileNotesForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
 import app.morphe.extension.facebook.reels.DoubleTapSkip;
@@ -710,6 +711,8 @@ public class PausedHooksTest {
         // Your own profile's count line shows the number you typed.
         probes.put(PatchFamily.LOCAL_PROFILE_COUNTS,
                 Collections.singletonList(app.morphe.extension.facebook.profile.LocalProfileCountsForTests::swapsAFriendsCount));
+        // Your own friends list, read to its end, is kept on the phone.
+        probes.put(PatchFamily.FRIEND_LIST, Collections.singletonList(FriendListForTests::keepsAList));
         // A post's row loses Facebook's own Save and Like, a video post's row gets Download, and the
         // row goes without its own tap. With every switch on, hiding Save wins over adding it (#541).
         probes.put(PatchFamily.POST_ACTION_BUTTONS, Arrays.asList(

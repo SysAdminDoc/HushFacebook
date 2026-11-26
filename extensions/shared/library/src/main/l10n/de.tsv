@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Facebooks echte Zahl wird angezeigt. Gib Ziffern ein, um deine eigene zu zeigen.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Dein Profil zeigt auf diesem Handy %1$s.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	Deine Freundesliste im Blick behalten
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	Jedes Mal, wenn du deine eigene Liste unter Profil > Freunde > Alle Freunde bis zum Ende scrollst, wird eine Kopie auf diesem Handy gespeichert, und du erfährst, wer seit dem letzten Mal nicht mehr darauf ist. Jemand, der dich entfreundet hat, jemand, den du entfreundet hast, und ein geschlossenes Konto sehen dabei gleich aus. Nichts verlässt dein Handy.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	Nicht mehr auf deiner Freundesliste
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	Personen, die auf deiner Freundesliste waren, als du sie einmal bis zum Ende gescrollt hast, und beim nächsten Mal nicht mehr. Tippe auf eine, um ihr Profil zu öffnen.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook hat eine Kopie deiner %1$d Freunde gespeichert. Wenn du die Liste das nächste Mal bis zum Ende scrollst, erfährst du, wer nicht mehr darauf ist.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s ist nicht mehr auf deiner Freundesliste.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	Nicht mehr auf deiner Freundesliste: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	Nicht mehr auf deiner Freundesliste: %1$s und %2$d weitere.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	Das Profil lässt sich hier nicht öffnen.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	Jemand ohne Namen
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	Weg zwischen %1$s und %2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	Noch keine Kopie deiner Freundesliste.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	Deine Liste wurde zuletzt am %1$s bis zum Ende gelesen, mit %2$d Freunden.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	Noch niemand. Wenn „Deine Freundesliste im Blick behalten“ an ist, scrolle ab und zu Profil > Freunde > Alle Freunde bis zum Ende. Wer zwischen zwei solchen Durchgängen wegfällt, erscheint hier.
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	Runde Stories-Leiste
 # context: summary of that switch

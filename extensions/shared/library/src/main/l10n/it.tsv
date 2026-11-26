@@ -2696,6 +2696,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Viene mostrato il numero reale di Facebook. Scrivi delle cifre per mostrare il tuo.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Il tuo profilo mostra %1$s su questo telefono.
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	Tieni traccia della tua lista di amici
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	Ogni volta che scorri fino in fondo la tua lista in Profilo > Amici > Tutti gli amici, ne tiene una copia su questo telefono e ti dice chi non c'è più dalla volta precedente. Chi ti ha tolto dagli amici, chi hai tolto tu e un account chiuso appaiono allo stesso modo. Niente lascia il tuo telefono.
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	Amici non più nella tua lista
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	Persone che erano nella tua lista di amici una volta che l'hai scorsa fino in fondo e non c'erano la volta dopo. Tocca una persona per aprire il suo profilo.
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook ha tenuto una copia dei tuoi %1$d amici. La prossima volta che scorri la lista fino in fondo, ti dice chi non c'è più.
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s non è più nella tua lista di amici.
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	Non più nella tua lista di amici: %1$s.
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	Non più nella tua lista di amici: %1$s e altri %2$d.
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	Il profilo non si può aprire qui.
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	Qualcuno senza nome
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	Uscito tra il %1$s e il %2$s
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	Ancora nessuna copia della tua lista di amici.
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	La tua lista è stata letta fino in fondo l'ultima volta il %1$s, con %2$d amici.
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	Ancora nessuno. Con Tieni traccia della tua lista di amici attivo, scorri ogni tanto Profilo > Amici > Tutti gli amici fino in fondo. Chi sparisce tra due di queste letture compare qui.
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	Barra delle storie rotonda
 # context: summary of that switch

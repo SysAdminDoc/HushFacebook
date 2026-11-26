@@ -2691,6 +2691,34 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	显示 Facebook 的真实数字。输入数字即可显示你自己的数字。
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	你的主页在这部手机上显示 %1$s。
+# context: switch title under News feed; on, your own Facebook friends list is kept on this phone each time you scroll it to the end, so you can see who is no longer on it
+Keep track of your friends list	追踪你的好友列表
+# context: summary of that switch; Profile > Friends > All friends is the path to the list in Facebook, so use Facebook's own names for those screens in your language
+Each time you scroll your own Profile > Friends > All friends list to its end, keeps a copy on this phone and tells you who's no longer on it since the time before. Someone who unfriended you, someone you unfriended and a closed account all show the same way. Nothing leaves your phone.	每次你把自己的“个人主页 > 好友 > 所有好友”列表滑到底，都会在这部手机上保存一份副本，并告诉你自上次以来谁不在列表里了。把你从好友中删除的人、你删除的好友和已关闭的账户都会以同样的方式显示。任何内容都不会离开你的手机。
+# context: row title and list title; the people who were on your Facebook friends list and aren't any more
+Friends no longer on your list	已不在你列表中的好友
+# context: summary of that row
+People who were on your friends list one time you scrolled it to the end and weren't the next. Tap one to open their profile.	你某次把好友列表滑到底时还在、下一次却不在的人。点按某人可打开其主页。
+# context: toast the first time your friends list is kept; %1$d is how many friends are on it
+Hushfacebook kept a copy of your %1$d friends. Next time you scroll the list to its end, it tells you who's no longer on it.	Hushfacebook 已保存你的 %1$d 位好友的副本。下次你把列表滑到底时，它会告诉你谁已不在列表中。
+# context: toast; %1$s is one person's name
+%1$s is no longer on your friends list.	%1$s 已不在你的好友列表中。
+# context: toast; %1$s is two or three people's names separated by commas
+No longer on your friends list: %1$s.	已不在你的好友列表中：%1$s。
+# context: toast; %1$s is three people's names separated by commas, %2$d how many other people
+No longer on your friends list: %1$s and %2$d more.	已不在你的好友列表中：%1$s，以及另外 %2$d 人。
+# context: toast when tapping a person in that list doesn't open their profile
+Their profile can't open here.	无法在这里打开其主页。
+# context: shown in place of a person's name when Facebook gave none
+Someone without a name	没有名字的人
+# context: second line of a person in that list; %1$s is the date they were last seen on your list, %2$s the date they were first missing
+Gone between %1$s and %2$s	在 %1$s 至 %2$s 之间离开
+# context: line above that list before your friends list was ever kept
+No copy of your friends list yet.	还没有你的好友列表副本。
+# context: line above that list; %1$s is a date, %2$d how many friends were on the list then
+Your list was last read to its end on %1$s, with %2$d friends.	你的列表上次在 %1$s 被读到底，共 %2$d 位好友。
+# context: shown while that list is empty; Keep track of your friends list is the switch's title
+Nobody yet. With Keep track of your friends list on, scroll Profile > Friends > All friends to its end now and then. Anyone who drops off between two of those reads shows up here.	还没有人。开启“追踪你的好友列表”后，不时把“个人主页 > 好友 > 所有好友”滑到底。在两次读取之间消失的人会显示在这里。
 # context: switch title under Stories; the stories row at the top of Home shown as round pictures
 Round stories tray	圆形快拍栏
 # context: summary of that switch
