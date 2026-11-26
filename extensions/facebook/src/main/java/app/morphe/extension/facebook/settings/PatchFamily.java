@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 import app.morphe.extension.facebook.feed.SeenPosts;
+import app.morphe.extension.facebook.media.VideoStarts;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.notifications.PushDiagnostics;
 import app.morphe.extension.facebook.reels.BurnInGuard;
@@ -727,6 +728,7 @@ public enum PatchFamily {
         LogBufferManager.registerReportSection(AppLock.REPORT);
         LogBufferManager.registerReportSection(PushDiagnostics.REPORT);
         LogBufferManager.registerReportSection(NetworkUsage.REPORT);
+        LogBufferManager.registerReportSection(VideoStarts.REPORT);
         for (PatchFamily family : values()) {
             // The theme's hooks run paused too: only Black cards, its one switch, steps back.
             if ((family.switches.isEmpty() && family.choice == null) || family == AMOLED_THEME) {

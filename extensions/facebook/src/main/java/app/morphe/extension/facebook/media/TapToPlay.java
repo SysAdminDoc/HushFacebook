@@ -224,15 +224,19 @@ public final class TapToPlay {
     /** The hook, first thing in FbGrootPlayer's play. False, and the play returns at once. */
     public static boolean allowStart(Object player, Object trigger) {
         // A reel waits while its comments are open, whatever this switch says (#266).
-        boolean allowed = !PauseUnderComments.holdsStart(player, trigger)
-                && allow(player, trigger, "player start", "", true);
+        boolean comments = PauseUnderComments.holdsStart(player, trigger);
+        boolean allowed = !comments && allow(player, trigger, "player start", "", true);
+        VideoStarts.started(player, trigger,
+                allowed ? VideoStarts.PLAYED : comments ? VideoStarts.HELD_COMMENTS : VideoStarts.HELD_TAP);
         FeedVideoControls.changed(player);
         return allowed;
     }
 
     /** The hook, first thing in the older Rich Video Player's playback controller play. */
     public static boolean allowLegacyStart(Object player, Object trigger) {
-        return allow(player, trigger, "older player start", " (older player)", false);
+        boolean allowed = allow(player, trigger, "older player start", " (older player)", false);
+        VideoStarts.startedOlder(trigger, allowed ? VideoStarts.PLAYED : VideoStarts.HELD_TAP);
+        return allowed;
     }
 
     /** Filled in by the patch: FbGrootPlayer's VideoPlayerParams getter. Only a player may be passed. */
@@ -468,6 +472,7 @@ public final class TapToPlay {
      * and that button needs one to start. The gate still holds every start (#239).
      */
     public static Object autoplaySetting(Object answer) {
+        Object given = answer;
         try {
             HookStatus.invoked(FamilyNames.TAP_TO_PLAY);
             if (!(answer instanceof Enum) || !on()) return answer;
@@ -476,10 +481,15 @@ public final class TapToPlay {
             HookStatus.bound(FamilyNames.TAP_TO_PLAY, "Autoplay setting");
             if (Settings.INLINE_FEED_VIDEO_CONTROLS.get()) return answer;
             logSettingOnce(chosen.name());
+            given = off;
             return off;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.TAP_TO_PLAY, "Autoplay setting", failure);
+            given = answer;
             return answer;
+        } finally {
+            // The report's VIDEO STARTS section says what Facebook chose and what it was told (#602).
+            VideoStarts.autoplayRead(answer, given);
         }
     }
 
@@ -933,6 +943,7 @@ public final class TapToPlay {
             partwayLogged = 0;
         }
         failNext = null;
+        VideoStarts.forget();
     }
 
     static boolean armed(Object player) {
