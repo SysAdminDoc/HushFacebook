@@ -864,8 +864,8 @@ final class L10nTableIt {
                 "Converti per mantenere la dimensione piena");
         table.put("Copied",
                 "Copiato");
-        table.put("Copied and saved. Pick a chat.",
-                "Copiato e salvato. Scegli una chat.");
+        table.put("Copied and saved. Paste and attach in a chat.",
+                "Copiato e salvato. Incolla e allega in chat.");
         table.put("Copied. Pick a chat and paste it.",
                 "Copiato. Scegli una chat e incollalo.");
         table.put("Copy a short report to the clipboard.",
@@ -2140,19 +2140,17 @@ final class L10nTableIt {
                 "Nell'elenco delle persone che hanno reagito a un post, il pulsante di ogni riga, come Aggiungi agli amici o Messaggio, diventa Blocca. Un tocco apre la schermata di blocco di Facebook.");
         table.put("In this order: %1$s. Facebook opens on the first one. Restart Facebook after you change this.",
                 "In questo ordine: %1$s. Facebook si apre sulla prima. Riavvia Facebook dopo averlo cambiato.");
-        table.put("In your gallery now. Pick a chat.",
-                "Ora \u00e8 nella galleria. Scegli una chat.");
         table.put("In-app proxy",
                 "Proxy nell'app");
         table.put("Indigo",
                 "Indaco");
         table.put("Inline feed video controls",
                 "Controlli integrati nei video del feed");
+        table.put("Instagram",
+                "Instagram");
     }
 
     private static void fill17(Map<String, String> table) {
-        table.put("Instagram",
-                "Instagram");
         table.put("Instagram can claim facebook.com links for itself, which turns this app's link switches back off. Tap, turn off Open supported links there (on newer Android, pick In your browser), then recheck Supported links above.",
                 "Instagram pu\u00f2 rivendicare per s\u00e9 i link facebook.com, e questo disattiva di nuovo gli interruttori dei link di questa app. Tocca, disattiva Apri link supportati l\u00ec (sulle versioni pi\u00f9 recenti di Android scegli Nel browser), poi ricontrolla Link supportati qui sopra.");
         table.put("Instagram's settings didn't open. Open App info from Instagram's icon, then Open by default.",
@@ -2271,11 +2269,11 @@ final class L10nTableIt {
                 "La riga %1$d non \u00e8 un modello che Hushfacebook riesce a leggere. Correggila o rimuovila, poi salva di nuovo.");
         table.put("Lines between posts",
                 "Linee tra i post");
+        table.put("Link copied",
+                "Link copiato");
     }
 
     private static void fill18(Map<String, String> table) {
-        table.put("Link copied",
-                "Link copiato");
         table.put("Link expired. Reopen the item and try again.",
                 "Link scaduto. Riapri l'elemento e riprova.");
         table.put("Link posts in groups",
@@ -2394,11 +2392,11 @@ final class L10nTableIt {
                 "Riquadri del Menu da nascondere");
         table.put("Messages, friend requests, comments, mentions, calls, login alerts and any kind not listed above always arrive. Android's notification settings for Facebook can block more.",
                 "Messaggi, richieste di amicizia, commenti, menzioni, chiamate, avvisi di accesso e qualsiasi tipo non elencato qui sopra arrivano sempre. Le impostazioni delle notifiche di Android per Facebook possono bloccarne altri.");
+        table.put("Messenger",
+                "Messenger");
     }
 
     private static void fill19(Map<String, String> table) {
-        table.put("Messenger",
-                "Messenger");
         table.put("Messenger can claim facebook.com and m.me links for itself, which turns this app's link switches back off. Tap, turn off Open supported links there (on newer Android, pick In your browser), then recheck Supported links above.",
                 "Messenger pu\u00f2 rivendicare per s\u00e9 i link facebook.com e m.me, e questo disattiva di nuovo gli interruttori dei link di questa app. Tocca, disattiva Apri link supportati l\u00ec (sulle versioni pi\u00f9 recenti di Android scegli Nel browser), poi ricontrolla Link supportati qui sopra.");
         table.put("Messenger's settings didn't open. Open App info from Messenger's icon, then Open by default.",
@@ -2517,11 +2515,11 @@ final class L10nTableIt {
                 "Ancora nessun tipo visto. Scorri la Home e torna qui.");
         table.put("No words yet, so no post is hidden.",
                 "Ancora nessuna parola, quindi nessun post viene nascosto.");
+        table.put("No words yet.",
+                "Ancora nessuna parola.");
     }
 
     private static void fill20(Map<String, String> table) {
-        table.put("No words yet.",
-                "Ancora nessuna parola.");
         table.put("Nobody listed yet, so no post is hidden.",
                 "Ancora nessuno in elenco, quindi nessun post viene nascosto.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
@@ -2640,11 +2638,11 @@ final class L10nTableIt {
                 "Sono stati controllati solo i primi %1$d caratteri.");
         table.put("Only the first reel waits",
                 "Solo il primo reel aspetta");
+        table.put("Open",
+                "Apri");
     }
 
     private static void fill21(Map<String, String> table) {
-        table.put("Open",
-                "Apri");
         table.put("Open a chat, then come back here to give it a color of its own.",
                 "Apri una chat, poi torna qui per darle un colore tutto suo.");
         table.put("Open chats in Messenger",
@@ -2763,11 +2761,11 @@ final class L10nTableIt {
                 "Carosello di foto");
         table.put("Photo file name",
                 "Nome dei file foto");
+        table.put("Photo saved",
+                "Foto salvata");
     }
 
     private static void fill22(Map<String, String> table) {
-        table.put("Photo saved",
-                "Foto salvata");
         table.put("Photo subfolder",
                 "Sottocartella delle foto");
         table.put("Photos are named %1$s.",
@@ -2886,11 +2884,11 @@ final class L10nTableIt {
                 "Mette un pulsante Salvati alla fine della barra di ricerca, cos\u00ec i post e i video salvati sono a un tocco di distanza. Riavvia Facebook per vedere la modifica.");
         table.put("Puts a feed video's full player button in its bottom corner, next to Facebook's speaker button, which moves over to make room. Live videos, and videos without Facebook's speaker, keep it up with the other buttons. Needs Full player button on feed videos on.",
                 "Mette il pulsante del player completo di un video del feed nell'angolo in basso, accanto al pulsante dell'audio di Facebook, che si sposta per fare spazio. Le dirette e i video senza il pulsante dell'audio di Facebook lo tengono in alto con gli altri pulsanti. Richiede Pulsante del player completo nei video del feed attivo.");
+        table.put("Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.",
+                "Mette la barra di scorrimento di un video del feed proprio sul bordo inferiore, cos\u00ec non d\u00e0 fastidio mentre scorri. I pulsanti dell'audio e delle persone taggate di Facebook salgono sopra di essa. Ha la precedenza su Abbassa la barra di scorrimento e l'audio. Richiede Barra di scorrimento nei video del feed attivo.");
     }
 
     private static void fill23(Map<String, String> table) {
-        table.put("Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.",
-                "Mette la barra di scorrimento di un video del feed proprio sul bordo inferiore, cos\u00ec non d\u00e0 fastidio mentre scorri. I pulsanti dell'audio e delle persone taggate di Facebook salgono sopra di essa. Ha la precedenza su Abbassa la barra di scorrimento e l'audio. Richiede Barra di scorrimento nei video del feed attivo.");
         table.put("Puts every feature switch but Lock Facebook back the way it started.",
                 "Riporta ogni interruttore delle funzioni, tranne Blocca Facebook, allo stato iniziale.");
         table.put("Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.",
@@ -3009,11 +3007,11 @@ final class L10nTableIt {
                 "I reel verranno riprodotti alla stessa qualit\u00e0 degli altri video.");
         table.put("Reels you've already seen may come back.",
                 "I reel che hai gi\u00e0 visto potrebbero ricomparire.");
+        table.put("Reels, videos and stories leave the list %1$s after you watch them.",
+                "Reel, video e storie escono dall'elenco %1$s dopo che li hai guardati.");
     }
 
     private static void fill24(Map<String, String> table) {
-        table.put("Reels, videos and stories leave the list %1$s after you watch them.",
-                "Reel, video e storie escono dall'elenco %1$s dopo che li hai guardati.");
         table.put("Reels, videos and stories save to this phone.",
                 "Reel, video e storie vengono salvati su questo telefono.");
         table.put("Reels, videos and stories stay on the list until you clear it.",
@@ -3132,11 +3130,11 @@ final class L10nTableIt {
                 "Salva GIF");
         table.put("Save all photos",
                 "Salva tutte le foto");
+        table.put("Save all videos",
+                "Salva tutti i video");
     }
 
     private static void fill25(Map<String, String> table) {
-        table.put("Save all videos",
-                "Salva tutti i video");
         table.put("Save any photo",
                 "Salva qualsiasi foto");
         table.put("Save any story",
@@ -3199,6 +3197,8 @@ final class L10nTableIt {
                 "Salvato nella galleria a %1$s, perch\u00e9 il file pi\u00f9 grande supera i 512 MB");
         table.put("Saved to the gallery in lower quality than on Facebook",
                 "Salvato nella galleria con una qualit\u00e0 inferiore a quella di Facebook");
+        table.put("Saved to your gallery. Attach it in a chat.",
+                "Salvato nella galleria. Allegalo in una chat.");
         table.put("Saved videos will be named %1$s.",
                 "I video salvati si chiameranno %1$s.");
         table.put("Saved, but WhatsApp and some editors may not accept it",

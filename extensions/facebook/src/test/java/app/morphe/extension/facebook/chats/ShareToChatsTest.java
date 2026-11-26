@@ -55,8 +55,8 @@ public class ShareToChatsTest {
             "Share to Facebook chats is off.",
             "Nothing in it to send.",
             "Couldn't save it to your gallery.",
-            "Copied and saved. Pick a chat.",
-            "In your gallery now. Pick a chat.",
+            "Copied and saved. Paste and attach in a chat.",
+            "Saved to your gallery. Attach it in a chat.",
             "Copied. Pick a chat and paste it.",
             "Open your chats to pick one.");
 
@@ -213,8 +213,8 @@ public class ShareToChatsTest {
 
     @Test
     public void theNoteSaysWhereTheTextAndTheFilesWent() {
-        assertEquals("Copied and saved. Pick a chat.", ShareToChats.note(app(), true, true));
-        assertEquals("In your gallery now. Pick a chat.", ShareToChats.note(app(), false, true));
+        assertEquals("Copied and saved. Paste and attach in a chat.", ShareToChats.note(app(), true, true));
+        assertEquals("Saved to your gallery. Attach it in a chat.", ShareToChats.note(app(), false, true));
         assertEquals("Copied. Pick a chat and paste it.", ShareToChats.note(app(), true, false));
     }
 

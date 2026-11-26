@@ -147,8 +147,8 @@ public final class ShareToChats extends Activity {
 
     /** What the note says once Chats opens: where the text and the files went. */
     static String note(Context context, boolean text, boolean files) {
-        if (text && files) return L10n.t(context, "Copied and saved. Pick a chat.");
-        if (files) return L10n.t(context, "In your gallery now. Pick a chat.");
+        if (text && files) return L10n.t(context, "Copied and saved. Paste and attach in a chat.");
+        if (files) return L10n.t(context, "Saved to your gallery. Attach it in a chat.");
         return L10n.t(context, "Copied. Pick a chat and paste it.");
     }
 
