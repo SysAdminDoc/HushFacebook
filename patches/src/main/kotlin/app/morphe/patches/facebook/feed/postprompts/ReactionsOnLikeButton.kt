@@ -552,7 +552,7 @@ private fun BytecodePatchContext.storyFirst(source: StorySource) {
 
 /**
  * Sizes the faces' box to the post's faces: the stubs filled and each [StorySource] patched, or
- * nothing with why logged, which keeps the box wide enough for three.
+ * nothing with why logged, which keeps the box wide enough for two.
  */
 private fun BytecodePatchContext.facesCounted(found: LikeLook) {
     val warn = { why: String -> patchLog.warning("$PATCH: $why. $WIDE_BOX") }

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -32,8 +33,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -151,14 +154,22 @@ public class LikeButtonFacesTest {
 
         /** A row whose Like icon is [icon], drawn through [glyphs] when there are no faces to show. */
         Row(Object icon, LikeButtonFaces.Glyphs glyphs) {
-            Context context = RuntimeEnvironment.getApplication();
+            this(RuntimeEnvironment.getApplication(), LikeButtonFaces.UNKNOWN, icon, glyphs);
+        }
+
+        /** A row on [screen] whose Like button's post was counted [faces]. */
+        Row(Context screen, int faces) {
+            this(screen, faces, null, null);
+        }
+
+        private Row(Context context, int faces, Object icon, LikeButtonFaces.Glyphs glyphs) {
             row = new LithoView(context);
             buttonHost = new Host(context);
             pileHost = new Host(context);
             row.addView(buttonHost);
             row.addView(pileHost);
-            button = glyphs == null ? new LikeButtonFaces.Faces(face)
-                    : new LikeButtonFaces.Faces(face, LikeButtonFaces.UNKNOWN, icon, glyphs);
+            button = glyphs == null ? new LikeButtonFaces.Faces(face, faces)
+                    : new LikeButtonFaces.Faces(face, faces, icon, glyphs);
             button.setBounds(0, 0, 48, 20);
             button.setCallback(buttonHost);
             pile.setCallback(pileHost);
@@ -192,6 +203,7 @@ public class LikeButtonFacesTest {
         Settings.HIDE_POST_REACTIONS.resetToDefault();
         Settings.HIDE_COMMENT_REACTIONS.resetToDefault();
         LikeButtonFaces.clearPending();
+        LikeButtonFaces.forgetScreensForTests();
         PostText.cachedMembers = null;
         HookStatus.clear();
     }
@@ -305,10 +317,10 @@ public class LikeButtonFacesTest {
     public void theBoxFitsThePostsFacesAtTheSameFaceSize() {
         Settings.REACTIONS_ON_LIKE_BUTTON.save(true);
         int[] reads = new int[1];
-        // The row's facepile draws two faces for a post with three reactions or more (588's compact
-        // footer on the S22), so a box for three left a gap before them.
-        int[][] posts = {{4}, {9, 2}, {9, 2, 1}, {9, 2, 1, 1}, {7, 0}};
-        float[] boxes = {0.8f, 1.6f, 1.6f, 1.6f, 0.8f};
+        // 588's feed footer takes three faces, so on Home a post with three kinds of reactions shows
+        // three, and a box for two squeezed them smaller than every other post's.
+        int[][] posts = {{4}, {9, 2}, {9, 2, 1}, {9, 2, 1, 1}, {7, 0}, {5, 0, 3, 0, 2}};
+        float[] boxes = {0.8f, 1.6f, 2.4f, 2.4f, 0.8f, 2.4f};
         Glyph[] icons = new Glyph[posts.length];
         for (int i = 0; i < posts.length; i++) {
             // Every post's icon equals every other's, as Facebook's Like icons do.
@@ -342,6 +354,48 @@ public class LikeButtonFacesTest {
         int before = reads[0];
         LikeButtonFaces.pendingStory(new GraphQLStory(), post(reads, 1));
         assertEquals("a post was read with the switch off", before, reads[0]);
+    }
+
+    /** Two kinds of screens, as Home's and a Page's are. */
+    public static final class HomeScreen extends Activity {
+    }
+
+    public static final class PageScreen extends Activity {
+    }
+
+    private static float boxFor(int faces) {
+        return width(new LikeButtonFaces.Faces(new Face(), faces));
+    }
+
+    @Test
+    public void aScreenWhosePilesDrawFewerFacesBoxesItsLaterPostsForThatMany() {
+        Settings.REACTIONS_ON_LIKE_BUTTON.save(true);
+        ActivityController<PageScreen> page = Robolectric.buildActivity(PageScreen.class).setup();
+        assertEquals("a screen no pile was seen on got less than three", 16f * 2.4f, boxFor(3), 0.001f);
+
+        // 588's Page timeline draws two of a post's three faces, a 40 by 20 pile.
+        Row trimmed = new Row(page.get(), 3);
+        trimmed.pile.setBounds(0, 0, 40, 20);
+        trimmed.pile.draw(canvas);
+        trimmed.button.draw(canvas);
+        assertEquals("the Page's next post with three kinds of reactions got a box for three",
+                16f * 1.6f, boxFor(3), 0.001f);
+        assertEquals("a post with one face lost its box for one", 16f * 0.8f, boxFor(1), 0.001f);
+        assertEquals("a post whose faces weren't counted lost its box for two",
+                16f * 1.6f, boxFor(LikeButtonFaces.UNKNOWN), 0.001f);
+
+        ActivityController<HomeScreen> home = Robolectric.buildActivity(HomeScreen.class).setup();
+        assertEquals("Home took the Page's two faces", 16f * 2.4f, boxFor(3), 0.001f);
+
+        home.pause();
+        page.pause().resume();
+        assertEquals("back on the Page, a post with three got a box for three again", 16f * 1.6f, boxFor(3), 0.001f);
+
+        // A pile on that screen with all three faces, 60 by 20, makes room for three again.
+        Row whole = new Row(page.get(), 3);
+        whole.pile.draw(canvas);
+        whole.button.draw(canvas);
+        assertEquals("a pile of three on the Page left its boxes at two", 16f * 2.4f, boxFor(3), 0.001f);
     }
 
     @Test
