@@ -144,7 +144,7 @@ A tap on a reaction at the bottom of a story asks first, and the story waits. On
 A tap on Follow beside a reel's author asks first, and only Continue follows or unfollows.	نقرة على متابعة بجانب كاتب ريل تسأل أولًا، وفقط متابعة تتابع أو تلغي المتابعة.
 A tap on Follow in a post, beside the poster's name or on its Follow button, asks first, and only Continue follows or unfollows.	نقرة على متابعة في منشور، بجانب اسم الناشر أو على زر متابعة فيه، تسأل أولًا، وفقط متابعة تتابع أو تلغي المتابعة.
 A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	نقرة على إعجاب بجانب ريل تسأل أولًا، وفقط متابعة تُعجب به أو تلغي إعجابك.
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	نقرة على إعجاب تحت تعليق تسأل أولًا، وفقط متابعة تُعجب به أو تلغي إعجابك.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	نقرة على إعجاب تحت تعليق، أو تفاعل تختاره بعد الضغط مطولًا على تعليق، تسأل أولًا، وفقط متابعة تُكمل.
 A tap on Like under a post asks first, and only Continue likes or unlikes it.	نقرة على إعجاب تحت منشور تسأل أولًا، وفقط متابعة تُعجب به أو تلغي إعجابك.
 A tap on the empty part of the row under a post, between the buttons and the reaction icons, does nothing instead of opening the comments or who reacted. The buttons work as before.	النقر على الجزء الفارغ من الصف تحت منشور، بين الأزرار وأيقونات التفاعل، لا يفعل شيئًا بدلًا من فتح التعليقات أو من تفاعل. الأزرار تعمل كما كانت.
 A thin gray line between posts in the feed, so posts without photos don't run together on the black page.	خط رمادي رفيع بين المنشورات في الخلاصة، حتى لا تلتصق المنشورات بلا صور ببعضها في الصفحة السوداء.
@@ -2338,3 +2338,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	إنشاء Remix لهذا الريل
 Hold the profile tab for Activity log	اضغط مطولًا على تبويب الملف الشخصي لفتح سجل النشاطات
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	اضغط مطولًا على تبويب الملف الشخصي لفتح سجل نشاطاتك بدلًا من تبديل الحساب. في الحسابات التي يظهر فيها تبويب القائمة مكانه، يقوم ذلك التبويب بالمهمة. لا يزال بإمكانك تبديل الحسابات من القائمة.
+React to this comment?	التفاعل مع هذا التعليق؟

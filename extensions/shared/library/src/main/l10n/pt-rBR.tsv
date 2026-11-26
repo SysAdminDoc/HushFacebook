@@ -762,7 +762,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	T
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	Perguntar antes de curtir um comentário
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Tocar em Curtir abaixo de um comentário pergunta antes, e só Continuar curte ou descurte.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	Tocar em Curtir abaixo de um comentário, ou escolher uma reação ao segurar um comentário, pergunta antes, e só Continuar segue em frente.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	Curtir ou descurtir esta publicação?
 # context: the same question for a reel
@@ -3149,3 +3149,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	Fazer remix deste reel
 Hold the profile tab for Activity log	Segure a aba do perfil para o Registro de atividades
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Segure a aba do perfil para abrir seu Registro de atividades em vez de trocar de conta. Em contas que têm a aba Menu no lugar dela, é essa aba que faz isso. Você ainda pode trocar de conta pelo Menu.
+React to this comment?	Reagir a este comentário?

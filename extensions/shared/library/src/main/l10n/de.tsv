@@ -876,7 +876,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	E
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	Vor „Gefällt mir“ bei Kommentaren fragen
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Ein Tippen auf „Gefällt mir“ unter einem Kommentar fragt zuerst nach, und erst Weiter setzt oder entfernt das „Gefällt mir“.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	Ein Tippen auf „Gefällt mir“ unter einem Kommentar oder eine Reaktion, die du nach langem Drücken auf einen Kommentar wählst, fragt zuerst nach, und erst Weiter führt sie aus.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	„Gefällt mir“ für diesen Beitrag setzen oder entfernen?
 # context: the same question for a reel
@@ -3263,3 +3263,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	Dieses Reel remixen
 Hold the profile tab for Activity log	Profil-Tab gedrückt halten für das Aktivitätenprotokoll
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Halte den Profil-Tab gedrückt, um dein Aktivitätenprotokoll zu öffnen, statt das Konto zu wechseln. Bei Konten, die an seiner Stelle einen Menü-Tab haben, macht das dieser Tab. Konten wechseln kannst du weiterhin über das Menü.
+React to this comment?	Auf diesen Kommentar reagieren?

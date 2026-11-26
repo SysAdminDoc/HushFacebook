@@ -898,7 +898,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	�
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	Спрашивать перед отметкой «Нравится» для комментария
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Нажатие на «Нравится» под комментарием сначала спрашивает, и только «Продолжить» ставит или снимает отметку.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	Нажатие на «Нравится» под комментарием или реакция, выбранная долгим нажатием на комментарий, сначала спрашивает, и только «Продолжить» её отправляет.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	Поставить или снять отметку «Нравится» для этой публикации?
 # context: the same question for a reel
@@ -3321,3 +3321,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	Сделать ремикс этого ролика
 Hold the profile tab for Activity log	Удерживайте вкладку профиля для журнала действий
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Удерживайте вкладку профиля, чтобы открыть журнал действий вместо смены аккаунта. В аккаунтах, где на её месте вкладка «Меню», это делает она. Сменить аккаунт по-прежнему можно в Меню.
+React to this comment?	Отреагировать на этот комментарий?

@@ -90,10 +90,15 @@ public final class AskBeforeLike {
     public static final int STORY_REACTION = 11;
     /** The single reaction button's own click, a merged lambda's arm that sends the reaction straight away. */
     public static final int STORY_SINGLE_REACTION = 12;
+    /**
+     * A reaction picked on the sheet a held comment opens (#443), a merged lambda's arm that keeps
+     * the screen in a field of its own.
+     */
+    public static final int COMMENT_REACTION = 13;
 
     private static final String[] KINDS = {"post footer like", "post plugin footer like", "reel like", "comment like",
             "post footer touch like", "post footer click like", "inline comment like", "reel follow", "collaborator reel follow",
-            "post header follow", "post attachment follow", "story reaction", "story single reaction"};
+            "post header follow", "post attachment follow", "story reaction", "story single reaction", "comment reaction"};
     private static final int CONTEXT_DEPTH = 10;
     static final String ASKED = "asked before a like";
     static final String ASKED_FOLLOW = "asked before a follow";
@@ -163,6 +168,7 @@ public final class AskBeforeLike {
                 return Settings.ASK_BEFORE_LIKING_REELS;
             case COMMENT:
             case COMMENT_INLINE:
+            case COMMENT_REACTION:
                 return Settings.ASK_BEFORE_LIKING_COMMENTS;
             case REEL_FOLLOW:
             case REEL_COLLAB_FOLLOW:
@@ -190,6 +196,7 @@ public final class AskBeforeLike {
 
     private static String questionOf(Context context, int kind) {
         if (story(kind)) return L10n.t(context, "React to this story?");
+        if (kind == COMMENT_REACTION) return L10n.t(context, "React to this comment?");
         if (follows(kind)) return L10n.t(context, "Follow or unfollow this account?");
         if (kind == REEL) return L10n.t(context, "Like or unlike this reel?");
         if (kind == COMMENT || kind == COMMENT_INLINE) return L10n.t(context, "Like or unlike this comment?");
@@ -219,7 +226,8 @@ public final class AskBeforeLike {
 
     /**
      * A context [value] keeps in an instance field, of its class or one above, that leads to an
-     * activity: the field's own, or the context of a view it keeps.
+     * activity: the field's own, or the context of a view it keeps. A merged lambda types its fields
+     * Object, so those are read too.
      */
     @Nullable
     private static Context screenKeptIn(@Nullable Object value) throws IllegalAccessException {
@@ -228,7 +236,7 @@ public final class AskBeforeLike {
             for (Field field : type.getDeclaredFields()) {
                 if (Modifier.isStatic(field.getModifiers())) continue;
                 Class<?> kind = field.getType();
-                if (!Context.class.isAssignableFrom(kind) && !View.class.isAssignableFrom(kind)) continue;
+                if (kind != Object.class && !Context.class.isAssignableFrom(kind) && !View.class.isAssignableFrom(kind)) continue;
                 field.setAccessible(true);
                 Object kept = field.get(value);
                 Context context = kept instanceof View ? ((View) kept).getContext() : kept instanceof Context ? (Context) kept : null;

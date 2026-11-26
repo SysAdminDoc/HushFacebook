@@ -876,7 +876,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	�
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	Питане преди харесване на коментар
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Докосването на „Харесвам“ под коментар първо пита и само „Продължи“ го харесва или отменя харесването.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	Докосването на „Харесвам“ под коментар или реакция, избрана при задържане на коментар, първо пита и само „Продължи“ я изпраща.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	Да се промени ли харесването на публикацията?
 # context: the same question for a reel
@@ -3263,3 +3263,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	Ремикс на този клип
 Hold the profile tab for Activity log	Задръжте раздела на профила за регистъра на дейностите
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Задръжте раздела на профила, за да отворите регистъра на дейностите си вместо смяна на акаунта. При акаунти с раздел Меню на негово място това прави този раздел. Пак можете да сменяте акаунти от Менюто.
+React to this comment?	Да реагираш ли на коментара?

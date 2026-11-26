@@ -1116,7 +1116,8 @@ final class FeedPages {
         if (ask) {
             // Read on each tap, so a change shows on the next one.
             comments.addPreference(toggle(context, Settings.ASK_BEFORE_LIKING_COMMENTS,
-                    L10n.t("A tap on Like under a comment asks first, and only Continue likes or unlikes it.")));
+                    L10n.t("A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only "
+                            + "Continue goes ahead.")));
         }
         if (options) {
             comments.addPreference(toggle(context, Settings.LIKE_ONLY,

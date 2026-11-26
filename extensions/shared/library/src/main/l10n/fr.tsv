@@ -876,7 +876,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	T
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	Demander avant d'aimer un commentaire
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Toucher J'aime sous un commentaire demande d'abord confirmation, et seul Continuer ajoute ou retire le J'aime.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	Toucher J'aime sous un commentaire, ou choisir une réaction en maintenant un commentaire, demande d'abord confirmation, et seul Continuer l'envoie.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	Aimer ou ne plus aimer cette publication ?
 # context: the same question for a reel
@@ -3263,3 +3263,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	Remixer ce reel
 Hold the profile tab for Activity log	Maintenir l'onglet du profil pour l'historique personnel
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Maintenez l'onglet du profil pour ouvrir votre historique personnel au lieu de changer de compte. Sur les comptes qui ont l'onglet Menu à sa place, c'est cet onglet qui le fait. Vous pouvez toujours changer de compte depuis le Menu.
+React to this comment?	Réagir à ce commentaire ?

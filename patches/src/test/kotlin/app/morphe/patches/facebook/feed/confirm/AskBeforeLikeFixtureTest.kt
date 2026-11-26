@@ -244,4 +244,66 @@ class AskBeforeLikeFixtureTest {
         }
         assertTrue("no fixture bundle for ${versions.joinToString()}", checked.isNotEmpty())
     }
+
+    /**
+     * A reaction picked on the sheet a held comment opens (#443) asks first on every declared build:
+     * the merged lambda's arm holding the presenter's trace name, which sends a reaction for the
+     * comment, starts with the case guard and the hand-over, and a held pick returns Unit.
+     */
+    @Test
+    fun `each declared build's held comment reaction asks the extension first`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val context = PatchContexts.of(holding(bundle, COMMENT_REACTION_TRACE))
+                val handler = context.commentReactionHandler()
+                val method = handler.method
+                assertEquals("$name: the reaction lambda isn't invoke(Object)", listOf("Ljava/lang/Object;"),
+                    method.parameterTypes.map { it.toString() })
+                val before = method.code()
+                val arm = handler.arm
+                assertTrue("$name: the reaction lambda got no arm guard", arm != null)
+                val cases = armCases(name, COMMENT_REACTION, before, arm!!, COMMENT_REACTION_TRACE)
+                assertEquals("$name: not one case of the reaction lambda names the presenter", 1, cases.size)
+                // Positive control: right after the trace name the arm sends the reaction, a call
+                // handing back the comment it reacted to.
+                val traceAt = before.indexOfFirst { it.loads(COMMENT_REACTION_TRACE) }
+                assertTrue("$name: the arm sends no reaction for a comment",
+                    before.subList(traceAt, minOf(before.size, traceAt + 20)).any {
+                        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.returnType ==
+                            "Lcom/facebook/graphql/model/GraphQLComment;"
+                    })
+
+                context.askBeforeCommentReaction()
+
+                val old = before.unpadded()
+                val after = context.patched(method).unpadded()
+                val grown = after.size - old.size
+                assertTrue("$name: no hook went in", grown > 0)
+                assertEquals("$name: Facebook's own first instruction moved or changed",
+                    old.map { it.opcode }, after.drop(grown).map { it.opcode })
+                val hook = after.take(grown)
+                assertEquals("$name: no case guard",
+                    listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE), hook.take(4).map { it.opcode })
+                assertEquals("$name: the guard doesn't read this", method.localRegisterCount(), (hook[0] as TwoRegisterInstruction).registerB)
+                assertEquals("$name: the guard reads another field", arm.field, hook[1].reference())
+                assertEquals("$name: the guard waits for another case", cases.single(), (hook[2] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the guard doesn't skip to Facebook's code", grown, hook[3].target())
+                val call = hook.indexOfFirst { it.opcode == Opcode.INVOKE_STATIC && it.reference() == HOLD }
+                assertTrue("$name: the hook doesn't call hold", call > 4)
+                assertEquals("$name: the array doesn't hold the lambda and the picked key", 2, (hook[4] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: not both go into the array", 2, hook.subList(4, call).count { it.opcode == Opcode.APUT_OBJECT })
+                assertEquals("$name: the wrong kind", COMMENT_REACTION, (hook[call - 2] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the wrong descriptor", descriptorOf(method),
+                    ((hook[call - 1] as ReferenceInstruction).reference as StringReference).string)
+                assertEquals("$name: a no doesn't go to Facebook's code", grown, hook[call + 2].target())
+                assertEquals("$name: a held pick doesn't return Unit", listOf(Opcode.SGET_OBJECT, Opcode.RETURN_OBJECT),
+                    hook.drop(call + 3).map { it.opcode })
+                checked += name
+            }
+        }
+        assertTrue("no fixture bundle for ${versions.joinToString()}", checked.isNotEmpty())
+    }
 }

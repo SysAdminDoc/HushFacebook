@@ -876,7 +876,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	�
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	댓글 좋아요 전에 확인
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	댓글 아래의 좋아요를 탭하면 먼저 확인하고, 계속을 눌러야만 좋아요를 누르거나 취소해요.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	댓글 아래의 좋아요를 탭하거나 댓글을 길게 눌러 감정 표현을 고르면 먼저 확인하고, 계속을 눌러야만 진행해요.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	이 게시물에 좋아요를 누르거나 취소할까요?
 # context: the same question for a reel
@@ -3263,3 +3263,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	이 릴스 리믹스하기
 Hold the profile tab for Activity log	프로필 탭을 길게 눌러 활동 로그 열기
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	프로필 탭을 길게 누르면 계정 전환 대신 활동 로그가 열려요. 그 자리에 메뉴 탭이 있는 계정에서는 메뉴 탭이 그렇게 해요. 계정 전환은 메뉴에서 계속할 수 있어요.
+React to this comment?	이 댓글에 감정 표현을 남길까요?

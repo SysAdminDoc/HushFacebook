@@ -880,7 +880,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	�
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	對留言按讚前先詢問
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	點按留言下方的「讚」會先詢問，只有點「繼續」才會按讚或收回讚。
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	點按留言下方的「讚」，或長按留言後選擇心情，都會先詢問，只有點「繼續」才會執行。
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	要對這則貼文按讚還是收回讚？
 # context: the same question for a reel
@@ -3267,3 +3267,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	混剪這則 Reel
 Hold the profile tab for Activity log	長按個人檔案分頁開啟動態紀錄
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	長按個人檔案分頁會開啟你的動態紀錄，而不是切換帳號。在該位置顯示選單分頁的帳號上，由選單分頁來做。你仍可以在選單中切換帳號.
+React to this comment?	要對這則留言留下心情嗎？

@@ -873,7 +873,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	�
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	点赞评论前先询问
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	点按评论下方的“赞”会先询问，只有点“继续”才会点赞或取消点赞。
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	点按评论下方的“赞”，或长按评论后选择心情，都会先询问，只有点“继续”才会执行。
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	要点赞还是取消点赞这条帖子？
 # context: the same question for a reel
@@ -3258,3 +3258,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	混剪这条 Reel
 Hold the profile tab for Activity log	长按个人主页标签打开活动日志
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	长按个人主页标签会打开你的活动日志，而不是切换账户。在该位置显示菜单标签的账户上，由菜单标签来做。你仍可以在菜单中切换账户.
+React to this comment?	要回应这条评论吗？

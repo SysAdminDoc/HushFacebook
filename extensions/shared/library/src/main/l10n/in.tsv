@@ -876,7 +876,7 @@ A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	M
 # context: switch title under Comments and writing; on, a tap on Like under a comment asks first
 Ask before liking a comment	Tanya sebelum menyukai komentar
 # context: summary of that switch
-A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Mengetuk Suka di bawah komentar akan bertanya dulu, dan hanya Lanjutkan yang menyukai atau batal menyukainya.
+A tap on Like under a comment, or a reaction picked on a held comment, asks first, and only Continue goes ahead.	Mengetuk Suka di bawah komentar, atau memilih reaksi setelah menahan komentar, akan bertanya dulu, dan hanya Lanjutkan yang meneruskannya.
 # context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
 Like or unlike this post?	Suka atau batal suka postingan ini?
 # context: the same question for a reel
@@ -3263,3 +3263,4 @@ Reels in your feed show the whole picture at their own shape, instead of cut dow
 Remix this reel	Remix reel ini
 Hold the profile tab for Activity log	Tahan tab profil untuk Log aktivitas
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Tekan lama tab profil untuk membuka Log aktivitas Anda, bukan beralih akun. Di akun yang punya tab Menu di tempatnya, tab itulah yang melakukannya. Anda tetap bisa beralih akun dari Menu.
+React to this comment?	Bereaksi ke komentar ini?
