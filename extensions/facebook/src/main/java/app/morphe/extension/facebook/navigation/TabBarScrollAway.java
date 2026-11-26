@@ -371,13 +371,20 @@ public final class TabBarScrollAway {
         IntegerSetting listSeen = wide ? Stored.WIDE_LIST_HEIGHT : Stored.LIST_HEIGHT;
         IntegerSetting setupSeen = wide ? Stored.WIDE_ROW_SETUP : Stored.ROW_SETUP;
         int wanted;
-        if (list > height) {
+        boolean seenFits = rowMade.get() == height && listSeen.get() > height
+                && (setupSeen.get() == setup || sameListUnderTabBar(setupSeen.get(), setup));
+        // A list laid out while another tab shows is laid out for that tab. With the tab bar kept on
+        // screen under See-through bars, Home leaves the Reels list its whole height, only pushed
+        // down below the status bar's strip, so the strip's room was counted twice: the first reel
+        // came out taller than its page and its caption, time and seek bar sat behind the bar (#554,
+        // S22 2026-11-26: rows made 2391 for a list of 2316). The height seen under the same switches
+        // wins for those rows, so once the Reels tab has shown, its list is the one they get.
+        if (list > height && (shown || !seenFits)) {
             wanted = list;
             if (rowMade.get() != height) rowMade.save(height);
             if (listSeen.get() != list) listSeen.save(list);
             if (setupSeen.get() != setup) setupSeen.save(setup);
-        } else if (rowMade.get() == height && listSeen.get() > height
-                && (setupSeen.get() == setup || sameListUnderTabBar(setupSeen.get(), setup))) {
+        } else if (seenFits) {
             wanted = listSeen.get();
         } else if (under || freed > 0) {
             int grown = height + (!under ? 0 : tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0) + freed;
