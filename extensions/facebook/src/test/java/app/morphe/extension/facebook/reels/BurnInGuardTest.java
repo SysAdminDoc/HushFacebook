@@ -262,9 +262,9 @@ public class BurnInGuardTest {
 
     /**
      * A photo story has no video surface: the photo and the layer over it holding the story's button
-     * stand in for one, so the header, the tap zones, the reply bar and that button dim and the photo
-     * doesn't (#401, laid out as 585's story card on an S22). The same screen outside the story viewer
-     * is left alone.
+     * stand in for one, so the header, the tap zones and the reply bar dim, and the photo and what its
+     * layer holds don't (#401, laid out as 585's story card on an S22; #523). The same screen outside
+     * the story viewer is left alone.
      */
     @Test
     public void aPhotoStoryDimsAroundThePhotoAndOnlyInTheStoryViewer() {
@@ -286,7 +286,7 @@ public class BurnInGuardTest {
             assertEquals("the photo", 1f, card[0].getAlpha(), 0f);
             assertEquals("the layer over it", 1f, card[1].getAlpha(), 0f);
             assertEquals("the card", 1f, card[6].getAlpha(), 0f);
-            assertEquals("the story's button", BurnInGuard.IDLE_LEVEL, card[2].getAlpha(), 0f);
+            assertEquals("the story's button", 1f, shownAlpha(card[2]), 0f);
             assertEquals("the header", BurnInGuard.IDLE_LEVEL, card[3].getAlpha(), 0f);
             assertEquals("the next tap zone", BurnInGuard.IDLE_LEVEL, card[4].getAlpha(), 0f);
             assertEquals("the reply bar", BurnInGuard.IDLE_LEVEL, card[5].getAlpha(), 0f);
@@ -353,10 +353,10 @@ public class BurnInGuardTest {
             assertTrue(lines.toString(), kept.contains("kept: " + BurnInGuard.describe(card[1], window)));
             assertTrue("the layer holds the button", BurnInGuard.describe(card[1], window).startsWith("FrameLayout [0,"));
             assertTrue("the layer holds the button", BurnInGuard.describe(card[1], window).endsWith(", 1 children"));
-            assertEquals("the button, the header, the tap zone and the reply bar: " + lines, 4, dimmed.size());
+            assertEquals("the header, the tap zone and the reply bar: " + lines, 3, dimmed.size());
             for (String line : dimmed) assertTrue(line, line.endsWith(", takes taps"));
             assertEquals("the tall tap zone first", "dimmed: " + BurnInGuard.describe(card[4], window), dimmed.get(0));
-            assertEquals("the story's button last", "dimmed: " + BurnInGuard.describe(card[2], window), dimmed.get(3));
+            assertEquals("the reply bar last", "dimmed: " + BurnInGuard.describe(card[5], window), dimmed.get(2));
             BurnInGuard.paused(screen);
         } finally {
             BaseSettings.DEBUG.resetToDefault();
@@ -387,6 +387,90 @@ public class BurnInGuardTest {
         View reply = clickable(screen);
         place(frame, reply, 0, bottom + 20, W, bottom + 200);
         return new View[]{photo, layer, learnMore, header, next, reply, card};
+    }
+
+    /**
+     * A note story (#523): the note's bubble with the friend's picture and the note's text, on a
+     * layer over the story. The header, the next tap zone and the reply bar dim, and the note never
+     * does, a text note's or a song note's, whose song plays on a video the card's size.
+     */
+    @Test
+    public void aTextNoteStaysBrightAndOnlyTheStoryControlsDim() {
+        noteStoryDims(false);
+    }
+
+    @Test
+    public void aSongNoteStaysBrightOverItsVideoAndOnlyTheStoryControlsDim() {
+        noteStoryDims(true);
+    }
+
+    private void noteStoryDims(boolean song) {
+        String kind = song ? "a song note's " : "a text note's ";
+        ActivityController<StoryViewerActivity> story = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        try {
+            Activity screen = story.get();
+            View[] note = noteStory(screen, song);
+            View decor = screen.getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(W, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(H, View.MeasureSpec.EXACTLY));
+            decor.layout(0, 0, W, H);
+            story.windowFocusChanged(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+
+            BurnInGuard.resumed(screen);
+            assertNotNull(kind + "story is guarded", BurnInGuard.reelOf(decor));
+            after(IDLE + 100);
+            assertEquals(kind + "bubble", 1f, shownAlpha(note[0]), 0f);
+            assertEquals(kind + "picture", 1f, shownAlpha(note[1]), 0f);
+            assertEquals(kind + "text", 1f, shownAlpha(note[2]), 0f);
+            assertEquals(kind + "story", 1f, shownAlpha(note[6]), 0f);
+            assertEquals(kind + "header", BurnInGuard.IDLE_LEVEL, shownAlpha(note[3]), 0f);
+            assertEquals(kind + "next tap zone", BurnInGuard.IDLE_LEVEL, shownAlpha(note[4]), 0f);
+            assertEquals(kind + "reply bar", BurnInGuard.IDLE_LEVEL, shownAlpha(note[5]), 0f);
+            BurnInGuard.paused(screen);
+        } finally {
+            story.close();
+        }
+    }
+
+    /**
+     * A note story's card: the note's bubble, the picture and the text in it, the header, the next tap
+     * zone, the reply bar under the card, and what the story shows under the note, a video the card's
+     * size for a song note or a plain background for a text one. The bubble sits on a layer the
+     * card's size, as Facebook's note sticker overlay does.
+     */
+    private View[] noteStory(Activity screen, boolean song) {
+        FrameLayout frame = new FrameLayout(screen);
+        screen.setContentView(frame);
+        FrameLayout card = new FrameLayout(screen);
+        int bottom = H * 83 / 100;
+        place(frame, card, 0, 50, W, bottom);
+        View under = song ? new TextureView(screen) : new View(screen);
+        card.addView(under, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout layer = new FrameLayout(screen);
+        card.addView(layer, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout bubble = new FrameLayout(screen);
+        bubble.setOnClickListener(clicked -> { });
+        place(layer, bubble, W / 6, bottom / 3, W * 5 / 6, bottom / 2);
+        View picture = new View(screen);
+        place(bubble, picture, 20, 20, 140, 140);
+        View text = new View(screen);
+        place(bubble, text, 160, 20, W * 2 / 3 - 20, 200);
+        View header = clickable(screen);
+        place(card, header, 0, 0, W, 200);
+        View next = clickable(screen);
+        place(card, next, W - 160, 0, W, bottom - 50);
+        View reply = clickable(screen);
+        place(frame, reply, 0, bottom + 20, W, bottom + 200);
+        return new View[]{bubble, picture, text, header, next, reply, card};
+    }
+
+    /** The share of its own drawing [view] shows at: its alpha times every parent's. */
+    private static float shownAlpha(View view) {
+        float alpha = 1f;
+        for (Object at = view; at instanceof View; at = ((View) at).getParent()) alpha *= ((View) at).getAlpha();
+        return alpha;
     }
 
     private static View clickable(Activity screen) {

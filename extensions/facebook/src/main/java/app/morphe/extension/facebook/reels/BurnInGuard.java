@@ -69,8 +69,10 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
  * about 87% of an S22's window with the tab bar showing, a tall video in the feed about 58% and a
  * landscape one about 26%. A video opened from the feed plays on a page of Facebook's full-screen
  * viewer sized to the video, so a wide one there is small too, but its page is the screen's size
- * ({@link #onAFullPage}, #370). A photo story plays on no surface at all, so in the story viewer the
- * photo's own layers stand in for one ({@link #pictures}, #401). Facebook's camera and story editor
+ * ({@link #onAFullPage}, #370). In the story viewer the story's own layers, the views about the size
+ * of the window, stay bright with everything in them, a video under them or not ({@link #pictures}):
+ * a photo story plays on no surface at all (#401), and a note's bubble sits on a layer over the
+ * story, its song's video included (#523). Facebook's camera and story editor
  * fill the screen with a preview too, and their shutter and tools are never dimmed ({@link #camera}).
  *
  * <p>The dim: once the Reels screen has gone the Dim after choice ({@link BurnInWait}) without a
@@ -452,22 +454,26 @@ public final class BurnInGuard {
     }
 
     /**
-     * What a pass keeps bright in [decor]: its shown video surfaces, and in the story viewer, when
-     * none of them fills the screen, the photo's layers as well ({@link #pictures}, #401).
+     * What a pass keeps bright in [decor]: its shown video surfaces, and in the story viewer the
+     * story's layers as well ({@link #pictures}), whether a video fills the screen or not: a note
+     * story's bubble sits on a layer over its song's video (#523). Surfaces come first, so the
+     * video still answers {@link #reelOf} when a layer is no bigger.
      */
     private static List<View> playing(View decor) {
         List<View> found = surfaces(decor);
-        if (!frontStory || reelOf(decor, found) != null) return found;
-        List<View> pictures = pictures(decor);
-        pictures.addAll(found);
-        return pictures;
+        if (!frontStory) return found;
+        for (View picture : pictures(decor)) {
+            if (!found.contains(picture)) found.add(picture);
+        }
+        return found;
     }
 
     /**
      * The deepest shown views in [decor]'s content frame each the size of at least {@link
-     * #REELS_SHARE} of the window, with no shown child that is: on a photo story, the layers that
-     * draw the photo and the layer over it holding the story's button (585 on an S22: a 1080x1920
-     * media frame in a 1080x2316 window, with the header, the tap zones and the reply bar beside it).
+     * #REELS_SHARE} of the window, with no shown child that is: on a story, the layers that draw the
+     * photo or video and the ones over it holding the story's own text, stickers and buttons, which
+     * stay bright with all they hold ({@link #dimAll}) (585 on an S22: a 1080x1920 media frame in a
+     * 1080x2316 window, with the header, the tap zones and the reply bar beside it).
      * Size rather than the part on the screen, so the photo the pager holds ready beside the one
      * showing keeps its branch bright, as a reel's surface does. Looks at no more than {@link
      * #MAX_VIEWS} views.
@@ -576,12 +582,16 @@ public final class BurnInGuard {
 
     /**
      * Dims what shows beside the video in [decor]: going up from each of [surfaces] in the content
-     * frame to the frame itself, the shown views at each level that hold none of them. A view dimmed
-     * before that no longer is one of those (a reel the pager moved on from) gets its alpha back.
+     * frame to the frame itself, the shown views at each level that hold none of them. What's inside
+     * one of [surfaces] is never dimmed: a story's layer keeps its note, text and stickers bright
+     * (#523), and a video surface holds nothing. A view dimmed before that no longer is one of those
+     * (a reel the pager moved on from) gets its alpha back.
      */
     private static void dimAll(View decor, List<View> surfaces) {
         View content = decor.findViewById(android.R.id.content);
         if (!(content instanceof ViewGroup)) return;
+        Set<View> kept = Collections.newSetFromMap(new IdentityHashMap<>());
+        kept.addAll(surfaces);
         Set<View> bright = Collections.newSetFromMap(new IdentityHashMap<>());
         List<View> path = new ArrayList<>();
         for (View surface : surfaces) {
@@ -598,7 +608,7 @@ public final class BurnInGuard {
         }
         Set<View> beside = Collections.newSetFromMap(new IdentityHashMap<>());
         for (View held : bright) {
-            if (!(held instanceof ViewGroup)) continue;
+            if (!(held instanceof ViewGroup) || inside(held, kept, content)) continue;
             ViewGroup group = (ViewGroup) held;
             for (int i = 0; i < group.getChildCount(); i++) {
                 View child = group.getChildAt(i);
@@ -621,6 +631,14 @@ public final class BurnInGuard {
         if (frontStory) noteStoryLayout(decor, surfaces, beside);
         float factor = factor(level());
         for (View view : beside) dim(view, factor);
+    }
+
+    /** Whether [view] is one of [kept] or sits inside one, below [content]. */
+    private static boolean inside(View view, Set<View> kept, View content) {
+        for (View at = view; at != null && at != content; at = parentOf(at)) {
+            if (kept.contains(at)) return true;
+        }
+        return false;
     }
 
     /** The Debug report's story section: nothing until the story viewer has dimmed with Debug logging on. */
