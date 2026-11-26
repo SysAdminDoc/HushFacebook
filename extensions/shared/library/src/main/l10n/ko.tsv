@@ -2905,6 +2905,16 @@ Bar opacity	바 불투명도
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	반투명 바가 유지할 색의 정도를 %1$s~%2$s 사이의 퍼센트로 입력하세요. 낮을수록 피드와 흐림 효과가 더 많이 비쳐요. 비워 두면 %3$s, 흐림 효과 위에서는 %4$s(으)로 설정돼요.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	바가 색의 %1$s퍼센트를 유지하며, 흐림 효과 위에서는 %2$s퍼센트를 유지해요. 바꾸려면 숫자를 입력하세요.
 The see-through bars keep %1$s percent of their color.	반투명 바가 색의 %1$s퍼센트를 유지해요.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	흐림 강도
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	반투명 바가 뒤의 피드를 얼마나 흐리게 할지 평소 흐림의 퍼센트로 입력하세요. %1$s(흐림 없음)부터 %2$s까지예요. 비워 두면 %3$s(으)로 설정돼요. 흐림 효과는 Android 12 이상에서 작동해요.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	반투명 바가 뒤의 피드를 평소만큼 흐리게 해요. 바꾸려면 숫자를 입력하세요.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	반투명 바가 뒤의 피드를 흐림 없이 선명하게 보여줘요.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	반투명 바가 뒤의 피드를 평소의 %1$s퍼센트만큼 흐리게 해요.
 Tab bar width	탭 바 너비
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	화면 너비 대비 퍼센트로 %1$s~%2$s 사이에서 입력하세요. 아이콘도 함께 커지거나 작아져요. 비워 두면 %3$s(으)로 설정돼요.
 The rounded tab bar is %1$s percent of the screen wide.	둥근 탭 바의 너비가 화면의 %1$s퍼센트예요.

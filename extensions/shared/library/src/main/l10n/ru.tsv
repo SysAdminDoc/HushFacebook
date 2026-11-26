@@ -2961,6 +2961,16 @@ Bar opacity	Непрозрачность панелей
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Сколько своего цвета сохраняют прозрачные панели, в процентах, от %1$s до %2$s. Чем меньше, тем лучше видны Лента и её размытие. Оставьте поле пустым, чтобы использовать %3$s, или %4$s поверх размытия.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Панели сохраняют %1$s процентов своего цвета, или %2$s процентов поверх размытия. Введите число, чтобы изменить.
 The see-through bars keep %1$s percent of their color.	Прозрачные панели сохраняют %1$s процентов своего цвета.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	Сила размытия
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	Насколько прозрачные панели размывают Ленту за собой, в процентах от обычного размытия, от %1$s, без размытия, до %2$s. Оставьте поле пустым, чтобы использовать %3$s. Размытию нужен Android 12 или новее.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	Прозрачные панели размывают Ленту за собой как обычно. Введите число, чтобы изменить.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	Прозрачные панели показывают Ленту за собой чётко, без размытия.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	Прозрачные панели размывают Ленту за собой на %1$s процентов от обычного.
 Tab bar width	Ширина панели вкладок
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Процент ширины экрана, от %1$s до %2$s. Значки увеличиваются и уменьшаются вместе с ней. Оставьте поле пустым, чтобы использовать %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	Ширина скруглённой панели вкладок: %1$s процентов ширины экрана.

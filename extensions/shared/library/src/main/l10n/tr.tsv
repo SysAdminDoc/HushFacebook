@@ -2905,6 +2905,16 @@ Bar opacity	Çubuk opaklığı
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Saydam çubukların rengini yüzde kaç koruduğu, %1$s ile %2$s arası. Daha düşük değer akışın ve bulanıklığın daha çok görünmesini sağlar. %3$s için ya da bulanıklığın üzerinde %4$s için boş bırakın.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Çubuklar renginin yüzde %1$s kadarını, bulanıklığın üzerinde yüzde %2$s kadarını korur. Değiştirmek için bir sayı yazın.
 The see-through bars keep %1$s percent of their color.	Saydam çubuklar renginin yüzde %1$s kadarını korur.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	Bulanıklık gücü
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	Saydam çubukların arkalarındaki akışı ne kadar bulanıklaştırdığı, olağan bulanıklığın yüzdesi olarak, bulanıklık yok demek olan %1$s ile %2$s arası. %3$s için boş bırakın. Bulanıklık için Android 12 veya daha yenisi gerekir.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	Saydam çubuklar arkalarındaki akışı olağan ölçüde bulanıklaştırır. Değiştirmek için bir sayı yazın.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	Saydam çubuklar arkalarındaki akışı bulanıklık olmadan net gösterir.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	Saydam çubuklar arkalarındaki akışı olağanın yüzde %1$s kadarı bulanıklaştırır.
 Tab bar width	Sekme çubuğu genişliği
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Ekran genişliğinin yüzdesi, %1$s ile %2$s arası. Simgeler onunla birlikte büyür ve küçülür. %3$s için boş bırakın.
 The rounded tab bar is %1$s percent of the screen wide.	Yuvarlak sekme çubuğu ekran genişliğinin yüzde %1$s kadarı.

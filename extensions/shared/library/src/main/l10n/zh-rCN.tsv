@@ -2900,6 +2900,16 @@ Bar opacity	栏的不透明度
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	透明栏保留自身颜色的百分比，范围 %1$s 到 %2$s。数值越低，越能透出动态消息及其模糊效果。留空则使用 %3$s，模糊时使用 %4$s.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	这些栏保留百分之 %1$s 的颜色，模糊时保留百分之 %2$s。输入数字即可更改.
 The see-through bars keep %1$s percent of their color.	透明栏保留百分之 %1$s 的颜色.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	模糊强度
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	透明栏对其后方动态消息的模糊程度，按常规模糊的百分比计，范围 %1$s（不模糊）到 %2$s。留空则使用 %3$s。模糊效果需要 Android 12 或更高版本.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	透明栏按常规程度模糊其后方的动态消息。输入数字即可更改.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	透明栏清晰显示其后方的动态消息，不做模糊.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	透明栏以常规程度的百分之 %1$s 模糊其后方的动态消息.
 Tab bar width	标签栏宽度
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	占屏幕宽度的百分比，范围 %1$s 到 %2$s。图标会随之放大或缩小。留空则使用 %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	圆角标签栏的宽度为屏幕的百分之 %1$s.

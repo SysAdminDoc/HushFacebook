@@ -2905,6 +2905,16 @@ Bar opacity	Deckkraft der Leisten
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Wie viel ihrer Farbe die durchsichtigen Leisten behalten, in Prozent, von %1$s bis %2$s. Weniger lässt mehr vom Feed und seiner Weichzeichnung durchscheinen. Leer lassen für %3$s, oder %4$s über der Weichzeichnung.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Die Leisten behalten %1$s Prozent ihrer Farbe, oder %2$s Prozent über der Weichzeichnung. Gib eine Zahl ein, um das zu ändern.
 The see-through bars keep %1$s percent of their color.	Die durchsichtigen Leisten behalten %1$s Prozent ihrer Farbe.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	Stärke der Weichzeichnung
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	Wie stark die durchsichtigen Leisten den Feed dahinter weichzeichnen, in Prozent der üblichen Weichzeichnung, von %1$s, ohne Weichzeichnung, bis %2$s. Leer lassen für %3$s. Die Weichzeichnung braucht Android 12 oder neuer.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	Die durchsichtigen Leisten zeichnen den Feed dahinter wie üblich weich. Gib eine Zahl ein, um das zu ändern.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	Die durchsichtigen Leisten zeigen den Feed dahinter scharf, ohne Weichzeichnung.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	Die durchsichtigen Leisten zeichnen den Feed dahinter mit %1$s Prozent der üblichen Stärke weich.
 Tab bar width	Breite der Tab-Leiste
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Prozent der Bildschirmbreite, von %1$s bis %2$s. Die Symbole werden mit ihr größer und kleiner. Leer lassen für %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	Die abgerundete Tab-Leiste ist %1$s Prozent der Bildschirmbreite breit.

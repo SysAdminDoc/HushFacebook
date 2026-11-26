@@ -127,8 +127,14 @@ public final class TranslucentBars {
     static final int PLAIN_ALPHA = 0xC0;
     /** How much stays over frost, which takes the busy detail out of what shows through. */
     static final int FROSTED_ALPHA = 0xA6;
-    /** The frost's blur radius, in dp. */
+    /** The frost's blur radius, in dp, with no Blur strength picked. */
     static final float FROST_RADIUS_DP = 18f;
+    /** The lowest Blur strength a person can pick, in percent of {@link #FROST_RADIUS_DP}: no blur (#596). */
+    public static final int MIN_BLUR = 0;
+    /** The highest, three times the stock blur. */
+    public static final int MAX_BLUR = 300;
+    /** What a blank Blur strength gives, in percent: the stock blur. */
+    public static final int DEFAULT_BLUR = 100;
     /**
      * How many times smaller the frost is drawn before its blur. The blur takes the detail out
      * anyway, so the small copy looks the same and is a sixteenth of the pixels for the graphics
@@ -311,6 +317,27 @@ public final class TranslucentBars {
      */
     public static int opacityPercent(@Nullable String saved) {
         return percent(saved, MIN_OPACITY, MAX_OPACITY, -1);
+    }
+
+    /**
+     * The Blur strength [saved] picks (#596), in percent of the stock blur, held to {@link #MIN_BLUR}
+     * to {@link #MAX_BLUR}, or {@link #DEFAULT_BLUR} when it's blank or not a number.
+     */
+    public static int blurPercent(@Nullable String saved) {
+        return percent(saved, MIN_BLUR, MAX_BLUR, DEFAULT_BLUR);
+    }
+
+    /** The frost's blur radius in pixels at [density]: the stock radius, scaled by the Blur strength picked. */
+    static float frostRadius(float density) {
+        int picked = Utils.settingsReady() ? blurPercent(Settings.SEE_THROUGH_BLUR.get()) : DEFAULT_BLUR;
+        return FROST_RADIUS_DP * density * picked / 100f;
+    }
+
+    /** Gives [blur] a blur of [radius] pixels, as drawn {@link #FROST_SCALE} times smaller, or none at 0. */
+    @RequiresApi(Build.VERSION_CODES.S)
+    static void blurWith(RenderNode blur, float radius) {
+        float small = radius / FROST_SCALE;
+        blur.setRenderEffect(small > 0 ? RenderEffect.createBlurEffect(small, small, Shader.TileMode.CLAMP) : null);
     }
 
     /**
@@ -1438,11 +1465,13 @@ public final class TranslucentBars {
                 frost.remove();
                 frost = null;
             }
+            float radius = frostRadius(bar.getResources().getDisplayMetrics().density);
             if (frost == null) {
-                float radius = FROST_RADIUS_DP * bar.getResources().getDisplayMetrics().density;
                 frost = new Frost(under, radius);
                 frosts.put(bar, frost);
                 HookStatus.counted(FAMILY, FROSTED);
+            } else {
+                frost.radius(radius);
             }
             frost.update(area, shown, frame, corner);
         }
@@ -1466,8 +1495,9 @@ public final class TranslucentBars {
                 }
                 return;
             }
+            float radius = frostRadius(found.getResources().getDisplayMetrics().density);
+            if (frost != null) frost.radius(radius);
             if (frost == null) {
-                float radius = FROST_RADIUS_DP * found.getResources().getDisplayMetrics().density;
                 frost = new StripFrost(found, host, radius);
                 strip = frost;
                 HookStatus.counted(FAMILY, STRIP_FROSTED);
@@ -1518,15 +1548,24 @@ public final class TranslucentBars {
         /** Whether it was drawn yet, for the debug log. */
         private boolean drawn;
         int frame;
+        /** The blur's radius in pixels, from the Blur strength picked (#596). */
+        float radius;
 
         Frost(View host, float radius) {
             this.host = host;
-            float small = radius / FROST_SCALE;
-            blur.setRenderEffect(RenderEffect.createBlurEffect(small, small, Shader.TileMode.CLAMP));
+            this.radius = radius;
+            blurWith(blur, radius);
             blur.setClipToBounds(true);
             node.setClipToBounds(true);
             setBounds(0, 0, host.getWidth(), host.getHeight());
             host.getOverlay().add(this);
+        }
+
+        /** Blurs by [wanted] pixels from this frame on, when the Blur strength changed. */
+        void radius(float wanted) {
+            if (wanted == radius) return;
+            radius = wanted;
+            blurWith(blur, wanted);
         }
 
         /**
@@ -1646,15 +1685,25 @@ public final class TranslucentBars {
         private final int[] hostOrigin = new int[2];
         int frame;
 
+        /** The blur's radius in pixels, from the Blur strength picked (#596). */
+        float radius;
+
         StripFrost(View strip, View host, float radius) {
             this.strip = strip;
             this.host = host;
-            float small = radius / FROST_SCALE;
-            blur.setRenderEffect(RenderEffect.createBlurEffect(small, small, Shader.TileMode.CLAMP));
+            this.radius = radius;
+            blurWith(blur, radius);
             blur.setClipToBounds(true);
             node.setClipToBounds(true);
             setBounds(0, 0, strip.getWidth(), strip.getHeight());
             strip.getOverlay().add(this);
+        }
+
+        /** Blurs by [wanted] pixels from this frame on, when the Blur strength changed. */
+        void radius(float wanted) {
+            if (wanted == radius) return;
+            radius = wanted;
+            blurWith(blur, wanted);
         }
 
         /** Copies the band under the strip again and draws it turned over under [tint]. */

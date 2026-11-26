@@ -2905,6 +2905,16 @@ Bar opacity	Opacità delle barre
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Quanto colore mantengono le barre trasparenti, in percentuale, da %1$s a %2$s. Un valore più basso lascia vedere di più il feed e la sua sfocatura. Lascia vuoto per %3$s, o %4$s sopra la sfocatura.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Le barre mantengono il %1$s percento del loro colore, o il %2$s percento sopra la sfocatura. Scrivi un numero per cambiarlo.
 The see-through bars keep %1$s percent of their color.	Le barre trasparenti mantengono il %1$s percento del loro colore.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	Intensità della sfocatura
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	Quanto le barre trasparenti sfocano il feed dietro di loro, in percentuale della sfocatura abituale, da %1$s, nessuna sfocatura, a %2$s. Lascia vuoto per %3$s. La sfocatura richiede Android 12 o più recente.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	Le barre trasparenti sfocano il feed dietro di loro come al solito. Scrivi un numero per cambiarlo.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	Le barre trasparenti mostrano nitido il feed dietro di loro, senza sfocatura.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	Le barre trasparenti sfocano il feed dietro di loro al %1$s percento del solito.
 Tab bar width	Larghezza della barra delle schede
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Percentuale della larghezza dello schermo, da %1$s a %2$s. Le icone si ingrandiscono e si rimpiccioliscono con essa. Lascia vuoto per %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	La barra delle schede arrotondata è larga il %1$s percento dello schermo.

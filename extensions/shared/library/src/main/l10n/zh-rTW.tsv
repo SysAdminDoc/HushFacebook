@@ -2909,6 +2909,16 @@ Bar opacity	列的不透明度
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	透明列保留自身顏色的百分比，範圍 %1$s 到 %2$s。數值越低，越能透出動態消息及其模糊效果。留空則使用 %3$s，模糊時使用 %4$s.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	這些列保留百分之 %1$s 的顏色，模糊時保留百分之 %2$s。輸入數字即可變更.
 The see-through bars keep %1$s percent of their color.	透明列保留百分之 %1$s 的顏色.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	模糊強度
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	透明列對其後方動態消息的模糊程度，以一般模糊的百分比計，範圍 %1$s（不模糊）到 %2$s。留空則使用 %3$s。模糊效果需要 Android 12 或更新版本.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	透明列以一般程度模糊其後方的動態消息。輸入數字即可變更.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	透明列清楚顯示其後方的動態消息，不做模糊.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	透明列以一般程度的百分之 %1$s 模糊其後方的動態消息.
 Tab bar width	分頁列寬度
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	佔螢幕寬度的百分比，範圍 %1$s 到 %2$s。圖示會隨之放大或縮小。留空則使用 %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	圓角分頁列的寬度為螢幕的百分之 %1$s.

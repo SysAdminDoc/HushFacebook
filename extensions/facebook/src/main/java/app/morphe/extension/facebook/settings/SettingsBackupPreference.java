@@ -882,6 +882,7 @@ public class SettingsBackupPreference extends Preference {
         if (row == SettingsBackup.TRAY_SIZE) return L10n.t("Round picture size");
         if (row == SettingsBackup.DIM_TO) return L10n.t("Dim to");
         if (row == SettingsBackup.OPACITY) return L10n.t("Bar opacity");
+        if (row == SettingsBackup.BLUR) return L10n.t("Blur strength");
         if (row == SettingsBackup.TAB_BAR_WIDTH) return L10n.t("Tab bar width");
         if (row == SettingsBackup.TAB_BAR_HEIGHT) return L10n.t("Tab bar height");
         if (row == SettingsBackup.BOX_DARKNESS) return L10n.t("Box darkness");

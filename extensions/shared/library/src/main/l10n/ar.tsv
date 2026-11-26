@@ -1889,6 +1889,16 @@ The saved copy of %1$s is missing. Choose the picture again.	النسخة الم
 The SD card you picked isn't in the phone, so videos and photos are saved on the phone's storage until it's back.	بطاقة SD التي اخترتها ليست في الهاتف، لذلك تُحفظ الفيديوهات والصور على تخزين الهاتف حتى تعود.
 The search box didn't open. Type the search again.	لم يُفتح مربع البحث. اكتب البحث مرة أخرى.
 The see-through bars keep %1$s percent of their color.	الأشرطة الشفافة تحتفظ بنسبة %1$s من لونها.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	قوة الضباب
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	مقدار ما تُضبّب به الأشرطة الشفافة الخلاصة خلفها، بالنسبة المئوية من الضباب المعتاد، من %1$s، بلا ضباب، إلى %2$s. اتركه فارغًا لِـ %3$s. يحتاج الضباب إلى Android 12 أو أحدث.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	الأشرطة الشفافة تُضبّب الخلاصة خلفها بالمقدار المعتاد. اكتب رقمًا لتغييره.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	الأشرطة الشفافة تُظهر الخلاصة خلفها واضحة، بلا ضباب.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	الأشرطة الشفافة تُضبّب الخلاصة خلفها بنسبة %1$s من المقدار المعتاد.
 The selected tab in the tab bar is %1$s. Restart Facebook to see the change.	التبويب المحدد في شريط التبويبات هو %1$s. أعد تشغيل فيسبوك لترى التغيير.
 The selected tab keeps Facebook's color. Type a color code to change it.	التبويب المحدد يحتفظ بلون فيسبوك. اكتب رمز لون لتغييره.
 The setting couldn't finish updating. Its saved value is shown.	تعذّر على الإعداد إنهاء التحديث. قيمته المحفوظة معروضة.

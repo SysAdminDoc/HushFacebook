@@ -269,6 +269,7 @@ final class HushfacebookPages {
                             + "On Android 12 and newer the feed behind them is blurred.")));
             // Asked as each frame draws too, so a new number shows when these settings close (#425).
             appearance.addPreference(HushfacebookPreferenceFragment.opacityRow(context));
+            appearance.addPreference(HushfacebookPreferenceFragment.blurRow(context));
             // Asked as each frame of the main screen draws, so a change shows right away (#344).
             appearance.addPreference(toggle(context, Settings.ROUNDED_TAB_BAR,
                     L10n.t("With the tab bar at the bottom, it gets round ends and sits a little smaller, just above "

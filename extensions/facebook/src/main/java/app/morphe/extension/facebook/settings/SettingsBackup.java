@@ -928,7 +928,7 @@ public final class SettingsBackup {
     static final StringSetting TAB_ORDER = Settings.TAB_ORDER;
 
     /**
-     * The rows that take a typed number (#589): Round picture size, Dim to, Bar opacity, Tab bar
+     * The rows that take a typed number (#589): Round picture size, Dim to, Bar opacity, Blur strength, Tab bar
      * width and height, and Box darkness. Each is held in a file exactly as its row stores it, digits
      * only and at most {@link #MAX_NUMBER_DIGITS} of them, blank for the row's default, and a value its
      * row would store any other way refuses the whole file, as a switch that isn't true or false does.
@@ -938,13 +938,14 @@ public final class SettingsBackup {
     static final StringSetting TRAY_SIZE = Settings.STORIES_TRAY_SIZE;
     static final StringSetting DIM_TO = Settings.BURN_IN_LEVEL;
     static final StringSetting OPACITY = Settings.SEE_THROUGH_OPACITY;
+    static final StringSetting BLUR = Settings.SEE_THROUGH_BLUR;
     static final StringSetting TAB_BAR_WIDTH = Settings.TAB_BAR_WIDTH;
     static final StringSetting TAB_BAR_HEIGHT = Settings.TAB_BAR_HEIGHT;
     static final StringSetting BOX_DARKNESS = Settings.TEXT_BOX_DARKNESS;
 
     /** Those number rows, in the order Settings declares them. */
     static final List<StringSetting> NUMBERS = Collections.unmodifiableList(
-            Arrays.asList(TRAY_SIZE, DIM_TO, OPACITY, TAB_BAR_WIDTH, TAB_BAR_HEIGHT, BOX_DARKNESS));
+            Arrays.asList(TRAY_SIZE, DIM_TO, OPACITY, BLUR, TAB_BAR_WIDTH, TAB_BAR_HEIGHT, BOX_DARKNESS));
 
     /** The most digits a number row's field takes. */
     static final int MAX_NUMBER_DIGITS = 3;
@@ -973,7 +974,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, TRAY_SIZE, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, DIM_TO, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, OPACITY, TAB_BAR_WIDTH, TAB_BAR_HEIGHT, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, HEADER_FONT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, FOLD_REEL_CAPTIONS, BOX_DARKNESS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, TRAY_SIZE, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, DIM_TO, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, OPACITY, BLUR, TAB_BAR_WIDTH, TAB_BAR_HEIGHT, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, HEADER_FONT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, FOLD_REEL_CAPTIONS, BOX_DARKNESS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY, VIDEO_BUFFER,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, REFRESH_RATE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));

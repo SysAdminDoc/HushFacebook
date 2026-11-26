@@ -2791,6 +2791,16 @@ Bar opacity	Opacidade das barras
 How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Quanto da cor as barras transparentes mantêm, em porcentagem, de %1$s a %2$s. Um valor menor deixa aparecer mais do feed e do desfoque. Deixe em branco para usar %3$s, ou %4$s sobre o desfoque.
 The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	As barras mantêm %1$s por cento da cor, ou %2$s por cento sobre o desfoque. Digite um número para mudar.
 The see-through bars keep %1$s percent of their color.	As barras transparentes mantêm %1$s por cento da cor.
+# context: row title under Appearance, right under Bar opacity; picks how strongly the see-through top bar and tab bar blur the feed behind them
+Blur strength	Intensidade do desfoque
+# context: message of that row's number box; %1$s is 0 (no blur), %2$s the most, %3$s the usual amount
+How much the see-through bars blur the feed behind them, in percent of the usual blur, from %1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.	Quanto as barras transparentes desfocam o feed atrás delas, em porcentagem do desfoque normal, de %1$s, sem desfoque, a %2$s. Deixe em branco para usar %3$s. O desfoque precisa do Android 12 ou mais recente.
+# context: summary of that row while it's blank
+The see-through bars blur the feed behind them the usual amount. Type a number to change it.	As barras transparentes desfocam o feed atrás delas no nível normal. Digite um número para mudar.
+# context: summary of that row when it's 0
+The see-through bars show the feed behind them sharp, with no blur.	As barras transparentes mostram o feed atrás delas nítido, sem desfoque.
+# context: summary of that row; %1$s is the number typed
+The see-through bars blur the feed behind them %1$s percent of the usual amount.	As barras transparentes desfocam o feed atrás delas %1$s por cento do normal.
 Tab bar width	Largura da barra de abas
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Porcentagem da largura da tela, de %1$s a %2$s. Os ícones crescem e encolhem junto. Deixe em branco para usar %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	A barra de abas arredondada ocupa %1$s por cento da largura da tela.

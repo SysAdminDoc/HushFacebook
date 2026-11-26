@@ -3056,6 +3056,25 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return L10n.f("The see-through bars keep %1$s percent of their color.", picked);
     }
 
+    /** See-through bars' Blur strength row (#596). */
+    static ValueRows.PercentRow blurRow(Context context) {
+        return percentRow(context, Settings.SEE_THROUGH_BLUR, L10n.t("Blur strength"),
+                L10n.f("How much the see-through bars blur the feed behind them, in percent of the usual blur, from "
+                                + "%1$s, no blur, to %2$s. Leave it blank for %3$s. The blur needs Android 12 or newer.",
+                        TranslucentBars.MIN_BLUR, TranslucentBars.MAX_BLUR, TranslucentBars.DEFAULT_BLUR),
+                TranslucentBars.DEFAULT_BLUR, HushfacebookPreferenceFragment::blurSummary);
+    }
+
+    /** What the Blur strength row says for [text], the digits typed there. */
+    static String blurSummary(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return L10n.t("The see-through bars blur the feed behind them the usual amount. Type a number to change it.");
+        }
+        int picked = TranslucentBars.blurPercent(text);
+        if (picked == TranslucentBars.MIN_BLUR) return L10n.t("The see-through bars show the feed behind them sharp, with no blur.");
+        return L10n.f("The see-through bars blur the feed behind them %1$s percent of the usual amount.", picked);
+    }
+
     /** Box darkness, for every dark box behind captions and names (#490). */
     static ValueRows.PercentRow boxDarknessRow(Context context) {
         return percentRow(context, Settings.TEXT_BOX_DARKNESS, L10n.t("Box darkness"),

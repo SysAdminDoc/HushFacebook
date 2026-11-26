@@ -3469,6 +3469,14 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_see_through_opacity", "");
 
     /**
+     * How strong See-through bars' blur is, a percent of the stock blur, digits only, blank for the
+     * stock blur (#596, {@link app.morphe.extension.facebook.navigation.TranslucentBars#blurPercent}).
+     * Not a switch. Asked as each frame of the main screen draws.
+     */
+    public static final StringSetting SEE_THROUGH_BLUR =
+            new StringSetting("hushfacebook_see_through_blur", "");
+
+    /**
      * The tab bar at the bottom is drawn as a pill with round ends, a little smaller than the bar and
      * a few dp above the bottom of the screen (#344, {@link app.morphe.extension.facebook.navigation.RoundedTabBar}).
      * Asked as each frame of the main screen draws, so a change shows right away.

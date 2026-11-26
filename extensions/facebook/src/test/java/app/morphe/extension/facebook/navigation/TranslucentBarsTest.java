@@ -81,6 +81,7 @@ public class TranslucentBarsTest {
         Settings.TRANSLUCENT_BARS.resetToDefault();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
         Settings.SEE_THROUGH_OPACITY.resetToDefault();
+        Settings.SEE_THROUGH_BLUR.resetToDefault();
         HookStatus.clear();
     }
 
@@ -1243,5 +1244,39 @@ public class TranslucentBarsTest {
         Settings.TRANSLUCENT_BARS.save(false);
         screen.bars.update();
         assertEquals("Facebook's own alpha comes back", 255, header.getAlpha());
+    }
+
+    @Test
+    public void blurStrengthScalesTheFrostFromNoneToThreeTimes() {
+        // #596: the blur behind the see-through bars was one fixed amount.
+        assertEquals("blank is the stock blur", 100, TranslucentBars.blurPercent(""));
+        assertEquals(100, TranslucentBars.blurPercent(null));
+        assertEquals(100, TranslucentBars.blurPercent("abc"));
+        assertEquals(0, TranslucentBars.blurPercent("0"));
+        assertEquals(300, TranslucentBars.blurPercent("350"));
+        assertEquals(50, TranslucentBars.blurPercent(" 50 "));
+
+        assertEquals("the stock radius", 36f, TranslucentBars.frostRadius(2f), 0f);
+        Settings.SEE_THROUGH_BLUR.save("50");
+        assertEquals(18f, TranslucentBars.frostRadius(2f), 0f);
+        Settings.SEE_THROUGH_BLUR.save("0");
+        assertEquals("no blur at all", 0f, TranslucentBars.frostRadius(2f), 0f);
+        Settings.SEE_THROUGH_BLUR.save("300");
+        assertEquals(108f, TranslucentBars.frostRadius(2f), 0f);
+    }
+
+    @Test
+    @Config(sdk = 34)
+    public void aNewBlurStrengthReachesAFrostAlreadyDrawn() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        TranslucentBars.Frost frost = new TranslucentBars.Frost(screen.page, 36f);
+        assertEquals(36f, frost.radius, 0f);
+        frost.radius(0f);
+        assertEquals("a sharp feed behind the bar", 0f, frost.radius, 0f);
+        frost.radius(72f);
+        assertEquals(72f, frost.radius, 0f);
+        frost.update(new Rect(0, 1440, 720, 1600), 1f, 1, 0f);
+        assertEquals("the box is the same at any blur", 160, frost.node.getHeight());
+        frost.remove();
     }
 }
