@@ -2148,6 +2148,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	隱藏搜尋中的「你可能認識的朋友」
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	隱藏開啟搜尋時 Facebook 顯示的「你可能認識的朋友」橫列。最近的搜尋與輸入時的建議仍會保留。
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	隱藏朋友分頁中的「你可能認識的朋友」
+Hides the People you may know list in the Friends tab. Your friend requests stay.	隱藏朋友分頁中的「你可能認識的朋友」清單。你的交友邀請仍會保留。
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	不儲存搜尋紀錄
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them

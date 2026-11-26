@@ -2878,6 +2878,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_search_people_you_may_know", FALSE);
 
     /**
+     * People you may know in the Friends tab (#600): its section header and the person rows under it,
+     * found by the row type names and the header's section type. Friend requests, the friends list
+     * and the Suggestions button stay. Part of Hide suggested and promoted posts, off until picked,
+     * since the Friends tab is where people go to find friends.
+     */
+    public static final BooleanSetting HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW =
+            new BooleanSetting("hushfacebook_hide_friends_tab_people_you_may_know", FALSE);
+
+    /**
      * Push notifications Facebook types TOP_TRENDING_VIDEO or PERSONALIZED_REELS: trending videos
      * and reels it picked for you. Off by default, like every notification switch: each one drops a
      * whole kind of notification, so it's yours to turn on.

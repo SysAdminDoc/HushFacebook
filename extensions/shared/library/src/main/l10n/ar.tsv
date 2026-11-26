@@ -914,6 +914,9 @@ Hide the gift button on profiles	إخفاء زر الهدية في الملفا�
 Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	يزيل زر إرسال هدية من الملفات الشخصية للآخرين. يُطبَّق في المرة التالية التي تفتح فيها ملفًا شخصيًا.
 Hides the other Meta AI buttons Facebook puts under posts. The post's next button shows instead, if it has one.	يخفي أزرار Meta AI الأخرى التي يضعها فيسبوك تحت المنشورات. يظهر زر المنشور التالي بدلًا منها، إن وُجد.
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	يخفي صف الأشخاص الذين قد تعرفهم الذي يعرضه فيسبوك عندما تفتح البحث. عمليات بحثك الأخيرة والاقتراحات أثناء الكتابة تبقى.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	إخفاء الأشخاص الذين قد تعرفهم في تبويب الأصدقاء
+Hides the People you may know list in the Friends tab. Your friend requests stay.	يخفي قائمة الأشخاص الذين قد تعرفهم في تبويب الأصدقاء. طلبات الصداقة تبقى.
 Hides the row of groups to join between posts and the groups card between reels. Posts from groups you're in stay.	يخفي صف المجموعات المقترحة للانضمام بين المنشورات وبطاقة المجموعات بين الريلز. منشورات المجموعات التي أنت فيها تبقى.
 Hides the row of groups to join between posts. Posts from groups you're in stay.	يخفي صف المجموعات المقترحة للانضمام بين المنشورات. منشورات المجموعات التي أنت فيها تبقى.
 Hides the row of Meta AI questions under some posts. The post, its link card and its buttons stay.	يخفي صف أسئلة Meta AI تحت بعض المنشورات. المنشور وبطاقة رابطه وأزراره تبقى.

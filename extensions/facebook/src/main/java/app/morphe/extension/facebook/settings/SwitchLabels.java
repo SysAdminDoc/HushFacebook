@@ -52,6 +52,9 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_FIND_FRIENDS_CARD) return L10n.t("Hide the Find friends card");
         if (setting == Settings.HIDE_SEARCH_FOR_YOU) return L10n.t("Hide For you in search");
         if (setting == Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW) return L10n.t("Hide \"People you may know\" in search");
+        if (setting == Settings.HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW) {
+            return L10n.t("Hide \"People you may know\" in the Friends tab");
+        }
         if (setting == Settings.HIDE_TOP_STORIES_TRAY) return L10n.t("Hide the Stories tray");
         if (setting == Settings.HIDE_STORIES_BETWEEN_POSTS) return L10n.t("Hide Stories between posts");
         if (setting == Settings.HIDE_HOME_COMPOSER) return L10n.t("Hide the composer row");

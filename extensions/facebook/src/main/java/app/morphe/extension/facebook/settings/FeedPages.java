@@ -234,6 +234,9 @@ final class FeedPages {
                                 ? L10n.t("Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the "
                                         + "Stories tray.")
                                 : L10n.t("Hides friend suggestions between posts and on your own profile.")));
+                // Off until picked: the Friends tab is where people go to find friends (#600).
+                feed.addPreference(toggle(context, Settings.HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW,
+                        L10n.t("Hides the People you may know list in the Friends tab. Your friend requests stay.")));
                 // The groups card between reels goes through the Reels mid-card hook, which only
                 // Clean up Reels and Hide reel interest prompts put in.
                 feed.addPreference(toggle(context, Settings.HIDE_SUGGESTED_GROUPS,

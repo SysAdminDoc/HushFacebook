@@ -2146,6 +2146,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	Nascondi "Persone che potresti conoscere" nella ricerca
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	Nasconde la fila Persone che potresti conoscere che Facebook mostra quando apri la ricerca. Le tue ricerche recenti e i suggerimenti mentre scrivi restano.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	Nascondi "Persone che potresti conoscere" nella scheda Amici
+Hides the People you may know list in the Friends tab. Your friend requests stay.	Nasconde l'elenco Persone che potresti conoscere nella scheda Amici. Le tue richieste di amicizia restano.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	Non salvare la cronologia delle ricerche
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them

@@ -2146,6 +2146,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	Ocultar “Personas que quizá conozcas” en la búsqueda
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	Oculta la fila de Personas que quizá conozcas que Facebook muestra al abrir la búsqueda. Tus búsquedas recientes y las sugerencias mientras escribes se mantienen.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	Ocultar “Personas que quizá conozcas” en la pestaña Amigos
+Hides the People you may know list in the Friends tab. Your friend requests stay.	Oculta la lista de Personas que quizá conozcas en la pestaña Amigos. Tus solicitudes de amistad se mantienen.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	No guardar el historial de búsqueda
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them

@@ -985,6 +985,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/FriendsTabSuggestions.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: People you may know in the Friends tab. In Facebook 588 the tab is one section naming itself FriendingJewelContentSection, whose rows come from one paginated GraphQL list through a connection section that hands each page to the section's event method as a load result: a status, the ImmutableList of rows so far and a Throwable. The patch finds the one read of that list in a method of the section holding SectionHeaderFriendingTabRow, and right after it hands the list to the extension and copies the answer back with ImmutableList.copyOf into the same register. The extension reads each row's getTypeName() and a header's type field (TreeJNI.getString with the key \"type\".hashCode()) and, while its switch is on, leaves out the header whose type is PEOPLE_YOU_MAY_KNOW, every row under it up to the next header, and any PeopleYouMayKnowFriendingTabRow."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostCounts.kt"
       ],
       "origin": "original",

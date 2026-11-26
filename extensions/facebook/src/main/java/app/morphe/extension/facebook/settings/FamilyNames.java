@@ -21,6 +21,8 @@ public final class FamilyNames {
      * guard's reads from the profile section's. Not a patch name: PatchFamily lists the patch once.
      */
     public static final String SUGGESTED_POSTS_PROFILE = "Hide suggested and promoted posts (your profile)";
+    /** The Hook status row of the same patch's hook in the Friends tab (#600). Not a patch name either. */
+    public static final String SUGGESTED_POSTS_FRIENDS_TAB = "Hide suggested and promoted posts (Friends tab)";
     public static final String AI_DETECTED_POSTS = "Hide AI-detected posts";
     /**
      * The Hook status row of the same patch's Reels and Watch hooks, so the report tells the feed

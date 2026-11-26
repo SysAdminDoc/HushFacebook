@@ -106,6 +106,7 @@ import app.morphe.extension.facebook.feed.PostPrompts;
 import app.morphe.extension.facebook.feed.LikeButtonFaces;
 import app.morphe.extension.facebook.feed.AskBeforeLike;
 import app.morphe.extension.facebook.feed.ProfilePictures;
+import app.morphe.extension.facebook.feed.FriendsTabSuggestionsForTests;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
 import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.feed.TranslateCommentsForTests;
@@ -448,6 +449,8 @@ public class PausedHooksTest {
                 () -> FeedGuardForTests.hides(Category.ORGANIC, FeedGuardForTests.storiesRow(true)),
                 // Your own profile's People you may know carousel builds nothing.
                 ProfileSuggestionsForTests::hidesTheCarousel,
+                // The Friends tab's list goes without its People you may know section.
+                FriendsTabSuggestionsForTests::dropsTheSuggestions,
                 // A post opened from a notification is asked for without its list of more posts.
                 () -> !NotificationFooter.show(true),
                 // The end of the feed is built without its Find friends card.

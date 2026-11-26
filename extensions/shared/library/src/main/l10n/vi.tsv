@@ -2146,6 +2146,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	Ẩn "Những người bạn có thể biết" trong tìm kiếm
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	Ẩn hàng Những người bạn có thể biết mà Facebook hiển thị khi bạn mở tìm kiếm. Các tìm kiếm gần đây và gợi ý khi bạn gõ vẫn giữ nguyên.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	Ẩn "Những người bạn có thể biết" trong tab Bạn bè
+Hides the People you may know list in the Friends tab. Your friend requests stay.	Ẩn danh sách Những người bạn có thể biết trong tab Bạn bè. Lời mời kết bạn của bạn vẫn giữ nguyên.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	Không lưu lịch sử tìm kiếm
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them

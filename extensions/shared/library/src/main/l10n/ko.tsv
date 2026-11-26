@@ -2146,6 +2146,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	검색에서 "알 수도 있는 사람" 숨기기
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	검색을 열 때 Facebook이 표시하는 "알 수도 있는 사람" 줄을 숨겨요. 최근 검색과 입력 중 표시되는 추천은 그대로 남아요.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	친구 탭에서 "알 수도 있는 사람" 숨기기
+Hides the People you may know list in the Friends tab. Your friend requests stay.	친구 탭의 "알 수도 있는 사람" 목록을 숨겨요. 친구 요청은 그대로 남아요.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	검색 기록 저장 안 함
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them

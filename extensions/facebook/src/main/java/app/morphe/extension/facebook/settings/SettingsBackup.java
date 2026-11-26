@@ -153,6 +153,7 @@ public final class SettingsBackup {
             Settings.HIDE_FIND_FRIENDS_CARD,
             Settings.HIDE_SEARCH_FOR_YOU,
             Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW,
+            Settings.HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW,
             Settings.HIDE_TOP_STORIES_TRAY,
             Settings.HIDE_STORIES_BETWEEN_POSTS,
             Settings.HIDE_HOME_COMPOSER,
