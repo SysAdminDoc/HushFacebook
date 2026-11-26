@@ -2105,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	Hiện bài viết đã lưu trong hàng
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	Bài viết đã lưu trong hàng sẽ ở lại trên màn hình thay vì bị bỏ qua. Vuốt lên khi đã đến cuối bài để sang video đã lưu tiếp theo, hoặc vuốt xuống khi ở đầu bài để quay lại mục trước.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	Phát lần lượt hàng thước phim trong Bảng feed
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	Thước phim bạn mở từ một hàng thước phim trong Bảng feed sẽ chuyển sang thước phim tiếp theo trong hàng đó khi kết thúc hoặc khi bạn vuốt lên, thay vì một thước phim được đề xuất. Vuốt xuống để quay lại thước phim trước.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	Bỏ qua "Bạn vẫn đang xem chứ?"
 # context: summary of that switch; reels and videos go on to the next one by themselves

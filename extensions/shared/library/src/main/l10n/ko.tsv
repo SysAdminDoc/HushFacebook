@@ -2105,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	연속 재생에 저장한 게시물 표시
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	연속 재생 중 저장한 게시물이 건너뛰어지지 않고 화면에 표시돼요. 다음 저장한 동영상을 보려면 게시물 끝을 지나 위로, 이전 동영상을 보려면 게시물 맨 위를 지나 아래로 스와이프하세요.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	피드의 릴스 줄 순서대로 재생
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	피드의 릴스 줄에서 연 릴스가 끝나거나 위로 스와이프하면 추천 릴스 대신 그 줄의 다음 릴스로 넘어가요. 이전 릴스로 돌아가려면 아래로 스와이프하세요.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	"아직 시청 중이신가요?" 건너뛰기
 # context: summary of that switch; reels and videos go on to the next one by themselves

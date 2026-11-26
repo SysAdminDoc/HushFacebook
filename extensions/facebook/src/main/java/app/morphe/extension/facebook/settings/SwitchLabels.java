@@ -272,6 +272,7 @@ final class SwitchLabels {
         if (setting == Settings.SAVED_VIDEOS_IN_ORDER) return L10n.t("Play saved videos in a row");
         if (setting == Settings.SAVED_VIDEOS_STAY_ON_END) return L10n.t("Stay on a saved video when it ends");
         if (setting == Settings.SAVED_POSTS_IN_ROW) return L10n.t("Show saved posts in the row");
+        if (setting == Settings.FEED_REELS_ROW_IN_ORDER) return L10n.t("Play the feed's Reels row in order");
         if (setting == Settings.SKIP_STILL_WATCHING) return L10n.t("Skip \"Are you still watching?\"");
         if (setting == Settings.FILL_REELS) return L10n.t("Fill the screen with reels");
         if (setting == Settings.FILL_EVERY_REEL) return L10n.t("Fill every reel");

@@ -130,6 +130,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	إظهار المنشورات المحفوظة في التتابع
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	يبقى المنشور المحفوظ في التتابع على الشاشة بدلًا من تخطيه. اسحب لأعلى بعد نهايته للفيديو المحفوظ التالي، أو لأسفل بعد أعلاه للسابق.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	تشغيل صف الريلز في الموجز بالترتيب
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	ريل تفتحه من صف ريلز في موجزك يستمر إلى التالي في ذلك الصف عندما ينتهي أو عندما تسحب لأعلى، بدلًا من ريل مقترح. اسحب لأسفل للعودة واحدًا.
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	ملصق صغير في أعلى ريلز يعرض الدقائق التي شاهدتها. الوقت في التبويبات الأخرى لا يُحسب، و15 دقيقة بعيدًا تبدأ العدّ من جديد.
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	أغنية تضيفها إلى صورة لقصتك تُعرض حتى 30 ثانية بدلًا من 15. تُطبَّق على الأغنية التالية التي تختارها.
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	قصة تجاوزتها في درج القصص تتركه في المرة التالية التي تفتح فيها فيسبوك، حتى لو لم تشاهدها. قصة جديدة تُعيد ذلك الشخص.

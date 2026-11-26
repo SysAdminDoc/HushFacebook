@@ -1290,6 +1290,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_saved_posts_in_row", FALSE, Setting.parent(SAVED_VIDEOS_IN_ORDER));
 
     /**
+     * A reel opened from a Reels row in the feed goes on to the next tile in that row when it ends or
+     * is swiped up, and back to the one before when swiped down, instead of a suggested reel ({@link
+     * app.morphe.extension.facebook.reels.SavedChain}, #599). Off by default. A change shows on the
+     * next reel opened from a row.
+     */
+    public static final BooleanSetting FEED_REELS_ROW_IN_ORDER =
+            new BooleanSetting("hushfacebook_feed_reels_row_in_order", FALSE);
+
+    /**
      * Reels and videos go on to the next one without Facebook holding it back to ask "Are you still
      * watching?" ({@link app.morphe.extension.facebook.reels.StillWatching}, #427). Off by default.
      * Asked before each next video, so a change shows from the next one.

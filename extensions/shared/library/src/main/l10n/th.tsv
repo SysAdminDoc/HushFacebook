@@ -2105,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	แสดงโพสต์ที่บันทึกไว้ในลำดับ
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	โพสต์ที่บันทึกไว้ในลำดับจะอยู่บนหน้าจอแทนที่จะถูกข้าม ปัดขึ้นเมื่อถึงท้ายโพสต์เพื่อไปวิดีโอที่บันทึกไว้ถัดไป หรือปัดลงเมื่ออยู่บนสุดเพื่อกลับไปรายการก่อนหน้า
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	เล่นแถว Reels ในฟีดตามลำดับ
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	Reel ที่คุณเปิดจากแถว Reels ในฟีดจะเล่นต่อไปยัง Reel ถัดไปในแถวนั้นเมื่อเล่นจบหรือเมื่อคุณปัดขึ้น แทนที่จะเป็น Reel แนะนำ ปัดลงเพื่อย้อนกลับไป Reel ก่อนหน้า
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	ข้าม "คุณยังดูอยู่หรือไม่"
 # context: summary of that switch; reels and videos go on to the next one by themselves

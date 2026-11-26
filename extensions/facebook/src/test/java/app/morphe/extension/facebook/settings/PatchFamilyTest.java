@@ -502,6 +502,7 @@ public class PatchFamilyTest {
                         + "hushfacebook_shared_reels_alone=off, hushfacebook_hide_shared_reel_friend_sheet=off, hushfacebook_watch_again_in_place=off, "
                         + "hushfacebook_saved_videos_in_player=off, hushfacebook_saved_videos_in_order=off, "
                         + "hushfacebook_saved_videos_stay_on_end=off, hushfacebook_saved_posts_in_row=off, "
+                        + "hushfacebook_feed_reels_row_in_order=off, "
                         + "hushfacebook_skip_still_watching=off, hushfacebook_fill_reels=off, "
                         + "hushfacebook_fill_every_reel=off, hushfacebook_play_feed_reels_whole=off, hushfacebook_uncropped_feed_reels=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DECLUTTER), false).get(0));

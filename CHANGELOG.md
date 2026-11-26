@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide the gift button on profiles` under News feed takes the Send a gift button off other people's profiles, so it's not there to tap by mistake. It starts off. (#576)
 * `Show feed reels uncropped` under Reels and Watch shows reels posted in your feed at their own shape. Facebook puts a tall reel in a wider frame and cuts off its sides, so you'd only see the middle of it. A reel taller than your screen stops at the screen's height. It starts off. (#581)
 * `Hide "People you may know" in the Friends tab` under News feed takes the People you may know list out of the Friends tab. Your friend requests stay where they are. It starts off, since that tab is where people go looking for friends. (#600)
+* `Play the feed's Reels row in order` under Reels and Watch plays a Reels row in your feed tile by tile. A reel you open from the row goes on to the next one in it when it ends or when you swipe up, and a swipe down goes back one. Facebook used to jump to suggested reels after the first. Reels posted in the feed on their own play the way they always did. It starts off. (#599)
 
 ### Fixed
 

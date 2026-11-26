@@ -169,7 +169,7 @@ public enum PatchFamily {
             Settings.FEED_VIDEOS_ALONE, Settings.SHARED_REELS_ALONE, Settings.HIDE_SHARED_REEL_FRIEND_SHEET,
             Settings.WATCH_AGAIN_IN_PLACE,
             Settings.SAVED_VIDEOS_IN_PLAYER, Settings.SAVED_VIDEOS_IN_ORDER, Settings.SAVED_VIDEOS_STAY_ON_END,
-            Settings.SAVED_POSTS_IN_ROW, Settings.SKIP_STILL_WATCHING,
+            Settings.SAVED_POSTS_IN_ROW, Settings.FEED_REELS_ROW_IN_ORDER, Settings.SKIP_STILL_WATCHING,
             Settings.FILL_REELS, Settings.FILL_EVERY_REEL, Settings.PLAY_FEED_REELS_WHOLE,
             Settings.UNCROPPED_FEED_REELS),
     REEL_PROMPTS(FamilyNames.REEL_PROMPTS, "reelPrompts", null,
