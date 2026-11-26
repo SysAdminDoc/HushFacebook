@@ -38,6 +38,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -66,7 +67,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * LX/03lJ;->A0C draws a drawable icon as an image fitted into a square box that a style helper
  * sizes (LX/03i3;->A0U, which sets the width and then the height). Right after that helper the
  * patch asks the extension whether the Drawable is its faces, and for faces sets the box's width
- * again with the helper's own width setter, so three faces fit before the count.
+ * again with the helper's own width setter, so the post's faces fit before the count.
  *
  * The faces at the end of the row are the facepile ReactionPreview.kt finds. Its draw already asks
  * the extension first, and now hands itself over too ([facepileAsk]), so the extension can hold it
@@ -80,6 +81,15 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * LX/04I4;->A0i()) and each edge's reaction_count, as Facebook's facepile picks them
  * (LX/03ls;->A01). The three accessors are found by field key and type tag and fill the
  * extension's stubs. Every return of the builder clears the count again.
+ *
+ * Until a row's faces turn up, the button shows Facebook's own thumb (read from 588, 2026-11-25).
+ * The renderer's icon method (LX/03lJ;->A0C) draws a thumb glyph (LX/03Av;: the glyph, its variant
+ * and a color) as a Litho icon, not a Drawable, so a third helper on the plugin draws it the way
+ * Facebook's comment pin does: a glyph drawer (LX/0DbN;->A00, a Context, the glyph, a size, the
+ * variant and a color) at 20 dp. The color is the glyph's own int (LX/0CPz;), the color of its token
+ * (LX/03lR;) or, with none, the token the renderer falls back to (LX/01yx;->A39), each token read
+ * through Facebook's color of a token for a Context (LX/0206;->A01, the one marked deprecated). The
+ * extension's glyph stub calls that helper.
  */
 
 internal const val LIKE_BUTTON_PLUGIN =
@@ -109,8 +119,15 @@ internal const val TOP_REACTIONS_TYPE = "TopReactionsConnection"
 internal const val EDGES_FIELD = "edges"
 internal const val TOP_REACTION_EDGE_TYPE = "TopReactionsEdge"
 private const val OBJECT = "Ljava/lang/Object;"
-private const val WIDE_BOX = "Show reactions on the Like button keeps a box for three faces"
+private const val WIDE_BOX = "Show reactions on the Like button keeps a box for two faces"
 private val RETURNS = setOf(Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT)
+internal const val FACES_GLYPH = "$LIKE_BUTTON_FACES->glyph(Landroid/content/Context;Ljava/lang/Object;)$DRAWABLE"
+/** The plugin's helper that draws a thumb glyph for the extension. */
+internal const val GLYPH_HELPER = "hushLikeGlyph"
+/** The size the helper draws a glyph at, the button's own: Facebook's glyph sizes keep their names. */
+internal const val GLYPH_SIZE = "SIZE_20"
+internal const val DEPRECATED = "Lkotlin/Deprecated;"
+private const val LIKE_FACE = "Show reactions on the Like button shows the Like face until a row's faces turn up"
 
 /** What the Like button's plugin builds its look from, read off its own code. */
 internal class LikeLook(
@@ -551,6 +568,206 @@ private fun BytecodePatchContext.facesCounted(found: LikeLook) {
     for (source in sources.distinctBy { it.builder.smali() }) storyFirst(source)
 }
 
+private fun ClassDef.instanceFields() = fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) }
+
+private fun isPublic(flags: Int) = AccessFlags.PUBLIC.isSet(flags)
+
+/** The thumb glyph and its color's two kinds, as [glyphParts] reads them. */
+internal class GlyphParts(
+    val glyph: ClassDef,
+    /** The glyph's color, of an abstract type both kinds extend. */
+    val color: FieldReference,
+    /** The glyph's two other fields, the glyph itself and its variant, in either order. */
+    val others: List<FieldReference>,
+    /** The int of the kind of color that is one. */
+    val intColor: FieldReference,
+    /** The token of the kind of color that names one. */
+    val tokenColor: FieldReference,
+)
+
+/**
+ * The thumb glyph's parts, read off [renderer], the renderer's icon method: of the classes it checks
+ * an icon against, the one that's an icon like the drawable icon and holds three objects; the field
+ * of it whose type other checked classes extend, its color; and those kinds of color, one holding an
+ * int and one a token. Null with why in [why]. [classOf] loads a type, null when it isn't in the build.
+ */
+internal fun glyphParts(found: LikeLook, renderer: Method, classOf: (String) -> ClassDef?, why: (String) -> Unit): GlyphParts? {
+    val iconSuper = classOf(found.drawableIcon)?.superclass ?: return null.also { why("${found.drawableIcon} isn't in this build") }
+    val checked = renderer.implementation!!.instructions.filter { it.opcode == Opcode.INSTANCE_OF }
+        .mapNotNull { ((it as ReferenceInstruction).reference as? TypeReference)?.type }.distinct()
+        .filter { it != found.drawableIcon }.mapNotNull(classOf)
+    val glyphs = checked.filter { kind ->
+        kind.superclass == iconSuper && kind.instanceFields().let { fields -> fields.size == 3 && fields.all { it.type.startsWith("L") } }
+    }
+    val glyph = glyphs.singleOrNull() ?: return null.also { why("expected one glyph among the icons ${renderer.smali()} checks for, found ${glyphs.size}") }
+    val colors = glyph.instanceFields().filter { field -> checked.any { it.superclass == field.type } }
+    val color = colors.singleOrNull() ?: return null.also { why("expected one color field on ${glyph.type}, found ${colors.size}") }
+    val kinds = checked.filter { it.superclass == color.type }
+    val held = kinds.mapNotNull { it.instanceFields().singleOrNull() }
+    val ints = held.filter { it.type == "I" }
+    val tokens = held.filter { it.type.startsWith("L") }
+    val intColor = ints.singleOrNull() ?: return null.also { why("expected one kind of ${color.type} holding an int, found ${ints.size}") }
+    val tokenColor = tokens.singleOrNull() ?: return null.also { why("expected one kind of ${color.type} holding a token, found ${tokens.size}") }
+    val shut = (kinds + glyph).filter { kind -> !isPublic(kind.accessFlags) || kind.instanceFields().any { !isPublic(it.accessFlags) } }
+    if (shut.isNotEmpty()) return null.also { why("${shut.map { it.type }} isn't public") }
+    return GlyphParts(glyph, color, glyph.instanceFields().filter { it.name != color.name }, intColor, tokenColor)
+}
+
+/**
+ * The token a glyph with no color of its own is drawn in: the first [token] the renderer's render
+ * method loads, where it reads the glyph's color. That's the one method of [rendererClass] calling
+ * [renderer] that loads a token at all (588's other caller only passes sizes on). Null with why in [why].
+ */
+internal fun defaultToken(rendererClass: ClassDef, renderer: Method, token: String, why: (String) -> Unit): FieldReference? {
+    fun firstToken(method: Method) = method.implementation?.instructions?.firstNotNullOfOrNull { instruction ->
+        ((instruction as? ReferenceInstruction)?.reference as? FieldReference)
+            ?.takeIf { instruction.opcode == Opcode.SGET_OBJECT && it.type == token && it.definingClass == token }
+    }
+    val callers = rendererClass.methods.filter { method ->
+        method.implementation?.instructions?.any { it.methodRef()?.toString() == renderer.smali() } == true
+    }
+    val loading = callers.mapNotNull { firstToken(it) }
+    return loading.singleOrNull()
+        ?: null.also { why("expected one method calling ${renderer.smali()} that loads a $token, found ${loading.size} of ${callers.size}") }
+}
+
+/** Whether [method] is Facebook's color of a [token] for a Context: public, static, (Context, token) -> int, and marked deprecated. */
+internal fun isTokenColor(method: Method, token: String) =
+    isStatic(method) && isPublic(method.accessFlags) && method.returnType == "I" &&
+        method.parameterTypes.map(CharSequence::toString) == listOf(CONTEXT, token) &&
+        method.annotations.any { it.type == DEPRECATED }
+
+/**
+ * Whether [method] draws a glyph as a Drawable: public, on an object, taking a Context, one of the
+ * glyph's two other fields, a size, the other one and a color, in that order.
+ */
+internal fun isGlyphDrawer(method: Method, parts: GlyphParts): Boolean {
+    val params = method.parameterTypes.map(CharSequence::toString)
+    return !isStatic(method) && isPublic(method.accessFlags) && method.returnType == DRAWABLE && params.size == 5 &&
+        params[0] == CONTEXT && params[4] == "I" && params[1] != params[3] &&
+        setOf(params[1], params[3]) == parts.others.map { it.type }.toSet()
+}
+
+/** Whether [classDef] is public with a public constructor taking nothing, so the helper can make one. */
+internal fun hasPlainInit(classDef: ClassDef) = isPublic(classDef.accessFlags) &&
+    classDef.methods.any { it.name == "<init>" && it.parameterTypes.isEmpty() && isPublic(it.accessFlags) }
+
+/** Whether [size] is an enum with a constant named [GLYPH_SIZE], which the helper asks it for by name. */
+internal fun hasGlyphSize(size: ClassDef?) = size != null && AccessFlags.ENUM.isSet(size.accessFlags) &&
+    size.methods.any { method ->
+        method.name == "<clinit>" && method.implementation?.instructions?.any {
+            ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == GLYPH_SIZE
+        } == true
+    }
+
+/** The glyph helper's descriptor. */
+internal fun glyphHelperRef() = "$LIKE_BUTTON_PLUGIN->$GLYPH_HELPER($CONTEXT$OBJECT)$DRAWABLE"
+
+/**
+ * The glyph helper added to the plugin: (Context, icon) -> Drawable. A thumb glyph comes back drawn
+ * by [drawer] at [GLYPH_SIZE] in its color: its own int, its token's color, or [default]'s when it
+ * has none, each token through [resolver]. Any other icon gets null.
+ */
+internal fun glyphHelper(parts: GlyphParts, default: FieldReference, resolver: Method, drawer: Method) = ImmutableMethod(
+    LIKE_BUTTON_PLUGIN,
+    GLYPH_HELPER,
+    listOf(ImmutableMethodParameter(CONTEXT, null, null), ImmutableMethodParameter(OBJECT, null, null)),
+    DRAWABLE,
+    AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+    null,
+    null,
+    MutableMethodImplementation(8),
+).toMutable().apply {
+    val params = drawer.parameterTypes.map(CharSequence::toString)
+    val glyphField = parts.others.single { it.type == params[1] }
+    val variantField = parts.others.single { it.type == params[3] }
+    val size = params[2]
+    // v0 to v5 end up as the drawer's call: the drawer, the Context, the glyph, the size, the variant
+    // and the color.
+    addInstructionsWithLabels(
+        0,
+        """
+            instance-of v0, p1, ${parts.glyph.type}
+            if-eqz v0, :none
+            move-object v1, p1
+            check-cast v1, ${parts.glyph.type}
+            iget-object v2, v1, ${parts.color.smali()}
+            instance-of v0, v2, ${parts.intColor.definingClass}
+            if-eqz v0, :token
+            check-cast v2, ${parts.intColor.definingClass}
+            iget v5, v2, ${parts.intColor.smali()}
+            goto :draw
+            :token
+            sget-object v0, ${default.smali()}
+            instance-of v3, v2, ${parts.tokenColor.definingClass}
+            if-eqz v3, :resolve
+            check-cast v2, ${parts.tokenColor.definingClass}
+            iget-object v3, v2, ${parts.tokenColor.smali()}
+            if-eqz v3, :resolve
+            move-object v0, v3
+            :resolve
+            invoke-static { p0, v0 }, ${resolver.smali()}
+            move-result v5
+            :draw
+            iget-object v2, v1, ${glyphField.smali()}
+            iget-object v4, v1, ${variantField.smali()}
+            const-class v3, $size
+            const-string v0, "$GLYPH_SIZE"
+            invoke-static { v3, v0 }, Ljava/lang/Enum;->valueOf(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+            move-result-object v3
+            check-cast v3, $size
+            new-instance v0, ${drawer.definingClass}
+            invoke-direct { v0 }, ${drawer.definingClass}-><init>()V
+            move-object v1, p0
+            invoke-virtual/range { v0 .. v5 }, ${drawer.smali()}
+            move-result-object v0
+            return-object v0
+            :none
+            const/4 v0, 0x0
+            return-object v0
+        """,
+    )
+}
+
+/**
+ * The thumb the extension shows until a row has faces: the glyph helper on the plugin and the
+ * extension's glyph stub calling it, or nothing with why logged, which keeps the Like face there.
+ */
+private fun BytecodePatchContext.glyphDrawn(found: LikeLook, renderer: Method) {
+    val warn = { why: String -> patchLog.warning("$PATCH: $why. $LIKE_FACE") }
+    val parts = glyphParts(found, renderer, ::classDefByOrNull, warn) ?: return
+    val token = parts.tokenColor.type
+    val default = defaultToken(classDefByOrNull(renderer.definingClass)!!, renderer, token, warn) ?: return
+    if (classDefByOrNull(token)?.fields?.any { it.name == default.name && isPublic(it.accessFlags) } != true) {
+        return warn("${default.smali()} isn't public")
+    }
+    val resolvers = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(token)) { classDef ->
+        if (isPublic(classDef.accessFlags)) classDef.methods.filterTo(resolvers) { isTokenColor(it, token) }
+    }
+    val resolver = resolvers.distinctBy { it.smali() }.singleOrNull()
+        ?: return warn("expected one deprecated color of a $token for a Context, found ${resolvers.size}")
+    val drawers = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(parts.others.first().type)) { classDef ->
+        if (hasPlainInit(classDef)) classDef.methods.filterTo(drawers) { isGlyphDrawer(it, parts) }
+    }
+    val drawer = drawers.distinctBy { it.smali() }.singleOrNull()
+        ?: return warn("expected one class drawing a ${parts.glyph.type} as a Drawable, found ${drawers.size}")
+    val size = drawer.parameterTypes[2].toString()
+    if (!hasGlyphSize(classDefByOrNull(size))) return warn("$size has no $GLYPH_SIZE")
+    mutableClassDefBy(LIKE_BUTTON_PLUGIN).methods.add(glyphHelper(parts, default, resolver, drawer))
+    val stub = mutableClassDefBy(LIKE_BUTTON_FACES).methods.singleOrNull { it.smali() == FACES_GLYPH }
+        ?: return warn("the extension has no $FACES_GLYPH")
+    stub.addInstructions(
+        0,
+        """
+            invoke-static { p0, p1 }, ${glyphHelperRef()}
+            move-result-object p0
+            return-object p0
+        """,
+    )
+}
+
 /**
  * Show reactions on the Like button: the helpers and their calls in the plugin and the litho
  * footer, the swap in the button renderer's constructors, and the wider box in its drawing. A
@@ -593,4 +810,5 @@ internal fun BytecodePatchContext.reactionsOnLikeButton() {
     facesAtRenderers(found, inits)
     widenFaces(box)
     facesCounted(found)
+    glyphDrawn(found, renderer)
 }

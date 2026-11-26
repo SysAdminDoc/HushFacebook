@@ -33,7 +33,9 @@ import org.junit.Test
  * Show reactions on the Like button (#541) on every Facebook build the bundle declares: the Like
  * button's plugin has two look builders, every return of both goes through the helper the patch adds,
  * and the one renderer of a drawable icon sets a faces icon's width again right after its square size.
- * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * The thumb shown until a row has faces is drawn by the one glyph drawer, in a color read through the
+ * one deprecated color of a token for a Context. Reads the fixture bundles from
+ * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class ReactionsOnLikeButtonFixtureTest {
     private fun Instruction.methodRef() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -108,7 +110,34 @@ class ReactionsOnLikeButtonFixtureTest {
                 val counted = listOf(GRAPHQL_STORY, GRAPHQL_FEEDBACK, accessors.topReactions.returnType, BASE_MODEL_WITH_TREE)
                     .map { classOf(it)!! } + sourceClass + ExtensionDex.classDef(LIKE_BUTTON_FACES)
 
-                val pool = (listOfNotNull(plugin, found.look, classOf(found.drawableIcon), rendererClass, siteClass) + sizers + counted)
+                // The thumb glyph the button shows until a row has faces, and what draws it. Facebook has
+                // more than one color of a token for a Context, which only the deprecation tells apart,
+                // so the others are the negative control.
+                val parts = glyphParts(found, renderer, classOf) { fail("$name: $it") }!!
+                val token = parts.tokenColor.type
+                val default = defaultToken(rendererClass, renderer, token) { fail("$name: $it") }!!
+                val tokenColors = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == token } }) { method ->
+                    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
+                        method.parameterTypes.map { it.toString() } == listOf("Landroid/content/Context;", token)
+                }.distinctBy { it.smali() }
+                val resolvers = tokenColors.filter { isTokenColor(it, token) }
+                assertEquals("$name: deprecated colors of a token for a Context", 1, resolvers.size)
+                assertTrue("$name: every color of a token for a Context passed, so the check proves nothing",
+                    tokenColors.size > resolvers.size)
+                val drawers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == parts.others.first().type } }) {
+                    isGlyphDrawer(it, parts)
+                }.distinctBy { it.smali() }
+                assertEquals("$name: methods drawing a glyph as a Drawable", 1, drawers.size)
+                val drawer = drawers.single()
+                val drawerClass = classOf(drawer.definingClass)!!
+                assertTrue("$name: ${drawerClass.type} can't be made from nothing", hasPlainInit(drawerClass))
+                val sizeClass = classOf(drawer.parameterTypes[2].toString())
+                assertTrue("$name: the glyph sizes have no $GLYPH_SIZE", hasGlyphSize(sizeClass))
+                val glyphPool = listOfNotNull(parts.glyph, classOf(parts.intColor.definingClass),
+                    classOf(parts.tokenColor.definingClass), classOf(token), classOf(resolvers.single().definingClass),
+                    drawerClass, sizeClass)
+
+                val pool = (listOfNotNull(plugin, found.look, classOf(found.drawableIcon), rendererClass, siteClass) + sizers + counted + glyphPool)
                     .distinctBy { it.type }
                 val context = PatchContexts.of(pool)
                 context.reactionsOnLikeButton()
@@ -233,6 +262,23 @@ class ReactionsOnLikeButtonFixtureTest {
                     assertEquals("$name: $stub doesn't call its accessor", accessor.smali(), code[1].methodRef()?.toString())
                 }
 
+                // The glyph helper draws a glyph with the drawer at the button's size, in a color it
+                // reads through the deprecated color of a token, and the extension's stub calls it.
+                val glyphHelper = patchedPlugin.methods.singleOrNull { it.name == GLYPH_HELPER }
+                assertNotNull("$name: the plugin has no $GLYPH_HELPER", glyphHelper)
+                assertTrue("$name: the glyph helper isn't static", AccessFlags.STATIC.isSet(glyphHelper!!.accessFlags))
+                assertEquals("$name: the glyph helper's shape", glyphHelperRef(), glyphHelper.smali())
+                val glyphCode = glyphHelper.implementation!!.instructions.toList()
+                assertEquals("$name: the glyph helper's calls", listOf(resolvers.single().smali(),
+                    "Ljava/lang/Enum;->valueOf(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;",
+                    "${drawer.definingClass}-><init>()V", drawer.smali()), glyphCode.mapNotNull { it.methodRef()?.toString() })
+                assertTrue("$name: the glyph helper has no color to fall back on", glyphCode.any {
+                    it.opcode == Opcode.SGET_OBJECT && "${(it as ReferenceInstruction).reference}" == "$default"
+                })
+                val glyphStub = faces.methods.single { it.smali() == FACES_GLYPH }.implementation!!.instructions.toList()
+                assertEquals("$name: the extension's glyph stub doesn't call the helper", glyphHelperRef(),
+                    glyphStub[0].methodRef()?.toString())
+
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -245,7 +291,7 @@ class ReactionsOnLikeButtonFixtureTest {
     fun `the extension has the hooks`() {
         val type = LIKE_BUTTON_FACES
         val methods = ExtensionDex.classDef(type).methods
-        for (wanted in listOf(FACES_REMEMBERING, FACES_REMEMBER, FACES_FOR, FACES_IS, FACES_WIDTH, FACES_STORY, FACES_CLEAR)) {
+        for (wanted in listOf(FACES_REMEMBERING, FACES_REMEMBER, FACES_FOR, FACES_IS, FACES_WIDTH, FACES_STORY, FACES_CLEAR, FACES_GLYPH)) {
             val hook = methods.singleOrNull { it.smali() == wanted }
             assertNotNull("the extension has no $wanted", hook)
             assertTrue("$wanted isn't public and static", AccessFlags.STATIC.isSet(hook!!.accessFlags) &&

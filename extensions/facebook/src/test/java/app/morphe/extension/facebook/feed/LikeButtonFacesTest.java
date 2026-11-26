@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.feed;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +47,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Show reactions on the Like button (#541): a button with a count asks for faces, the faces drawn
  * at the end of a post's button row move onto the Like button of the same row, whichever of the
  * two draws first, and the end of the row keeps them while the switch is off, paused or overruled
- * by Hide the reaction preview on posts. A comment's faces never move.
+ * by Hide the reaction preview on posts. A comment's faces never move. The faces are never drawn
+ * larger than the facepile drew them, and until they turn up the button shows Facebook's own thumb.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -144,16 +146,37 @@ public class LikeButtonFacesTest {
         final LikeButtonFaces.Faces button;
 
         Row() {
+            this(null, null);
+        }
+
+        /** A row whose Like icon is [icon], drawn through [glyphs] when there are no faces to show. */
+        Row(Object icon, LikeButtonFaces.Glyphs glyphs) {
             Context context = RuntimeEnvironment.getApplication();
             row = new LithoView(context);
             buttonHost = new Host(context);
             pileHost = new Host(context);
             row.addView(buttonHost);
             row.addView(pileHost);
-            button = new LikeButtonFaces.Faces(face);
+            button = glyphs == null ? new LikeButtonFaces.Faces(face)
+                    : new LikeButtonFaces.Faces(face, LikeButtonFaces.UNKNOWN, icon, glyphs);
             button.setBounds(0, 0, 48, 20);
             button.setCallback(buttonHost);
             pile.setCallback(pileHost);
+        }
+    }
+
+    /** A canvas that keeps the last scale it was given, the size the button draws its row's faces at. */
+    private static final class ScaleCanvas extends Canvas {
+        float scaled = Float.NaN;
+
+        ScaleCanvas() {
+            super(Bitmap.createBitmap(200, 60, Bitmap.Config.ARGB_8888));
+        }
+
+        @Override
+        public void scale(float sx, float sy) {
+            scaled = sx;
+            super.scale(sx, sy);
         }
     }
 
@@ -246,8 +269,12 @@ public class LikeButtonFacesTest {
         Glyph unknown = new Glyph("no face");
         LikeButtonFaces.remember(unknown, null);
         assertTrue("a Like button with no face of its own got no faces", LikeButtonFaces.isFaces(LikeButtonFaces.facesFor(unknown, "12")));
-        assertEquals("the box isn't 2.4 icons wide", 16f * 2.4f,
+        assertEquals("the box isn't 1.6 icons wide", 16f * 1.6f,
                 (float) Double.longBitsToDouble(LikeButtonFaces.widthBits(faces, 16f)), 0.001f);
+        // The Like builders hand the same face for a plain thumb and a liked one; only the icon differs.
+        Glyph liked = new Glyph("liked thumb");
+        LikeButtonFaces.remember(liked, like);
+        assertNotEquals("liking the post kept the plain thumb's icon", faces, LikeButtonFaces.facesFor(liked, "13"));
     }
 
     /** A post's three reads, its top reactions each used by [used] people. Counts every read. */
@@ -278,8 +305,10 @@ public class LikeButtonFacesTest {
     public void theBoxFitsThePostsFacesAtTheSameFaceSize() {
         Settings.REACTIONS_ON_LIKE_BUTTON.save(true);
         int[] reads = new int[1];
+        // The row's facepile draws two faces for a post with three reactions or more (588's compact
+        // footer on the S22), so a box for three left a gap before them.
         int[][] posts = {{4}, {9, 2}, {9, 2, 1}, {9, 2, 1, 1}, {7, 0}};
-        float[] boxes = {0.8f, 1.6f, 2.4f, 2.4f, 0.8f};
+        float[] boxes = {0.8f, 1.6f, 1.6f, 1.6f, 0.8f};
         Glyph[] icons = new Glyph[posts.length];
         for (int i = 0; i < posts.length; i++) {
             // Every post's icon equals every other's, as Facebook's Like icons do.
@@ -299,15 +328,15 @@ public class LikeButtonFacesTest {
         Glyph later = new Glyph("thumb");
         LikeButtonFaces.remember(later, new Face());
         assertEquals("an icon noted after the builder returned took a post's count",
-                16f * 2.4f, width(LikeButtonFaces.facesFor(later, "12")), 0.001f);
+                16f * 1.6f, width(LikeButtonFaces.facesFor(later, "12")), 0.001f);
         assertEquals("something that isn't a story got a count",
-                16f * 2.4f, width(build("props", post(reads, 1), new Glyph("thumb"))), 0.001f);
+                16f * 1.6f, width(build("props", post(reads, 1), new Glyph("thumb"))), 0.001f);
         LikeButtonFaces.Readers unpatched = new LikeButtonFaces.Readers(
                 story -> StoryFlag.NOT_PATCHED, model -> StoryFlag.NOT_PATCHED, model -> StoryFlag.NOT_PATCHED);
         assertEquals("an unpatched build got a count",
-                16f * 2.4f, width(build(new GraphQLStory(), unpatched, new Glyph("thumb"))), 0.001f);
+                16f * 1.6f, width(build(new GraphQLStory(), unpatched, new Glyph("thumb"))), 0.001f);
         assertEquals("a post nobody reacted to got a count",
-                16f * 2.4f, width(build(new GraphQLStory(), post(reads), new Glyph("thumb"))), 0.001f);
+                16f * 1.6f, width(build(new GraphQLStory(), post(reads), new Glyph("thumb"))), 0.001f);
 
         Settings.REACTIONS_ON_LIKE_BUTTON.save(false);
         int before = reads[0];
@@ -357,6 +386,62 @@ public class LikeButtonFacesTest {
         post.button.draw(canvas);
         assertEquals("the button didn't draw its row's faces", 1, post.pile.drawn);
         assertEquals("the button drew its own face over its row's faces", 1, post.face.drawn);
+    }
+
+    @Test
+    public void facesAreNeverDrawnLargerThanTheFacepileDrewThem() {
+        Settings.REACTIONS_ON_LIKE_BUTTON.save(true);
+        Row post = new Row();
+        // A box taller than the 60 by 20 facepile and wide enough for it, as a post whose count of
+        // faces wasn't read gets.
+        post.button.setBounds(0, 0, 96, 40);
+        post.pile.draw(canvas);
+
+        ScaleCanvas drawn = new ScaleCanvas();
+        post.button.draw(drawn);
+        assertEquals("the button didn't draw its row's faces", 2, post.pile.drawn);
+        assertEquals("the faces came out larger than the facepile drew them", 1f, drawn.scaled, 0.001f);
+
+        // A box narrower than the facepile still shrinks them to fit.
+        post.button.setBounds(0, 0, 48, 20);
+        post.button.draw(drawn);
+        assertEquals("the faces didn't shrink to the box", 0.8f, drawn.scaled, 0.001f);
+    }
+
+    @Test
+    public void theButtonShowsFacebooksThumbUntilItsRowHasFaces() {
+        Settings.REACTIONS_ON_LIKE_BUTTON.save(true);
+        Glyph thumb = new Glyph("thumb");
+        Face glyph = new Face();
+        int[] asked = new int[1];
+        Row post = new Row(thumb, (context, icon) -> {
+            asked[0]++;
+            assertNotNull("the glyph was drawn with no context", context);
+            return icon.equals(thumb) ? glyph : null;
+        });
+
+        post.button.draw(canvas);
+        post.button.draw(canvas);
+        assertEquals("the button didn't show Facebook's thumb", 2, glyph.drawn);
+        assertEquals("the button showed the Like face instead of the thumb", 0, post.face.drawn);
+        assertEquals("the thumb was drawn again for every draw", 1, asked[0]);
+
+        post.pile.draw(canvas);
+        post.button.draw(canvas);
+        assertEquals("the button didn't draw its row's faces", 1, post.pile.drawn);
+        assertEquals("the thumb showed with the faces", 2, glyph.drawn);
+
+        // An icon that isn't a glyph, like a reaction's picture, keeps the face its builders noted.
+        Row reacted = new Row(new Glyph("love"), (context, icon) -> null);
+        reacted.button.draw(canvas);
+        assertEquals("a reaction with no glyph lost its face", 1, reacted.face.drawn);
+
+        Row broken = new Row(thumb, (context, icon) -> {
+            throw new IllegalStateException("no glyphs here");
+        });
+        broken.button.draw(canvas);
+        assertEquals("a glyph that threw left the button empty", 1, broken.face.drawn);
+        assertTrue("the throw wasn't reported", statusLine().contains("threw"));
     }
 
     @Test
