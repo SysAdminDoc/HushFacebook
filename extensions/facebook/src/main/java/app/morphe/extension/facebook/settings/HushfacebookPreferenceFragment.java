@@ -904,6 +904,17 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         if (navigation != null) navigation.restartChanged();
     }
 
+    /** A switch turned on here is timed for Switches that are on's Newest order (#604). */
+    @Override
+    protected void onSettingChanged(Preference pref, Setting<?> setting, Object valueBefore) {
+        if (!(setting instanceof BooleanSetting)) return;
+        Object now = setting.savedValue();
+        if (java.util.Objects.equals(valueBefore, now)) return;
+        Context context = getContext();
+        FavoriteSwitchesScreen.noteTurned(context == null ? Utils.getContext() : context,
+                setting.key, Boolean.TRUE.equals(now));
+    }
+
     /**
      * Quick setups: Quiet, Privacy or Back to defaults, each changing its switches at once
      * ({@link QuickSetupKeys}), then a toast saying how many changed. A switch that needs a restart

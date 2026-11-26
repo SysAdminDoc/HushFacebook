@@ -2798,6 +2798,10 @@ Switches that are on	Options activées
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	Toutes les options que vous avez activées, dans une seule liste. Désactivez-en une ici et elle est désactivée partout.
 No switches are on yet.	Aucune option n'est encore activée.
 Turned off lately	Désactivées récemment
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	Comme sur la page
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	De A à Z
 Emoji after the logo	Emoji après le logo
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Un emoji affiché juste après le logo Facebook en haut de l'Accueil, dans ses propres couleurs. Laissez vide pour n'en avoir aucun.
 No emoji after the logo. Type one to show it there.	Aucun emoji après le logo. Saisissez-en un pour l'afficher à cet endroit.

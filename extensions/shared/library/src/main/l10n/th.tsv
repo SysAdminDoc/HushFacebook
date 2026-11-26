@@ -2798,6 +2798,10 @@ Switches that are on	สวิตช์ที่เปิดใช้งาน�
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	สวิตช์ทั้งหมดที่คุณเปิดใช้งาน รวมอยู่ในรายการเดียว ปิดสวิตช์ที่นี่แล้วสวิตช์นั้นจะปิดทุกที่
 No switches are on yet.	ยังไม่มีสวิตช์ใดเปิดใช้งานอยู่
 Turned off lately	ปิดไปเมื่อเร็วๆ นี้
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	ตามลำดับในหน้า
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	ตามตัวอักษร
 Emoji after the logo	อิโมจิหลังโลโก้
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	อิโมจิที่แสดงอยู่ด้านหลังโลโก้ Facebook ที่ด้านบนของหน้าหลัก โดยใช้สีดั้งเดิมของอิโมจิ เว้นว่างไว้หากไม่ต้องการแสดง
 No emoji after the logo. Type one to show it there.	ไม่มีอิโมจิหลังโลโก้ พิมพ์อิโมจิเพื่อแสดงตรงนั้น

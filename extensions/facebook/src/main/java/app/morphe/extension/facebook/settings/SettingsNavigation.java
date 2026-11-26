@@ -538,13 +538,30 @@ final class SettingsNavigation extends BaseAdapter {
         else showAt(0, 0);
     }
 
+    /**
+     * Back clears a search first, then folds the open section with its header kept in place (#604),
+     * so it takes a Back with every section folded to leave the settings. The list view shows every
+     * section open at once, and Back leaves from there.
+     */
     boolean back() {
         if (!query.isEmpty()) {
             search("");
             showPage();
             return true;
         }
-        return false;
+        if (listMode) return false;
+        boolean folded = false;
+        for (String id : new ArrayList<>(expanded)) {
+            Preference header = header(id);
+            if (header == null) {
+                expanded.remove(id);
+                continue;
+            }
+            // A Back that folds only a section the list doesn't show would seem to do nothing.
+            if (visible.contains(header)) folded = true;
+            setExpanded(id, false);
+        }
+        return folded;
     }
 
     private void showAt(int position, int offset) {

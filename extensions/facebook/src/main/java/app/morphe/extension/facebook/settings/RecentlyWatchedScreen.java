@@ -509,7 +509,8 @@ public final class RecentlyWatchedScreen {
         }
     }
 
-    private static RadioButton chip(Context context, ScreenColors palette, String label) {
+    /** A choice chip as the filter row draws it, also used by the Switches that are on order row. */
+    static RadioButton chip(Context context, ScreenColors palette, String label) {
         RadioButton chip = new RadioButton(context);
         chip.setButtonDrawable(null);
         chip.setText(label);
@@ -521,7 +522,7 @@ public final class RecentlyWatchedScreen {
         return chip;
     }
 
-    private static void paintChip(android.widget.CompoundButton chip, ScreenColors palette, boolean picked) {
+    static void paintChip(android.widget.CompoundButton chip, ScreenColors palette, boolean picked) {
         GradientDrawable surface = new GradientDrawable();
         surface.setCornerRadius(dp(chip.getContext(), 8));
         surface.setColor(picked ? palette.accent : Color.TRANSPARENT);

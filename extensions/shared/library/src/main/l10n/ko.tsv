@@ -2798,6 +2798,10 @@ Switches that are on	켜져 있는 스위치
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	켜 둔 모든 스위치를 한 목록으로 보여 줘요. 여기서 끄면 모든 곳에서 꺼져요.
 No switches are on yet.	아직 켜진 스위치가 없어요.
 Turned off lately	최근에 끈 스위치
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	페이지 순서
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	가나다순
 Emoji after the logo	로고 뒤 이모티콘
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	홈 상단 Facebook 로고 바로 뒤에 원래 색으로 표시할 이모티콘이에요. 표시하지 않으려면 비워 두세요.
 No emoji after the logo. Type one to show it there.	로고 뒤에 이모티콘이 없어요. 표시하려면 입력하세요.

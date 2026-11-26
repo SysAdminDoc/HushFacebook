@@ -1975,6 +1975,10 @@ Turn on %1$s to save videos that WhatsApp and these editors accept.	شغّل %1$
 Turn on %1$s to use this.	شغّل %1$s لاستخدام هذا.
 Turn on notifications for this post	تشغيل الإشعارات لهذا المنشور
 Turned off lately	أُوقف مؤخرًا
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	كما في الصفحة
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	أبجديًا
 Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	يعيد كل مفتاح واختيار يحفظه تصدير الإعدادات إلى حال التثبيت الجديد. الإيقاف المؤقت، وسجل التصحيح، والتحقق من التحديثات تبقى كما هي.
 Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.	اكتب @ قبل أن يقترح فيسبوك شخصًا لوسمه في المنشورات أو التعليقات. نصك يبقى دون تغيير.
 Type a six-digit color code, like #2ECC71.	اكتب رمز لون من ست خانات، مثل #2ECC71.

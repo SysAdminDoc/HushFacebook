@@ -2793,6 +2793,10 @@ Switches that are on	已开启的开关
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	你开启的所有开关，集中在一个列表里。在这里关掉一个，它在所有地方都会关闭。
 No switches are on yet.	还没有开启任何开关。
 Turned off lately	最近关闭
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	页面顺序
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	按名称
 Emoji after the logo	徽标后的表情符号
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	在主页顶部的 Facebook 徽标后面紧接着显示一个表情符号，保持它自己的颜色。留空则不显示。
 No emoji after the logo. Type one to show it there.	徽标后没有表情符号。输入一个即可显示在那里。

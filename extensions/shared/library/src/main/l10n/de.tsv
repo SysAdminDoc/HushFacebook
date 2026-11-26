@@ -2798,6 +2798,10 @@ Switches that are on	Eingeschaltete Schalter
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	Alle Schalter, die du eingeschaltet hast, in einer Liste. Schaltest du hier einen aus, ist er überall aus.
 No switches are on yet.	Noch ist kein Schalter eingeschaltet.
 Turned off lately	Zuletzt ausgeschaltet
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	Wie auf der Seite
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	A bis Z
 Emoji after the logo	Emoji nach dem Logo
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Ein Emoji direkt hinter dem Facebook-Logo oben auf der Startseite, in seinen eigenen Farben. Lass das Feld leer, wenn keins erscheinen soll.
 No emoji after the logo. Type one to show it there.	Kein Emoji nach dem Logo. Gib eins ein, damit es dort erscheint.

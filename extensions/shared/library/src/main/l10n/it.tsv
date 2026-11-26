@@ -2798,6 +2798,10 @@ Switches that are on	Interruttori attivi
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	Tutti gli interruttori che hai attivato, in un unico elenco. Se ne disattivi uno qui, è disattivato ovunque.
 No switches are on yet.	Ancora nessun interruttore attivo.
 Turned off lately	Disattivati di recente
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	Come nella pagina
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	Dalla A alla Z
 Emoji after the logo	Emoji dopo il logo
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Un'emoji mostrata subito dopo il logo di Facebook in cima alla Home, con i suoi colori. Lascia vuoto per non averne.
 No emoji after the logo. Type one to show it there.	Nessuna emoji dopo il logo. Scrivine una per mostrarla lì.

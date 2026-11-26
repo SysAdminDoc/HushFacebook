@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.settings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -21,6 +22,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.RadioButton;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,14 +38,17 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowToast;
 
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -482,6 +487,129 @@ public class FavoriteSwitchesScreenTest {
             store().edit().clear().commit();
             SettingsBackup.apply(snapshot);
             assertFalse("an import wrote the group", store().contains(FavoriteSwitchesScreen.OFF_KEYS));
+        }
+    }
+
+    private static RadioButton chip(AlertDialog dialog, FavoriteSwitchesScreen.Order order) {
+        View row = dialog.getWindow().getDecorView().findViewWithTag(FavoriteSwitchesScreen.ORDER_ROW);
+        assertNotNull("the list has no order row", row);
+        RadioButton chip = row.findViewWithTag(order);
+        assertNotNull("the order row has no " + order + " choice", chip);
+        return chip;
+    }
+
+    private static void pick(AlertDialog dialog, FavoriteSwitchesScreen.Order order) {
+        // A chip has no click listener of its own, so performClick answers false either way.
+        chip(dialog, order).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue(chip(dialog, order).isChecked());
+    }
+
+    /** The keys above the heading, in the list's order. */
+    private static List<String> onInOrder(ListView list) {
+        List<String> keys = new ArrayList<>();
+        int end = heading(list) < 0 ? list.getAdapter().getCount() : heading(list);
+        for (int i = 0; i < end; i++) keys.add(item(list, i).getKey());
+        return keys;
+    }
+
+    private static List<String> titlesOf(ListView list) {
+        List<String> titles = new ArrayList<>();
+        int end = heading(list) < 0 ? list.getAdapter().getCount() : heading(list);
+        for (int i = 0; i < end; i++) titles.add(String.valueOf(item(list, i).getTitle()));
+        return titles;
+    }
+
+    /** [keys] as the page has their rows, top to bottom. */
+    private static List<String> inPageOrder(HushfacebookPreferenceFragment page, List<String> keys) {
+        List<Preference> rows = new ArrayList<>();
+        collect(page.getPreferenceScreen(), rows);
+        List<String> ordered = new ArrayList<>();
+        for (Preference row : rows) {
+            if (keys.contains(row.getKey()) && !ordered.contains(row.getKey())) ordered.add(row.getKey());
+        }
+        return ordered;
+    }
+
+    /** Turns [setting] on or off with the page's own row, as a tap there does. */
+    private void turnOnThePage(HushfacebookPreferenceFragment page, BooleanSetting setting, boolean on) {
+        touched.add(setting);
+        Preference row = rowWithKey(page, setting.key);
+        assertTrue(setting.key + " has no switch on the page", row instanceof SwitchPreference);
+        ((SwitchPreference) row).setChecked(on);
+        ShadowLooper.idleMainLooper();
+        assertEquals(on, setting.savedValue());
+    }
+
+    @Test
+    public void aToZListsTheSwitchesByTitleAndTheListOpensThatWayAgain() {
+        Settings.HIDE_SUGGESTED_GROUPS.save(true);
+        Settings.HIDE_PROMOTED_POSTS.save(true);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = page(controller);
+            AlertDialog dialog = open(page);
+            ListView list = listOf(dialog);
+            List<String> shown = onInOrder(list);
+            assertTrue("too few switches are on to order", shown.size() > 2);
+            assertTrue("the list didn't open in the page's order", chip(dialog, FavoriteSwitchesScreen.Order.PAGE).isChecked());
+            assertEquals(inPageOrder(page, shown), shown);
+            List<String> pageTitles = titlesOf(list);
+
+            pick(dialog, FavoriteSwitchesScreen.Order.NAME);
+            List<String> titles = titlesOf(list);
+            List<String> sorted = new ArrayList<>(pageTitles);
+            Collator collator = Collator.getInstance(Locale.ENGLISH);
+            collator.setStrength(Collator.SECONDARY);
+            sorted.sort(collator);
+            assertEquals(sorted, titles);
+            assertNotEquals("the page's order is A to Z already, so this proves nothing", pageTitles, titles);
+            dialog.dismiss();
+
+            AlertDialog again = open(page);
+            assertTrue(chip(again, FavoriteSwitchesScreen.Order.NAME).isChecked());
+            assertFalse(chip(again, FavoriteSwitchesScreen.Order.PAGE).isChecked());
+            assertEquals(titles, titlesOf(listOf(again)));
+            pick(again, FavoriteSwitchesScreen.Order.PAGE);
+            assertEquals(shown, onInOrder(listOf(again)));
+        }
+    }
+
+    @Test
+    public void newestListsTheSwitchTurnedOnLastFirstAndTheRestAsThePageHasThem() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = page(controller);
+            List<String> pair = inPageOrder(page,
+                    Arrays.asList(Settings.HIDE_SUGGESTED_GROUPS.key, Settings.HIDE_PROMOTED_POSTS.key));
+            assertEquals(2, pair.size());
+            BooleanSetting higher = (BooleanSetting) app.morphe.extension.shared.settings.Setting.getSettingFromPath(pair.get(0));
+            BooleanSetting lower = (BooleanSetting) app.morphe.extension.shared.settings.Setting.getSettingFromPath(pair.get(1));
+            // Both start on, so off first. Then on in page order a second apart, so Newest has to
+            // turn the two around.
+            turnOnThePage(page, higher, false);
+            turnOnThePage(page, lower, false);
+            turnOnThePage(page, higher, true);
+            ShadowLooper.idleMainLooper(1, TimeUnit.SECONDS);
+            turnOnThePage(page, lower, true);
+            assertTrue("turning a switch on there wasn't timed", FavoriteSwitchesScreen.turnedOnAt(context(), higher.key) > 0);
+            assertTrue(FavoriteSwitchesScreen.turnedOnAt(context(), lower.key) > FavoriteSwitchesScreen.turnedOnAt(context(), higher.key));
+
+            AlertDialog dialog = open(page);
+            ListView list = listOf(dialog);
+            List<String> shown = onInOrder(list);
+            pick(dialog, FavoriteSwitchesScreen.Order.NEWEST);
+            List<String> newest = onInOrder(list);
+            assertEquals(Arrays.asList(lower.key, higher.key), newest.subList(0, 2));
+            List<String> rest = new ArrayList<>(shown);
+            rest.removeAll(pair);
+            assertEquals("the switches with no time aren't in the page's order", rest, newest.subList(2, newest.size()));
+            dialog.dismiss();
+
+            // Turned off, a switch loses its time, so turned on again before it would come first.
+            turnOnThePage(page, lower, false);
+            assertEquals(0L, FavoriteSwitchesScreen.turnedOnAt(context(), lower.key));
+            AlertDialog again = open(page);
+            assertTrue(chip(again, FavoriteSwitchesScreen.Order.NEWEST).isChecked());
+            assertEquals(higher.key, onInOrder(listOf(again)).get(0));
         }
     }
 }

@@ -245,6 +245,13 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
         return pending;
     }
 
+    /**
+     * [setting] took a new value from a change on this page or another live one, never from an
+     * import: [valueBefore] is what it held. Does nothing here; a page can note the change.
+     */
+    protected void onSettingChanged(Preference pref, Setting<?> setting, Object valueBefore) {
+    }
+
     /** The page's chance to show that a restart is owed. */
     protected void onRestartPendingChanged() {
     }
@@ -326,6 +333,7 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
             // Apply 'Setting <- Preference', unless importing already updated the Setting.
             updatePreference(pref, setting, true, settingImportInProgress);
+            if (!settingImportInProgress && !afterImport) onSettingChanged(pref, setting, valueBefore);
             // Update any other preference availability that may now be different. An import does
             // that once per page when it finishes: a walk of the whole page per imported switch
             // held the main thread for a minute on a large file and Android called it frozen.

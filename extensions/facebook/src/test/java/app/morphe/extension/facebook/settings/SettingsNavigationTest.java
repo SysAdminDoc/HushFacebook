@@ -136,6 +136,46 @@ public class SettingsNavigationTest {
     }
 
     /**
+     * #604: with a section open, Back folds it and its header stays where it was on the screen. The
+     * settings stay open, and the next Back, with everything folded, closes them.
+     */
+    @Test public void backFoldsTheOpenSectionFirstAndTheNextBackCloses() {
+        layout(dialog.getView(), 1200);
+        tap("section_News feed");
+        layout(dialog.getView(), 1200);
+        assertTrue(page.navigation.isExpanded("News feed"));
+        int header = position("section_News feed");
+        View shownHeader = list().getChildAt(header - list().getFirstVisiblePosition());
+        assertNotNull("the open section's header is off the screen", shownHeader);
+        int top = shownHeader.getTop();
+        android.app.Dialog shown = dialog.getDialog();
+
+        shown.onBackPressed();
+        ShadowLooper.idleMainLooper();
+        layout(dialog.getView(), 1200);
+        assertTrue("Back closed the settings with a section open", shown.isShowing());
+        assertFalse(page.navigation.isExpanded("News feed"));
+        assertEquals(24, list().getCount());
+        header = position("section_News feed");
+        assertEquals(top, list().getChildAt(header - list().getFirstVisiblePosition()).getTop());
+
+        shown.onBackPressed();
+        ShadowLooper.idleMainLooper();
+        assertFalse("Back with every section folded left the settings open", shown.isShowing());
+    }
+
+    /** The list view shows every section open at once, so Back there leaves as before (#604). */
+    @Test public void backInTheListViewStillCloses() {
+        page.navigation.showAsList(true);
+        try {
+            page.navigation.navigate("News feed");
+            assertFalse(page.navigation.back());
+        } finally {
+            page.navigation.showAsList(false);
+        }
+    }
+
+    /**
      * Switches that are on (#353) was in the model under the jump row, but the main list only drew
      * the sections, so on a phone nothing led to it. It's first on the main list and search finds it.
      */
@@ -476,8 +516,10 @@ public class SettingsNavigationTest {
         assertTrue(anchor == list().getItemAtPosition(list().getFirstVisiblePosition()));
         assertEquals(offset, list().getChildAt(0).getTop());
 
+        // Back folds the open section first (#604), and only the next one leaves.
+        assertTrue(page.navigation.back());
+        assertFalse(page.navigation.isExpanded("News feed"));
         assertFalse(page.navigation.back());
-        assertTrue(page.navigation.isExpanded("News feed"));
     }
 
     /** Search explains paused controls while the main list keeps one global status line. */
@@ -495,6 +537,9 @@ public class SettingsNavigationTest {
             page.navigation.navigate(quiet);
             assertTrue(page.navigation.isExpanded(quiet));
             assertEquals(quiet, 25 + categoryCount(quiet), list().getCount());
+            assertEquals(1, java.util.Collections.frequency(titles(), "Hushfacebook is paused"));
+            assertTrue(page.navigation.back());
+            assertFalse(page.navigation.isExpanded(quiet));
             assertEquals(1, java.util.Collections.frequency(titles(), "Hushfacebook is paused"));
             assertFalse(page.navigation.back());
         }
@@ -783,6 +828,8 @@ public class SettingsNavigationTest {
         assertTrue(page.navigation.isExpanded("Links"));
         assertEquals(24 + categoryCount("Links"), list().getCount());
         assertMainToolbar();
+        assertTrue(page.navigation.back());
+        assertFalse(page.navigation.isExpanded("Links"));
         assertFalse(page.navigation.back());
         for (String legacy : new String[]{"more", "No such page"}) {
             reopenOn(legacy);
@@ -1870,7 +1917,8 @@ public class SettingsNavigationTest {
         assertEquals(title, String.valueOf(((Preference) first).getTitle()));
     }
 
-    @Test public void bothBackPathsClearSearchThenCloseWithoutCollapsingSections() {
+    /** Both Backs clear a search first, then fold the open section (#604), then close the settings. */
+    @Test public void bothBackPathsClearSearchThenFoldTheOpenSectionThenClose() {
         for (boolean toolbar : new boolean[]{true, false}) {
             reopenOn("");
             page.navigation.navigate("Playback");
@@ -1887,7 +1935,12 @@ public class SettingsNavigationTest {
             if (toolbar) SettingsL10nTest.backOf(dialog).performClick();
             else shown.onBackPressed();
             ShadowLooper.idleMainLooper();
-            assertFalse("Back traversed expanded sections", shown.isShowing());
+            assertTrue("Back closed the settings with a section open", shown.isShowing());
+            assertFalse(page.navigation.isExpanded("About"));
+            if (toolbar) SettingsL10nTest.backOf(dialog).performClick();
+            else shown.onBackPressed();
+            ShadowLooper.idleMainLooper();
+            assertFalse("Back with every section folded kept the settings open", shown.isShowing());
             assertFalse(controller.get().isFinishing());
         }
     }

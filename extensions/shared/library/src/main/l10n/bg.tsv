@@ -2798,6 +2798,10 @@ Switches that are on	Включени превключватели
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	Всички включени превключватели в един списък. Изключиш ли някой тук, той е изключен навсякъде.
 No switches are on yet.	Още няма включени превключватели.
 Turned off lately	Изключени наскоро
+# context: one of three order choices above the Switches that are on list; lists the switches in the order the settings page has them (the other two are A to Z and Newest)
+Page order	Както на страницата
+# context: the second order choice there; lists the switches alphabetically by their titles
+A to Z	От А до Я
 Emoji after the logo	Емоджи след логото
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Емоджи точно след логото на Facebook горе в „Начало“, в собствените си цветове. Остави празно, ако не искаш емоджи.
 No emoji after the logo. Type one to show it there.	Няма емоджи след логото. Въведи едно, за да се покаже там.

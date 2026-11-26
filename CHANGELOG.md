@@ -22,6 +22,11 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Blur strength` sits under `Bar opacity` and sets how much the see-through bars blur the feed behind them. 0 turns the blur off and leaves the feed sharp, and you can go up to 300 for three times the usual blur. Leave it blank and it stays as it was. It's saved with `Export settings` too. (#596)
 * `Glass tab bar` under the tab bar settings gives the `Rounded tab bar` pill a thin light edge and a soft shadow, and the highlight behind the tab you're on slides across to the next one you pick. With animations turned off on your phone it just jumps there. It starts off. (#596)
 * `Next reel in the window` under `Video and audio` plays the next reel from Reels in the picture-in-picture window when the one there ends, so the window doesn't loop the same reel over and over. It works with `Picture-in-picture` on and starts off. (#578)
+* `Switches that are on` can sort its list. The chips at the top pick A to Z, Newest (the switch you turned on last comes first) or the order the settings pages show them in, and the list opens the same way next time. Switches you turned on before this update have no time yet, so Newest puts them after the rest, in page order. (#604)
+
+### Changed
+
+* Back in the Hushfacebook settings folds the section you have open and keeps its header where it was, and the next Back leaves. Before, Back closed the settings with a section still open. After `Show all settings as a list`, Back still leaves right away. (#604)
 
 ### Fixed
 
