@@ -42,6 +42,23 @@ public class SettingsSearchTest {
         assertEquals(Arrays.asList("icons", "toolbar"), SettingsSearch.terms("  ÍCONS \t toolbar "));
     }
 
+    /**
+     * Plain ASCII skips the accent step (#601: each letter typed normalized every row's texts, with
+     * the marks pattern compiled for each), and comes out as the accent step left it, while text
+     * that isn't ASCII still loses its accents, whatever the script.
+     */
+    @Test
+    public void plainTextComesOutAsTheAccentStepLeftIt() {
+        assertEquals("hide reels in the feed (#599)!", SettingsSearch.normalized("Hide REELS in the Feed (#599)!"));
+        assertEquals("", SettingsSearch.normalized(""));
+        assertEquals("", SettingsSearch.normalized(null));
+        assertEquals("ecole reseau", SettingsSearch.normalized("École RÉSEAU"));
+        assertEquals("gizli bolum", SettingsSearch.normalized("Gizli Bölüm"));
+        assertEquals("приложения", SettingsSearch.normalized("Приложения"));
+        assertEquals("tieng viet", SettingsSearch.normalized("Tiếng Việt"));
+        assertEquals(keys("cafe"), keys(SettingsSearch.filter(ROWS, "MODE")));
+    }
+
     @Test
     public void extraWordsFindARowButTheKeyDoesNot() {
         assertEquals(keys("header"), keys(SettingsSearch.filter(ROWS, "toolbar")));
