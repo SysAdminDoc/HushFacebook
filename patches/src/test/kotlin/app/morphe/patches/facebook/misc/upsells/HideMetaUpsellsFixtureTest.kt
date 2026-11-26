@@ -9,20 +9,26 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.metaai.DROPS_DEFAULT_PILL
+import app.morphe.patches.facebook.feed.metaai.META_AI_QUESTION_BUTTON
+import app.morphe.patches.facebook.feed.metaai.hideMetaAiQuestionsPatch
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.sharesheet.shareSheetHookPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,7 +37,8 @@ import java.io.File
 /**
  * Hide Meta upsells' anchors on every Facebook build the bundle declares: the Edits flags the
  * landing configuration's serializer writes and every read of them, the gates that set the Edits
- * pill's request parameter, the Threads cross-posting capability's one answer, the Meta Verified
+ * pill's request parameter, the one getter of a feed video's Edits attribution the pill is drawn
+ * from, the Threads cross-posting capability's one answer, the Meta Verified
  * sheet's eligibility check and the one place that asks for the label, the three avatar sticker
  * upsell components, Imagine's three (the post call-to-action selector's check, every question the
  * composer asks about its Imagine capability and Create story's tile builder) and the method that
@@ -44,6 +51,15 @@ class HideMetaUpsellsFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.called() = ((this as? ReferenceInstruction)?.reference as? MethodReference)?.toString()
+
+    /** The index the branch at [from] in [code] lands on. */
+    private fun landing(code: List<Instruction>, from: Int): Int {
+        val offset = (code[from] as OffsetInstruction).codeOffset
+        var units = 0
+        var at = from
+        while (units < offset) units += code[at++].codeUnits
+        return at
+    }
 
     private fun Method.reference() =
         "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
@@ -145,6 +161,27 @@ class HideMetaUpsellsFixtureTest {
                 }
                 val draws = components.associate { it.type to avatarUpsellDraw(it) }
 
+                // Edits over feed videos (#314): one getter reads a video's Edits attribution, counted by its enum.
+                val attributionEnums = FixtureDex.classesHolding(bundle, EDITS_ATTRIBUTION_GETTER)
+                    .filter { isEnumNaming(it, VIDEO_ATTACHMENT_GETTERS) }
+                assertEquals("$name: video attachment getter enums", 1, attributionEnums.size)
+                val editsAttribution = enumConstant(attributionEnums.single(), EDITS_ATTRIBUTION_GETTER)
+                val attributionGetters = FixtureDex.methodsWhere(bundle,
+                    { dex -> dex.fieldSection.any { it.toString() == editsAttribution.toString() } }) {
+                    isEditsAttributionGetter(it, editsAttribution)
+                }
+                assertEquals("$name: Edits attribution getters", 1, attributionGetters.size)
+                // The pill under a feed video (#314): one builder names the plugin socket and reads its pill's type.
+                val pillSocketHolders = FixtureDex.classesHolding(bundle, DEEP_DIVE_SOCKET).distinctBy { it.type }
+                val pillBuilders = pillSocketHolders.flatMap { holder ->
+                    methodsHolding(holder, DEEP_DIVE_SOCKET).filter { it.returnType.startsWith("L") && deepDivePillType(it) != null }
+                }
+                assertEquals("$name: builders of the pill under a feed video", 1, pillBuilders.size)
+                val pillBuilder = pillBuilders.single()
+                val (pill, pillType) = deepDivePillType(pillBuilder)!!
+                assertEquals("$name: the pill's type is a String getter on the pill", pillBuilder.parameterTypes[pill].toString(),
+                    pillType.definingClass)
+
                 // Imagine: the selector's table and check, the composer's capability, Create story's tools.
                 val ctaTableHolders = FixtureDex.classesHolding(bundle, IMAGINE_ME_PLUGIN)
                 val ctaTable = ctaTable(ctaTableHolders)
@@ -187,11 +224,11 @@ class HideMetaUpsellsFixtureTest {
                 assertTrue("$name: $IMMUTABLE_LIST has no copyOf(Collection)", definesImmutableCopy(immutableList))
 
                 val readerClasses = FixtureDex.classes(bundle,
-                    (flagReaders + labelAskers + imagineAskers + storyBuilders + shareLists + gates.map { it.first })
-                        .map { it.definingClass }.toSet())
+                    (flagReaders + labelAskers + imagineAskers + storyBuilders + shareLists + gates.map { it.first } +
+                        attributionGetters).map { it.definingClass }.toSet())
                 val pool = (kept.values + readerClasses.values + pillClasses + capabilities + components +
                     ctaTableHolders + ctaSocketHolders + listOfNotNull(calledClasses[ctaCheck.definingClass]) +
-                    composerEnums + storyEnums + shareEnums + immutableList +
+                    composerEnums + storyEnums + shareEnums + attributionEnums + pillSocketHolders + immutableList +
                     ExtensionDex.classDef(SETTINGS_STATUS)).associateBy { it.type }.values
                 val context = PatchContexts.of(pool)
                 // execute() runs only the patch it's called on, so the shared share sheet hook goes first.
@@ -228,6 +265,42 @@ class HideMetaUpsellsFixtureTest {
                     assertEquals("$name: $type returns null on a yes", Opcode.RETURN_OBJECT, after[4].opcode)
                     assertEquals("$name: $type draws as before otherwise", draw.code().map { it.opcode }, after.drop(5).map { it.opcode })
                 }
+                val getter = attributionGetters.single()
+                val answered = patched(getter)
+                val getterName = "$name: ${getter.definingClass}->${getter.name}"
+                assertEquals("$getterName asks about the Edits attribution first", HIDES_EDITS_ATTRIBUTION, answered[0].called())
+                assertEquals("$getterName answers none on a yes", Opcode.RETURN_OBJECT, answered[4].opcode)
+                assertEquals("$getterName reads as before otherwise", getter.code().map { it.opcode }, answered.drop(5).map { it.opcode })
+
+                // The pill builder: with a pill, its type to the extension first, and nothing drawn on a yes.
+                val pillCode = pillBuilder.code()
+                val drawn = patched(pillBuilder)
+                val builderName = "$name: ${pillBuilder.descriptor()}"
+                val sizes = pillBuilder.parameterTypes.map { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+                val pillRegister = pillBuilder.implementation!!.registerCount - sizes.sum() + sizes.take(pill).sum()
+                assertTrue("$builderName is static", AccessFlags.STATIC.isSet(pillBuilder.accessFlags))
+                assertEquals("$builderName gains eight instructions", pillCode.size + 8, drawn.size)
+                assertEquals("$builderName checks there's a pill", listOf(Opcode.IF_EQZ, pillRegister),
+                    listOf(drawn[0].opcode, (drawn[0] as OneRegisterInstruction).registerA))
+                assertEquals("$builderName reads the pill's type", pillType.toString(), drawn[1].called())
+                assertEquals("$builderName reads it off the pill", listOf(pillRegister, 1),
+                    listOf((drawn[1] as RegisterRangeInstruction).startRegister, (drawn[1] as RegisterRangeInstruction).registerCount))
+                assertEquals("$builderName hands the type over", HIDES_DEEP_DIVE_PILL, drawn[3].called())
+                assertEquals("$builderName draws nothing on a yes", Opcode.RETURN_OBJECT, drawn[7].opcode)
+                assertEquals("$builderName: no pill builds as before", 8, landing(drawn, 0))
+                assertEquals("$builderName: a no builds as before", 8, landing(drawn, 5))
+                assertEquals("$builderName builds as before otherwise", pillCode.map { it.opcode }, drawn.drop(8).map { it.opcode })
+                // A build runs Hide Meta AI questions under posts first, which hooks the same builder
+                // between its type read and the "stars" compare. The Edits pill still gets its hook then.
+                val withQuestions = PatchContexts.of((pool + FixtureDex.classesHolding(bundle, META_AI_QUESTION_BUTTON))
+                    .associateBy { it.type }.values)
+                shareSheetHookPatch.execute(withQuestions)
+                hideMetaAiQuestionsPatch.execute(withQuestions)
+                hideMetaUpsellsPatch.execute(withQuestions)
+                val drawnBoth = withQuestions.mutableClassDefBy(pillBuilder.definingClass).method(pillBuilder).code()
+                assertEquals("$builderName after the Meta AI questions hook hands the type over first", HIDES_DEEP_DIVE_PILL,
+                    drawnBoth[3].called())
+                assertTrue("$builderName keeps the Meta AI questions hook", drawnBoth.drop(8).any { it.called() == DROPS_DEFAULT_PILL })
 
                 // Imagine me: the plugin's name from the table with the check's own number, then the extension.
                 val check = ctaCheck.code()
@@ -296,6 +369,48 @@ class HideMetaUpsellsFixtureTest {
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "metaUpsells" }
                 assertEquals("$name: SettingsStatus.metaUpsells() isn't switched on", 1,
                     (status.code()[0] as NarrowLiteralInstruction).narrowLiteral)
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
+    }
+
+    /** Whether [method] loads the pill's name right after a config answer, a boolean or a Boolean asked by a long id. */
+    private fun setsPillFromAnAnswer(method: Method): Boolean {
+        val code = method.code()
+        return (2 until code.size).any { at ->
+            val load = code[at]
+            if (load.opcode != Opcode.CONST_STRING && load.opcode != Opcode.CONST_STRING_JUMBO) return@any false
+            if (((load as ReferenceInstruction).reference as StringReference).string != EDITS_PILL_PARAMETER) return@any false
+            val asked = (code[at - 2] as? ReferenceInstruction)?.reference as? MethodReference ?: return@any false
+            code[at - 1].opcode in setOf(Opcode.MOVE_RESULT, Opcode.MOVE_RESULT_OBJECT) &&
+                asked.parameterTypes.lastOrNull()?.toString() == "J" && asked.returnType in setOf("Z", "Ljava/lang/Boolean;")
+        }
+    }
+
+    /**
+     * Every query handing the Edits pill's request parameter a config answer gets the hook (#314).
+     * 588's two feed queries ask through a static helper taking the config as an Object, and were
+     * left asking the server for the pill while the switch was on.
+     */
+    @Test
+    fun `every query that sets the Edits pill from a config answer is hooked`() {
+        val checked = mutableSetOf<String>()
+        for ((version, bundles) in declaredBundles()) {
+            for (bundle in bundles) {
+                val name = bundle.name
+                val pillClasses = FixtureDex.classesHolding(bundle, EDITS_PILL_PARAMETER)
+                val tables = pillClasses.associateBy { it.type }
+                val table: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val asked = pillClasses.flatMap { it.methods }.filter(::setsPillFromAnAnswer)
+                assertTrue("$name: no query sets the Edits pill from a config answer", asked.size > 1)
+                val called = asked.flatMap { method -> method.code().mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference } }
+                    .map { it.definingClass }.toSet()
+                val helpers = FixtureDex.classes(bundle, called)
+                val missed = asked.filter { editsPillGates(it, table) { type -> helpers[type] }.isEmpty() }
+                assertTrue("$name: queries still asking for the pill: ${missed.map { "${it.definingClass}->${it.name}" }}", missed.isEmpty())
+                val unboxed = asked.count { method -> editsPillGates(method, table) { type -> helpers[type] }.any { !it.boxed } }
+                assertTrue("$name: no feed query passes the pill a plain boolean", unboxed > 0)
                 checked += version
             }
         }
