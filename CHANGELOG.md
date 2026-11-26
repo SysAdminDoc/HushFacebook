@@ -28,6 +28,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Changed
 
+* With `See-through bars` on, the top bar no longer shows as a plain strip at the top of your feed. It keeps the color of your posts while nothing but the empty space above the first post is under it, and turns see-through as posts slide under it. (#588)
 * Back in the Hushfacebook settings folds the section you have open and keeps its header where it was, and the next Back leaves. Before, Back closed the settings with a section still open. After `Show all settings as a list`, Back still leaves right away. (#604)
 * With `Download first in post menus` on, `Download to phone` and `Save photo` sit on the first page of a post's three-dot menu now, right above `Playback speed`. Facebook used to file them under More options on video and photo posts, so they took an extra tap. (#603)
 

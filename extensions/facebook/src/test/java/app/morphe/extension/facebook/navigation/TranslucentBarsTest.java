@@ -695,6 +695,65 @@ public class TranslucentBarsTest {
         assertTrue(statusLine(), statusLine().contains(TranslucentBars.MADE_SEE_THROUGH + " 2"));
     }
 
+    /**
+     * #588: at the top of the feed only the list's empty padding sits under the top bar, so the
+     * page's background showed through it as a plain strip. The top bar's fill keeps Facebook's own
+     * alpha there and goes see-through in proportion to how far the list's highest row reaches
+     * under the bar; the tab bar keeps the usual. A row of stories or reels passing under the bar
+     * isn't the feed, and with no list under it the bar is as before.
+     */
+    @Test
+    public void atTheTopOfTheFeedTheTopBarKeepsItsColorUntilRowsSlideUnderIt() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        RecyclerView feed = new RecyclerView(screen.activity, true);
+        View first = new View(screen.activity);
+        FrameLayout.LayoutParams firstRow = new FrameLayout.LayoutParams(720, 400);
+        firstRow.topMargin = 88;
+        feed.addView(first, firstRow);
+        screen.page.addView(feed, new FrameLayout.LayoutParams(720, 1600));
+        screen.layOut();
+
+        screen.bars.update();
+        assertEquals("over the list's padding the top bar keeps Facebook's own alpha", 255,
+                screen.topHolder.getBackground().getAlpha());
+        assertEquals("the tab bar keeps its tint", SEE_THROUGH, screen.tabBar.getBackground().getAlpha());
+
+        firstRow.topMargin = 44;
+        first.setLayoutParams(firstRow);
+        screen.layOut();
+        screen.bars.update();
+        Rect rows = new Rect();
+        screen.topBar.getGlobalVisibleRect(rows);
+        int[] rowTop = new int[2];
+        first.getLocationInWindow(rowTop);
+        float under = (rows.bottom - rowTop[1]) / (float) rows.height();
+        assertTrue("the first row reaches partway under the bar: " + under, under > 0.3f && under < 0.7f);
+        int partway = screen.topHolder.getBackground().getAlpha();
+        int plain = TranslucentBars.PLAIN_ALPHA;
+        int expected = TranslucentBars.seeThrough(255, Math.round(plain + (255 - plain) * (1f - under)));
+        assertTrue("the bar goes see-through as far as the first row reaches under it: " + partway + " for " + expected,
+                Math.abs(partway - expected) <= 2 && partway > SEE_THROUGH && partway < 255);
+
+        firstRow.topMargin = -200;
+        first.setLayoutParams(firstRow);
+        screen.layOut();
+        screen.bars.update();
+        assertEquals("scrolled, the whole tint", SEE_THROUGH, screen.topHolder.getBackground().getAlpha());
+
+        // A row of reels passing under the bar isn't the feed: the tint stays whole.
+        screen.page.removeView(feed);
+        RecyclerView reelsRow = new RecyclerView(screen.activity, false);
+        View tile = new View(screen.activity);
+        FrameLayout.LayoutParams tileRow = new FrameLayout.LayoutParams(720, 400);
+        tileRow.topMargin = 88;
+        reelsRow.addView(tile, tileRow);
+        screen.page.addView(reelsRow, new FrameLayout.LayoutParams(720, 1200));
+        screen.layOut();
+        ShadowLooper.idleMainLooper(TranslucentBars.RESCAN_MS + 1, TimeUnit.MILLISECONDS);
+        screen.bars.update();
+        assertEquals("a row of reels isn't the feed", SEE_THROUGH, screen.topHolder.getBackground().getAlpha());
+    }
+
     @Test
     public void withTheTabBarAtTheTopBothRowsOfTheOneHolderGoSeeThrough() {
         TranslucentBarsForTests.TabBarOnTop screen = new TranslucentBarsForTests.TabBarOnTop();

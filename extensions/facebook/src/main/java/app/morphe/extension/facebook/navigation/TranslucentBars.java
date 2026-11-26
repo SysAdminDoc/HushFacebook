@@ -89,6 +89,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Only one on screen counts: Reels' page waiting beside Home with its video kept every tab plain
  * once Reels had been opened, which read as the frost coming and going (#188).
  *
+ * <p>At the top of a feed, the list pads its first row clear of the top bar, so only that empty
+ * padding sits under the bar, and the page's background showing through the tint read as a plain
+ * strip (gray in light mode, darker than the posts in dark), where further down the bar frosts
+ * the posts going by (#588). The top bar's fills keep Facebook's own alpha while nothing but
+ * that padding is under them, so the bar has the posts' color and no strip, and go see-through
+ * in proportion to how far the list's highest row reaches under the bar's rows.
+ *
  * <p>A SurfaceView's video is a layer the display hardware puts behind the window, so no copy of
  * the window holds it and the frost can't blur it. On phones where Facebook gives feed videos
  * their own SurfaceView, the bar over one showed the video sharp under its tint, a dark strip that
@@ -942,6 +949,18 @@ public final class TranslucentBars {
         private final Runnable retry = this::retry;
         private int frame;
         private boolean stopped;
+        /**
+         * How much of the bar being made see-through this frame has the feed under it, 0 to 1
+         * ({@link #contentUnder}, #588): at 0 its fills keep Facebook's own alpha, at 1 the
+         * see-through one, and between the two in proportion. 1 for every bar but the top bar over
+         * a list at its top.
+         */
+        private float edge = 1f;
+        /** The feed list the top bar was last found over, and when to look for it again. */
+        private WeakReference<View> feed = new WeakReference<>(null);
+        private long nextFeedLook;
+        private final Rect feedBox = new Rect();
+        private final int[] rowTop = new int[2];
 
         Bars(View window, String topBar, String tabBar) {
             this.window = new WeakReference<>(window);
@@ -1026,7 +1045,9 @@ public final class TranslucentBars {
                 View under = blurs ? underNow(bar, rows) : null;
                 if (holdsTopBar && under != null) topHost = under;
                 seen.setEmpty();
+                edge = holdsTopBar && !tabsBelow ? contentUnder(under != null ? under : under(bar), rows, now) : 1f;
                 float shown = keep(bar, bar, row, under != null, 1f, 0);
+                edge = 1f;
                 if (under != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     keepInside(seen, rows, height);
                     float corner = keepInPill(seen, bar, pill);
@@ -1238,6 +1259,67 @@ public final class TranslucentBars {
         }
 
         /**
+         * How much of the top bar's [rows] the feed runs under this frame, 0 to 1 (#588). At the
+         * top of a list, only the list's empty top padding sits under the bar, so the page's
+         * background showed through it as a plain strip there, where further down it frosts the
+         * posts going by. So at the top the bar keeps its color, and goes see-through with how far
+         * the first row reaches under the rows. 1 once a row runs under the whole of the rows, and
+         * whenever no list runs under the bar or it has no rows yet.
+         */
+        float contentUnder(@Nullable View under, Rect rows, long now) {
+            if (under == null || rows.isEmpty()) return 1f;
+            View list = feed.get();
+            if (!feedUnder(list, rows)) {
+                list = null;
+                if (now >= nextFeedLook) {
+                    nextFeedLook = now + RESCAN_MS;
+                    list = feedInside(under, rows, 0);
+                    feed = new WeakReference<>(list);
+                }
+            }
+            if (list == null) return 1f;
+            // The highest row on screen: once the list scrolls, one runs above the rows and it's 1.
+            ViewGroup group = (ViewGroup) list;
+            int top = Integer.MAX_VALUE;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View row = group.getChildAt(i);
+                if (row.getVisibility() != View.VISIBLE || row.getHeight() <= 0) continue;
+                row.getLocationInWindow(rowTop);
+                top = Math.min(top, rowTop[1]);
+            }
+            if (top == Integer.MAX_VALUE) return 1f;
+            return Math.max(0f, Math.min(1f, (rows.bottom - top) / (float) rows.height()));
+        }
+
+        /** The first list in [view], down to {@link #INSIDE_DEPTH}, that {@link #feedUnder} takes. */
+        @Nullable
+        private View feedInside(View view, Rect rows, int depth) {
+            if (feedUnder(view, rows)) return view;
+            if (depth >= INSIDE_DEPTH || !(view instanceof ViewGroup)) return null;
+            ViewGroup group = (ViewGroup) view;
+            for (int i = group.getChildCount() - 1; i >= 0; i--) {
+                View child = group.getChildAt(i);
+                if (child.getVisibility() != View.VISIBLE) continue;
+                View found = feedInside(child, rows, depth + 1);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        /**
+         * Whether [view] is a list on screen running under the whole width of [rows] from their top,
+         * at least half the window tall and scrolling up and down: a feed, never a row of stories or
+         * reels passing under them, however tall that row is.
+         */
+        private boolean feedUnder(@Nullable View view, Rect rows) {
+            if (view == null || !isList(view) || !view.isAttachedToWindow() || !view.isShown()) return false;
+            if (!view.canScrollVertically(1) && !view.canScrollVertically(-1)) return false;
+            if (!view.getGlobalVisibleRect(feedBox)) return false;
+            return feedBox.left <= rows.left && feedBox.right >= rows.right && feedBox.top <= rows.top
+                    && feedBox.bottom > rows.bottom && view.getHeight() * 2 >= view.getRootView().getHeight();
+        }
+
+        /**
          * The view under [bar] this frame, with [rows] its rows on screen. The report counts each
          * change to a view that only holds the rows or to none, and once says what the layout was,
          * so a dark strip on a phone nobody here has can be read from its diagnostic report.
@@ -1377,7 +1459,8 @@ public final class TranslucentBars {
         void makeSeeThrough(Drawable drawn, boolean frosted) {
             Fill fill = fills.get(drawn);
             int now = reading(drawn);
-            int kept = keptAlpha(frosted);
+            int see = keptAlpha(frosted);
+            int kept = Math.round(see + (255 - see) * (1f - edge));
             if (fill != null && fill.left == now && fill.kept == kept) {
                 fill.frame = frame;
                 return;
