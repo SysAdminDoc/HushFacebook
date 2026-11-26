@@ -3264,3 +3264,13 @@ Remix this reel	이 릴스 리믹스하기
 Hold the profile tab for Activity log	프로필 탭을 길게 눌러 활동 로그 열기
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	프로필 탭을 길게 누르면 계정 전환 대신 활동 로그가 열려요. 그 자리에 메뉴 탭이 있는 계정에서는 메뉴 탭이 그렇게 해요. 계정 전환은 메뉴에서 계속할 수 있어요.
 React to this comment?	이 댓글에 감정 표현을 남길까요?
+Hide reactions on a held comment	댓글을 길게 누를 때 반응 숨기기
+Hide Reply on a held comment	댓글을 길게 누를 때 답글 달기 숨기기
+Hide Copy on a held comment	댓글을 길게 누를 때 복사 숨기기
+Hide Report on a held comment	댓글을 길게 누를 때 신고 숨기기
+Hide the Hide comment option	댓글 숨기기 옵션 숨기기
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	댓글을 길게 눌러도 위에 반응 줄이 더 이상 나타나지 않아요. 댓글 아래의 좋아요는 그대로 작동해요.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	댓글을 길게 눌러도 답글 달기가 더 이상 나오지 않아요. 댓글 아래의 답글 달기는 그대로 있어요.
+Holding a comment no longer offers Copy.	댓글을 길게 눌러도 복사가 더 이상 나오지 않아요.
+Holding a comment no longer offers Report comment or Report to group admins.	댓글을 길게 눌러도 댓글 신고나 그룹 관리자에게 신고가 더 이상 나오지 않아요.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	댓글을 길게 눌러도 댓글 숨기기가 더 이상 나오지 않아요. 남은 옵션이 하나도 없는 댓글은 길게 눌러도 아무 일도 일어나지 않아요.

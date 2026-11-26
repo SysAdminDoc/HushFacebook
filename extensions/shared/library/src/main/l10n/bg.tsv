@@ -3264,3 +3264,13 @@ Remix this reel	Ремикс на този клип
 Hold the profile tab for Activity log	Задръжте раздела на профила за регистъра на дейностите
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Задръжте раздела на профила, за да отворите регистъра на дейностите си вместо смяна на акаунта. При акаунти с раздел Меню на негово място това прави този раздел. Пак можете да сменяте акаунти от Менюто.
 React to this comment?	Да реагираш ли на коментара?
+Hide reactions on a held comment	Скриване на реакциите при задържане на коментар
+Hide Reply on a held comment	Скриване на „Отговор“ при задържане на коментар
+Hide Copy on a held comment	Скриване на „Копиране“ при задържане на коментар
+Hide Report on a held comment	Скриване на „Сигнал“ при задържане на коментар
+Hide the Hide comment option	Скриване на опцията „Скриване на коментара“
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	При задържане на коментар редът с реакции над него вече не се показва. „Харесвам“ под коментара продължава да работи.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	При задържане на коментар вече не се предлага „Отговор“. „Отговор“ под коментара остава.
+Holding a comment no longer offers Copy.	При задържане на коментар вече не се предлага „Копиране“.
+Holding a comment no longer offers Report comment or Report to group admins.	При задържане на коментар вече не се предлагат „Сигнал за коментара“ и „Сигнал до администраторите на групата“.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	При задържане на коментар вече не се предлага „Скриване на коментара“. Ако на коментара не остане нищо за предлагане, задържането не прави нищо.

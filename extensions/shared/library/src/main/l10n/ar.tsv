@@ -2339,3 +2339,13 @@ Remix this reel	إنشاء Remix لهذا الريل
 Hold the profile tab for Activity log	اضغط مطولًا على تبويب الملف الشخصي لفتح سجل النشاطات
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	اضغط مطولًا على تبويب الملف الشخصي لفتح سجل نشاطاتك بدلًا من تبديل الحساب. في الحسابات التي يظهر فيها تبويب القائمة مكانه، يقوم ذلك التبويب بالمهمة. لا يزال بإمكانك تبديل الحسابات من القائمة.
 React to this comment?	التفاعل مع هذا التعليق؟
+Hide reactions on a held comment	إخفاء التفاعلات عند الضغط مطولا على تعليق
+Hide Reply on a held comment	إخفاء رد عند الضغط مطولا على تعليق
+Hide Copy on a held comment	إخفاء نسخ عند الضغط مطولا على تعليق
+Hide Report on a held comment	إخفاء الإبلاغ عند الضغط مطولا على تعليق
+Hide the Hide comment option	إخفاء خيار إخفاء التعليق
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	الضغط مطولا على تعليق لم يعد يعرض صف التفاعلات فوقه. زر إعجاب تحت التعليق ما زال يعمل.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	الضغط مطولا على تعليق لم يعد يعرض خيار رد. يبقى زر رد تحت التعليق.
+Holding a comment no longer offers Copy.	الضغط مطولا على تعليق لم يعد يعرض خيار نسخ.
+Holding a comment no longer offers Report comment or Report to group admins.	الضغط مطولا على تعليق لم يعد يعرض الإبلاغ عن التعليق أو إبلاغ مشرفي المجموعة.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	الضغط مطولا على تعليق لم يعد يعرض إخفاء التعليق. إذا لم يبق للتعليق ما يعرضه، فلن يحدث شيء عند الضغط عليه مطولا.

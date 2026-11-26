@@ -1737,6 +1737,30 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_emoji_row", FALSE);
 
     /**
+     * Holding a comment shows it without the row of reactions above it (#607,
+     * {@link app.morphe.extension.facebook.comments.HeldComment}). Off by default. A change shows
+     * on the next comment held, as do the four switches after it.
+     */
+    public static final BooleanSetting HIDE_HELD_COMMENT_REACTIONS =
+            new BooleanSetting("hushfacebook_hide_held_comment_reactions", FALSE);
+
+    /** Holding a comment no longer offers Reply (#607). Off by default. */
+    public static final BooleanSetting HIDE_HELD_COMMENT_REPLY =
+            new BooleanSetting("hushfacebook_hide_held_comment_reply", FALSE);
+
+    /** Holding a comment no longer offers Copy (#607). Off by default. */
+    public static final BooleanSetting HIDE_HELD_COMMENT_COPY =
+            new BooleanSetting("hushfacebook_hide_held_comment_copy", FALSE);
+
+    /** Holding a comment no longer offers Report comment or Report to group admins (#607). Off by default. */
+    public static final BooleanSetting HIDE_HELD_COMMENT_REPORT =
+            new BooleanSetting("hushfacebook_hide_held_comment_report", FALSE);
+
+    /** Holding a comment no longer offers Hide comment (#607). Off by default. */
+    public static final BooleanSetting HIDE_HELD_COMMENT_HIDE =
+            new BooleanSetting("hushfacebook_hide_held_comment_hide", FALSE);
+
+    /**
      * Comments open with the keyboard closed, even where Facebook would open it for the first
      * comment (#594, {@link app.morphe.extension.facebook.comments.CommentSheetOptions#keyboardOnFirstLoad}).
      * A tap on the comment box still opens it. Off by default. A change shows the next time comments open.

@@ -3268,3 +3268,13 @@ Remix this reel	混剪這則 Reel
 Hold the profile tab for Activity log	長按個人檔案分頁開啟動態紀錄
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	長按個人檔案分頁會開啟你的動態紀錄，而不是切換帳號。在該位置顯示選單分頁的帳號上，由選單分頁來做。你仍可以在選單中切換帳號.
 React to this comment?	要對這則留言留下心情嗎？
+Hide reactions on a held comment	長按留言時隱藏心情
+Hide Reply on a held comment	長按留言時隱藏回覆
+Hide Copy on a held comment	長按留言時隱藏複製
+Hide Report on a held comment	長按留言時隱藏檢舉
+Hide the Hide comment option	隱藏「隱藏留言」選項
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	長按留言時，上方不再顯示心情列。留言下方的讚照常可用。
+Holding a comment no longer offers Reply. The Reply under the comment stays.	長按留言時不再提供回覆。留言下方的回覆按鈕保留。
+Holding a comment no longer offers Copy.	長按留言時不再提供複製。
+Holding a comment no longer offers Report comment or Report to group admins.	長按留言時不再提供檢舉留言或向社團管理員檢舉。
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	長按留言時不再提供隱藏留言。沒有任何選項可提供的留言，長按後什麼也不會發生。

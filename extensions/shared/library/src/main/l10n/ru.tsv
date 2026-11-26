@@ -3322,3 +3322,13 @@ Remix this reel	Сделать ремикс этого ролика
 Hold the profile tab for Activity log	Удерживайте вкладку профиля для журнала действий
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Удерживайте вкладку профиля, чтобы открыть журнал действий вместо смены аккаунта. В аккаунтах, где на её месте вкладка «Меню», это делает она. Сменить аккаунт по-прежнему можно в Меню.
 React to this comment?	Отреагировать на этот комментарий?
+Hide reactions on a held comment	Скрывать реакции при удержании комментария
+Hide Reply on a held comment	Скрывать «Ответить» при удержании комментария
+Hide Copy on a held comment	Скрывать «Копировать» при удержании комментария
+Hide Report on a held comment	Скрывать «Пожаловаться» при удержании комментария
+Hide the Hide comment option	Скрывать пункт «Скрыть комментарий»
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	При удержании комментария над ним больше не появляется строка реакций. «Нравится» под комментарием по-прежнему работает.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	При удержании комментария больше не предлагается «Ответить». Кнопка «Ответить» под комментарием остаётся.
+Holding a comment no longer offers Copy.	При удержании комментария больше не предлагается «Копировать».
+Holding a comment no longer offers Report comment or Report to group admins.	При удержании комментария больше не предлагаются «Пожаловаться на комментарий» и «Пожаловаться администраторам группы».
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	При удержании комментария больше не предлагается «Скрыть комментарий». Если у комментария не осталось ни одного пункта, удержание ничего не делает.

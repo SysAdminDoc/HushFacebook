@@ -3264,3 +3264,13 @@ Remix this reel	Remix thước phim này
 Hold the profile tab for Activity log	Giữ tab trang cá nhân để mở Nhật ký hoạt động
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Giữ tab trang cá nhân để mở Nhật ký hoạt động thay vì chuyển tài khoản. Với tài khoản có tab Menu ở vị trí đó, tab này sẽ làm việc đó. Bạn vẫn có thể chuyển tài khoản từ Menu.
 React to this comment?	Bày tỏ cảm xúc về bình luận này?
+Hide reactions on a held comment	Ẩn cảm xúc khi nhấn giữ bình luận
+Hide Reply on a held comment	Ẩn Trả lời khi nhấn giữ bình luận
+Hide Copy on a held comment	Ẩn Sao chép khi nhấn giữ bình luận
+Hide Report on a held comment	Ẩn Báo cáo khi nhấn giữ bình luận
+Hide the Hide comment option	Ẩn tùy chọn Ẩn bình luận
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Nhấn giữ bình luận sẽ không còn hiện hàng cảm xúc phía trên. Thích dưới bình luận vẫn hoạt động.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Nhấn giữ bình luận sẽ không còn có Trả lời. Trả lời dưới bình luận vẫn giữ nguyên.
+Holding a comment no longer offers Copy.	Nhấn giữ bình luận sẽ không còn có Sao chép.
+Holding a comment no longer offers Report comment or Report to group admins.	Nhấn giữ bình luận sẽ không còn có Báo cáo bình luận hay Báo cáo với quản trị viên nhóm.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Nhấn giữ bình luận sẽ không còn có Ẩn bình luận. Một bình luận không còn gì để chọn thì nhấn giữ sẽ không làm gì cả.

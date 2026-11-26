@@ -3259,3 +3259,13 @@ Remix this reel	混剪这条 Reel
 Hold the profile tab for Activity log	长按个人主页标签打开活动日志
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	长按个人主页标签会打开你的活动日志，而不是切换账户。在该位置显示菜单标签的账户上，由菜单标签来做。你仍可以在菜单中切换账户.
 React to this comment?	要回应这条评论吗？
+Hide reactions on a held comment	长按评论时隐藏心情
+Hide Reply on a held comment	长按评论时隐藏回复
+Hide Copy on a held comment	长按评论时隐藏复制
+Hide Report on a held comment	长按评论时隐藏举报
+Hide the Hide comment option	隐藏“隐藏评论”选项
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	长按评论时，上方不再显示心情栏。评论下方的赞照常可用。
+Holding a comment no longer offers Reply. The Reply under the comment stays.	长按评论时不再提供回复。评论下方的回复按钮保留。
+Holding a comment no longer offers Copy.	长按评论时不再提供复制。
+Holding a comment no longer offers Report comment or Report to group admins.	长按评论时不再提供举报评论或向小组管理员举报。
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	长按评论时不再提供隐藏评论。没有任何选项可提供的评论，长按后什么也不会发生。

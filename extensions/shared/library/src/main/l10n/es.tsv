@@ -3264,3 +3264,13 @@ Remix this reel	Hacer un remix de este reel
 Hold the profile tab for Activity log	Mantén pulsada la pestaña del perfil para el registro de actividad
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Mantén pulsada la pestaña del perfil para abrir tu registro de actividad en lugar de cambiar de cuenta. En las cuentas que tienen la pestaña Menú en su lugar, lo hace esa pestaña. Puedes seguir cambiando de cuenta desde el Menú.
 React to this comment?	¿Reaccionar a este comentario?
+Hide reactions on a held comment	Ocultar las reacciones al mantener pulsado un comentario
+Hide Reply on a held comment	Ocultar Responder al mantener pulsado un comentario
+Hide Copy on a held comment	Ocultar Copiar al mantener pulsado un comentario
+Hide Report on a held comment	Ocultar Reportar al mantener pulsado un comentario
+Hide the Hide comment option	Ocultar la opción Ocultar comentario
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Al mantener pulsado un comentario ya no aparece la fila de reacciones encima. Me gusta debajo del comentario sigue funcionando.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Al mantener pulsado un comentario ya no se ofrece Responder. El Responder debajo del comentario se queda.
+Holding a comment no longer offers Copy.	Al mantener pulsado un comentario ya no se ofrece Copiar.
+Holding a comment no longer offers Report comment or Report to group admins.	Al mantener pulsado un comentario ya no se ofrece Reportar comentario ni Reportar a los administradores del grupo.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Al mantener pulsado un comentario ya no se ofrece Ocultar comentario. Si a un comentario no le queda nada que ofrecer, mantenerlo pulsado no hace nada.

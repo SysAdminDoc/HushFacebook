@@ -3264,3 +3264,13 @@ Remix this reel	Remix reel ini
 Hold the profile tab for Activity log	Tahan tab profil untuk Log aktivitas
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Tekan lama tab profil untuk membuka Log aktivitas Anda, bukan beralih akun. Di akun yang punya tab Menu di tempatnya, tab itulah yang melakukannya. Anda tetap bisa beralih akun dari Menu.
 React to this comment?	Bereaksi ke komentar ini?
+Hide reactions on a held comment	Sembunyikan reaksi saat menahan komentar
+Hide Reply on a held comment	Sembunyikan Balas saat menahan komentar
+Hide Copy on a held comment	Sembunyikan Salin saat menahan komentar
+Hide Report on a held comment	Sembunyikan Laporkan saat menahan komentar
+Hide the Hide comment option	Sembunyikan opsi Sembunyikan komentar
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Menahan komentar tidak lagi menampilkan baris reaksi di atasnya. Suka di bawah komentar tetap berfungsi.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Menahan komentar tidak lagi menawarkan Balas. Balas di bawah komentar tetap ada.
+Holding a comment no longer offers Copy.	Menahan komentar tidak lagi menawarkan Salin.
+Holding a comment no longer offers Report comment or Report to group admins.	Menahan komentar tidak lagi menawarkan Laporkan komentar atau Laporkan ke admin grup.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Menahan komentar tidak lagi menawarkan Sembunyikan komentar. Komentar yang tidak punya pilihan lagi tidak melakukan apa-apa saat ditahan.

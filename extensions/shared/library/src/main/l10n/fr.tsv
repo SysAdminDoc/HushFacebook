@@ -3264,3 +3264,13 @@ Remix this reel	Remixer ce reel
 Hold the profile tab for Activity log	Maintenir l'onglet du profil pour l'historique personnel
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Maintenez l'onglet du profil pour ouvrir votre historique personnel au lieu de changer de compte. Sur les comptes qui ont l'onglet Menu à sa place, c'est cet onglet qui le fait. Vous pouvez toujours changer de compte depuis le Menu.
 React to this comment?	Réagir à ce commentaire ?
+Hide reactions on a held comment	Masquer les réactions lors d'un appui long sur un commentaire
+Hide Reply on a held comment	Masquer Répondre lors d'un appui long sur un commentaire
+Hide Copy on a held comment	Masquer Copier lors d'un appui long sur un commentaire
+Hide Report on a held comment	Masquer Signaler lors d'un appui long sur un commentaire
+Hide the Hide comment option	Masquer l'option Masquer le commentaire
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Un appui long sur un commentaire n'affiche plus la rangée de réactions au-dessus. J'aime sous le commentaire fonctionne toujours.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Un appui long sur un commentaire ne propose plus Répondre. Le bouton Répondre sous le commentaire reste.
+Holding a comment no longer offers Copy.	Un appui long sur un commentaire ne propose plus Copier.
+Holding a comment no longer offers Report comment or Report to group admins.	Un appui long sur un commentaire ne propose plus Signaler le commentaire ni Signaler aux administrateurs du groupe.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Un appui long sur un commentaire ne propose plus Masquer le commentaire. Si un commentaire n'a plus rien à proposer, l'appui long ne fait plus rien.

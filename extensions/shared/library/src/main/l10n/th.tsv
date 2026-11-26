@@ -3264,3 +3264,13 @@ Remix this reel	รีมิกซ์ Reel นี้
 Hold the profile tab for Activity log	กดแท็บโปรไฟล์ค้างไว้เพื่อเปิดบันทึกกิจกรรม
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	กดแท็บโปรไฟล์ค้างไว้เพื่อเปิดบันทึกกิจกรรมของคุณแทนการสลับบัญชี ในบัญชีที่มีแท็บเมนูอยู่ตรงนั้นแทน แท็บเมนูจะทำหน้าที่นี้ คุณยังสลับบัญชีได้จากเมนู
 React to this comment?	แสดงความรู้สึกต่อความคิดเห็นนี้ไหม
+Hide reactions on a held comment	ซ่อนรีแอคชั่นเมื่อกดค้างที่ความคิดเห็น
+Hide Reply on a held comment	ซ่อน "ตอบกลับ" เมื่อกดค้างที่ความคิดเห็น
+Hide Copy on a held comment	ซ่อน "คัดลอก" เมื่อกดค้างที่ความคิดเห็น
+Hide Report on a held comment	ซ่อน "รายงาน" เมื่อกดค้างที่ความคิดเห็น
+Hide the Hide comment option	ซ่อนตัวเลือก "ซ่อนความคิดเห็น"
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	การกดค้างที่ความคิดเห็นจะไม่แสดงแถวรีแอคชั่นด้านบนอีกต่อไป ปุ่ม "ถูกใจ" ใต้ความคิดเห็นยังใช้ได้
+Holding a comment no longer offers Reply. The Reply under the comment stays.	การกดค้างที่ความคิดเห็นจะไม่มี "ตอบกลับ" ให้เลือกอีกต่อไป ปุ่ม "ตอบกลับ" ใต้ความคิดเห็นยังอยู่
+Holding a comment no longer offers Copy.	การกดค้างที่ความคิดเห็นจะไม่มี "คัดลอก" ให้เลือกอีกต่อไป
+Holding a comment no longer offers Report comment or Report to group admins.	การกดค้างที่ความคิดเห็นจะไม่มี "รายงานความคิดเห็น" หรือ "รายงานไปยังผู้ดูแลกลุ่ม" ให้เลือกอีกต่อไป
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	การกดค้างที่ความคิดเห็นจะไม่มี "ซ่อนความคิดเห็น" ให้เลือกอีกต่อไป หากความคิดเห็นไม่เหลือตัวเลือกใดเลย การกดค้างจะไม่เกิดอะไรขึ้น

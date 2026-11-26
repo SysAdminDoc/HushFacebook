@@ -170,6 +170,11 @@ final class SwitchLabels {
         if (setting == Settings.LIKE_ONLY) return L10n.t("Like only");
         if (setting == Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS) return L10n.t("Hide GIF and sticker buttons");
         if (setting == Settings.HIDE_COMMENT_EMOJI_ROW) return L10n.t("Hide the emoji row on comments");
+        if (setting == Settings.HIDE_HELD_COMMENT_REACTIONS) return L10n.t("Hide reactions on a held comment");
+        if (setting == Settings.HIDE_HELD_COMMENT_REPLY) return L10n.t("Hide Reply on a held comment");
+        if (setting == Settings.HIDE_HELD_COMMENT_COPY) return L10n.t("Hide Copy on a held comment");
+        if (setting == Settings.HIDE_HELD_COMMENT_REPORT) return L10n.t("Hide Report on a held comment");
+        if (setting == Settings.HIDE_HELD_COMMENT_HIDE) return L10n.t("Hide the Hide comment option");
         if (setting == Settings.KEEP_COMMENT_KEYBOARD_CLOSED) return L10n.t("Keep the keyboard closed when comments open");
         if (setting == Settings.KEEP_COMMENTS_CLOSED_ON_TEXT_TAP) return L10n.t("Post text doesn't open comments");
         if (setting == Settings.HIDE_COMMENT_BOX_LINE) return L10n.t("Hide the line over the comment box");

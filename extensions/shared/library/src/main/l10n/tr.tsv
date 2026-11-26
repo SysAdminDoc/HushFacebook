@@ -3264,3 +3264,13 @@ Remix this reel	Bu reeli remixle
 Hold the profile tab for Activity log	Etkinlik günlüğü için profil sekmesini basılı tut
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Hesap değiştirmek yerine Etkinlik günlüğünü açmak için profil sekmesini basılı tut. Onun yerinde Menü sekmesi olan hesaplarda bunu o sekme yapar. Hesap değiştirmeye Menü'den devam edebilirsin.
 React to this comment?	Bu yoruma tepki verilsin mi?
+Hide reactions on a held comment	Basılı tutulan yorumda tepkileri gizle
+Hide Reply on a held comment	Basılı tutulan yorumda Yanıtla'yı gizle
+Hide Copy on a held comment	Basılı tutulan yorumda Kopyala'yı gizle
+Hide Report on a held comment	Basılı tutulan yorumda Şikayet Et'i gizle
+Hide the Hide comment option	Yorumu gizle seçeneğini gizle
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Bir yorumu basılı tuttuğunda üstündeki tepki satırı artık görünmez. Yorumun altındaki Beğen çalışmaya devam eder.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Bir yorumu basılı tuttuğunda artık Yanıtla sunulmaz. Yorumun altındaki Yanıtla yerinde kalır.
+Holding a comment no longer offers Copy.	Bir yorumu basılı tuttuğunda artık Kopyala sunulmaz.
+Holding a comment no longer offers Report comment or Report to group admins.	Bir yorumu basılı tuttuğunda artık Yorumu şikayet et veya Grup yöneticilerine şikayet et sunulmaz.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Bir yorumu basılı tuttuğunda artık Yorumu gizle sunulmaz. Sunacak hiçbir şeyi kalmayan bir yorumu basılı tutmak hiçbir şey yapmaz.

@@ -120,6 +120,7 @@ import app.morphe.extension.facebook.comments.CommentBlock;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.comments.FakeReplyPager;
 import app.morphe.extension.facebook.comments.FullHeightComments;
+import app.morphe.extension.facebook.comments.HeldComment;
 import app.morphe.extension.facebook.comments.LiveCommentBar;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
 import app.morphe.extension.facebook.comments.ReactorBlock;
@@ -329,6 +330,9 @@ public class PausedHooksTest {
 
     /** Stands in for Facebook's story navigation reasons, which the last-card tap goes by. */
     private enum NavigationReason { TAP_FORWARD }
+
+    /** Stands in for Facebook's kinds of option a held comment offers (#607). */
+    private enum HeldOption { REPLY }
 
     @After
     public void restore() {
@@ -1142,6 +1146,9 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.incomingTypers(3) == 0,
                 () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty(),
                 CommentSheetOptions::holdsEmojiRow,
+                // A held comment loses its Reply and its reactions (#607).
+                () -> HeldComment.dropsOption(HeldOption.REPLY),
+                () -> HeldComment.reactions(new Object()) == null,
                 // Comments open with the keyboard closed (#594).
                 () -> !CommentSheetOptions.keyboardOnFirstLoad(true),
                 // A tap on a post's text, flyout context 5, leaves its comments closed (#594).

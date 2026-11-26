@@ -3264,3 +3264,13 @@ Remix this reel	Dieses Reel remixen
 Hold the profile tab for Activity log	Profil-Tab gedrückt halten für das Aktivitätenprotokoll
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Halte den Profil-Tab gedrückt, um dein Aktivitätenprotokoll zu öffnen, statt das Konto zu wechseln. Bei Konten, die an seiner Stelle einen Menü-Tab haben, macht das dieser Tab. Konten wechseln kannst du weiterhin über das Menü.
 React to this comment?	Auf diesen Kommentar reagieren?
+Hide reactions on a held comment	Reaktionen bei gedrückt gehaltenem Kommentar ausblenden
+Hide Reply on a held comment	„Antworten“ bei gedrückt gehaltenem Kommentar ausblenden
+Hide Copy on a held comment	„Kopieren“ bei gedrückt gehaltenem Kommentar ausblenden
+Hide Report on a held comment	„Melden“ bei gedrückt gehaltenem Kommentar ausblenden
+Hide the Hide comment option	Die Option „Kommentar verbergen“ ausblenden
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Wenn du einen Kommentar gedrückt hältst, erscheint die Reaktionsleiste darüber nicht mehr. „Gefällt mir“ unter dem Kommentar funktioniert weiterhin.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Wenn du einen Kommentar gedrückt hältst, wird „Antworten“ nicht mehr angeboten. „Antworten“ unter dem Kommentar bleibt.
+Holding a comment no longer offers Copy.	Wenn du einen Kommentar gedrückt hältst, wird „Kopieren“ nicht mehr angeboten.
+Holding a comment no longer offers Report comment or Report to group admins.	Wenn du einen Kommentar gedrückt hältst, werden „Kommentar melden“ und „An Gruppenadmins melden“ nicht mehr angeboten.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Wenn du einen Kommentar gedrückt hältst, wird „Kommentar verbergen“ nicht mehr angeboten. Bleibt bei einem gedrückt gehaltenen Kommentar nichts mehr übrig, passiert gar nichts.

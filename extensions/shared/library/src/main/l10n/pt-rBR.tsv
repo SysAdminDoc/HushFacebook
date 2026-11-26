@@ -3150,3 +3150,13 @@ Remix this reel	Fazer remix deste reel
 Hold the profile tab for Activity log	Segure a aba do perfil para o Registro de atividades
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Segure a aba do perfil para abrir seu Registro de atividades em vez de trocar de conta. Em contas que têm a aba Menu no lugar dela, é essa aba que faz isso. Você ainda pode trocar de conta pelo Menu.
 React to this comment?	Reagir a este comentário?
+Hide reactions on a held comment	Ocultar as reações ao segurar um comentário
+Hide Reply on a held comment	Ocultar Responder ao segurar um comentário
+Hide Copy on a held comment	Ocultar Copiar ao segurar um comentário
+Hide Report on a held comment	Ocultar Denunciar ao segurar um comentário
+Hide the Hide comment option	Ocultar a opção Ocultar comentário
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Segurar um comentário não mostra mais a fileira de reações acima dele. Curtir embaixo do comentário continua funcionando.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Segurar um comentário não oferece mais Responder. O Responder embaixo do comentário continua.
+Holding a comment no longer offers Copy.	Segurar um comentário não oferece mais Copiar.
+Holding a comment no longer offers Report comment or Report to group admins.	Segurar um comentário não oferece mais Denunciar comentário nem Denunciar aos administradores do grupo.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Segurar um comentário não oferece mais Ocultar comentário. Se não sobrar nada para oferecer, segurar o comentário não faz nada.

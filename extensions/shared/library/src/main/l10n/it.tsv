@@ -3264,3 +3264,13 @@ Remix this reel	Fai il remix di questo reel
 Hold the profile tab for Activity log	Tieni premuta la scheda del profilo per il registro attività
 Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	Tieni premuta la scheda del profilo per aprire il tuo registro attività invece di cambiare account. Negli account che hanno la scheda Menu al suo posto, lo fa quella scheda. Puoi comunque cambiare account dal Menu.
 React to this comment?	Reagire a questo commento?
+Hide reactions on a held comment	Nascondi le reazioni tenendo premuto un commento
+Hide Reply on a held comment	Nascondi Rispondi tenendo premuto un commento
+Hide Copy on a held comment	Nascondi Copia tenendo premuto un commento
+Hide Report on a held comment	Nascondi Segnala tenendo premuto un commento
+Hide the Hide comment option	Nascondi l'opzione Nascondi commento
+Holding a comment no longer shows the row of reactions above it. Like under the comment still works.	Tenendo premuto un commento non compare più la fila di reazioni sopra. Mi piace sotto il commento funziona ancora.
+Holding a comment no longer offers Reply. The Reply under the comment stays.	Tenendo premuto un commento non viene più offerto Rispondi. Rispondi sotto il commento resta.
+Holding a comment no longer offers Copy.	Tenendo premuto un commento non viene più offerto Copia.
+Holding a comment no longer offers Report comment or Report to group admins.	Tenendo premuto un commento non vengono più offerti Segnala commento e Segnala agli amministratori del gruppo.
+Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Tenendo premuto un commento non viene più offerto Nascondi commento. Se a un commento non resta nulla da offrire, tenerlo premuto non fa niente.

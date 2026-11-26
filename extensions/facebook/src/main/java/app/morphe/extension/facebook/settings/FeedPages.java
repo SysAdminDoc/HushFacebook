@@ -1126,6 +1126,17 @@ final class FeedPages {
                     L10n.t("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_EMOJI_ROW,
                     L10n.t("The row of emoji over the comment box goes away. You can still type emoji from your keyboard.")));
+            // Read as each held comment is built, so a change shows on the next one held (#607).
+            comments.addPreference(toggle(context, Settings.HIDE_HELD_COMMENT_REACTIONS,
+                    L10n.t("Holding a comment no longer shows the row of reactions above it. Like under the comment still works.")));
+            comments.addPreference(toggle(context, Settings.HIDE_HELD_COMMENT_REPLY,
+                    L10n.t("Holding a comment no longer offers Reply. The Reply under the comment stays.")));
+            comments.addPreference(toggle(context, Settings.HIDE_HELD_COMMENT_COPY,
+                    L10n.t("Holding a comment no longer offers Copy.")));
+            comments.addPreference(toggle(context, Settings.HIDE_HELD_COMMENT_REPORT,
+                    L10n.t("Holding a comment no longer offers Report comment or Report to group admins.")));
+            comments.addPreference(toggle(context, Settings.HIDE_HELD_COMMENT_HIDE,
+                    L10n.t("Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.")));
             comments.addPreference(toggle(context, Settings.KEEP_COMMENT_KEYBOARD_CLOSED,
                     L10n.t("Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.")));
             comments.addPreference(toggle(context, Settings.KEEP_COMMENTS_CLOSED_ON_TEXT_TAP,
