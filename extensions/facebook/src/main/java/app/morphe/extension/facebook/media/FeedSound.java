@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 
+import app.morphe.extension.facebook.navigation.StartTabRoute;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -48,6 +49,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * its own ({@link #NEW_SESSION}), which {@link #sessionSound} mutes. A rotation isn't leaving,
  * nor is the screen going off with Facebook in front, nor a picture-in-picture window, and a video
  * carried on in the background keeps its sound.
+ *
+ * <p>The Reels tab shares the flag, and as it shows a reel its player asks for sound with a reason
+ * of its own (BY_PLAYER), which kept every reel there silent until a tap on its speaker (#593).
+ * While the main screen shows the Reels tab, a sound-on that isn't yours goes through, and once
+ * another tab is picked ({@link #tabShown}) a sound the Reels tab turned on itself starts a new,
+ * muted session, so the feed is as quiet as before. Coming back to Facebook on the Reels tab keeps
+ * that sound. A sound you turn on or off yourself is yours from then on, on any tab.
  */
 public final class FeedSound {
     /** Counted under the patch's name each time a new session's sound starts off instead of on. */
@@ -65,6 +73,15 @@ public final class FeedSound {
     /** Counted each time a sound-on that wasn't yours left the flag as it was. */
     static final String KEPT_MUTED = "Sound kept off";
 
+    /** Counted each time the Reels tab's own sound-on went through (#593). */
+    static final String REELS_SOUND = "Reels tab sound let through";
+
+    /** Counted each time another tab was picked after the Reels tab turned the sound on, and the feed went quiet again. */
+    static final String REELS_LEFT = "Sound off again after Reels";
+
+    /** Counted each time a video's speaker button took the sound as it was when it started listening (#593). */
+    static final String SPEAKER_CAUGHT_UP = "Speaker caught up";
+
     /** The start of the names of Facebook's reasons for a tap, swipe or gesture of yours. */
     static final String BY_USER = "BY_USER";
 
@@ -79,6 +96,11 @@ public final class FeedSound {
     /** The sound state Facebook's setters last ran on, and whether the flag they set was on. */
     private static volatile WeakReference<Object> state = new WeakReference<>(null);
     private static volatile boolean soundOn;
+
+    /** The screen last resumed, read for the tab it shows. */
+    private static volatile WeakReference<Activity> front = new WeakReference<>(null);
+    /** Whether the Reels tab turned the sound on itself, and nothing of yours set it since. */
+    private static volatile boolean reelsSound;
 
     /** Main process screens between their start and their stop. */
     private static int started;
@@ -113,8 +135,9 @@ public final class FeedSound {
      * Injection point, in the sound manager's setter right after it reads the flag it holds,
      * [current], which it then sets to [asked] for [reason], one of Facebook's enum of reasons.
      * Answers the flag it sets: while the switch is on, a sound-on that isn't yours gets
-     * [current], which changes nothing. Everything else gets [asked]. While Mute stories is on, a
-     * sound change of yours also tells {@link StorySound} whether you want stories heard.
+     * [current], which changes nothing, unless the main screen shows the Reels tab. Everything
+     * else gets [asked]. While Mute stories is on, a sound change of yours also tells
+     * {@link StorySound} whether you want stories heard.
      */
     public static boolean soundChange(@Nullable Object reason, boolean asked, boolean current) {
         try {
@@ -125,7 +148,17 @@ public final class FeedSound {
             if (!feed && !stories) return asked;
             boolean yours = yours(reason);
             if (stories && yours) StorySound.yoursSound(asked);
-            if (!feed || yours) return asked;
+            if (!feed) return asked;
+            if (yours) {
+                reelsSound = false;
+                return asked;
+            }
+            if (onReels()) {
+                reelsSound = true;
+                HookStatus.counted(FAMILY, REELS_SOUND);
+                Logger.printDebug(() -> "Keep feed videos muted: the Reels tab turned the sound on for " + name(reason));
+                return asked;
+            }
             HookStatus.counted(FAMILY, KEPT_MUTED);
             Logger.printDebug(() -> "Keep feed videos muted: kept the sound off for " + name(reason));
             return current;
@@ -167,9 +200,55 @@ public final class FeedSound {
         try {
             if (manager == null) return;
             if (state.get() != manager) state = new WeakReference<>(manager);
+            if (sound != soundOn && on()) {
+                Logger.printDebug(() -> "Keep feed videos muted: the sound goes " + (sound ? "on" : "off")
+                        + " for " + name(reason));
+            }
             soundOn = sound;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "sound set", failure);
+        }
+    }
+
+    /**
+     * Injection point, as a video's speaker button starts listening to the sound flag. Answers
+     * whether the button takes the flag as it is now: while the switch is on, yes. The button
+     * works its sound out as it's built, and a reel on the Reels tab is built before the tab
+     * turns its sound on, so the first reels' buttons showed the sound off and kept putting it
+     * back off until a tap (#593). Never throws.
+     */
+    public static boolean speakerCatchesUp() {
+        try {
+            HookStatus.bound(FAMILY, "speaker listens");
+            if (!on()) return false;
+            HookStatus.counted(FAMILY, SPEAKER_CAUGHT_UP);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "speaker listens", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the tab bar's restyle for the tab just picked, [tab] being
+     * Facebook's TabTag. Off the Reels tab, a sound the Reels tab turned on itself starts a new,
+     * muted session, so the feed is quiet again. Never throws.
+     */
+    public static void tabShown(@Nullable Object tab) {
+        try {
+            HookStatus.bound(FAMILY, "tab picked");
+            if (tab == null || !reelsSound || StartTabRoute.isReelsTab(tab.getClass().getName())) return;
+            reelsSound = false;
+            Object manager = state.get();
+            if (!soundOn || manager == null || !on()) {
+                Logger.printDebug(() -> "Keep feed videos muted: off the Reels tab, the sound was already off");
+                return;
+            }
+            startMuted(manager);
+            HookStatus.counted(FAMILY, REELS_LEFT);
+            Logger.printDebug(() -> "Keep feed videos muted: off the Reels tab, the sound starts off again");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "tab picked", failure);
         }
     }
 
@@ -185,7 +264,7 @@ public final class FeedSound {
     static final class Watcher implements Application.ActivityLifecycleCallbacks {
         @Override public void onActivityCreated(Activity activity, @Nullable Bundle saved) { }
         @Override public void onActivityStarted(Activity activity) { started(activity); }
-        @Override public void onActivityResumed(Activity activity) { }
+        @Override public void onActivityResumed(Activity activity) { resumed(activity); }
         @Override public void onActivityPaused(Activity activity) { }
         @Override public void onActivityStopped(Activity activity) { stopped(activity); }
         @Override public void onActivitySaveInstanceState(Activity activity, Bundle saved) { }
@@ -197,6 +276,10 @@ public final class FeedSound {
         if (started != 1 || !left) return;
         left = false;
         muteOnReturn();
+    }
+
+    static void resumed(Activity activity) {
+        if (front.get() != activity) front = new WeakReference<>(activity);
     }
 
     static void stopped(Activity activity) {
@@ -220,10 +303,12 @@ public final class FeedSound {
                 Logger.printDebug(() -> "Keep feed videos muted: back with a video playing in the background, its sound stays");
                 return;
             }
-            Method start = manager.getClass().getMethod(NEW_SESSION);
-            start.setAccessible(true);
-            start.invoke(manager);
-            soundOn = false;
+            if (reelsSound && onReels()) {
+                Logger.printDebug(() -> "Keep feed videos muted: back on the Reels tab, its sound stays");
+                return;
+            }
+            reelsSound = false;
+            startMuted(manager);
             HookStatus.bound(FAMILY, "return to Facebook");
             HookStatus.counted(FAMILY, RETURN_MUTED);
             Logger.printDebug(() -> "Keep feed videos muted: back in Facebook, the sound starts off again");
@@ -232,17 +317,33 @@ public final class FeedSound {
         }
     }
 
-    /** Forgets the sound state, the screens and a leave, for tests. */
+    /** Starts a new session on the sound state [manager], which {@link #sessionSound} mutes. */
+    private static void startMuted(Object manager) throws ReflectiveOperationException {
+        Method start = manager.getClass().getMethod(NEW_SESSION);
+        start.setAccessible(true);
+        start.invoke(manager);
+        soundOn = false;
+    }
+
+    /** Forgets the sound state, the screens, a leave and the Reels tab's sound, for tests. */
     static void forget() {
         state = new WeakReference<>(null);
         soundOn = false;
         started = 0;
         left = false;
+        front = new WeakReference<>(null);
+        reelsSound = false;
     }
 
     /** Whether feed videos are kept muted: the switch on, not paused, and the settings ready. */
     private static boolean on() {
         return Utils.settingsReady() && Settings.KEEP_FEED_VIDEOS_MUTED.get();
+    }
+
+    /** Whether the screen last resumed is the main screen showing the Reels tab. */
+    private static boolean onReels() {
+        Activity screen = front.get();
+        return screen != null && StartTabRoute.isReelsTab(StartTabRoute.shownTab(screen));
     }
 
     /** Whether a sound-on for [reason] is yours: a tap, swipe or gesture, or the volume up key. */

@@ -596,6 +596,11 @@ public final class StartTabRoute {
         }
     }
 
+    /** Whether [className] names the tab called Reels or Video. */
+    public static boolean isReelsTab(@Nullable String className) {
+        return StartTab.VIDEO.isTab(className);
+    }
+
     /** Whether [activity] is the Feeds page the Menu's Feeds row opens. Never throws. */
     public static boolean feedsPage(Activity activity) {
         try {

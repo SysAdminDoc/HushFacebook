@@ -22,6 +22,10 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
+import com.facebook.feed.tab.FeedTab;
+import com.facebook.katana.activity.FbMainTabActivity;
+import com.facebook.video.videohome.tab.WatchTab;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.Settings;
@@ -98,8 +102,22 @@ public class FeedSoundTest {
         return Robolectric.buildActivity(Screen.class).setup().get();
     }
 
+    /** Facebook's main screen, resumed with its tab bar on [tab]. */
+    private static FbMainTabActivity mainScreen(Object tab) {
+        FbMainTabActivity main = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
+        main.currentTab = tab;
+        new FeedSound.Watcher().onActivityResumed(main);
+        return main;
+    }
+
+    /** The tab bar of [main] moves to [tab]. */
+    private static void pick(FbMainTabActivity main, Object tab) {
+        main.currentTab = tab;
+        FeedSound.tabShown(tab);
+    }
+
     /** Facebook goes to the background from [screen] and comes back to it. */
-    private static void awayAndBack(Screen screen) {
+    private static void awayAndBack(Activity screen) {
         FeedSound.stopped(screen);
         FeedSound.started(screen);
     }
@@ -223,6 +241,139 @@ public class FeedSoundTest {
         shadowOf(power).setIsInteractive(true);
         FeedSound.started(screen);
         assertTrue("the screen going off and on with Facebook in front muted the sound", sound.on);
+        assertEquals(0, sound.sessions);
+    }
+
+    @Test
+    public void onTheReelsTabItsOwnSoundGoesThroughAndTheNextTabMutesAgain() {
+        // #593: the Reels tab asks for sound with BY_PLAYER as each reel shows, and its reels played silent.
+        Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
+        SoundState sound = new SoundState();
+        sound.startNewSession();
+        FbMainTabActivity main = mainScreen(new FeedTab());
+        FeedSound.started(main);
+        sound.set(Reason.BY_PLAYER, true);
+        assertFalse("a player on Home turned the sound on", sound.on);
+
+        pick(main, new WatchTab());
+        sound.set(Reason.BY_PLAYER, true);
+        assertTrue("a reel on the Reels tab played muted", sound.on);
+
+        pick(main, new FeedTab());
+        assertFalse("Home after the Reels tab kept its sound", sound.on);
+        assertEquals("the state's own session start ran once more", 2, sound.sessions);
+        sound.set(Reason.BY_PLAYER, true);
+        assertFalse("a player on Home turned the sound on after the Reels tab", sound.on);
+        pick(main, new FeedTab());
+        FeedSound.tabShown(null);
+        assertEquals("a tab picked with the feed already muted got another session", 2, sound.sessions);
+
+        String line = statusLine();
+        assertTrue(line, line.contains(FeedSound.REELS_SOUND + " 1"));
+        assertTrue(line, line.contains(FeedSound.REELS_LEFT + " 1"));
+    }
+
+    @Test
+    public void aSoundYouTurnOnOnTheReelsTabIsYoursOnEveryTab() {
+        Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
+        SoundState sound = new SoundState();
+        FbMainTabActivity main = mainScreen(new WatchTab());
+        FeedSound.started(main);
+        sound.set(Reason.BY_PLAYER, true);
+        sound.set(Reason.BY_USER, false);
+        sound.set(Reason.BY_USER, true);
+        pick(main, new FeedTab());
+        assertTrue("a sound you turned on went off with the next tab", sound.on);
+        assertEquals(0, sound.sessions);
+    }
+
+    @Test
+    public void backOnTheReelsTabItsSoundStaysAndAScreenOverItStaysMuted() {
+        Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
+        SoundState sound = new SoundState();
+        FbMainTabActivity main = mainScreen(new WatchTab());
+        FeedSound.started(main);
+        sound.set(Reason.BY_PLAYER, true);
+        awayAndBack(main);
+        assertTrue("back on the Reels tab, its sound went off", sound.on);
+        assertEquals(0, sound.sessions);
+
+        Screen viewer = screen();
+        new FeedSound.Watcher().onActivityResumed(viewer);
+        sound.set(Reason.BY_USER, false);
+        sound.set(Reason.BY_PLAYER, true);
+        assertFalse("a player on a screen over the Reels tab turned the sound on", sound.on);
+    }
+
+    /**
+     * A stand-in for a video's speaker button: it works its sound out from the state as it's
+     * built, and only once on screen makes the listener the patch has catch up as it's made.
+     */
+    static final class SpeakerButton {
+        final SoundState sound;
+        boolean shows;
+
+        SpeakerButton(SoundState sound) {
+            this.sound = sound;
+            shows = sound.on;
+        }
+
+        /** Facebook's listener, with the patch's lines at the end of its constructor. */
+        final class Listener {
+            Listener() {
+                if (FeedSound.speakerCatchesUp()) heard(null);
+            }
+
+            void heard(Object reason) {
+                shows = sound.on;
+            }
+        }
+
+        void onScreen() {
+            new Listener();
+        }
+    }
+
+    @Test
+    public void onAReelsSpeakerBuiltBeforeTheTabsSoundOnShowsTheSoundOnceOnScreen() {
+        Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
+        SoundState sound = new SoundState();
+        mainScreen(new WatchTab());
+        SpeakerButton speaker = new SpeakerButton(sound);
+        sound.set(Reason.BY_PLAYER, true);
+        assertFalse("the button was built after the sound went on", speaker.shows);
+        speaker.onScreen();
+        assertTrue("on screen, the first reel's speaker kept the sound off", speaker.shows);
+        String line = statusLine();
+        assertTrue(line, line.contains(FeedSound.SPEAKER_CAUGHT_UP + " 1"));
+    }
+
+    @Test
+    public void offPausedOrColdASpeakerIsLeftToFacebook() {
+        SoundState sound = new SoundState();
+        mainScreen(new WatchTab());
+        SpeakerButton speaker = new SpeakerButton(sound);
+        sound.set(Reason.BY_PLAYER, true);
+        speaker.onScreen();
+        assertFalse("with the switch off, the speaker caught up", speaker.shows);
+
+        Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        speaker.onScreen();
+        assertFalse("paused, the speaker caught up", speaker.shows);
+        PauseForTests.resume();
+
+        SettingsContextRule.withoutContext(speaker::onScreen);
+        assertFalse("before the settings were ready, the speaker caught up", speaker.shows);
+    }
+
+    @Test
+    public void offTheReelsTabIsLeftToFacebook() {
+        SoundState sound = new SoundState();
+        FbMainTabActivity main = mainScreen(new WatchTab());
+        sound.set(Reason.BY_PLAYER, true);
+        pick(main, new FeedTab());
+        assertTrue("with the switch off, leaving the Reels tab muted the sound", sound.on);
         assertEquals(0, sound.sessions);
     }
 

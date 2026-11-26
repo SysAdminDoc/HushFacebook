@@ -63,6 +63,13 @@ internal const val NEW_SESSION = "startNewSession"
  * ([viewerExitSound]). Past a threshold from Facebook's servers, that step turns the feed's sound on
  * as the user's own pick, so a feed muted before the video comes back loud.
  *
+ * The Reels tab shares the flag and asks for sound with a reason of its own as each reel shows, so
+ * with the switch on its reels played silent (#593). The tab bar restyle tells FeedSound each tab
+ * picked ([feedSoundTabSite]): on the Reels tab that ask goes through, and the next tab mutes again.
+ * A video's speaker button works its sound out from the flag as it's built and only listens once
+ * it's on screen, so the first reels missed that sound-on and kept putting the sound back off:
+ * its listener now reads the flag as it starts listening ([speakerListener]).
+ *
  * In the default selection with its switch off: a feed that stays quiet after the user turned
  * its sound on would be a surprise nobody asked for.
  */
@@ -79,7 +86,8 @@ val keepFeedVideosMutedPatch = patch(
     compatibleWith(*AppCompatibilities.facebook())
 
     executeBytecode {
-        askFeedSound(feedSoundState())
+        val state = feedSoundState()
+        askFeedSound(state)
         // Mute stories (#261) asks in the story viewer's volume setter. A moved story viewer
         // costs that switch, not the feed's.
         try {
@@ -93,6 +101,20 @@ val keepFeedVideosMutedPatch = patch(
             askViewerSoundTime(viewerExitSound())
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on without restoring the feed's sound after opened videos.")
+        }
+        // The Reels tab's own sound goes through and goes off again on the next tab picked (#593).
+        // A moved tab bar restyle leaves a sound the Reels tab turned on playing in the feed too.
+        try {
+            tellTabShown(feedSoundTabSite())
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without muting the feed again after the Reels tab.")
+        }
+        // A reel's speaker button reads the flag as it starts listening, so the Reels tab's own
+        // sound-on that came in while it was being built doesn't leave it muting the reel (#593).
+        try {
+            speakerCatchesUp(speakerListener(state))
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on, and the first reels on the Reels tab may play muted until their speaker is tapped.")
         }
         enableStatus("keepFeedVideosMuted")
     }
