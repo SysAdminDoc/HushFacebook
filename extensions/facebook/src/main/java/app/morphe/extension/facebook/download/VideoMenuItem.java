@@ -18,6 +18,7 @@ import java.util.Set;
 
 import app.morphe.extension.facebook.media.PostMenuSpeed;
 import app.morphe.extension.facebook.media.SkipSilence;
+import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
@@ -37,7 +38,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * ({@link SendLink}), the item is Send to app and hands over the video's facebook.com link. A post
  * holding several videos, as an album of them does, gets Save all videos, which saves them one
  * after another (#509). While Skip silent parts is on and a video has started, the same call adds that patch's row below
- * Facebook's ({@link SkipSilence}), so it shows only where Download any video is patched too.
+ * Facebook's ({@link SkipSilence}), so it shows only where Download any video is patched too, and
+ * not while Post menu items keeps it out ({@link PostMenuItems#keepsOut}, #475).
  * Playback speed in the post menu adds its Playback speed row the same way ({@link PostMenuSpeed}).
  *
  * <p>Nothing here names a class or member that Facebook renames. The post and its attachment are
@@ -126,7 +128,7 @@ public final class VideoMenuItem {
             }
             if (saving) HookStatus.bound(FamilyNames.VIDEO_DOWNLOAD, "video menu item");
             String quiet = silence ? SkipSilence.rowFor(video.id) : null;
-            if (quiet != null) {
+            if (quiet != null && !PostMenuItems.keepsOut(PostMenuItems.SKIP_SILENT_PARTS)) {
                 MenuItem entry = menu.add(SkipSilence.rowTitle(quiet));
                 if (entry != null) {
                     entry.setOnMenuItemClickListener(tapped -> {

@@ -11,6 +11,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.net.Uri;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -176,6 +178,39 @@ public class PostMenuItemsTest {
         String line = statusLine(FamilyNames.POST_MENU_ITEMS);
         assertNotNull(String.join("\n", HookStatus.report()), line);
         assertTrue(line, line.contains(PostMenuItems.HIDDEN + " 4"));
+    }
+
+    /**
+     * #475: the feed's sheet draws Interested and Not interested as one card, and only when both are
+     * there, so with one of them picked the other moves on top of the first page and stays.
+     */
+    @Test
+    public void oneOfInterestedAndNotInterestedPickedTheOtherStaysOnTopOfTheFirstPage() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        PostMenuItems.hide(Collections.singletonList("SEE_MORE"));
+        Sheet sheet = sheet();
+        arrange(sheet);
+        assertNull("Interested went", sheet.A01);
+        assertNull("Not interested left the card it can't have alone", sheet.A00);
+        assertEquals(Arrays.asList(notInterested, save, report), sheet.A08);
+        assertSame("Manage your Feed stays", manage, sheet.A02);
+        String line = statusLine(FamilyNames.POST_MENU_ITEMS);
+        assertNotNull(String.join("\n", HookStatus.report()), line);
+        assertTrue(line, line.contains(PostMenuItems.HIDDEN + " 1"));
+
+        PostMenuItems.hide(Collections.singletonList("SEE_LESS"));
+        sheet = sheet();
+        arrange(sheet);
+        assertNull(sheet.A00);
+        assertNull(sheet.A01);
+        assertEquals(Arrays.asList(interested, save, report), sheet.A08);
+
+        // Facebook handed the card only one of them, so it draws neither: nothing moves.
+        sheet = sheet();
+        sheet.A00 = null;
+        arrange(sheet);
+        assertSame(interested, sheet.A01);
+        assertEquals(Arrays.asList(save, report), sheet.A08);
     }
 
     @Test
@@ -362,7 +397,7 @@ public class PostMenuItemsTest {
         assertEquals("Clear mode", PostMenuItems.label("CLEAR_MODE"));
         assertEquals("Scroll to next reel automatically", PostMenuItems.label("AUTO_ADVANCE"));
         // A reel's More sheet shows these rows by other words than their ids (588, #475).
-        assertEquals("Quality settings", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_best_guess_post_control")));
+        assertEquals("Quality settings", PostMenuItems.label(PostMenuItems.reelKind(PostMenuItems.NO_ID, "HD")));
         assertEquals("Request community note", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_other")));
         assertEquals("Something went wrong", PostMenuItems.label(PostMenuItems.reelKind("fds_control_type_bug")));
         // #475: a kind that kept an fb_control_type_ wrapping reads without it, and Skip silent parts by its title.
@@ -483,7 +518,68 @@ public class PostMenuItemsTest {
         }
     }
 
+    /** Stands in for 588's LX/01Yk, Facebook's icon enum, which keeps its names. */
+    enum Icon { HD, RUNNING, NUCLEUS_HIDE }
+
+    /** Stands in for 588's LX/0b3x, a row's icon: an image address and an icon. */
+    static final class IconBox {
+        final Uri A00 = null;
+        final Icon A01;
+        final Boolean A02 = null;
+
+        IconBox(Icon icon) {
+            A01 = icon;
+        }
+    }
+
+    /** Stands in for 588's LX/0Zsz made without an id: it answers NO_ID, and holds its icon in A01. */
+    static final class NoIdRow extends ReelModel {
+        private final String title;
+        final IconBox A01;
+
+        NoIdRow(String title, IconBox icon) {
+            super(PostMenuItems.NO_ID);
+            this.title = title;
+            A01 = icon;
+        }
+
+        @Override
+        public String toString() {
+            return title;
+        }
+    }
+
     private static final String REEL_MODEL = ReelModel.class.getName();
+
+    /**
+     * #475: every row made without an id answers the same one, Quality settings and the rows a post
+     * menu's items become alike, so picking Quality settings took Playback speed off a feed video's
+     * sheet. Only the row wearing the HD icon is Quality settings now.
+     */
+    @Test
+    public void onlyTheHdRowWithNoIdIsQualitySettings() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        NoIdRow quality = new NoIdRow("Quality settings", new IconBox(Icon.HD));
+        NoIdRow feedSpeed = new NoIdRow("Playback speed", new IconBox(null));
+        NoIdRow feedSkip = new NoIdRow("Skip silent parts: on", null);
+        NoIdRow product = new NoIdRow("Hide product", new IconBox(Icon.NUCLEUS_HIDE));
+        List<Object> rows = Arrays.asList(quality, feedSpeed, feedSkip, product, reelSpeed);
+        assertSame("nothing picked keeps them", rows, PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertEquals("of the rows with no id only Quality settings is written down",
+                Arrays.asList("BEST_GUESS_POST", "PLAYBACK_SPEED"),
+                new ArrayList<>(PostMenuItems.parse(Settings.SEEN_POST_MENU_ITEMS.savedValue())));
+
+        PostMenuItems.hide(Collections.singletonList("BEST_GUESS_POST"));
+        assertEquals(Arrays.asList(feedSpeed, feedSkip, product, reelSpeed),
+                PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertTrue(PostMenuItems.reelRowHidden(quality, REEL_MODEL, "A04"));
+        assertFalse("a post menu's Playback speed stays", PostMenuItems.reelRowHidden(feedSpeed, REEL_MODEL, "A04"));
+        assertFalse(PostMenuItems.reelRowHidden(product, REEL_MODEL, "A04"));
+        assertEquals("Quality settings", PostMenuItems.label("BEST_GUESS_POST"));
+        assertNull(PostMenuItems.reelKind(PostMenuItems.NO_ID));
+        assertNull(PostMenuItems.reelKind(PostMenuItems.NO_ID, "RUNNING"));
+        assertEquals("BEST_GUESS_POST", PostMenuItems.reelKind(PostMenuItems.NO_ID, "HD"));
+    }
 
     private final ReelRow reelInterested = new ReelRow("Interested", "fds_control_type_preference_signal_positive");
     private final ReelRow reelSpeed = new ReelRow("Playback speed", "fds_control_playback_speed");

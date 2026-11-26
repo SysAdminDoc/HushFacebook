@@ -4,6 +4,8 @@
  */
 package app.morphe.extension.facebook.misc;
 
+import android.net.Uri;
+
 import androidx.annotation.Nullable;
 
 import java.lang.reflect.Field;
@@ -43,7 +45,9 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * the kinds Facebook has shown on this phone, so its list offers the real ones beside the common
  * ones. Keep the reel speed's Playback speed row (#473) has no kind, so Facebook files it under More
  * options; with {@link Settings#POST_MENU_SPEED_ON_TOP} on it moves to the end of the first page, the
- * way Facebook's own presenter moves its Why am I seeing this row there after the sort.
+ * way Facebook's own presenter moves its Why am I seeing this row there after the sort. Facebook draws
+ * Interested and Not interested as one card only when it has both, so with one of them picked the
+ * other moves to the top of the first page.
  *
  * <p>The holder's fields are found by what they hold, and the kind by the names the patch hands over:
  * the row metadata's class and its kind field, and the first page's list. Settings that aren't ready
@@ -70,7 +74,17 @@ public final class PostMenuItems {
      * list can keep it out like one of Facebook's (#475). The id is SkipSilenceRow.kt's SKIP_ROW_ID.
      */
     static final String SKIP_SILENCE_ROW = "hushfacebook_skip_silence";
-    static final String SKIP_SILENT_PARTS = "SKIP_SILENT_PARTS";
+    public static final String SKIP_SILENT_PARTS = "SKIP_SILENT_PARTS";
+
+    /**
+     * The id every sheet row made without one answers (588 LX/0b1J;->A04): Quality settings, the
+     * rows a post menu's items become, ours among them, and shop and ad rows alike (#475). Only the
+     * icon tells them apart, so only the row wearing {@link #QUALITY_ICON} gets a kind, the one the
+     * list has called Quality settings since 2026-11-21.
+     */
+    static final String NO_ID = "fds_control_type_best_guess_post_control";
+    static final String QUALITY_ICON = "HD";
+    static final String QUALITY = "BEST_GUESS_POST";
 
     /** What a few reel kinds still start with when their id had a wrapping the list doesn't take off. */
     private static final String[] KIND_WRAPS = {"FB_CONTROL_TYPE_", "FB_CONTROL_"};
@@ -85,6 +99,8 @@ public final class PostMenuItems {
     /** How each row class reaches its model, and each model class its id: a Field, a Method or NONE. */
     private static final Map<Class<?>, Object> reelModels = new ConcurrentHashMap<>();
     private static final Map<Class<?>, Object> reelIds = new ConcurrentHashMap<>();
+    /** How each model class reaches its icon's name: a pair of Fields or NONE. */
+    private static final Map<Class<?>, Object> reelIcons = new ConcurrentHashMap<>();
 
     /** The model class and id method name the two maps above were filled for. */
     @Nullable
@@ -192,11 +208,14 @@ public final class PostMenuItems {
             StringBuilder section = debugging() ? new StringBuilder() : null;
             for (int i = 0; i < rows.size(); i++) {
                 Object row = rows.get(i);
-                String id = reelId(row, modelClass, idMethod);
-                String kind = reelKind(id);
+                Object meta = reelMeta(row, modelClass);
+                String id = meta == null ? null : idOf(meta, idMethod);
+                String icon = NO_ID.equals(id) ? reelIcon(meta) : null;
+                String kind = reelKind(id, icon);
                 if (section != null) {
                     if (section.length() > 0) section.append(", ");
                     section.append(row == null ? "null" : row.getClass().getName()).append('=').append(id);
+                    if (icon != null) section.append('/').append(icon);
                 }
                 if (kind != null) kinds.add(kind);
                 if (kind != null && hidden.contains(kind)) {
@@ -281,7 +300,7 @@ public final class PostMenuItems {
         try {
             if (!PatchFamily.POST_MENU_ITEMS.inBuild()) return false;
             HookStatus.invoked(FAMILY);
-            String kind = reelKind(reelId(row, reelModel(model, idMethod), idMethod));
+            String kind = reelKindOf(row, reelModel(model, idMethod), idMethod);
             if (kind == null) return false;
             remember(Collections.singletonList(kind));
             if (!parse(Settings.HIDDEN_POST_MENU_ITEMS.get()).contains(kind)) return false;
@@ -290,6 +309,28 @@ public final class PostMenuItems {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel menu rows", failure);
+            return false;
+        }
+    }
+
+    /**
+     * For a row Hushfacebook adds to a post's menu itself, Skip silent parts' one: writes its [kind]
+     * down so the list offers it, and answers whether it's picked, when the row isn't added. A post
+     * menu turns its items into sheet rows with no id, so the reel sheet's hook can't tell it there
+     * (#475). Never throws.
+     */
+    public static boolean keepsOut(String kind) {
+        if (!Utils.settingsReady()) return false;
+        try {
+            if (!PatchFamily.POST_MENU_ITEMS.inBuild()) return false;
+            HookStatus.invoked(FAMILY);
+            remember(Collections.singletonList(kind));
+            if (!parse(Settings.HIDDEN_POST_MENU_ITEMS.get()).contains(kind)) return false;
+            HookStatus.bound(FAMILY, "post menu items");
+            HookStatus.counted(FAMILY, HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "post menu items", failure);
             return false;
         }
     }
@@ -310,8 +351,18 @@ public final class PostMenuItems {
      */
     @Nullable
     static String reelKind(@Nullable String id) {
+        return reelKind(id, null);
+    }
+
+    /**
+     * The kind of a reel row with [id] wearing the icon named [icon]: as {@link #reelKind(String)},
+     * except that a row with {@link #NO_ID} has a kind only when its icon is Quality settings' one.
+     */
+    @Nullable
+    static String reelKind(@Nullable String id, @Nullable String icon) {
         if (SKIP_SILENCE_ROW.equals(id)) return SKIP_SILENT_PARTS;
         if (id == null || id.startsWith(OWN_ROW)) return null;
+        if (NO_ID.equals(id)) return QUALITY_ICON.equals(icon) ? QUALITY : null;
         switch (id) {
             case "fds_control_type_preference_signal_positive": return "SEE_MORE";
             case "fds_control_type_preference_signal_negative": return "SEE_LESS";
@@ -331,25 +382,36 @@ public final class PostMenuItems {
         return KIND.matcher(kind).matches() ? kind : null;
     }
 
+    /** [row]'s kind, read off its model's id and, for a row made without an id, its icon. */
+    @Nullable
+    static String reelKindOf(@Nullable Object row, Class<?> model, String idMethod) throws ReflectiveOperationException {
+        Object meta = reelMeta(row, model);
+        if (meta == null) return null;
+        String id = idOf(meta, idMethod);
+        return reelKind(id, NO_ID.equals(id) ? reelIcon(meta) : null);
+    }
+
     /**
-     * [row]'s id: read off the row itself when it is a [model], else off the model it holds in a
-     * field or answers from a method that takes nothing. Null when it has none.
+     * [row]'s model: the row itself when it is a [model], else the model it holds in a field or
+     * answers from a method that takes nothing. Null when it has none.
      */
     @Nullable
-    static String reelId(@Nullable Object row, Class<?> model, String idMethod) throws ReflectiveOperationException {
+    static Object reelMeta(@Nullable Object row, Class<?> model) throws ReflectiveOperationException {
         if (row == null) return null;
-        Object meta = row;
-        if (!model.isInstance(row)) {
-            Object way = reelModels.get(row.getClass());
-            if (way == null) {
-                way = wayToModel(row.getClass(), model);
-                reelModels.put(row.getClass(), way);
-            }
-            if (way instanceof Field) meta = ((Field) way).get(row);
-            else if (way instanceof Method) meta = ((Method) way).invoke(row);
-            else return null;
-            if (meta == null) return null;
+        if (model.isInstance(row)) return row;
+        Object way = reelModels.get(row.getClass());
+        if (way == null) {
+            way = wayToModel(row.getClass(), model);
+            reelModels.put(row.getClass(), way);
         }
+        if (way instanceof Field) return ((Field) way).get(row);
+        if (way instanceof Method) return ((Method) way).invoke(row);
+        return null;
+    }
+
+    /** The id the model [meta] answers from its method [idMethod], or null. */
+    @Nullable
+    static String idOf(Object meta, String idMethod) throws ReflectiveOperationException {
         Object way = reelIds.get(meta.getClass());
         if (way == null) {
             Method found = noArgMethod(meta.getClass(), idMethod, String.class);
@@ -362,6 +424,55 @@ public final class PostMenuItems {
     }
 
     /**
+     * The name of the icon the model [meta] wears, or null. 588's row model holds its icon in a
+     * class of an image address and an icon enum (LX/0b3x: a Uri and LX/01Yk), and the enum keeps
+     * Facebook's names, HD for Quality settings.
+     */
+    @Nullable
+    static String reelIcon(@Nullable Object meta) throws IllegalAccessException {
+        if (meta == null) return null;
+        Object way = reelIcons.get(meta.getClass());
+        if (way == null) {
+            way = wayToIcon(meta.getClass());
+            reelIcons.put(meta.getClass(), way);
+        }
+        if (!(way instanceof Field[])) return null;
+        Field[] path = (Field[]) way;
+        Object holder = path[0].get(meta);
+        Object icon = holder == null ? null : path[1].get(holder);
+        return icon instanceof Enum ? ((Enum<?>) icon).name() : null;
+    }
+
+    /** The field of [type] holding its icon and that holder's enum field, or NONE. */
+    private static Object wayToIcon(Class<?> type) {
+        for (Class<?> at = type; at != null && at != Object.class; at = at.getSuperclass()) {
+            for (Field field : at.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) continue;
+                Field icon = iconField(field.getType());
+                if (icon == null) continue;
+                field.setAccessible(true);
+                icon.setAccessible(true);
+                return new Field[]{field, icon};
+            }
+        }
+        return NONE;
+    }
+
+    /** [type]'s enum field when [type] holds an image address and an enum, the shape of an icon. */
+    @Nullable
+    private static Field iconField(Class<?> type) {
+        if (type.isPrimitive() || type.isArray() || type.getName().startsWith("java.")) return null;
+        boolean address = false;
+        Field icon = null;
+        for (Field field : type.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers())) continue;
+            if (field.getType() == Uri.class) address = true;
+            else if (icon == null && field.getType().isEnum()) icon = field;
+        }
+        return address ? icon : null;
+    }
+
+    /**
      * The model class named [model], loaded where the extension is (the patch merges it into the
      * app). The ways to models and ids found so far are forgotten when the names change.
      */
@@ -370,6 +481,7 @@ public final class PostMenuItems {
         if (known != null && known.getName().equals(model) && idMethod.equals(reelIdName)) return known;
         reelModels.clear();
         reelIds.clear();
+        reelIcons.clear();
         Class<?> loaded = Class.forName(model, false, PostMenuItems.class.getClassLoader());
         reelIdName = idMethod;
         reelModelClass = loaded;
@@ -431,14 +543,33 @@ public final class PostMenuItems {
                 }
             }
         }
+        // Facebook draws Interested and Not interested as one card, and only when both are there (588
+        // LX/0ZfE;->A0G), so with one of them picked the other goes on top of the first page (#475).
+        Object top = read.firstPage.get(holder);
+        boolean split = hidden.contains(SEE_MORE) != hidden.contains(SEE_LESS) && top instanceof List;
+        Object single = null;
+        Field singleField = null;
+        boolean partnerGone = false;
         for (Field field : read.rows) {
-            String kind = read.kind(field.get(holder));
+            Object row = field.get(holder);
+            String kind = read.kind(row);
             if (kind == null) continue;
             kinds.add(kind);
+            boolean paired = SEE_MORE.equals(kind) || SEE_LESS.equals(kind);
             if (hidden.contains(kind)) {
                 field.set(holder, null);
                 dropped++;
+                partnerGone |= paired;
+            } else if (split && paired) {
+                single = row;
+                singleField = field;
             }
+        }
+        if (single != null && partnerGone) {
+            singleField.set(holder, null);
+            @SuppressWarnings("unchecked")
+            List<Object> firstPage = (List<Object>) top;
+            firstPage.add(0, single);
         }
         remember(kinds);
         if (dropped == 0) return;
@@ -710,6 +841,7 @@ public final class PostMenuItems {
         logged = false;
         reelModels.clear();
         reelIds.clear();
+        reelIcons.clear();
         reelModelClass = null;
         reelIdName = null;
     }

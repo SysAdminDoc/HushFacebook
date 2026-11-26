@@ -44,6 +44,10 @@ import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.media.SkipSilenceForTests;
+import app.morphe.extension.facebook.misc.PostMenuItems;
+import app.morphe.extension.facebook.misc.PostMenuItemsForTests;
+import app.morphe.extension.facebook.settings.PatchFamily;
+import app.morphe.extension.facebook.settings.PatchFamilyForTests;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -102,6 +106,10 @@ public class VideoMenuItemTest {
         Settings.SKIP_SILENT_PARTS.resetToDefault();
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
         Settings.POST_MENU_DOWNLOAD_FIRST.resetToDefault();
+        Settings.HIDDEN_POST_MENU_ITEMS.resetToDefault();
+        Settings.SEEN_POST_MENU_ITEMS.resetToDefault();
+        PatchFamilyForTests.reset();
+        PostMenuItemsForTests.forget();
         LogBufferManager.clearLogBuffer();
         HookStatus.clear();
     }
@@ -231,6 +239,33 @@ public class VideoMenuItemTest {
         assertEquals(4, menu.size());
         assertEquals("Download to phone", String.valueOf(menu.getItem(2).getTitle()));
         assertEquals("Skip silent parts: on", String.valueOf(menu.getItem(3).getTitle()));
+    }
+
+    /**
+     * #475: picked in Post menu items, the row stays out of a post's menu too. Facebook turns a post
+     * menu's items into sheet rows with no id, so only here can it be told from the others.
+     */
+    @Test
+    public void skipSilentPartsPickedInPostMenuItemsGetsNoRow() {
+        Settings.SKIP_SILENT_PARTS.save(true);
+        SkipSilenceForTests.playing("1234567890123456");
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        assertEquals("nothing picked, it's there", 4, filled(VideoMenuItemForTests.videoPost()).size());
+        assertTrue("the list offers it once a post's menu showed it",
+                PostMenuItems.choices().contains(PostMenuItems.SKIP_SILENT_PARTS));
+
+        PostMenuItems.hide(Collections.singletonList(PostMenuItems.SKIP_SILENT_PARTS));
+        Menu menu = filled(VideoMenuItemForTests.videoPost());
+        assertEquals(3, menu.size());
+        assertEquals("Download to phone", String.valueOf(menu.getItem(2).getTitle()));
+
+        PatchFamilyForTests.carry();
+        assertEquals("Post menu items out of the build keeps it", 4, filled(VideoMenuItemForTests.videoPost()).size());
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, neither row", 2, filled(VideoMenuItemForTests.videoPost()).size());
+        PauseForTests.resume();
+        assertEquals("the control: running, it stays out", 3, filled(VideoMenuItemForTests.videoPost()).size());
     }
 
     /** Alone, the row is the menu's only one without an id, so a tap by id reaches it. */
