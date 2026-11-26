@@ -2807,6 +2807,10 @@ The rounded tab bar is %1$s percent of the screen wide.	A barra de abas arredond
 Tab bar height	Altura da barra de abas
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Porcentagem da altura total que a barra de abas arredondada mantém, de %1$s a %2$s, cortada acima e abaixo dos ícones. Acima de 100 ela fica mais alta, principalmente em direção à parte de baixo da tela. Deixe em branco para usar %3$s.
 The rounded tab bar keeps %1$s percent of its height.	A barra de abas arredondada mantém %1$s por cento da altura.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	Barra de abas de vidro
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	Com Barra de abas arredondada ligada, a barra ganha uma borda de vidro clara e uma sombra suave, e o destaque atrás da aba em que você está desliza até a aba que você escolher.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Marcar configurações novas
 # context: choice in that row; the dot goes once the page holding the setting is left

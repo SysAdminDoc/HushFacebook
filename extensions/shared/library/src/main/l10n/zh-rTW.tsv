@@ -2925,6 +2925,10 @@ The rounded tab bar is %1$s percent of the screen wide.	圓角分頁列的寬度
 Tab bar height	分頁列高度
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	圓角分頁列保留其完整高度的百分比，範圍 %1$s 到 %2$s，在圖示上方和下方裁切。超過 100 會讓它變高，主要向螢幕底部延伸。留空則使用 %3$s.
 The rounded tab bar keeps %1$s percent of its height.	圓角分頁列保留其高度的百分之 %1$s.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	玻璃分頁列
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	開啟圓角分頁列後，分頁列會有明亮的玻璃邊緣和柔和的陰影，目前分頁後面的醒目標示會滑到你選的分頁上.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	標記新設定
 # context: choice in that row; the dot goes once the page holding the setting is left

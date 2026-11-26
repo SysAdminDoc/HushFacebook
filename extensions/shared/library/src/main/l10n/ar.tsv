@@ -1883,6 +1883,10 @@ The report couldn't be copied. Try again.	تعذّر نسخ التقرير. حا
 The report couldn't be saved. Try again.	تعذّر حفظ التقرير. حاول مرة أخرى.
 The rounded tab bar is %1$s percent of the screen wide.	شريط التبويبات المستدير هو %1$s بالمائة من عرض الشاشة.
 The rounded tab bar keeps %1$s percent of its height.	شريط التبويبات المستدير يحتفظ بنسبة %1$s من ارتفاعه.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	شريط تبويبات زجاجي
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	مع تشغيل شريط التبويبات المستدير، يحصل الشريط على حافة زجاجية مضيئة وظل ناعم، وينزلق الإبراز خلف التبويب الذي أنت فيه إلى التبويب الذي تختاره.
 The row of emoji over the comment box goes away. You can still type emoji from your keyboard.	صف الرموز التعبيرية فوق صندوق التعليق يزول. ما زلت تستطيع كتابة رموز تعبيرية من لوحة مفاتيحك.
 The saved copy of %1$s is missing. Choose the file again.	النسخة المحفوظة من %1$s مفقودة. اختر الملف مرة أخرى.
 The saved copy of %1$s is missing. Choose the picture again.	النسخة المحفوظة من %1$s مفقودة. اختر الصورة مرة أخرى.

@@ -471,6 +471,7 @@ final class SwitchLabels {
         if (setting == Settings.TAB_BAR_IN_GROUPS) return L10n.t("Keep the tab bar in groups");
         if (setting == Settings.TRANSLUCENT_BARS) return L10n.t("See-through bars");
         if (setting == Settings.ROUNDED_TAB_BAR) return L10n.t("Rounded tab bar");
+        if (setting == Settings.GLASS_TAB_BAR) return L10n.t("Glass tab bar");
         if (setting == Settings.HIDE_STATUS_BAR) return L10n.t("Hide the status bar");
         if (setting == Settings.CENTER_FEED_ON_BIG_SCREENS) return L10n.t("Center the feed on big screens");
         if (setting == Settings.LIGHT_REELS_TAB_BARS) return L10n.t("Light bars on the Reels tab");

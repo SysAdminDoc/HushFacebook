@@ -2921,6 +2921,10 @@ The rounded tab bar is %1$s percent of the screen wide.	Заоблената л�
 Tab bar height	Височина на лентата с раздели
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Колко процента от пълната си височина запазва заоблената лента с раздели, от %1$s до %2$s, като се отрязва над и под иконите. Над 100 я прави по-висока, най-вече към долния край на екрана. Остави празно за %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Заоблената лента с раздели запазва %1$s процента от височината си.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	Стъклена лента с раздели
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	С включена „Заоблена лента с раздели“ лентата получава светъл стъклен ръб и мека сянка, а подсветката зад раздела, в който си, се плъзга към раздела, който избереш.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Отбелязване на новите настройки
 # context: choice in that row; the dot goes once the page holding the setting is left

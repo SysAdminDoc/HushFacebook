@@ -2921,6 +2921,10 @@ The rounded tab bar is %1$s percent of the screen wide.	แถบแท็บแ
 Tab bar height	ความสูงของแถบแท็บ
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	เปอร์เซ็นต์ความสูงเต็มที่แถบแท็บแบบโค้งมนจะคงไว้ ตั้งแต่ %1$s ถึง %2$s โดยจะตัดขอบด้านบนและด้านล่างของไอคอนออก ค่าที่มากกว่า 100 จะทำให้แถบสูงขึ้น โดยส่วนใหญ่จะขยายไปทางด้านล่างของหน้าจอ เว้นว่างไว้สำหรับ %3$s
 The rounded tab bar keeps %1$s percent of its height.	แถบแท็บแบบโค้งมนจะคงความสูงไว้ %1$s เปอร์เซ็นต์
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	แถบแท็บแบบกระจก
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	เมื่อเปิดแถบแท็บแบบโค้งมน แถบจะมีขอบกระจกสว่างและเงานุ่มนวล และไฮไลต์ด้านหลังแท็บที่คุณกำลังใช้งานจะเลื่อนไปยังแท็บที่คุณเลือก
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	ทำเครื่องหมายการตั้งค่าใหม่
 # context: choice in that row; the dot goes once the page holding the setting is left

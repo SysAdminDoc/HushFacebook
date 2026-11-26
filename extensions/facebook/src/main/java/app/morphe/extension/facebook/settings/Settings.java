@@ -3501,6 +3501,14 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_tab_bar_height", "");
 
     /**
+     * Glass tab bar (#596): with Rounded tab bar on, the pill gets a light rim and a soft shadow, and the
+     * selected tab's spot slides over to the next tab ({@link app.morphe.extension.facebook.navigation.GlassLook}).
+     * Asked as each frame of the main screen draws, so a change shows right away.
+     */
+    public static final BooleanSetting GLASS_TAB_BAR =
+            new BooleanSetting("hushfacebook_glass_tab_bar", FALSE);
+
+    /**
      * Android's status bar goes from Facebook's main screen, a swipe down from the top edge showing
      * it for a moment (#124, {@link app.morphe.extension.facebook.navigation.HiddenStatusBar}).
      * Asked as the main screen resumes, gets its focus back or lays itself out, so a change shows

@@ -2921,6 +2921,10 @@ The rounded tab bar is %1$s percent of the screen wide.	Die abgerundete Tab-Leis
 Tab bar height	Höhe der Tab-Leiste
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Wie viel Prozent ihrer vollen Höhe die abgerundete Tab-Leiste behält, von %1$s bis %2$s, über und unter den Symbolen gekürzt. Über 100 macht sie höher, vor allem zum unteren Bildschirmrand hin. Leer lassen für %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Die abgerundete Tab-Leiste behält %1$s Prozent ihrer Höhe.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	Tab-Leiste aus Glas
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	Mit Abgerundete Tab-Leiste an bekommt die Leiste einen hellen Glasrand und einen weichen Schatten, und die Hervorhebung hinter deinem Tab gleitet zum Tab, den du antippst.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Neue Einstellungen markieren
 # context: choice in that row; the dot goes once the page holding the setting is left

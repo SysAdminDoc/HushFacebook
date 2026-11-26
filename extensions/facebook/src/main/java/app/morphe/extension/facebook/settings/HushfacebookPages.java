@@ -276,6 +276,10 @@ final class HushfacebookPages {
                             + "the bottom of the screen, with a soft highlight behind the tab you're on.")));
             appearance.addPreference(HushfacebookPreferenceFragment.tabBarWidthRow(context));
             appearance.addPreference(HushfacebookPreferenceFragment.tabBarHeightRow(context));
+            // Asked as each frame of the main screen draws, so a change shows right away (#596).
+            appearance.addPreference(toggle(context, Settings.GLASS_TAB_BAR,
+                    L10n.t("With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the "
+                            + "highlight behind the tab you're on slides over when you pick another tab.")));
             // Asked as the main screen gets its focus back, so a change shows when these settings close.
             appearance.addPreference(toggle(context, Settings.HIDE_STATUS_BAR,
                     L10n.t("Takes the phone's status bar, with the time and battery, off Facebook's main screen, so "

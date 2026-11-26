@@ -2921,6 +2921,10 @@ The rounded tab bar is %1$s percent of the screen wide.	Thanh tab bo tròn rộn
 Tab bar height	Chiều cao thanh tab
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Phần trăm chiều cao đầy đủ mà thanh tab bo tròn giữ lại, từ %1$s đến %2$s, được cắt bớt phía trên và phía dưới các biểu tượng. Trên 100 làm thanh cao hơn, chủ yếu về phía cuối màn hình. Để trống để dùng %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Thanh tab bo tròn giữ lại %1$s phần trăm chiều cao.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	Thanh tab kính
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	Khi bật Thanh tab bo tròn, thanh có viền kính sáng và bóng đổ nhẹ, còn vệt sáng phía sau tab bạn đang mở sẽ trượt sang tab bạn chọn.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Đánh dấu cài đặt mới
 # context: choice in that row; the dot goes once the page holding the setting is left

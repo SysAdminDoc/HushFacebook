@@ -2921,6 +2921,10 @@ The rounded tab bar is %1$s percent of the screen wide.	둥근 탭 바의 너비
 Tab bar height	탭 바 높이
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	둥근 탭 바가 유지할 원래 높이의 퍼센트로, %1$s~%2$s 사이에서 입력하세요. 아이콘 위아래가 줄어들어요. 100을 넘으면 주로 화면 아래쪽으로 더 높아져요. 비워 두면 %3$s(으)로 설정돼요.
 The rounded tab bar keeps %1$s percent of its height.	둥근 탭 바가 높이의 %1$s퍼센트를 유지해요.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	유리 탭 바
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	둥근 탭 바가 켜져 있으면 바에 밝은 유리 테두리와 부드러운 그림자가 생기고, 현재 탭 뒤의 강조 표시가 고른 탭으로 미끄러지듯 옮겨가요.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	새 설정 표시
 # context: choice in that row; the dot goes once the page holding the setting is left

@@ -548,6 +548,7 @@ public final class SettingsBackup {
             Settings.TAB_BAR_IN_GROUPS,
             Settings.TRANSLUCENT_BARS,
             Settings.ROUNDED_TAB_BAR,
+            Settings.GLASS_TAB_BAR,
             Settings.HIDE_STATUS_BAR,
             Settings.CENTER_FEED_ON_BIG_SCREENS,
             Settings.LIGHT_REELS_TAB_BARS,

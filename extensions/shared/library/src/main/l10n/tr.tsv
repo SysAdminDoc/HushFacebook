@@ -2921,6 +2921,10 @@ The rounded tab bar is %1$s percent of the screen wide.	Yuvarlak sekme çubuğu 
 Tab bar height	Sekme çubuğu yüksekliği
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Yuvarlak sekme çubuğunun tam yüksekliğinin yüzde kaçını koruduğu, %1$s ile %2$s arası, simgelerin üstünden ve altından kırpılır. 100'ün üstü onu daha uzun yapar, çoğunlukla ekranın altına doğru. %3$s için boş bırakın.
 The rounded tab bar keeps %1$s percent of its height.	Yuvarlak sekme çubuğu yüksekliğinin yüzde %1$s kadarını korur.
+# context: switch title under Appearance, right under Tab bar height; gives the rounded tab bar a glass look
+Glass tab bar	Cam sekme çubuğu
+# context: description of that switch; Rounded tab bar is the switch a few rows above it, the pill is that rounded tab bar, and the highlight is the faint pill behind the selected tab's icon
+With Rounded tab bar on, the pill gets a light glass edge and a soft shadow, and the highlight behind the tab you're on slides over when you pick another tab.	Yuvarlak sekme çubuğu açıkken çubuk açık renkli bir cam kenar ve hafif bir gölge alır, açık olan sekmenin arkasındaki vurgu da seçtiğin sekmeye kayar.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Yeni ayarları işaretle
 # context: choice in that row; the dot goes once the page holding the setting is left

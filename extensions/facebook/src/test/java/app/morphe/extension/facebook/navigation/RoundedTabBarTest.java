@@ -10,11 +10,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Insets;
 import android.graphics.Outline;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -32,6 +36,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLooper;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -64,6 +75,7 @@ public class RoundedTabBarTest {
         RoundedTabBar.insetsForTests = null;
         PauseForTests.resume();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
+        Settings.GLASS_TAB_BAR.resetToDefault();
         Settings.TAB_COLOR.resetToDefault();
         Settings.TAB_BAR_WIDTH.resetToDefault();
         Settings.TAB_BAR_HEIGHT.resetToDefault();
@@ -456,5 +468,193 @@ public class RoundedTabBarTest {
         assertFalse("a tab bar at the top stays Facebook's", top.header.getClipToOutline());
         assertEquals(1f, top.header.getScaleX(), 0f);
         assertFalse(statusLine(), statusLine().contains(RoundedTabBar.ROUNDED));
+    }
+
+    /** A row of six 120 pixel tabs in [screen], the [selected] one picked, laid out and drawn once. */
+    private static FrameLayout[] sixTabs(RoundedTabBarForTests screen, int selected) {
+        screen.tabBar.removeAllViews();
+        FrameLayout[] tabs = new FrameLayout[6];
+        for (int i = 0; i < tabs.length; i++) {
+            tabs[i] = new FrameLayout(screen.activity);
+            tabs[i].addView(new View(screen.activity), new FrameLayout.LayoutParams(48, 48, Gravity.CENTER));
+            screen.tabBar.addView(tabs[i], new LinearLayout.LayoutParams(120, 112));
+        }
+        tabs[selected].setSelected(true);
+        screen.layOut();
+        screen.shaper.update();
+        return tabs;
+    }
+
+    private static RoundedTabBar.Spot spotOf(View tab) {
+        return RoundedTabBar.SPOTTED.get(tab).spot;
+    }
+
+    /** One frame [ms] after the last: the clock moves on, then the bubble draws. */
+    private static void frame(long ms, Canvas canvas, GlassLook.Bubble bubble) {
+        ShadowLooper.idleMainLooper(ms, TimeUnit.MILLISECONDS);
+        bubble.draw(canvas);
+    }
+
+    private static void assertBox(String what, RectF expected, RectF actual) {
+        assertEquals(what + " left", expected.left, actual.left, 0.01f);
+        assertEquals(what + " top", expected.top, actual.top, 0.01f);
+        assertEquals(what + " right", expected.right, actual.right, 0.01f);
+        assertEquals(what + " bottom", expected.bottom, actual.bottom, 0.01f);
+    }
+
+    @Test
+    public void glassGivesThePillARimAndAShadowAroundItThatFollowTheBar() {
+        // #596: the bar asked for a glass look, a light edge and a soft shadow.
+        assertFalse("it starts off", Settings.GLASS_TAB_BAR.get());
+        assertFalse("a change shows on the next frame", Settings.GLASS_TAB_BAR.rebootApp);
+        assertTrue(PatchFamily.BOTTOM_TAB_BAR.switches.contains(Settings.GLASS_TAB_BAR));
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        screen.shaper.update();
+        GlassLook glass = screen.shaper.glass;
+        assertFalse("off, the pill has neither", glass.isOn(screen.holder));
+
+        Settings.GLASS_TAB_BAR.save(true);
+        screen.shaper.update();
+        assertTrue(glass.isOn(screen.holder));
+        float[] radius = new float[1];
+        Rect pill = outlineOf(screen, radius);
+        assertEquals("the rim runs along the pill's edge", pill, glass.rim.pill);
+        // Where the pill shows in the window: 90% of its size about the bar's pivot, from the bar's place.
+        float scale = 0.9f;
+        float pivotX = screen.holder.getPivotX();
+        float pivotY = screen.holder.getPivotY();
+        RectF shown = new RectF(pivotX + (pill.left - pivotX) * scale, pivotY + (pill.top - pivotY) * scale,
+                pivotX + (pill.right - pivotX) * scale, pivotY + (pill.bottom - pivotY) * scale);
+        shown.offset(0, 1600 - 176);
+        assertBox("the shadow goes round the pill where it shows", shown, glass.shadow.box);
+        assertEquals("with round ends", shown.height() / 2f, glass.shadow.radius, 0.01f);
+        assertEquals(255, glass.shadow.shown);
+
+        screen.holder.setTranslationY(80f);
+        screen.holder.setAlpha(0.5f);
+        screen.shaper.update();
+        shown.offset(0, 80f);
+        assertBox("it slides away with the bar", shown, glass.shadow.box);
+        assertEquals("and fades with it", 128, glass.shadow.shown);
+
+        // The pill is clipped out of the shadow, so a see-through bar doesn't show it through itself,
+        // and the shadow falls a little below the pill.
+        List<String> calls = new ArrayList<>();
+        Canvas canvas = new Canvas(Bitmap.createBitmap(720, 1600, Bitmap.Config.ARGB_8888)) {
+            @Override
+            public boolean clipOutPath(Path path) {
+                calls.add("clip");
+                return true;
+            }
+
+            @Override
+            public void drawRoundRect(RectF rect, float rx, float ry, Paint paint) {
+                calls.add("shadow at " + Math.round(rect.top));
+            }
+        };
+        glass.shadow.draw(canvas);
+        assertEquals(Arrays.asList("clip", "shadow at " + Math.round(shown.top + 3f)), calls);
+        glass.rim.draw(new Canvas(Bitmap.createBitmap(720, 176, Bitmap.Config.ARGB_8888)));
+
+        Settings.GLASS_TAB_BAR.save(false);
+        screen.shaper.update();
+        assertFalse("off, both go", glass.isOn(screen.holder));
+        assertNull(glass.rim.getCallback());
+        assertNull(glass.shadow.getCallback());
+        Settings.GLASS_TAB_BAR.save(true);
+        screen.shaper.update();
+        assertTrue(glass.isOn(screen.holder));
+        Settings.ROUNDED_TAB_BAR.save(false);
+        screen.shaper.update();
+        assertFalse("and they go with the pill", glass.isOn(screen.holder));
+    }
+
+    @Test
+    public void withGlassTheSpotIsABubbleThatSlidesToTheTabYouPick() {
+        Settings.GLASS_TAB_BAR.save(true);
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        FrameLayout[] tabs = sixTabs(screen, 1);
+        GlassLook glass = screen.shaper.glass;
+        GlassLook.Bubble bubble = glass.bubble;
+        assertTrue("the bubble is over the row of tabs", glass.bubbleIn(screen.tabBar));
+        // The second tab starts 120 px in, and its spot is 4 px in at each side and 7 above and below.
+        assertBox("over the tab picked", new RectF(124, 7, 236, 105), bubble.to);
+        assertFalse("the first one just shows", bubble.sliding);
+        assertTrue("the tab's own spot makes way", spotOf(tabs[1]).area.isEmpty());
+
+        tabs[1].setSelected(false);
+        tabs[3].setSelected(true);
+        screen.shaper.update();
+        assertTrue(bubble.sliding);
+        assertBox("from where it was", new RectF(124, 7, 236, 105), bubble.from);
+        assertBox("to the tab picked", new RectF(364, 7, 476, 105), bubble.to);
+        assertTrue(spotOf(tabs[3]).area.isEmpty());
+        long started = bubble.started;
+        screen.shaper.update();
+        assertEquals("the next frame doesn't start it again", started, bubble.started);
+
+        // Frames are drawn here, not by the screen.
+        bubble.setCallback(null);
+        Canvas canvas = new Canvas(Bitmap.createBitmap(720, 112, Bitmap.Config.ARGB_8888));
+        for (int i = 0; i < 6; i++) frame(10, canvas, bubble);
+        assertEquals("the end behind waits", 124f, bubble.drawn.left, 0.01f);
+        assertTrue("the end in front is on its way", bubble.drawn.right > 236f && bubble.drawn.right < 476f);
+        assertTrue("so it stretches toward the new tab", bubble.drawn.width() > 112f);
+
+        // A frame long in coming carries the slide one frame on, not to its end.
+        float before = bubble.drawn.right;
+        frame(2 * GlassLook.SLIDE_MS, canvas, bubble);
+        assertTrue("one frame on", bubble.drawn.right > before);
+        assertTrue("not done", bubble.sliding);
+
+        for (int i = 0; i < 30; i++) frame(10, canvas, bubble);
+        assertFalse(bubble.sliding);
+        assertBox("done, it sits over the new tab", new RectF(364, 7, 476, 105), bubble.drawn);
+
+        tabs[3].setSelected(false);
+        tabs[0].setSelected(true);
+        screen.shaper.update();
+        for (int i = 0; i < 3; i++) frame(10, canvas, bubble);
+        assertEquals("going left, the right end waits", 476f, bubble.drawn.right, 0.01f);
+        assertTrue(bubble.drawn.left < 364f);
+
+        float left = bubble.drawn.left;
+        tabs[0].setSelected(false);
+        tabs[5].setSelected(true);
+        screen.shaper.update();
+        assertEquals("picked again part way, it turns from where it is", left, bubble.from.left, 0.01f);
+        assertBox("to the last tab", new RectF(604, 7, 716, 105), bubble.to);
+    }
+
+    @Test
+    public void theBubbleMovesAtOnceWithAnimationsOffAndGoesWithGlass() throws Exception {
+        Settings.GLASS_TAB_BAR.save(true);
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        FrameLayout[] tabs = sixTabs(screen, 1);
+        GlassLook.Bubble bubble = screen.shaper.glass.bubble;
+        Method scale = ValueAnimator.class.getMethod("setDurationScale", float.class);
+        scale.invoke(null, 0f);
+        try {
+            tabs[1].setSelected(false);
+            tabs[4].setSelected(true);
+            screen.shaper.update();
+            assertFalse("animations off, no slide", bubble.sliding);
+            assertBox("it's there at once", new RectF(484, 7, 596, 105), bubble.drawn);
+        } finally {
+            scale.invoke(null, 1f);
+        }
+
+        Settings.GLASS_TAB_BAR.save(false);
+        screen.shaper.update();
+        assertFalse("off, the bubble goes", screen.shaper.glass.bubbleIn(screen.tabBar));
+        assertNull(bubble.getCallback());
+        assertEquals("and the tab's own spot is back", new Rect(4, 7, 116, 105), spotOf(tabs[4]).area);
+
+        Settings.GLASS_TAB_BAR.save(true);
+        screen.shaper.update();
+        assertTrue(screen.shaper.glass.bubbleIn(screen.tabBar));
+        tabs[4].setSelected(false);
+        screen.shaper.update();
+        assertFalse("nothing picked, no bubble", screen.shaper.glass.bubbleIn(screen.tabBar));
     }
 }

@@ -60,6 +60,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Tab bar width sets the scale, evenly in both directions so the icons keep their shape, and
  * Tab bar height trims the outline above and below the icons (#425). Both are asked each frame.
+ * So is Glass tab bar (#596), which gives the pill a rim and a soft shadow and puts a glass bubble
+ * over the selected tab in place of its spot, one that slides to the next tab ({@link GlassLook}).
  *
  * <p>Nothing is laid out again: the scale and the clip are drawing properties, so Facebook's pages
  * keep their padding, scroll-away keeps sliding the bar, and a tap goes to the tab drawn under the
@@ -413,19 +415,44 @@ public final class RoundedTabBar {
         Spotted spotted = SPOTTED.get(tab);
         if (spotted == null) return;
         Rect box = spotted.scratch;
-        box.set(0, 0, tab.getWidth(), tab.getHeight());
-        if (bar != tab && bar instanceof ViewGroup) ((ViewGroup) bar).offsetDescendantRectToMyCoords(tab, box);
-        int top = Math.max(0, row.top - box.top);
-        int bottom = Math.min(tab.getHeight(), row.bottom - box.top);
-        float density = tab.getResources().getDisplayMetrics().density;
-        int across = Math.round(SPOT_ACROSS_DP * density);
-        // A pill trimmed short by Tab bar height keeps a spot half its height (#425).
-        int down = Math.min(Math.round(SPOT_DOWN_DP * density), Math.max(0, (bottom - top) / 4));
-        box.set(across, top + down, tab.getWidth() - across, bottom - down);
+        spotBox(bar, tab, row, box);
         if (!box.equals(spotted.spot.area)) {
             spotted.spot.area.set(box);
             spotted.spot.invalidateSelf();
         }
+    }
+
+    /**
+     * Puts in [out] where [tab]'s spot goes, in the tab's coordinates: inside the part of the tab
+     * the pill around [row], in [bar]'s coordinates, shows.
+     */
+    static void spotBox(View bar, View tab, Rect row, Rect out) {
+        out.set(0, 0, tab.getWidth(), tab.getHeight());
+        if (bar != tab && bar instanceof ViewGroup) ((ViewGroup) bar).offsetDescendantRectToMyCoords(tab, out);
+        int top = Math.max(0, row.top - out.top);
+        int bottom = Math.min(tab.getHeight(), row.bottom - out.top);
+        float density = tab.getResources().getDisplayMetrics().density;
+        int across = Math.round(SPOT_ACROSS_DP * density);
+        // A pill trimmed short by Tab bar height keeps a spot half its height (#425).
+        int down = Math.min(Math.round(SPOT_DOWN_DP * density), Math.max(0, (bottom - top) / 4));
+        out.set(across, top + down, tab.getWidth() - across, bottom - down);
+    }
+
+    /**
+     * With Glass tab bar on (#596), [tab]'s spot is [glass]'s bubble, drawn over the row of tabs so
+     * it can slide from one tab to the next, and the tab's own spot is emptied. False when the
+     * bubble can't go over [tab], which then keeps its own spot.
+     */
+    static boolean bubble(View bar, View tab, Rect row, GlassLook glass) {
+        Rect box = glass.scratch;
+        spotBox(bar, tab, row, box);
+        if (!glass.bubble(tab, box)) return false;
+        Spotted spotted = SPOTTED.get(tab);
+        if (spotted != null && !spotted.spot.area.isEmpty()) {
+            spotted.spot.area.setEmpty();
+            spotted.spot.invalidateSelf();
+        }
+        return true;
     }
 
     /** Gives [tab] back the background it had before the spot. */
@@ -584,6 +611,8 @@ public final class RoundedTabBar {
         private WeakReference<View> shaped = new WeakReference<>(null);
         /** Every tab wearing the spot's layers, kept until the pill goes. */
         private final List<WeakReference<View>> wrapped = new ArrayList<>();
+        /** Glass tab bar's rim, shadow and bubble on the bar this shaper made a pill (#596). */
+        final GlassLook glass = new GlassLook();
         private final int[] at = new int[2];
         private long nextLook;
         private boolean stopped;
@@ -659,9 +688,14 @@ public final class RoundedTabBar {
                 HookStatus.bound(FAMILY, "selected tab");
                 letGoOutside(tab.getParent());
                 wrapRow(tab, anchor.getWidth(), wrapped);
-                spot(bar, tab, shape.pill.row);
+                boolean glassy = GlassLook.on();
+                if (!glassy || !bubble(bar, tab, shape.pill.row, glass)) {
+                    glass.hideBubble();
+                    spot(bar, tab, shape.pill.row);
+                }
             } else {
                 // No tab selected, no spot: the tabs keep their layers, empty.
+                glass.hideBubble();
                 for (WeakReference<View> each : wrapped) {
                     View wearing = each.get();
                     Spotted spotted = wearing == null ? null : SPOTTED.get(wearing);
@@ -670,6 +704,11 @@ public final class RoundedTabBar {
                         spotted.spot.invalidateSelf();
                     }
                 }
+            }
+            if (shape != null && GlassLook.on()) {
+                glass.follow(bar, shape.pill.row);
+            } else {
+                glass.remove();
             }
         }
 
@@ -685,6 +724,7 @@ public final class RoundedTabBar {
 
         /** Gives the bar this shaper made a pill its own shape back, and every tab its background. */
         private void letGo() {
+            glass.remove();
             for (WeakReference<View> each : wrapped) {
                 View tab = each.get();
                 if (tab != null) unspot(tab);
