@@ -261,9 +261,10 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * box gone and keeps it gone before each frame of its window, whatever background it set.
  *
  * Keep the keyboard closed when comments open (#594): the params comments open with carry
- * Facebook's pick of whether the keyboard comes up as they first load. CommentKeyboard.kt finds
- * that flag and hands the extension its value as the params are built; a build where it can't be
- * found keeps the rest of the patch, with that switch doing nothing and a warning saying why.
+ * Facebook's pick of whether the keyboard comes up as they first load, and whether a post with no
+ * comments yet skips the keyboard Facebook raises there once they've loaded. CommentKeyboard.kt
+ * finds both flags and hands the extension their values as the params are built; a build where
+ * they can't be found keeps the rest of the patch, with a warning saying what the switch won't do.
  *
  * Hide related groups: what comes after a post's comments is drawn through another socket, the one
  * that names itself [BOTTOM_SOCKET] in the two comment surfaces' methods going through its plugins

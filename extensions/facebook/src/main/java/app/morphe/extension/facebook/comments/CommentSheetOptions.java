@@ -378,6 +378,12 @@ public final class CommentSheetOptions {
     /** Counted each time comments that would open with the keyboard up are opened with it closed. */
     static final String KEYBOARD_KEPT_CLOSED = "Comments opened with the keyboard closed";
 
+    /** The member the report names once the comments' params have asked whether a post with no comments skips the keyboard (#594). */
+    static final String EMPTY_KEYBOARD = "keyboard on posts with no comments";
+
+    /** Counted each time comments are set to keep the keyboard closed even when the post has none yet. */
+    static final String EMPTY_KEYBOARD_KEPT_CLOSED = "Comments set to skip the keyboard on posts with none";
+
     /** The member the report names once the comment box has set its background (#344). */
     static final String BOX_LINE = "line over the comment box";
 
@@ -629,6 +635,26 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "comment keyboard", failure);
             return show;
+        }
+    }
+
+    /**
+     * The hook, as the params comments open with are built (#594): whether the comments skip the
+     * keyboard Facebook raises on a post with no comments yet, once they've loaded. That's a second
+     * path past {@link #keyboardOnFirstLoad}: the comment fragment focuses the comment box itself
+     * when the post has none, unless the params say to skip it. While the switch is on the answer is
+     * yes. Off, paused, or before the settings are ready, Facebook's pick stands.
+     */
+    public static boolean suppressKeyboard(boolean suppress) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, EMPTY_KEYBOARD);
+            if (suppress || !Utils.settingsReady() || !Settings.KEEP_COMMENT_KEYBOARD_CLOSED.get()) return suppress;
+            HookStatus.counted(FAMILY, EMPTY_KEYBOARD_KEPT_CLOSED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comment keyboard on posts with no comments", failure);
+            return suppress;
         }
     }
 

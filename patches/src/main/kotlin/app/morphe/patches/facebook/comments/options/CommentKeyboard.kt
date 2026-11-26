@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.comments.options
 
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -30,6 +31,13 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * back what the first wrote. Every other place that wants new params, the fragment rebuilding its
  * own among them, goes through the builder. So right before the builder's constructor writes the
  * flag, the extension is handed the value and its answer is written instead.
+ *
+ * A post with no comments yet raised the keyboard anyway with that flag off (the S22, 2026-11-25):
+ * once the comments have loaded, the fragment (588 `LX/09YI;->A0E`) focuses the comment box itself
+ * when the post's comment count is zero, unless another boolean of the params, the one toString
+ * writes after [SUPPRESS_KEYBOARD_LABEL] (588 `A13`), says to skip it. Nothing else in the app reads
+ * that one. Its write in the same constructor is hooked the same way, the extension answering yes
+ * while the switch is on. The later write is hooked first, so the earlier one's place holds.
  */
 
 internal const val FEEDBACK_PARAMS = "Lcom/facebook/ufiservices/flyout/params/FeedbackParams;"
@@ -37,7 +45,12 @@ internal const val FEEDBACK_PARAMS = "Lcom/facebook/ufiservices/flyout/params/Fe
 /** What the params' toString writes ahead of the keyboard flag. */
 internal const val KEYBOARD_LABEL = ", showKeyboardOnFirstLoad="
 
+/** What the params' toString writes ahead of the flag that skips the keyboard on a post with no comments. */
+internal const val SUPPRESS_KEYBOARD_LABEL = ", suppressKeyboardForCommentAndBrowse="
+
 internal const val KEYBOARD_ON_FIRST_LOAD = "$EXTENSION_PACKAGE/comments/CommentSheetOptions;->keyboardOnFirstLoad(Z)Z"
+
+internal const val SUPPRESS_KEYBOARD = "$EXTENSION_PACKAGE/comments/CommentSheetOptions;->suppressKeyboard(Z)Z"
 
 private const val PARCEL = "Landroid/os/Parcel;"
 
@@ -48,20 +61,20 @@ private val FIELD_READS = setOf(
 )
 
 /**
- * The keyboard flag: the first field of [params] its toString reads after [KEYBOARD_LABEL], when
- * that's a boolean of the class's own. Null when there's no such label or the read after it is
- * anything else.
+ * The keyboard flag: the first field of [params] its toString reads after [label] ([KEYBOARD_LABEL]
+ * unless asked for another), when that's a boolean of the class's own. Null when there's no such
+ * label or the read after it is anything else.
  */
-internal fun keyboardField(params: ClassDef): FieldReference? {
+internal fun keyboardField(params: ClassDef, label: String = KEYBOARD_LABEL): FieldReference? {
     val toString = params.methods.singleOrNull {
         it.name == "toString" && it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;"
     } ?: return null
     val code = toString.implementation?.instructions?.toList() ?: return null
-    val label = code.indexOfFirst {
-        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == KEYBOARD_LABEL
+    val at = code.indexOfFirst {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == label
     }
-    if (label < 0) return null
-    val read = code.drop(label + 1).firstOrNull { it.opcode in FIELD_READS } ?: return null
+    if (at < 0) return null
+    val read = code.drop(at + 1).firstOrNull { it.opcode in FIELD_READS } ?: return null
     if (read.opcode != Opcode.IGET_BOOLEAN) return null
     return ((read as ReferenceInstruction).reference as FieldReference)
         .takeIf { it.definingClass == params.type && it.type == "Z" }
@@ -97,19 +110,43 @@ internal fun keyboardWrite(params: ClassDef, field: FieldReference, why: (String
     return KeyboardWrite(init, index, put.registerA)
 }
 
-/** Right before the params' builder constructor writes the keyboard flag, the extension picks the value. */
+/**
+ * Right before the params' builder constructor writes the keyboard flag, the extension picks the
+ * value, and the same for the flag that skips the keyboard on a post with no comments. A build
+ * missing the second keeps the first, with a warning saying why.
+ */
 internal fun BytecodePatchContext.keepCommentKeyboardClosed(patch: String) {
     fun skip(why: String) = patchLog.warning("$patch: $why. Keep the keyboard closed when comments open does nothing in this build")
+    fun skipEmpty(why: String) = patchLog.warning(
+        "$patch: $why. Keep the keyboard closed when comments open still lets it up on a post with no comments in this build",
+    )
     val params = classDefByOrNull(FEEDBACK_PARAMS) ?: return skip("this build has no $FEEDBACK_PARAMS")
     val field = keyboardField(params) ?: return skip("$FEEDBACK_PARAMS's toString reads no boolean after \"$KEYBOARD_LABEL\"")
     val write = keyboardWrite(params, field, ::skip) ?: return
-    val register = write.register
-    // At the write's own label, so a branch landing on the write runs the hook as well.
-    mutableClassDefBy(params.type).findMutableMethodOf(write.init).addInstructionsAtControlFlowLabel(
-        write.index,
-        """
-            invoke-static/range { v$register .. v$register }, $KEYBOARD_ON_FIRST_LOAD
-            move-result v$register
-        """,
-    )
+    val hooks = mutableListOf(write to KEYBOARD_ON_FIRST_LOAD)
+    val suppress = keyboardField(params, SUPPRESS_KEYBOARD_LABEL)
+    if (suppress == null) {
+        skipEmpty("$FEEDBACK_PARAMS's toString reads no boolean after \"$SUPPRESS_KEYBOARD_LABEL\"")
+    } else {
+        keyboardWrite(params, suppress, ::skipEmpty)?.let { second ->
+            if (second.init.descriptor() == write.init.descriptor()) {
+                hooks += second to SUPPRESS_KEYBOARD
+            } else {
+                skipEmpty("${suppress.name} is written in another constructor than ${field.name}")
+            }
+        }
+    }
+    val init = mutableClassDefBy(params.type).findMutableMethodOf(write.init)
+    // The later write first, so the earlier one's index still points at it.
+    for ((at, hook) in hooks.sortedByDescending { it.first.index }) {
+        val register = at.register
+        // At the write's own label, so a branch landing on the write runs the hook as well.
+        init.addInstructionsAtControlFlowLabel(
+            at.index,
+            """
+                invoke-static/range { v$register .. v$register }, $hook
+                move-result v$register
+            """,
+        )
+    }
 }

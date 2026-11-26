@@ -160,6 +160,27 @@ public class CommentSheetOptionsTest {
                 CommentSheetOptions.keyboardOnFirstLoad(true)));
     }
 
+    /**
+     * A post with no comments yet (#594): Facebook focuses the comment box once they've loaded
+     * unless the params say to skip it, so under the switch they always do. The S22 raised the
+     * keyboard there with the switch on, from that second path.
+     */
+    @Test
+    public void onAPostWithNoCommentsTheKeyboardIsSkippedOnlyUnderItsOwnSwitch() {
+        Settings.HIDE_COMMENT_EMOJI_ROW.save(true);
+        assertFalse("the emoji row switch skipped the keyboard", CommentSheetOptions.suppressKeyboard(false));
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.save(true);
+        assertTrue("the keyboard still came up on a post with no comments", CommentSheetOptions.suppressKeyboard(false));
+        assertTrue("comments Facebook already kept closed lost it", CommentSheetOptions.suppressKeyboard(true));
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.EMPTY_KEYBOARD_KEPT_CLOSED + " 1", statusLine());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook skipped the keyboard", CommentSheetOptions.suppressKeyboard(false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the keyboard was skipped before the settings were ready",
+                CommentSheetOptions.suppressKeyboard(false)));
+    }
+
     /** Facebook's top border: the line's color filling the box, the box's color over it, 3 px down. */
     private static LayerDrawable topBorder() {
         LayerDrawable border = new LayerDrawable(new Drawable[] {
