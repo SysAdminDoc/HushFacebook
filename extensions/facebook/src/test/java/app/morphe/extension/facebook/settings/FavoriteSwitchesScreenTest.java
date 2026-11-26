@@ -18,6 +18,7 @@ import android.preference.PreferenceGroup;
 import android.preference.SwitchPreference;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
@@ -33,6 +34,7 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowToast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
@@ -362,6 +365,93 @@ public class FavoriteSwitchesScreenTest {
             assertEquals(FavoriteSwitchesScreen.LATELY, stored.size());
             assertEquals(off.get(5).getKey(), stored.get(0));
             assertEquals(stored.indexOf(off.get(5).getKey()), stored.lastIndexOf(off.get(5).getKey()));
+        }
+    }
+
+    /** The remove button of [key]'s row as the list draws it now, or null when it has none. */
+    private static View removeButton(ListView list, String key) {
+        int position = positionOf(list, key);
+        assertTrue(key + " isn't listed", position >= 0);
+        return list.getAdapter().getView(position, null, list).findViewWithTag(FavoriteSwitchesScreen.REMOVE);
+    }
+
+    @Test
+    public void aRowTurnedOffLatelyHasARemoveButtonThatTakesItOffForGood() {
+        String suggested = Settings.HIDE_SUGGESTED_GROUPS.key;
+        String promoted = Settings.HIDE_PROMOTED_POSTS.key;
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = page(controller);
+            turnOffThere(page, Settings.HIDE_SUGGESTED_GROUPS);
+            turnOffThere(page, Settings.HIDE_PROMOTED_POSTS);
+            ListView list = listOf(open(page));
+            assertEquals(Arrays.asList(promoted, suggested), lately(list));
+            String title = String.valueOf(item(list, positionOf(list, suggested)).getTitle());
+            View remove = removeButton(list, suggested);
+            assertNotNull("a row under Turned off lately has no remove button", remove);
+            assertTrue(remove instanceof ImageButton);
+            assertEquals("Remove " + L10n.isolate(title), String.valueOf(remove.getContentDescription()));
+            assertFalse("the button takes the focus, so a tap on the row never reaches the list", remove.isFocusable());
+
+            assertTrue(remove.performClick());
+            ShadowLooper.idleMainLooper();
+            assertEquals(Collections.singletonList(promoted), lately(list));
+            assertEquals(Collections.singletonList(promoted), FavoriteSwitchesScreen.turnedOff(context()));
+            assertFalse("taking it off the list turned it on", Settings.HIDE_SUGGESTED_GROUPS.savedValue());
+            assertFalse("the page's row turned on",
+                    ((SwitchPreference) rowWithKey(page, suggested)).isChecked());
+            assertEquals("Removed " + L10n.isolate(title), ShadowToast.getTextOfLatestToast());
+            // Open again: it's still off, and no longer under Turned off lately.
+            ListView again = listOf(open(page));
+            assertEquals(Collections.singletonList(promoted), lately(again));
+            assertFalse(keysIn(again).contains(suggested));
+        }
+    }
+
+    @Test
+    public void takingTheLastOneOffTakesTheHeadingToo() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = page(controller);
+            turnOffThere(page, Settings.HIDE_SUGGESTED_GROUPS);
+            ListView list = listOf(open(page));
+            assertTrue(heading(list) >= 0);
+            assertTrue(removeButton(list, Settings.HIDE_SUGGESTED_GROUPS.key).performClick());
+            ShadowLooper.idleMainLooper();
+
+            assertEquals("the heading stayed with nothing under it", -1, heading(list));
+            assertEquals(-1, positionOf(list, Settings.HIDE_SUGGESTED_GROUPS.key));
+            assertEquals(new ArrayList<String>(), FavoriteSwitchesScreen.turnedOff(context()));
+            assertFalse("an empty group was kept", store().contains(FavoriteSwitchesScreen.OFF_KEYS));
+            assertEquals(-1, heading(listOf(open(page))));
+        }
+    }
+
+    @Test
+    public void onlyARowStillOffUnderTurnedOffLatelyHasOne() {
+        Settings.HIDE_PROMOTED_POSTS.save(true);
+        touched.add(Settings.HIDE_PROMOTED_POSTS);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = page(controller);
+            turnOffThere(page, Settings.HIDE_SUGGESTED_GROUPS);
+            ListView list = listOf(open(page));
+            int heading = heading(list);
+            assertTrue(heading > 0);
+            for (int i = 0; i <= heading; i++) {
+                assertEquals(item(list, i).getKey() + " isn't under Turned off lately and has a remove button", null,
+                        list.getAdapter().getView(i, null, list).findViewWithTag(FavoriteSwitchesScreen.REMOVE));
+            }
+            // A switch turned off in the list keeps its place up top, and has none either.
+            int promoted = positionOf(list, Settings.HIDE_PROMOTED_POSTS.key);
+            tap(list, promoted);
+            assertFalse(Settings.HIDE_PROMOTED_POSTS.savedValue());
+            assertEquals(null, removeButton(list, Settings.HIDE_PROMOTED_POSTS.key));
+
+            // Turned back on there, a row of the group shows none, and turned off again it's back.
+            int position = positionOf(list, Settings.HIDE_SUGGESTED_GROUPS.key);
+            tap(list, position);
+            assertTrue(Settings.HIDE_SUGGESTED_GROUPS.savedValue());
+            assertEquals("a switch that's on has a remove button", null, removeButton(list, Settings.HIDE_SUGGESTED_GROUPS.key));
+            tap(list, position);
+            assertNotNull(removeButton(list, Settings.HIDE_SUGGESTED_GROUPS.key));
         }
     }
 

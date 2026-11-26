@@ -10,9 +10,11 @@ import android.content.SharedPreferences;
 import android.preference.Preference;
 import android.preference.PreferenceGroup;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -20,15 +22,20 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 
 import app.morphe.extension.facebook.settings.SettingsRows.Row;
 import app.morphe.extension.facebook.settings.SettingsRows.Subheading;
 import app.morphe.extension.facebook.settings.SettingsRows.Toggle;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.Setting;
 
@@ -41,7 +48,8 @@ import app.morphe.extension.shared.settings.Setting;
  * <p>A switch turned off in the list keeps its place, off, until the list closes, so a wrong tap is
  * one more tap to undo. It then goes under Turned off lately at the end of the list (#470), newest
  * first, at most {@link #LATELY} of them, each one tap from on again. A switch that's on again, from
- * here or anywhere else, leaves that group. Which switches those are is kept in a file of its own,
+ * here or anywhere else, leaves that group, and each one still off there has a remove button that
+ * takes it off the group for good, staying off (#577). Which switches those are is kept in a file of its own,
  * apart from the settings, so a settings file never carries it and an import never writes it, as
  * with the new-row dots.
  */
@@ -58,6 +66,9 @@ final class FavoriteSwitchesScreen {
 
     /** How many switches Turned off lately keeps. */
     static final int LATELY = 20;
+
+    /** The tag of a Turned off lately row's remove button. */
+    static final String REMOVE = "remove";
 
     private FavoriteSwitchesScreen() {
     }
@@ -168,6 +179,12 @@ final class FavoriteSwitchesScreen {
         store(context, keys);
     }
 
+    /** Takes [key] out of the file, so it's no longer under Turned off lately. Its setting stays as it is. */
+    static void forget(Context context, String key) {
+        List<String> keys = turnedOff(context);
+        if (keys.remove(key)) store(context, keys);
+    }
+
     private static void store(Context context, List<String> keys) {
         try {
             SharedPreferences.Editor edit = offStore(context).edit();
@@ -209,6 +226,8 @@ final class FavoriteSwitchesScreen {
         ScreenColors palette = ScreenColors.current();
         PreferenceGroup screen = page.getPreferenceScreen();
         List<Preference> rows = new ArrayList<>();
+        // The Turned off lately rows, the ones a remove button can take off the list.
+        Set<Preference> removable = Collections.newSetFromMap(new IdentityHashMap<>());
         boolean anyOn = false;
         if (screen != null) {
             List<Toggle> on = onSwitches(context, screen);
@@ -220,6 +239,7 @@ final class FavoriteSwitchesScreen {
                 heading.setTitle(L10n.t("Turned off lately"));
                 rows.add(heading);
                 rows.addAll(lately);
+                removable.addAll(lately);
             }
         }
 
@@ -237,7 +257,24 @@ final class FavoriteSwitchesScreen {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         ListView list = new ListView(context);
         list.setDivider(null);
-        list.setAdapter(new Listing(rows));
+        Listing listing = new Listing(context, palette, rows, removable);
+        listing.remover = row -> {
+            String key = row.getKey();
+            if (key != null) forget(context, key);
+            rows.remove(row);
+            removable.remove(row);
+            if (removable.isEmpty()) {
+                // The last one gone, the heading goes with it.
+                for (int i = rows.size() - 1; i >= 0; i--) {
+                    if (rows.get(i) instanceof Subheading) rows.remove(i);
+                }
+            }
+            listing.notifyDataSetChanged();
+            list.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
+            Utils.showToastShort(L10n.f("Removed %1$s", L10n.isolate(String.valueOf(row.getTitle()))));
+            Logger.printDebug(() -> "Switches that are on: " + key + " taken off Turned off lately");
+        };
+        list.setAdapter(listing);
         list.setOnItemClickListener((parent, view, position, id) -> {
             Preference item = rows.get(position);
             if (!(item instanceof Toggle)) return;
@@ -254,12 +291,23 @@ final class FavoriteSwitchesScreen {
                 .setPositiveButton(L10n.t("OK"), null));
     }
 
-    /** The rows, each drawn by its own preference, so it looks as it does on the page. */
+    /**
+     * The rows, each drawn by its own preference, so it looks as it does on the page. A Turned off
+     * lately row that's still off gets a remove button at its end.
+     */
     private static final class Listing extends BaseAdapter {
+        private final Context context;
+        private final ScreenColors palette;
         private final List<Preference> rows;
+        private final Set<Preference> removable;
+        /** What a row's remove button does with its row. */
+        @Nullable Consumer<Preference> remover;
 
-        Listing(List<Preference> rows) {
+        Listing(Context context, ScreenColors palette, List<Preference> rows, Set<Preference> removable) {
+            this.context = context;
+            this.palette = palette;
             this.rows = rows;
+            this.removable = removable;
         }
 
         @Override
@@ -290,7 +338,30 @@ final class FavoriteSwitchesScreen {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            return rows.get(position).getView(null, parent);
+            Preference item = rows.get(position);
+            View view = item.getView(null, parent);
+            // One turned back on in the list shows none: it's on, so it leaves the group anyway.
+            if (!removable.contains(item) || (item instanceof Toggle && ((Toggle) item).isChecked())) return view;
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.addView(view, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            ImageButton remove = new ImageButton(context);
+            remove.setTag(REMOVE);
+            remove.setImageDrawable(SettingsIcons.icon(context, SettingsIcons.DELETE, palette.summary));
+            ScreenColors.pressFeedback(remove, palette.summary, true);
+            int pad = dp(context, 12);
+            remove.setPadding(pad, pad, pad, pad);
+            remove.setContentDescription(L10n.f("Remove %1$s", L10n.isolate(String.valueOf(item.getTitle()))));
+            // Not focusable, or the list stops handing taps on the row to its click listener.
+            remove.setFocusable(false);
+            remove.setOnClickListener(button -> {
+                if (remover != null) remover.accept(item);
+            });
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(dp(context, 48), dp(context, 48));
+            size.setMarginEnd(dp(context, 8));
+            row.addView(remove, size);
+            return row;
         }
     }
 

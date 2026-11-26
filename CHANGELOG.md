@@ -18,6 +18,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Hide "People you may know" in the Friends tab` under News feed takes the People you may know list out of the Friends tab. Your friend requests stay where they are. It starts off, since that tab is where people go looking for friends. (#600)
 * `Play the feed's Reels row in order` under Reels and Watch plays a Reels row in your feed tile by tile. A reel you open from the row goes on to the next one in it when it ends or when you swipe up, and a swipe down goes back one. Facebook used to jump to suggested reels after the first. Reels posted in the feed on their own play the way they always did. It starts off. (#599)
 * `Keep track of your friends list` under News feed keeps a copy of your friends list on your phone each time you scroll Profile > Friends > All friends to the end. The next time you do, it tells you who's no longer on it, and `Friends no longer on your list` right under the switch keeps their names with the dates in between. Tap one to open their profile. Someone who unfriended you, someone you unfriended and a closed account all drop off the same way, and nothing leaves your phone. It starts off. (#597)
+* Each switch under `Turned off lately` in `Switches that are on` has a trash button now. Tap it and that switch leaves the list for good and stays off, so the ones you're done with stop piling up there. (#577)
 
 ### Fixed
 
