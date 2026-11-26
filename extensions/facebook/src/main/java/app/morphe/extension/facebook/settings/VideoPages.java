@@ -181,6 +181,10 @@ final class VideoPages {
             }
             // Back to Clean mode (#519): read as each reel leaves Clean mode, so a change shows from the next one.
             reels.addPreference(cleanReturnRow(context));
+            // Asked each frame of a reel's list, so a change shows right away (#519).
+            reels.addPreference(toggle(context, Settings.REEL_CLEAN_EXIT_FAINT,
+                    L10n.t("Facebook's button for leaving Clean mode shows faint, so the text in the video under it "
+                            + "stays readable. It still works when you tap it.")));
             reels.addPreference(toggle(context, Settings.PLAY_REELS_ONCE,
                     L10n.t("A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to "
                             + "the next one. Feed videos and stories aren't changed. Off by default, since it hasn't "
@@ -211,6 +215,9 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.BURN_IN_STAY_DIM,
                     L10n.t("Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, "
                             + "the next reel too. They still work. Leaving Reels brings them back.")));
+            reels.addPreference(toggle(context, Settings.BURN_IN_TAP_BACK,
+                    L10n.t("Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing "
+                            + "it. The next tap pauses as usual.")));
             reels.addPreference(toggle(context, Settings.BURN_IN_FADE,
                     L10n.t("The buttons, caption and bars fade out slowly as they dim and fade back in when they "
                             + "return, rather than changing at once.")));
@@ -254,6 +261,10 @@ final class VideoPages {
                             + "who posted it. A change shows from the next reel.")));
             // Asked as each reel's date is worded, so a change shows from the next reel (#357).
             reels.addPreference(reelDateStyleRow(context));
+            // Asked as each reel's caption and footer are built, so no restart (#490).
+            reels.addPreference(toggle(context, Settings.REEL_POST_DATE_AFTER_CAPTION,
+                    L10n.t("With Show the post date on reels on, puts the date at the end of the caption instead of "
+                            + "under the name, where the song and other labels crowd it. A change shows from the next reel.")));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_NEW_FOR_YOU,
                     L10n.t("Takes \"New for you\", and other reasons Facebook gives for showing you a reel, off the line "
                             + "under its author, so the date and the song show right away. A change shows from the next reel.")));
@@ -267,6 +278,14 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_AUDIO_LINE,
                     L10n.t("Takes the line with the reel's sound, \"Original audio\" or a song, off the bottom of "
                             + "reels. Other info stays. A change shows from the next reel.")));
+            // Asked each time Facebook hands out a reel's attributions, which the label is drawn from.
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_AI_LABEL,
+                    L10n.t("Takes the \"AI content\" or \"AI info\" label off reels Facebook marks as made with AI. "
+                            + "A change shows from the next reel.")));
+            // Asked each time a reel's caption is built, collapsed or open.
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_HASHTAGS,
+                    L10n.t("Takes the hashtags off reel captions, like the block of tags at the end. A hashtag "
+                            + "that's part of a sentence stays. A change shows from the next reel.")));
             // Asked each time a video stalls long enough for the message, so a change shows right away.
             reels.addPreference(toggle(context, Settings.HIDE_SLOW_CONNECTION_MESSAGE,
                     L10n.t("Stops the \"This is taking a while\" message about your network connection when a video "
@@ -318,6 +337,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SAVED_POSTS_IN_ROW,
                     L10n.t("A saved post in the row stays on screen instead of being skipped. Swipe up past its end "
                             + "for the next saved video, or down past its top for the one before.")));
+            // Asked as a reel opened from a Reels row in the feed ends or is swiped (#599).
+            reels.addPreference(toggle(context, Settings.FEED_REELS_ROW_IN_ORDER,
+                    L10n.t("A reel you open from a Reels row in your feed goes on to the next one in that row when it "
+                            + "ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.")));
             // Asked before each next video, so a change shows from the next one (#427).
             reels.addPreference(toggle(context, Settings.SKIP_STILL_WATCHING,
                     L10n.t("Reels and videos keep going to the next one without pausing to ask if you're still "
@@ -328,10 +351,18 @@ final class VideoPages {
                     L10n.t("Reels and full-screen videos that would leave black bars fill the screen instead, with "
                             + "a little cut off the edges. Pinch in on a reel to see all of it, or pinch out to fill "
                             + "it again.")));
+            // Asked each time a player view is sized, like the switch above, which it needs (#571).
+            reels.addPreference(toggle(context, Settings.FILL_EVERY_REEL,
+                    L10n.t("With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot "
+                            + "off the edges. Made for foldables and tablets, where most reels would keep their bars.")));
             // Asked as each tile of the feed's Reels row is drawn, so a change shows on the next tiles.
             reels.addPreference(toggle(context, Settings.PLAY_FEED_REELS_WHOLE,
                     L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "
                             + "repeating a second or two. Tiles drawn after a change pick it up.")));
+            // Asked as each feed reel's frame is shaped, so a change shows on the next reels (#581).
+            reels.addPreference(toggle(context, Settings.UNCROPPED_FEED_REELS,
+                    L10n.t("Reels in your feed show the whole picture at their own shape, instead of cut down to "
+                            + "Facebook's frame. Reels drawn after a change pick it up.")));
         }
         // Show full post text's reel half, a switch of its own since #398, read as each caption starts.
         if (build.contains(PatchFamily.FULL_POST_TEXT)) {
@@ -357,14 +388,14 @@ final class VideoPages {
             // Asked as each reel's name is built (#490).
             if (reelNamesInBuild()) {
                 reels.addPreference(toggle(context, Settings.DIM_REEL_NAMES,
-                        L10n.t("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a "
-                                + "bright video. A change shows from the next reel.")));
+                        L10n.t("The name at the bottom of a reel, with the date and details under it, sits on the same "
+                                + "dark box, so it's easy to read over a bright video. A change shows from the next reel.")));
             }
             // The same hook, for a feed post's header drawn over its video (#533).
             if (feedVideoNamesInBuild()) {
                 reels.addPreference(toggle(context, Settings.DIM_FEED_VIDEO_NAMES,
-                        L10n.t("When a video in your feed has the poster's name on top of the video, that name sits on "
-                                + "the same dark box. A change shows on the posts drawn after it.")));
+                        L10n.t("When a video in your feed has the poster's name on top of the video, that name and the "
+                                + "date under it sit on the same dark box. A change shows on the posts drawn after it.")));
             }
             // Every box's look, story names' included, read as each box is made (#490).
             if (captionBackdropInBuild() || reelNamesInBuild() || storyNamesInBuild() || feedVideoNamesInBuild()) {
@@ -692,8 +723,8 @@ final class VideoPages {
                 // Asked as each background reel nears its end, so a change counts right away.
                 playback.addPreference(toggle(context, Settings.NEXT_REEL_IN_BACKGROUND,
                         L10n.t("When a reel playing in the background ends, the next reel plays instead of the same one "
-                                + "again. It goes through the reels Reels had loaded when you left. Works with Keep "
-                                + "playing in the background on.")));
+                                + "again, and Reels keeps loading more as it goes. Works with Keep playing in the "
+                                + "background on.")));
                 if (build.contains(PatchFamily.PICTURE_IN_PICTURE)) {
                     // Asked as each window's buttons are made, so a change shows from the next window.
                     playback.addPreference(toggle(context, Settings.BACKGROUND_PLAY_BUTTON,
@@ -710,8 +741,9 @@ final class VideoPages {
      */
     @Nullable
     static PreferenceCategory downloads(PreferenceScreen screen, Context context, Set<PatchFamily> build) {
-        if (build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.REEL_DOWNLOAD)
-                || build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PHOTO_DOWNLOAD)) {
+        boolean media = build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.REEL_DOWNLOAD)
+                || build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PHOTO_DOWNLOAD);
+        if (media || build.contains(PatchFamily.FILE_DOWNLOADS)) {
             PreferenceCategory downloads = category(screen, L10n.t("Downloads"));
             if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_VIDEOS,
@@ -740,6 +772,14 @@ final class VideoPages {
                 downloads.addPreference(toggle(context, Settings.MARKETPLACE_PHOTO_SAVE,
                         L10n.t("With Save any photo on, a long press on a photo you open from a Marketplace listing saves it.")));
             }
+            if (build.contains(PatchFamily.FILE_DOWNLOADS)) {
+                downloads.addPreference(toggle(context, Settings.SAVE_FILES_TO_DOWNLOADS,
+                        L10n.t("A PDF, document or other file you download from a post goes to your phone's Downloads "
+                                + "folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.")));
+            }
+            // The rows below shape a video or photo save, which a build with only Save files to
+            // Downloads doesn't have.
+            if (!media) return downloads;
             // Every save reads these, a story's and a reel's as much as a feed video's, so they're here
             // whichever download patch is in, the compatible ones above the quality they keep within.
             downloads.addPreference(toggle(context, Settings.ASK_BEFORE_DOWNLOAD,

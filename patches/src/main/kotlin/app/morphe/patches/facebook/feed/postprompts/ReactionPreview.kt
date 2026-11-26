@@ -103,6 +103,8 @@ internal fun BytecodePatchContext.hideReactionPreview() {
 
     // Comments draw the same facepile, so it learns which surface it was built for before it can be asked.
     tagCommentFaces(component, classDefBy(facepile), factory)
+    // The count beside a comment's faces asks with the same flag (#483).
+    hideCommentCounts(component)
     mutableClassDefBy(facepile).methods.single { isDrawMethod(it, "draw") }.skipDrawWhen(facepileAsk(facepile))
     mutableClassDefBy(bar.type).methods.single { isDrawMethod(it, "onDraw") }
         .skipDrawWhen("invoke-static { }, $HIDE_REACTION_PREVIEW")

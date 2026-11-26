@@ -67,7 +67,7 @@ Export settings	Ekspor pengaturan
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook berhenti mendadak atau macet dalam satu menit setelah dibuka, tiga kali berturut-turut, jadi Hushfacebook menjeda dirinya sendiri.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook tidak lagi mengunduh iklan, atau data untuk memilihnya, di latar belakang.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook tidak menampilkan iklannya di dalam aplikasi lain di ponsel ini.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Mode gelap dan layar ini memakai warna dari wallpaper kamu (biru di Android 11). Aktifkan mode gelap di Facebook untuk melihatnya.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	Mode gelap dan layar ini memakai warna dari wallpaper kamu (biru di Android 11). Matikan untuk kembali ke warna lama tanpa tambal ulang. Mulai ulang Facebook untuk melihat perubahannya.
 Hide Stories between posts	Sembunyikan Cerita di antara postingan
 Joining the picture and sound	Menggabungkan gambar dan suara
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	Me
 Hide profile notes	Sembunyikan catatan profil
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Menyembunyikan gelembung catatan di atas foto profil. Berlaku saat kamu membuka profil berikutnya.
+Hide the gift button on profiles	Sembunyikan tombol hadiah di profil
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Menghapus tombol kirim hadiah dari profil orang lain. Berlaku saat kamu membuka profil berikutnya.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Tombol Simpan di bawah postingan
 # context: summary of that switch; Like, Comment and Share are the buttons under a post
@@ -590,6 +592,8 @@ Hide Repost under posts	Sembunyikan Posting Ulang di bawah postingan
 Hide Share under posts	Sembunyikan Bagikan di bawah postingan
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Sembunyikan Kirim di bawah postingan
+Hide Stars and gifts under posts	Sembunyikan Bintang dan hadiah di bawah postingan
+Hide Save under posts	Sembunyikan Simpan di bawah postingan
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Menghapus tombol ini dari baris di bawah postingan di feed. Tombol lainnya tetap ada, dan postingan yang semua tombolnya disembunyikan tidak menampilkan baris.
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
@@ -1003,6 +1007,7 @@ Hide the Create tab	Sembunyikan tab Buat
 Hide the Explore tab	Sembunyikan tab Jelajahi
 Hide the Jobs tab	Sembunyikan tab Lowongan Kerja
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Menghapus tab ini dari bilah tab. Halamannya masih ada di Menu. Mulai ulang Facebook untuk melihat perubahannya.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Menghapus tab ini dari bilah tab. Halamannya masih ada di Menu, kecuali kamu memilihnya di Ubin Menu yang disembunyikan. Mulai ulang Facebook untuk melihat perubahannya.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook terbuka di Beranda selama “%1$s” aktif, karena %2$s tidak ada di bilah tab. Pilihan Anda tetap tersimpan.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Tanpa titik atau jumlah baru di tab Reels, yang di beberapa akun bernama Video. Tab lain tetap menampilkannya.
@@ -1100,7 +1105,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	Kotak gelap di balik nama reel
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Nama di bagian bawah reel tampil di atas kotak gelap yang sama, jadi mudah dibaca di atas video yang terang. Perubahan berlaku mulai reel berikutnya.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Nama di bagian bawah reel, beserta tanggal dan detail di bawahnya, tampil di atas kotak gelap yang sama, jadi mudah dibaca di atas video yang terang. Perubahan berlaku mulai reel berikutnya.
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	Kegelapan kotak
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -1243,15 +1248,6 @@ Turn off haptics	Matikan haptik
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Menghentikan getaran kecil yang dibuat Facebook saat kamu mengetuk atau menggeser. Getaran keyboard dan ponsel tidak terpengaruh.
 Turn off screen transitions	Matikan transisi layar
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	Tab, Menu, foto, dan layar yang terbuka di atas Facebook langsung muncul tanpa efek geser atau zoom. Menggeser antar tab tetap berfungsi.
-Unlock app icons	Buka ikon aplikasi
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Memungkinkan memilih ikon aplikasi yang disediakan Facebook khusus untuk Facebook Plus, di halaman Ikon aplikasi Facebook. Baris Pilih ikon aplikasi membukanya. Pilihan tetap berlaku meski ini dimatikan, jadi pilih ikon biru dulu untuk kembali.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	Pilih ikon aplikasi
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	Membuka halaman Ikon aplikasi Facebook, juga di akun yang tidak menampilkannya di Pengaturan & privasi.
-Use the icon at the top of Home	Pakai ikon di bagian atas Beranda
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	Menampilkan ikon aplikasi pilihanmu di bagian atas Beranda sebagai pengganti tulisan Facebook. Perlu Buka ikon aplikasi dan pilihan selain yang biru. Mulai ulang Facebook untuk melihat perubahannya.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	Versi Facebook ini tidak punya halaman Ikon aplikasi.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Gambar dalam gambar
 # context: summary of that switch
@@ -1463,7 +1459,7 @@ Adds an eye button to the top of each story while you view anonymously. Tap it t
 # context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
 Mark as seen	Tandai sudah dilihat
 # context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
-Marked as seen. Tap again to undo.	Ditandai sudah dilihat. Ketuk lagi untuk membatalkan.
+Marked as seen	Ditandai sudah dilihat
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	Ditandai sudah dilihat dan dikirim
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
@@ -1865,7 +1861,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	Tetap putar di latar belakang
 Next reel in the background	Reel berikutnya di latar belakang
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	Saat reel yang diputar di latar belakang selesai, reel berikutnya diputar, bukan reel yang sama lagi. Ini memutar reel yang sudah dimuat Reels saat kamu keluar. Berfungsi saat Tetap putar di latar belakang aktif.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	Saat reel yang diputar di latar belakang selesai, reel berikutnya diputar, bukan reel yang sama lagi, dan Reels terus memuat lebih banyak. Berfungsi saat Tetap putar di latar belakang aktif.
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	Video yang Anda mulai dengan ketukan, atau reel yang Anda buka dengan menggeser di Reels, tetap bersuara setelah Anda keluar dari Facebook, dan notifikasinya bisa menjedanya. Menggeser notifikasi atau menerima panggilan akan menghentikannya.
 # context: title of that notification when the video has none of its own
@@ -1983,8 +1979,10 @@ Show reactions on the Like button	Tampilkan reaksi di tombol Suka
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	Memindahkan ikon reaksi postingan dari ujung baris tombolnya ke tombol Suka, tepat sebelum angkanya. Tombol Suka tetap menyukai dan memberi reaksi seperti biasa. Video yang menampilkan jumlah tontonannya di sana mendapat satu ikon Suka, atau reaksimu sendiri setelah kamu bereaksi. Sembunyikan pratinjau reaksi di postingan lebih diutamakan. Perubahan terlihat pada postingan yang ditampilkan setelahnya.
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	Sembunyikan pratinjau reaksi di komentar
+Hide reaction counts on comments	Sembunyikan jumlah reaksi di komentar
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	Menyembunyikan ikon reaksi yang bertumpuk di sudut komentar. Ruangnya tetap ada, jadi mengetuk di tempat semula tetap membuka daftar reaksi.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Menyembunyikan angka di samping ikon reaksi pada komentar. Ikonnya tetap ada, dan mengetuknya tetap membuka daftar reaksi.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Unduh di urutan pertama menu kiriman
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
@@ -2107,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	Tampilkan postingan tersimpan dalam urutan
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	Postingan tersimpan dalam urutan tetap di layar alih-alih dilewati. Geser ke atas setelah akhirnya untuk video tersimpan berikutnya, atau ke bawah dari atasnya untuk yang sebelumnya.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	Putar baris Reels di feed berurutan
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	Reel yang kamu buka dari baris Reels di feed kamu lanjut ke reel berikutnya di baris itu saat selesai atau saat kamu menggeser ke atas, bukan ke reel saran. Geser ke bawah untuk kembali ke reel sebelumnya.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	Lewati "Masih menonton?"
 # context: summary of that switch; reels and videos go on to the next one by themselves
@@ -2148,6 +2150,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	Sembunyikan “Orang yang Mungkin Anda Kenal” di pencarian
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	Menyembunyikan baris Orang yang Mungkin Anda Kenal yang ditampilkan Facebook saat kamu membuka pencarian. Pencarian terbaru kamu dan saran saat mengetik tetap ada.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	Sembunyikan “Orang yang Mungkin Anda Kenal” di tab Teman
+Hides the People you may know list in the Friends tab. Your friend requests stay.	Menyembunyikan daftar Orang yang Mungkin Anda Kenal di tab Teman. Permintaan pertemanan kamu tetap ada.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	Jangan simpan riwayat pencarian
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
@@ -2653,6 +2658,8 @@ After %1$d seconds	Setelah %1$d detik
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Tetap redup saat saya ketuk
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Setelah Pelindung burn-in meredupkan tombol, tombol tetap redup di Reels apa pun yang kamu ketuk atau geser, termasuk di reel berikutnya. Tombol tetap berfungsi. Keluar dari Reels mengembalikannya.
+Tap the video to bring them back	Ketuk video untuk memunculkannya kembali
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	Setelah Pelindung burn-in meredupkan tombol, ketukan pada video memunculkannya kembali tanpa menjeda video. Ketukan berikutnya menjeda seperti biasa.
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	Redupkan hingga
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Seberapa banyak tombol, keterangan, dan bilah yang masih terlihat setelah meredup, dalam persen, dari %1$s sampai %2$s. Biarkan kosong untuk %3$s.
@@ -2725,7 +2732,9 @@ Your tab bar will go in this order: %1$s.	Bilah tab Anda akan memakai urutan ini
 Show only watched stories	Tampilkan hanya cerita yang sudah ditonton
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	Baki Cerita hanya menyimpan cerita yang sudah Anda tonton, jadi Anda bisa menemukannya lagi. Matikan untuk melihat yang baru. Sembunyikan cerita yang sudah dilihat menunggu selama ini aktif. Berlaku saat Facebook memuat baki berikutnya.
 Show Posts in search	Tampilkan Postingan di pencarian
+Show Videos in search	Tampilkan Video di pencarian
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	Mengembalikan Postingan ke baris di atas hasil pencarian, setelah Reels, agar kamu bisa melihat postingan saja untuk yang kamu cari.
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	Menaruh Video di baris atas hasil pencarian, di sebelah Postingan, agar kamu bisa melihat video saja untuk yang kamu cari.
 Saved button in search	Tombol Tersimpan di pencarian
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	Menaruh tombol Tersimpan di ujung bilah pencarian, agar postingan dan video yang kamu simpan cukup satu ketukan saja. Mulai ulang Facebook untuk melihat perubahannya.
 Restore feed sound after opened videos	Pulihkan suara Kabar Beranda setelah membuka video
@@ -2819,12 +2828,16 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	Bilah geser di cerita
 Plain slide between people	Geser biasa antar orang
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Saat menggeser ke cerita orang berikutnya atau sebelumnya, cerita bergeser ke samping, bukan berputar seperti kubus. Berlaku mulai geseran berikutnya.
+Show the time on every story	Tampilkan waktu di setiap cerita
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	Cerita yang tidak menampilkan kapan diposting, seperti cerita Halaman, menampilkannya di samping nama seperti cerita teman. Berlaku mulai cerita berikutnya yang kamu buka.
 Fade the story seek bar	Redupkan bilah geser cerita
 Story position	Posisi cerita
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Menampilkan bilah di bagian bawah cerita video yang bisa kamu geser untuk berpindah di dalamnya. Cerita menunggu selama kamu menggeser. “Bilah progres di bawah” memberi tempat untuknya di cerita video.
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	Dengan “Bilah geser di cerita” aktif, bilahnya meredup beberapa detik setelah cerita mulai atau setelah terakhir kali kamu menyentuhnya. Sentuhan atau jeda memunculkannya lagi.
 Clean mode	Mode bersih
 Clean mode button on reels	Tombol mode bersih di reel
+Faint Clean mode button	Tombol mode bersih samar
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Tombol Facebook untuk keluar dari mode bersih tampil samar, jadi teks di video di bawahnya tetap terbaca. Tombol tetap berfungsi saat diketuk.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Menambahkan tombol mode bersih ke tombol-tombol di sisi reel. Ketuk untuk menyembunyikannya, dan mode bersih tetap aktif saat kamu menggeser. Tombol mode bersih milik Facebook sendiri memunculkannya kembali.
 Open chats in Messenger	Buka chat di Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Membuka chat di aplikasi Messenger, bukan di dalam Facebook, termasuk dari tombol Kirim Pesan di profil, selama Messenger terpasang dan aktif. Tanpa Messenger, chat tetap di Facebook. Mulai ulang Facebook setelah mengubahnya.
@@ -3146,7 +3159,7 @@ The time or date under the poster's name is bold, like the name.	Waktu atau tang
 Show full names	Tampilkan nama lengkap
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Nama panjang di bagian atas postingan berlanjut ke baris berikutnya, bukan terpotong dengan "...". Nama yang muat tetap satu baris.
 Dark box behind feed video names	Kotak gelap di belakang nama pada video Kabar Beranda
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Saat video di Kabar Beranda menampilkan nama pemosting di atas video, nama itu tampil di atas kotak gelap yang sama. Perubahan terlihat pada postingan yang dimuat setelahnya.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	Saat video di Kabar Beranda menampilkan nama pemosting di atas video, nama itu dan tanggal di bawahnya tampil di atas kotak gelap yang sama. Perubahan terlihat pada postingan yang dimuat setelahnya.
 Quality settings	Pengaturan kualitas
 Request community note	Minta catatan komunitas
 Something went wrong	Terjadi kesalahan
@@ -3157,23 +3170,44 @@ All your notifications are marked as read.	Semua notifikasi Anda sudah ditandai 
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Tidak ada yang ditandai karena Facebook tidak memberi tahu siapa yang masuk. Buka tab Notifikasi sekali, lalu coba lagi.
 This build can't mark notifications as read.	Build ini tidak bisa menandai notifikasi sudah dibaca.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook tidak bisa menandai notifikasi Anda sudah dibaca. Coba lagi sebentar lagi.
-# context: the account sharing rows in Hushfacebook settings, and their dialogs
-Export account	Ekspor akun
-Copies this account's cookies and token to the clipboard.	Menyalin cookie dan token akun ini ke papan klip.
-Facebook hasn't built a session yet. Open a post, then try again.	Facebook belum membuat sesi. Buka satu kiriman, lalu coba lagi.
-Import account	Impor akun
-Signs in with an account you paste, or a file.	Masuk dengan akun yang Anda tempel, atau dengan file.
-Account copied	Akun disalin
-Nothing was exported	Tidak ada yang diekspor
-This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Facebook ini tidak punya akun untuk diekspor. Buka tautan Facebook sekali di perambannya, lalu coba lagi.
-Paste it into Import account on the other phone, or use the saved file.	Tempel di Impor akun di ponsel lain, atau pakai file yang tersimpan.
-From file	Dari file
-No account file on this phone.	Tidak ada file akun di ponsel ini.
-Your account	Akun Anda
-Copy	Salin
-Copied.	Disalin.
-There's nothing to save.	Tidak ada yang bisa disimpan.
-That file couldn't be written.	File itu tidak bisa ditulis.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Bagikan ke chat Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Menambahkan chat Facebook ke menu bagikan Android. Foto atau video yang kamu bagikan ke sana disimpan ke galeri dan teks disalin, lalu chat kamu terbuka agar kamu bisa memilih satu dan mengirimnya.
+Share to Facebook chats is off.	Bagikan ke chat Facebook nonaktif.
+Nothing in it to send.	Tidak ada yang bisa dikirim.
+Couldn't save it to your gallery.	Tidak bisa menyimpan ke galeri.
+Copied and saved. Paste and attach in a chat.	Disalin & disimpan. Tempel dan lampirkan di chat.
+Saved to your gallery. Attach it in a chat.	Disimpan di galeri. Lampirkan di chat.
+Copied. Pick a chat and paste it.	Disalin. Pilih chat lalu tempel.
+Open your chats to pick one.	Buka chat kamu untuk memilih satu.
+Post date after the caption	Tanggal posting setelah keterangan
+With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	Saat "Tampilkan tanggal posting di reel" aktif, tanggal ditaruh di akhir keterangan, bukan di bawah nama, tempat lagu dan label lain menyesakkannya. Perubahan terlihat mulai reel berikutnya.
+Fill every reel	Penuhi layar dengan semua reels
+With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	Saat "Penuhi layar dengan reels" aktif, setiap reel memenuhi layar, meskipun banyak bagian tepinya terpotong. Dibuat untuk ponsel lipat dan tablet, tempat sebagian besar reel tetap menyisakan bilah hitam.
+Chat background	Latar chat
+Last chat's background	Latar chat terakhir
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	Kode warna (#RRGGBB) untuk ruang di belakang pesan di setiap chat, misalnya #1E3A5F. Dua kode, misalnya #1E3A5F #6A1B9A, berpadu dari satu warna ke warna lain. Hanya ponsel ini yang menampilkannya. Biarkan kosong untuk latar Facebook.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	Kode warna (#RRGGBB) khusus untuk %1$s, misalnya #1E3A5F. Dua kode berpadu dari satu warna ke warna lain. Biarkan kosong agar memakai latar chat di atas.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	Chat tetap memakai latar Facebook. Ketik kode warna untuk mengubahnya di ponsel ini saja.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	Latar di belakang pesan chat berwarna %1$s, di ponsel ini saja. Tidak ada orang di chat yang diberi tahu.
+Open a chat, then come back here to give it a color of its own.	Buka sebuah chat, lalu kembali ke sini untuk memberinya warna sendiri.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s, chat terakhir yang kamu buka, memakai latar chat di atas. Ketik kode warna untuk memberinya warna sendiri.
+%1$s, the last chat you opened, is %2$s.	%1$s, chat terakhir yang kamu buka, berwarna %2$s.
+Type one color code, or two for a fade from top to bottom.	Ketik satu kode warna, atau dua untuk gradasi dari atas ke bawah.
+Hide the AI content label on reels	Sembunyikan label konten AI di reel
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Menghapus label "Konten AI" atau "Info AI" dari reel yang ditandai Facebook sebagai dibuat dengan AI. Perubahan terlihat mulai reel berikutnya.
+The %1$s row will be set to %2$s.	Baris %1$s akan diatur ke %2$s.
+The %1$s row will go back to its default.	Baris %1$s akan kembali ke bawaannya.
+Save files to Downloads	Simpan file ke Unduhan
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	PDF, dokumen, atau file lain yang Anda unduh dari postingan masuk ke folder Unduhan di ponsel Anda, tempat pengelola file bisa membukanya. Saat mati, Facebook menyimpannya di tempat yang tidak bisa dijangkau pengelola file.
+Hide hashtags in reel captions	Sembunyikan tagar di keterangan reel
+Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	Menghapus tagar dari keterangan reel, seperti deretan tagar di bagian akhir. Tagar yang menjadi bagian kalimat tetap ada. Perubahan terlihat mulai reel berikutnya.
+Keep the keyboard closed when comments open	Biarkan keyboard tertutup saat komentar dibuka
+Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	Komentar terbuka tanpa keyboard muncul, bahkan di postingan yang belum punya komentar. Ketuk kotak komentar saat ingin menulis.
+Settings language	Bahasa pengaturan
+Same as Facebook	Sama seperti Facebook
+Show feed reels uncropped	Tampilkan reel di feed tanpa dipotong
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	Reel di feed kamu menampilkan seluruh gambarnya dengan bentuk aslinya, bukan dipotong agar pas dengan bingkai Facebook. Reel yang muncul setelah perubahan akan mengikutinya.
 Export token	Ekspor token
 Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Menampilkan token akses setiap akun yang masuk di ponsel ini. Salin satu, atau simpan semuanya sebagai JSON.
 Save JSON	Simpan JSON

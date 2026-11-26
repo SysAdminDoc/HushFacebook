@@ -209,6 +209,45 @@ class ReactionPreviewFixtureTest {
                 assertEquals("$name: the copy takes the Drawable alone",
                     "${facepile.type}->$COMMENT_COPY(${facepile.type})V",
                     ((lambda[copyAt] as ReferenceInstruction).reference as MethodReference).toString())
+
+                // The count beside a comment's faces (#483): the render's one test of the count text's
+                // length hands the length and the component to the added helper and keeps its answer.
+                val checks = component.methods.mapNotNull { m -> commentCountCheck(m, component.type)?.let { m to it } }
+                assertEquals("$name: methods testing the count text's length", 1, checks.size)
+                val lengthCalls = component.methods.sumOf { m ->
+                    m.implementation?.instructions?.count {
+                        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.let { r ->
+                            r.definingClass == "Ljava/lang/String;" && r.name == "length"
+                        } == true
+                    } ?: 0
+                }
+                assertTrue("$name: no other String.length() was rejected, so the check proves nothing", lengthCalls > 1)
+                val (render, check) = checks.single()
+                val stockRender = render.implementation!!.instructions.toList()
+                assertEquals("$name: the gate is Facebook's if-lez", Opcode.IF_LEZ, stockRender[check.gate].opcode)
+                val patchedComponent = context.mutableClassDefBy(component.type)
+                val patchedRender = patchedComponent.methods.single {
+                    it.name == render.name && it.parameterTypes == render.parameterTypes
+                }.implementation!!.instructions.toList()
+                assertEquals("$name: render: two instructions added", stockRender.size + 2, patchedRender.size)
+                val ask = patchedRender[check.gate]
+                assertEquals("$name: render: the helper is asked", "${component.type}->$COMMENT_COUNT(I${component.type})I",
+                    ((ask as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: render: with the length and the component", listOf(check.length, check.self),
+                    ask.callRegisters())
+                assertEquals("$name: render: its answer is kept", Opcode.MOVE_RESULT, patchedRender[check.gate + 1].opcode)
+                assertEquals("$name: render: in the length's register", check.length,
+                    (patchedRender[check.gate + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: render: the rest is Facebook's", stockRender.map { it.opcode },
+                    patchedRender.filterIndexed { index, _ -> index != check.gate && index != check.gate + 1 }.map { it.opcode })
+                val helper = patchedComponent.methods.singleOrNull { it.name == COMMENT_COUNT }
+                assertNotNull("$name: the component has no $COMMENT_COUNT", helper)
+                assertTrue("$name: $COMMENT_COUNT isn't static", AccessFlags.STATIC.isSet(helper!!.accessFlags))
+                val helperCode = helper.implementation!!.instructions.toList()
+                assertEquals("$name: the helper reads the comment flag", "${component.type}->$COMMENT_FLAG:Z",
+                    ((helperCode[0] as ReferenceInstruction).reference as FieldReference).toString())
+                assertEquals("$name: and asks the extension", COMMENT_REACTION_COUNT,
+                    ((helperCode[1] as ReferenceInstruction).reference as MethodReference).toString())
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -281,6 +320,16 @@ class ReactionPreviewFixtureTest {
         }
         assertNotNull("the extension has no $REACTION_COUNT", hook)
         assertTrue("$REACTION_COUNT isn't static", AccessFlags.STATIC.isSet(hook!!.accessFlags))
+    }
+
+    @Test
+    fun `the extension has the comment count hook`() {
+        val type = COMMENT_REACTION_COUNT.substringBefore("->")
+        val hook = ExtensionDex.classDef(type).methods.singleOrNull {
+            "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == COMMENT_REACTION_COUNT
+        }
+        assertNotNull("the extension has no $COMMENT_REACTION_COUNT", hook)
+        assertTrue("$COMMENT_REACTION_COUNT isn't static", AccessFlags.STATIC.isSet(hook!!.accessFlags))
     }
 
     @Test

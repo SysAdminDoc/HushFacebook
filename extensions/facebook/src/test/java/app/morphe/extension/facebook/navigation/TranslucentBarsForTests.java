@@ -88,6 +88,8 @@ public final class TranslucentBarsForTests {
 
         activity.setContentView(window, new FrameLayout.LayoutParams(720, 1600));
         layOut();
+        // A tab shown by an earlier test's tab bar would have this screen's first frames look on.
+        TranslucentBars.forgetStretchDueForTests();
         bars = new TranslucentBars.Bars(window, TopBar.class.getName(), TabBar.class.getName());
     }
 

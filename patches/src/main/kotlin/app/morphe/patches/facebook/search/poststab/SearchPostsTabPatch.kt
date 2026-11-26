@@ -20,6 +20,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.executeBytecode
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -47,6 +48,11 @@ internal const val POSTS_TAB_CLASS = "$EXTENSION_PACKAGE/search/SearchPostsTab;"
 
 internal const val CHIPS = "$POSTS_TAB_CLASS->chips($LIST)$LIST"
 
+internal const val STRING = "Ljava/lang/String;"
+
+/** The extension's hook handed each tapped chip's label. */
+internal const val TAPPED = "$POSTS_TAB_CLASS->tapped($STRING)V"
+
 /** The extension's stub this patch fills with a call to Facebook's table of tab labels. */
 internal const val TAB_LABELS_STUB = "tabLabels"
 
@@ -67,13 +73,27 @@ internal const val TAB_LABELS_STUB = "tabLabels"
  * extension's [TAB_LABELS_STUB] is filled with a call to the table, so with the switch on every
  * row gets a chip labelled as the table labels Posts, after Reels, and a tap on it opens the posts
  * results.
+ *
+ * Videos (BLENDED_SHOWS_HOME) is in the same table, and its own switch adds it after Posts (#483).
+ * A tap runs the row class's handler (588 arm64:
+ * `LX/0E7z;->A01(FbUserSession, LX/07qs;, LX/0E7z;, String)V`), which rebuilds the row from the
+ * stored chips with the tapped label marked. The added chips are never among the stored ones, so
+ * that row comes with none marked. The handler hands its label to the extension first, so with more
+ * than one chip added the extension knows which to mark.
+ *
+ * No Photos chip: on 588 Facebook's server answers both photo tabs its results page can open,
+ * BLENDED_PHOTOS (`keywords_blended_photos(%s)`) and PHOTOS (`keywords_photos(%s)`), with "We got
+ * nothing" for every search, on the test account and on a second one, and its other photo tabs
+ * (PHOTO_STREAM, DENSE_MEDIA) have no query template, so opening them throws "Unsupported
+ * displayStyle" (`LX/07qr;->A07`).
  */
 @Suppress("unused")
 val searchPostsTabPatch = patch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Search posts tab",
     description = "Puts the Posts chip back in the row over search results, after Reels, so you can see only posts " +
-        "for what you searched. Turn it off in Hushfacebook settings > Search.",
+        "for what you searched. A Videos chip can go in next to it too. Turn each on or off in " +
+        "Hushfacebook settings > Search.",
 ) {
     category("Interface")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -95,7 +115,12 @@ val searchPostsTabPatch = patch(
             ?: throw PatchException("$PATCH: expected one table of tab labels called from ${rowClass.type}, found $tables")
         val draw = rowClass.methods.singleOrNull { it.descriptor() == row.draw.descriptor() }
             ?: throw PatchException("$PATCH: ${builder.descriptor()} draws its row with ${row.draw.descriptor()}, which isn't there")
+        // Read before anything is added, so the handler's registers are Facebook's.
+        val (handler, label) = tapHandler(rowClass, table)
+            ?: throw PatchException("$PATCH: expected one method of ${rowClass.type} looking a String parameter up in $table")
+        val handlerMethod = rowClass.methods.single { it.descriptor() == handler.descriptor() }
         draw.handChipsOver()
+        handlerMethod.addInstructions(0, "invoke-static/range { v$label .. v$label }, $TAPPED")
         tabLabelsStub(mutableClassDefBy(POSTS_TAB_CLASS)).fillTabLabels(table)
         enableStatus("searchPostsTab")
     }
@@ -183,6 +208,31 @@ private fun castsLookup(code: List<Instruction>, at: Int): Boolean {
     val cast = code.getOrNull(at + 4) ?: return false
     return cast.opcode == Opcode.CHECK_CAST && (cast as OneRegisterInstruction).registerA == answer
 }
+
+/**
+ * The method of [rowClass] that looks a tapped chip's label up in [table], and the register its
+ * label comes in: the one method whose lookup's key is a String parameter nothing writes before
+ * the lookup. Null unless there is exactly one.
+ */
+internal fun tapHandler(rowClass: ClassDef, table: MethodReference): Pair<Method, Int>? =
+    rowClass.methods.mapNotNull { method ->
+        val implementation = method.implementation ?: return@mapNotNull null
+        val code = implementation.instructions.toList()
+        val at = code.indices.singleOrNull { at ->
+            code[at].opcode == Opcode.INVOKE_STATIC && code[at].methodRef()?.toString() == table.toString() &&
+                castsLookup(code, at)
+        } ?: return@mapNotNull null
+        val key = (code[at + 2] as FiveRegisterInstruction).registerD
+        val types = method.parameterTypes.map { it.toString() }
+        var register = implementation.registerCount - types.size - types.count { it == "J" || it == "D" }
+        val strings = mutableSetOf<Int>()
+        for (type in types) {
+            if (type == STRING) strings += register
+            register += if (type == "J" || type == "D") 2 else 1
+        }
+        if (key !in strings || method.writersReaching(at, key) != listOf(-1)) return@mapNotNull null
+        method to key
+    }.singleOrNull()
 
 /** The parameter register holding a static method's one List parameter. */
 internal fun Method.listParameter(): Int {

@@ -85,16 +85,17 @@ final class StoryMarks {
     }
 
     /**
-     * A tap: marks [card] for [account], or takes its mark back. A card already sent stays sent,
-     * and with no account nothing is marked. Answers where it stands now.
+     * A tap: marks [card] for [account]. A mark stays until a send carries it, and a card already
+     * sent stays sent: a second tap never takes a mark back (#557), so the eye only ever moves on
+     * to seen. With no account nothing is marked. Answers where it stands now.
      */
-    synchronized State toggle(@Nullable String account, @Nullable String card) {
+    synchronized State mark(@Nullable String account, @Nullable String card) {
         if (account == null || card == null) return State.UNMARKED;
         long now = clock.getAsLong();
         prune(now);
         String id = id(account, card);
         if (sent.containsKey(id)) return State.SENT;
-        if (marked.remove(id) != null) return State.UNMARKED;
+        if (marked.containsKey(id)) return State.MARKED;
         marked.put(id, now);
         trim(marked, MAX_MARKS);
         return State.MARKED;

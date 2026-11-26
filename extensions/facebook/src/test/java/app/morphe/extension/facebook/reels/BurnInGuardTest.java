@@ -20,6 +20,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -44,11 +45,14 @@ import org.robolectric.shadows.ShadowSystemClock;
 import org.robolectric.util.ReflectionHelpers;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
@@ -90,6 +94,7 @@ public class BurnInGuardTest {
         Settings.BURN_IN_STAY_DIM.resetToDefault();
         Settings.BURN_IN_LEVEL.resetToDefault();
         Settings.BURN_IN_FADE.resetToDefault();
+        Settings.BURN_IN_TAP_BACK.resetToDefault();
         PauseForTests.resume();
         BurnInGuard.resetForTests();
         HookStatus.clear();
@@ -133,6 +138,7 @@ public class BurnInGuardTest {
         Settings.BURN_IN_STAY_DIM.resetToDefault();
         Settings.BURN_IN_LEVEL.resetToDefault();
         Settings.BURN_IN_FADE.resetToDefault();
+        Settings.BURN_IN_TAP_BACK.resetToDefault();
         animationScale(1f);
         PauseForTests.resume();
         HookStatus.clear();
@@ -256,9 +262,9 @@ public class BurnInGuardTest {
 
     /**
      * A photo story has no video surface: the photo and the layer over it holding the story's button
-     * stand in for one, so the header, the tap zones, the reply bar and that button dim and the photo
-     * doesn't (#401, laid out as 585's story card on an S22). The same screen outside the story viewer
-     * is left alone.
+     * stand in for one, so the header, the tap zones and the reply bar dim, and the photo and what its
+     * layer holds don't (#401, laid out as 585's story card on an S22; #523). The same screen outside
+     * the story viewer is left alone.
      */
     @Test
     public void aPhotoStoryDimsAroundThePhotoAndOnlyInTheStoryViewer() {
@@ -280,7 +286,7 @@ public class BurnInGuardTest {
             assertEquals("the photo", 1f, card[0].getAlpha(), 0f);
             assertEquals("the layer over it", 1f, card[1].getAlpha(), 0f);
             assertEquals("the card", 1f, card[6].getAlpha(), 0f);
-            assertEquals("the story's button", BurnInGuard.IDLE_LEVEL, card[2].getAlpha(), 0f);
+            assertEquals("the story's button", 1f, shownAlpha(card[2]), 0f);
             assertEquals("the header", BurnInGuard.IDLE_LEVEL, card[3].getAlpha(), 0f);
             assertEquals("the next tap zone", BurnInGuard.IDLE_LEVEL, card[4].getAlpha(), 0f);
             assertEquals("the reply bar", BurnInGuard.IDLE_LEVEL, card[5].getAlpha(), 0f);
@@ -301,6 +307,61 @@ public class BurnInGuardTest {
         after(IDLE * 3);
         assertEquals("the header", 1f, card[3].getAlpha(), 0f);
         assertEquals("the reply bar", 1f, card[5].getAlpha(), 0f);
+    }
+
+    /**
+     * With Debug logging on, the Debug report says what a story's dim pass kept bright and what it
+     * dimmed, biggest first, each with its box and whether it takes taps (#523: a note story came
+     * out blurred, and the report shows which of its views the guard took for controls). Off,
+     * nothing is kept.
+     */
+    @Test
+    public void theDebugReportSaysWhatAStoryKeptAndDimmed() {
+        ActivityController<StoryViewerActivity> story = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        try {
+            Activity screen = story.get();
+            View[] card = photoStory(screen);
+            View decor = screen.getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(W, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(H, View.MeasureSpec.EXACTLY));
+            decor.layout(0, 0, W, H);
+            story.windowFocusChanged(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+
+            BurnInGuard.resumed(screen);
+            after(IDLE + 100);
+            assertEquals("dimmed", BurnInGuard.IDLE_LEVEL, card[3].getAlpha(), 0f);
+            assertTrue("nothing kept with Debug logging off", BurnInGuard.REPORT.lines().isEmpty());
+
+            BaseSettings.DEBUG.save(true);
+            after(BurnInGuard.KEEP_MS + 100);
+            List<String> lines = BurnInGuard.REPORT.lines();
+            assertEquals("BURN-IN GUARD", BurnInGuard.REPORT.title());
+            assertTrue(BurnInGuard.REPORT.isAppState());
+            assertTrue(lines.get(0), lines.get(0).startsWith("story viewer, last dimmed 0 s before this report"));
+            assertEquals("window " + W + "x" + H, lines.get(1));
+            List<String> kept = new ArrayList<>();
+            List<String> dimmed = new ArrayList<>();
+            for (String line : lines) {
+                if (line.startsWith("kept: ")) kept.add(line);
+                if (line.startsWith("dimmed: ")) dimmed.add(line);
+            }
+            long window = (long) W * H;
+            assertEquals("the photo and the layer over it: " + lines, 2, kept.size());
+            assertTrue(lines.toString(), kept.contains("kept: " + BurnInGuard.describe(card[0], window)));
+            assertTrue(lines.toString(), kept.contains("kept: " + BurnInGuard.describe(card[1], window)));
+            assertTrue("the layer holds the button", BurnInGuard.describe(card[1], window).startsWith("FrameLayout [0,"));
+            assertTrue("the layer holds the button", BurnInGuard.describe(card[1], window).endsWith(", 1 children"));
+            assertEquals("the header, the tap zone and the reply bar: " + lines, 3, dimmed.size());
+            for (String line : dimmed) assertTrue(line, line.endsWith(", takes taps"));
+            assertEquals("the tall tap zone first", "dimmed: " + BurnInGuard.describe(card[4], window), dimmed.get(0));
+            assertEquals("the reply bar last", "dimmed: " + BurnInGuard.describe(card[5], window), dimmed.get(2));
+            BurnInGuard.paused(screen);
+        } finally {
+            BaseSettings.DEBUG.resetToDefault();
+            story.close();
+        }
     }
 
     /**
@@ -326,6 +387,90 @@ public class BurnInGuardTest {
         View reply = clickable(screen);
         place(frame, reply, 0, bottom + 20, W, bottom + 200);
         return new View[]{photo, layer, learnMore, header, next, reply, card};
+    }
+
+    /**
+     * A note story (#523): the note's bubble with the friend's picture and the note's text, on a
+     * layer over the story. The header, the next tap zone and the reply bar dim, and the note never
+     * does, a text note's or a song note's, whose song plays on a video the card's size.
+     */
+    @Test
+    public void aTextNoteStaysBrightAndOnlyTheStoryControlsDim() {
+        noteStoryDims(false);
+    }
+
+    @Test
+    public void aSongNoteStaysBrightOverItsVideoAndOnlyTheStoryControlsDim() {
+        noteStoryDims(true);
+    }
+
+    private void noteStoryDims(boolean song) {
+        String kind = song ? "a song note's " : "a text note's ";
+        ActivityController<StoryViewerActivity> story = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        try {
+            Activity screen = story.get();
+            View[] note = noteStory(screen, song);
+            View decor = screen.getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(W, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(H, View.MeasureSpec.EXACTLY));
+            decor.layout(0, 0, W, H);
+            story.windowFocusChanged(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+
+            BurnInGuard.resumed(screen);
+            assertNotNull(kind + "story is guarded", BurnInGuard.reelOf(decor));
+            after(IDLE + 100);
+            assertEquals(kind + "bubble", 1f, shownAlpha(note[0]), 0f);
+            assertEquals(kind + "picture", 1f, shownAlpha(note[1]), 0f);
+            assertEquals(kind + "text", 1f, shownAlpha(note[2]), 0f);
+            assertEquals(kind + "story", 1f, shownAlpha(note[6]), 0f);
+            assertEquals(kind + "header", BurnInGuard.IDLE_LEVEL, shownAlpha(note[3]), 0f);
+            assertEquals(kind + "next tap zone", BurnInGuard.IDLE_LEVEL, shownAlpha(note[4]), 0f);
+            assertEquals(kind + "reply bar", BurnInGuard.IDLE_LEVEL, shownAlpha(note[5]), 0f);
+            BurnInGuard.paused(screen);
+        } finally {
+            story.close();
+        }
+    }
+
+    /**
+     * A note story's card: the note's bubble, the picture and the text in it, the header, the next tap
+     * zone, the reply bar under the card, and what the story shows under the note, a video the card's
+     * size for a song note or a plain background for a text one. The bubble sits on a layer the
+     * card's size, as Facebook's note sticker overlay does.
+     */
+    private View[] noteStory(Activity screen, boolean song) {
+        FrameLayout frame = new FrameLayout(screen);
+        screen.setContentView(frame);
+        FrameLayout card = new FrameLayout(screen);
+        int bottom = H * 83 / 100;
+        place(frame, card, 0, 50, W, bottom);
+        View under = song ? new TextureView(screen) : new View(screen);
+        card.addView(under, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout layer = new FrameLayout(screen);
+        card.addView(layer, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout bubble = new FrameLayout(screen);
+        bubble.setOnClickListener(clicked -> { });
+        place(layer, bubble, W / 6, bottom / 3, W * 5 / 6, bottom / 2);
+        View picture = new View(screen);
+        place(bubble, picture, 20, 20, 140, 140);
+        View text = new View(screen);
+        place(bubble, text, 160, 20, W * 2 / 3 - 20, 200);
+        View header = clickable(screen);
+        place(card, header, 0, 0, W, 200);
+        View next = clickable(screen);
+        place(card, next, W - 160, 0, W, bottom - 50);
+        View reply = clickable(screen);
+        place(frame, reply, 0, bottom + 20, W, bottom + 200);
+        return new View[]{bubble, picture, text, header, next, reply, card};
+    }
+
+    /** The share of its own drawing [view] shows at: its alpha times every parent's. */
+    private static float shownAlpha(View view) {
+        float alpha = 1f;
+        for (Object at = view; at instanceof View; at = ((View) at).getParent()) alpha *= ((View) at).getAlpha();
+        return alpha;
     }
 
     private static View clickable(Activity screen) {
@@ -433,6 +578,58 @@ public class BurnInGuardTest {
         assertUp("still waiting");
         after(1_100);
         assertDimmed("the wait the tap didn't start over ran out");
+    }
+
+    /**
+     * Tap the video to bring them back (#523): while dimmed, a tap on the video brings the controls
+     * back and the layer that pauses the video never sees it. Before the dim, after it, with the
+     * switch off and with Stay dim when I tap on, a tap goes to the video as always, and a hold
+     * (Facebook's 2x) isn't a tap.
+     */
+    @Test
+    public void tapTheVideoBringsThemBackWithoutPausingIt() {
+        int[] pauses = new int[1];
+        tapLayer.setOnClickListener(view -> pauses[0]++);
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        Settings.BURN_IN_TAP_BACK.save(true);
+        BurnInGuard.resumed(activity);
+        after(IDLE - 1_000);
+        tapOn(video);
+        assertEquals("a tap before the dim pauses the video", 1, pauses[0]);
+        after(1_100);
+        assertDimmed("the wait that tap didn't start over ran out");
+
+        tapOn(video);
+        assertUp("a tap on the video while dimmed");
+        assertEquals("the video didn't get that tap", 1, pauses[0]);
+        assertTrue(reported(BurnInGuard.COUNT_TAP_BACK));
+        tapOn(video);
+        assertEquals("the next tap pauses it", 2, pauses[0]);
+        after(IDLE - 100);
+        assertUp("the wait runs from the tap that brought them back");
+        after(IDLE);
+        assertDimmed("idle again");
+
+        float[] at = middleOf(video);
+        long down = SystemClock.uptimeMillis();
+        sendAt(MotionEvent.ACTION_DOWN, at[0], at[1], down);
+        after(ViewConfiguration.getLongPressTimeout() + 100);
+        sendAt(MotionEvent.ACTION_UP, at[0], at[1], down);
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertDimmed("a hold on the video");
+        // The hold reached the video whole. This stand-in has no 2x, so its lift reads as a click.
+        assertEquals("the hold went to the video", 3, pauses[0]);
+
+        Settings.BURN_IN_TAP_BACK.save(false);
+        tapOn(video);
+        assertDimmed("switch off");
+        assertEquals("and the tap paused the video", 4, pauses[0]);
+
+        Settings.BURN_IN_TAP_BACK.save(true);
+        Settings.BURN_IN_STAY_DIM.save(true);
+        tapOn(video);
+        assertDimmed("Stay dim when I tap wins");
+        assertEquals(5, pauses[0]);
     }
 
     /** A swipe to the next reel counts from the moment it moves farther than a tap does. */
@@ -879,8 +1076,13 @@ public class BurnInGuardTest {
 
     /** A finger event at [x, y] in the window, delivered to the decor view, which hands it to the window's callback. */
     private void sendAt(int action, float x, float y) {
+        sendAt(action, x, y, SystemClock.uptimeMillis());
+    }
+
+    /** The same, for a finger that went down at [downTime]. */
+    private void sendAt(int action, float x, float y, long downTime) {
         long now = SystemClock.uptimeMillis();
-        MotionEvent event = MotionEvent.obtain(now, now, action, x, y, 0);
+        MotionEvent event = MotionEvent.obtain(downTime, now, action, x, y, 0);
         try {
             activity.getWindow().getDecorView().dispatchTouchEvent(event);
         } finally {

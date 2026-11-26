@@ -80,6 +80,7 @@ public class CommentSheetOptionsTest {
         Settings.LIKE_ONLY.resetToDefault();
         Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS.resetToDefault();
         Settings.HIDE_COMMENT_EMOJI_ROW.resetToDefault();
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.resetToDefault();
         Settings.HIDE_COMMENT_BOX_LINE.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         Settings.HIDE_COMMENT_BOX.resetToDefault();
@@ -141,6 +142,43 @@ public class CommentSheetOptionsTest {
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() -> assertFalse("the emoji row went before the settings were ready",
                 CommentSheetOptions.holdsEmojiRow()));
+    }
+
+    @Test
+    public void theKeyboardStaysClosedOnlyUnderItsOwnSwitch() {
+        Settings.HIDE_COMMENT_EMOJI_ROW.save(true);
+        assertTrue("the emoji row switch kept the keyboard closed", CommentSheetOptions.keyboardOnFirstLoad(true));
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.save(true);
+        assertFalse("the keyboard still came up", CommentSheetOptions.keyboardOnFirstLoad(true));
+        assertFalse("comments that open without the keyboard got it", CommentSheetOptions.keyboardOnFirstLoad(false));
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.KEYBOARD_KEPT_CLOSED + " 1", statusLine());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("a paused Hushfacebook kept the keyboard closed", CommentSheetOptions.keyboardOnFirstLoad(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertTrue("the keyboard stayed closed before the settings were ready",
+                CommentSheetOptions.keyboardOnFirstLoad(true)));
+    }
+
+    /**
+     * A post with no comments yet (#594): Facebook focuses the comment box once they've loaded
+     * unless the params say to skip it, so under the switch they always do. The S22 raised the
+     * keyboard there with the switch on, from that second path.
+     */
+    @Test
+    public void onAPostWithNoCommentsTheKeyboardIsSkippedOnlyUnderItsOwnSwitch() {
+        Settings.HIDE_COMMENT_EMOJI_ROW.save(true);
+        assertFalse("the emoji row switch skipped the keyboard", CommentSheetOptions.suppressKeyboard(false));
+        Settings.KEEP_COMMENT_KEYBOARD_CLOSED.save(true);
+        assertTrue("the keyboard still came up on a post with no comments", CommentSheetOptions.suppressKeyboard(false));
+        assertTrue("comments Facebook already kept closed lost it", CommentSheetOptions.suppressKeyboard(true));
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.EMPTY_KEYBOARD_KEPT_CLOSED + " 1", statusLine());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook skipped the keyboard", CommentSheetOptions.suppressKeyboard(false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the keyboard was skipped before the settings were ready",
+                CommentSheetOptions.suppressKeyboard(false)));
     }
 
     /** Facebook's top border: the line's color filling the box, the box's color over it, 3 px down. */

@@ -585,6 +585,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_story_up_next", FALSE);
 
     /**
+     * A story that leaves out how long ago it was posted, like a Page's, shows it next to the name
+     * the way a friend's story does ({@link app.morphe.extension.facebook.stories.StoryViewerCleanup},
+     * #563). Starts off. Read as each story's header is built.
+     */
+    public static final BooleanSetting SHOW_STORY_TIME =
+            new BooleanSetting("hushfacebook_show_story_time", FALSE);
+
+    /**
      * The bar under someone else's story leaves: the repost button, the Send message box and the quick
      * reactions ({@link app.morphe.extension.facebook.stories.StoryViewerCleanup}, #542). Starts off.
      * Read as the bar draws.
@@ -655,6 +663,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_profile_notes", FALSE);
 
     /**
+     * The Send a gift button on other people's profiles, left out of the profile's Bloks layout the
+     * same way ({@link app.morphe.extension.facebook.profile.ProfileNotes}, #576). Starts off. Read
+     * each time Facebook lays the profile out, so a change shows the next time a profile opens.
+     */
+    public static final BooleanSetting HIDE_PROFILE_GIFTS =
+            new BooleanSetting("hushfacebook_hide_profile_gifts", FALSE);
+
+    /**
      * Friends, followers and following counts of your own profile that you type yourself, shown on this
      * phone only ({@link app.morphe.extension.facebook.profile.LocalProfileCounts}, #280). Starts off.
      * Read each time Facebook lays the profile out, so a change shows the next time a profile opens.
@@ -692,8 +708,10 @@ public class Settings extends BaseSettings {
 
     /**
      * Each takes one button out of the row under a post (issue #265, {@link
-     * app.morphe.extension.facebook.feed.PostSaveButton}): Like, Comment, Repost (#450), Share or
-     * Send. Start off.
+     * app.morphe.extension.facebook.feed.PostSaveButton}): Like, Comment, Repost (#450), Share,
+     * Send, Stars (the button some creators' posts get for sending them Stars or gifts, #483), or
+     * Save, which Facebook now shows some accounts on its own (#541) and which this wins over
+     * POST_SAVE_BUTTON. Start off.
      */
     public static final BooleanSetting HIDE_POST_LIKE_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_like_button", FALSE);
@@ -705,6 +723,10 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_post_share_button", FALSE);
     public static final BooleanSetting HIDE_POST_SEND_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_send_button", FALSE);
+    public static final BooleanSetting HIDE_POST_STARS_BUTTON =
+            new BooleanSetting("hushfacebook_hide_post_stars_button", FALSE);
+    public static final BooleanSetting HIDE_POST_SAVE_BUTTON =
+            new BooleanSetting("hushfacebook_hide_post_save_button", FALSE);
 
     /**
      * A tap on the empty part of the row under a post, between its buttons and the reaction faces,
@@ -868,6 +890,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_reel_clean_button", FALSE);
 
     /**
+     * Faint Clean mode button (#519): Facebook's button out of Clean mode, over a clean reel's lower
+     * right, draws at {@link app.morphe.extension.facebook.reels.CleanExitSpot#FAINT} of its opacity,
+     * so the video's own text under it shows through. It still takes taps. Off by default, read each frame.
+     */
+    public static final BooleanSetting REEL_CLEAN_EXIT_FAINT =
+            new BooleanSetting("hushfacebook_reel_clean_exit_faint", FALSE);
+
+    /**
      * Back to Clean mode (#519): once the buttons are brought back over a reel with Always use
      * Clean mode or the Clean mode button on, the reel goes back into Clean mode on its own, when a
      * sheet opened over it closes or after a few seconds with no touch ({@link
@@ -954,6 +984,14 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting BURN_IN_STAY_DIM =
             new BooleanSetting("hushfacebook_burn_in_stay_dim", FALSE);
+
+    /**
+     * Tap the video to bring them back (#523): once Burn-in guard has dimmed the controls, a tap on the
+     * video brings them back and isn't handed to Facebook, so the video doesn't pause or play. A hold
+     * and a swipe stay Facebook's. {@link #BURN_IN_STAY_DIM} wins over it. Off by default, read on each tap.
+     */
+    public static final BooleanSetting BURN_IN_TAP_BACK =
+            new BooleanSetting("hushfacebook_burn_in_tap_back", FALSE, Setting.parentNot(BURN_IN_STAY_DIM));
 
     /**
      * Dim to (#523): how much of the buttons, caption and bars still shows once Burn-in guard dims
@@ -1070,6 +1108,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_reel_post_date_style", ReelDateStyle.AGO);
 
     /**
+     * Post date after the caption: while {@link #SHOW_REEL_POST_DATE} is on, the date shows in the row
+     * Facebook draws after a reel's caption instead of on the line under its author, where the song
+     * and other labels crowd it ({@link app.morphe.extension.facebook.reels.ReelDeclutter#captionDateShows},
+     * #490). Off by default. A change shows from the next reel.
+     */
+    public static final BooleanSetting REEL_POST_DATE_AFTER_CAPTION =
+            new BooleanSetting("hushfacebook_reel_post_date_after_caption", FALSE);
+
+    /**
      * "New for you", the reason Facebook picked a reel, is left off the line under its author
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#slotNewForYou}, #520). Off by
      * default. A change shows from the next reel.
@@ -1100,6 +1147,24 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting HIDE_REEL_AUDIO_LINE =
             new BooleanSetting("hushfacebook_hide_reel_audio_line", FALSE);
+
+    /**
+     * The "AI content" or "AI info" label Facebook puts on a reel made with AI isn't drawn, beside the
+     * sound line, under the caption or in the reel's info rows
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#filterAiLabel}, #574).
+     * Off by default. A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_AI_LABEL =
+            new BooleanSetting("hushfacebook_hide_reel_ai_label", FALSE);
+
+    /**
+     * A reel caption's runs of hashtags aren't drawn: the ones ending it, on lines of their own or two
+     * or more in a row. A hashtag that is a word of a sentence stays
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#captionText}, #594). Off by default.
+     * A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_HASHTAGS =
+            new BooleanSetting("hushfacebook_hide_reel_hashtags", FALSE);
 
     /**
      * The "This is taking a while. Try checking your network connection." message a video shows
@@ -1147,6 +1212,14 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting PLAY_FEED_REELS_WHOLE =
             new BooleanSetting("hushfacebook_play_feed_reels_whole", FALSE);
+
+    /**
+     * A reel posted in the feed plays in a frame of its own shape instead of the wider one Facebook
+     * cuts it to ({@link app.morphe.extension.facebook.reels.FeedReelShape}, #581), no taller than
+     * the screen has room for. Off by default. A change shows on reels the feed draws after it.
+     */
+    public static final BooleanSetting UNCROPPED_FEED_REELS =
+            new BooleanSetting("hushfacebook_uncropped_feed_reels", FALSE);
 
     /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
@@ -1217,6 +1290,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_saved_posts_in_row", FALSE, Setting.parent(SAVED_VIDEOS_IN_ORDER));
 
     /**
+     * A reel opened from a Reels row in the feed goes on to the next tile in that row when it ends or
+     * is swiped up, and back to the one before when swiped down, instead of a suggested reel ({@link
+     * app.morphe.extension.facebook.reels.SavedChain}, #599). Off by default. A change shows on the
+     * next reel opened from a row.
+     */
+    public static final BooleanSetting FEED_REELS_ROW_IN_ORDER =
+            new BooleanSetting("hushfacebook_feed_reels_row_in_order", FALSE);
+
+    /**
      * Reels and videos go on to the next one without Facebook holding it back to ask "Are you still
      * watching?" ({@link app.morphe.extension.facebook.reels.StillWatching}, #427). Off by default.
      * Asked before each next video, so a change shows from the next one.
@@ -1233,6 +1315,15 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting FILL_REELS =
             new BooleanSetting("hushfacebook_fill_reels", FALSE);
+
+    /**
+     * Fill every reel: while {@link #FILL_REELS} is on, a reel fills the screen however much of its
+     * picture that cuts off, not only up to {@link app.morphe.extension.facebook.reels.ReelFill#MOST_CUT},
+     * for foldables and tablets where most reels would keep their bars (#571). Off by default. Asked
+     * each time a player view is sized, so a change shows on the next reel.
+     */
+    public static final BooleanSetting FILL_EVERY_REEL =
+            new BooleanSetting("hushfacebook_fill_every_reel", FALSE);
 
     /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
@@ -1290,25 +1381,6 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting ALLOW_SCREENSHOTS =
             new BooleanSetting("hushfacebook_allow_screenshots", FALSE);
-
-    /**
-     * Facebook's Facebook Plus app icons on its App icon page ({@link app.morphe.extension.facebook.misc.AppIcons}).
-     * Starts off. The App icon page reads it each time it opens. An icon picked while it's on is a
-     * launcher alias, so it stays when the switch goes off, unless Facebook's start-up rollback (behind
-     * a server flag, off on the accounts seen so far) puts the blue one back. Facebook's component
-     * manager resets it on the first start after an update, which the switch skips while it's on.
-     */
-    public static final BooleanSetting UNLOCK_APP_ICONS =
-            new BooleanSetting("hushfacebook_unlock_app_icons", FALSE);
-
-    /**
-     * The picked app icon stands in for the Facebook wordmark at the top of Home
-     * ({@link app.morphe.extension.facebook.misc.AppIcons#dressLogo}, #172). Starts off, so Facebook's
-     * wordmark stays. Needs {@link #UNLOCK_APP_ICONS}. Facebook builds the header once, so a change
-     * waits for a restart. It never changes which launcher alias is on.
-     */
-    public static final BooleanSetting USE_APP_ICON_IN_HEADER =
-            new BooleanSetting("hushfacebook_use_app_icon_in_header", FALSE, true, Setting.parent(UNLOCK_APP_ICONS));
 
     /**
      * Facebook's haptics on its own taps and gestures ({@link app.morphe.extension.facebook.misc.Haptics}).
@@ -1655,6 +1727,14 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting HIDE_COMMENT_EMOJI_ROW =
             new BooleanSetting("hushfacebook_hide_comment_emoji_row", FALSE);
+
+    /**
+     * Comments open with the keyboard closed, even where Facebook would open it for the first
+     * comment (#594, {@link app.morphe.extension.facebook.comments.CommentSheetOptions#keyboardOnFirstLoad}).
+     * A tap on the comment box still opens it. Off by default. A change shows the next time comments open.
+     */
+    public static final BooleanSetting KEEP_COMMENT_KEYBOARD_CLOSED =
+            new BooleanSetting("hushfacebook_keep_comment_keyboard_closed", FALSE);
 
     /**
      * The comment box comes without the thin line along its top (#344,
@@ -2530,6 +2610,40 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_open_chats_in_messenger", FALSE, true);
 
     /**
+     * Facebook chats in Android's share menu (#568): a photo or video shared there goes to the
+     * gallery and text to the clipboard, and Facebook opens on Chats to pick one. Starts off, and
+     * the share target stays out of the share menu until it's on.
+     */
+    public static final BooleanSetting SHARE_TO_CHATS =
+            new BooleanSetting("hushfacebook_share_to_chats", FALSE);
+
+    /**
+     * The color behind the messages of every chat inside Facebook, drawn on this phone only (#573,
+     * {@link app.morphe.extension.facebook.chats.ChatBackground}): blank for Facebook's own, one
+     * {@code #RRGGBB} code, or two for a fade from top to bottom. A chat with a color of its own in
+     * {@link #CHAT_BACKGROUNDS} takes that one. Not a switch, and a paused Facebook reads it blank.
+     * A settings file leaves it out for now.
+     */
+    public static final StringSetting CHAT_BACKGROUND_COLOR =
+            new StringSetting("hushfacebook_chat_background_color", "");
+
+    /**
+     * The chats with a color of their own, one {@code <thread key><TAB><code>} line each, the code
+     * kept as {@link #CHAT_BACKGROUND_COLOR}'s is. The keys are this account's chats, so a settings
+     * file leaves it out.
+     */
+    public static final StringSetting CHAT_BACKGROUNDS =
+            new StringSetting("hushfacebook_chat_backgrounds", "");
+
+    /**
+     * The last chat seen inside Facebook, as {@code <thread key><TAB><name on its top bar>}, which the
+     * settings offer a color of its own. Hushfacebook writes it, never a person, and a settings file
+     * leaves it out.
+     */
+    public static final StringSetting CHAT_BACKGROUND_LAST =
+            new StringSetting("hushfacebook_chat_background_last", "");
+
+    /**
      * The Upgrades section of Facebook's Menu, the group Facebook types UPSELL, with its offers.
      * Only that group goes: Settings, Help and support and the rest of the Menu stay. A Menu built
      * before the switch changed keeps the group on screen even though its sections ask again (#184),
@@ -2742,6 +2856,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_search_posts_tab", TRUE);
 
     /**
+     * A Videos chip goes in the row over search results, after Posts, labelled and opened through
+     * Facebook's own table of tab labels like the Posts chip (#483). Off by default.
+     */
+    public static final BooleanSetting SEARCH_VIDEOS_TAB =
+            new BooleanSetting("hushfacebook_search_videos_tab", FALSE);
+
+    /**
      * A Saved button at the end of the search bar opens Facebook's Saved screen
      * ({@link app.morphe.extension.facebook.search.SearchSavedButton}, #433). Off by default. The
      * button goes in as Facebook builds the bar, so turning it on takes a restart.
@@ -2764,6 +2885,15 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW =
             new BooleanSetting("hushfacebook_hide_search_people_you_may_know", FALSE);
+
+    /**
+     * People you may know in the Friends tab (#600): its section header and the person rows under it,
+     * found by the row type names and the header's section type. Friend requests, the friends list
+     * and the Suggestions button stay. Part of Hide suggested and promoted posts, off until picked,
+     * since the Friends tab is where people go to find friends.
+     */
+    public static final BooleanSetting HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW =
+            new BooleanSetting("hushfacebook_hide_friends_tab_people_you_may_know", FALSE);
 
     /**
      * Push notifications Facebook types TOP_TRENDING_VIDEO or PERSONALIZED_REELS: trending videos
@@ -3058,6 +3188,16 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting MARKETPLACE_PHOTO_SAVE =
             new BooleanSetting("hushfacebook_marketplace_photo_save", FALSE);
+
+    /**
+     * A PDF, document or other file downloaded from a post goes to the phone's public Downloads
+     * folder, where a file manager can open it ({@link app.morphe.extension.facebook.download.FileDownloads},
+     * #590). Off, it stays in DownloadManager's private cache as Facebook leaves it. Starts on, as
+     * the report asked: a file nobody can find helps nobody. The key never spells "downloads":
+     * SettingsBackupTest plants that word in a value no settings file may carry.
+     */
+    public static final BooleanSetting SAVE_FILES_TO_DOWNLOADS =
+            new BooleanSetting("hushfacebook_save_files_to_download_folder", TRUE);
 
     /**
      * Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of
@@ -3432,6 +3572,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_amoled_flat_cards", FALSE, true);
 
     /**
+     * With the Material You theme in the build, whether it runs (D#527). Off, Facebook keeps the
+     * colours it has without the theme, AMOLED's with that one in the build, with no new patch
+     * ({@link app.morphe.extension.facebook.theme.MaterialYouSwitch}). Its resources go back as
+     * Facebook starts, so a change brings up the restart row. Starts on: picking the patch in
+     * Manager asked for the theme.
+     */
+    public static final BooleanSetting MATERIAL_YOU =
+            new BooleanSetting("hushfacebook_material_you", TRUE, true);
+
+    /**
      * With the AMOLED black theme, the gap Facebook leaves between a list's rows, posts in the feed
      * among them, shows as a thin gray line instead of the page's black
      * ({@link app.morphe.extension.facebook.theme.FeedGaps}, issue #206). Rows read it as they
@@ -3558,6 +3708,15 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting HIDE_COMMENT_REACTIONS =
             new BooleanSetting("hushfacebook_hide_comment_reaction_preview", FALSE);
+
+    /**
+     * The number beside the reaction faces on a comment is left out, and the faces, their tap and
+     * what TalkBack reads stay ({@link app.morphe.extension.facebook.feed.PostPrompts#commentReactionCount},
+     * #483). Facebook's own setting for reaction counts misses comments. Off by default. A change
+     * shows on the comments drawn after it.
+     */
+    public static final BooleanSetting HIDE_COMMENT_REACTION_COUNTS =
+            new BooleanSetting("hushfacebook_hide_comment_reaction_counts", FALSE);
 
     /**
      * A post's stacked reaction faces leave the end of its button row and sit on its Like button,
@@ -3725,17 +3884,18 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_dim_folded_reel_captions", FALSE);
 
     /**
-     * The name at the bottom of a reel sits on the caption's dark box (#490,
-     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}). Feed posts' names keep
+     * The name at the bottom of a reel, with the date line under it, sits on the caption's dark box (#490,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName} and
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forNameBlock}). Feed posts' names keep
      * Facebook's look. A change shows from the next reel.
      */
     public static final BooleanSetting DIM_REEL_NAMES =
             new BooleanSetting("hushfacebook_dim_reel_names", FALSE);
 
     /**
-     * A name Facebook draws over a feed video, rather than above it, sits on the same dark box (#533,
-     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}). A change shows on the
-     * headers drawn after it.
+     * A name Facebook draws over a feed video, rather than above it, sits on the same dark box with the
+     * date under it (#533, #490, {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}).
+     * A change shows on the headers drawn after it.
      */
     public static final BooleanSetting DIM_FEED_VIDEO_NAMES =
             new BooleanSetting("hushfacebook_dim_feed_video_names", FALSE);

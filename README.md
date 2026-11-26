@@ -1,7 +1,7 @@
 ![Hushfacebook. Keep the people. Cut the noise.](assets/readme-hero.png)
 
 <p align="center">
-  <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.24.0-0866FF" alt="Version 0.24.0"></a>
+  <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.25.0-0866FF" alt="Version 0.25.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%2011%2B-3DDC84" alt="Platform Android 11+">
   <img src="https://img.shields.io/badge/Facebook-588.0.0.42.55-0866FF" alt="Facebook 588.0.0.42.55">
@@ -22,7 +22,7 @@ Each row in the [patch table](docs/patches.md) says how its switch starts. The a
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.24.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.24.0), with 127 patches. It includes all changes since v0.23.0, among them background play for the next reel, a tab bar that stays in groups, a pause button for feed videos, a proxy you can point Facebook at, a centered feed column on tablets, and the move to Facebook 588.0.0.42.55, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.25.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.25.0), with 128 patches. It includes all changes since v0.24.0, among them chat backgrounds, hiding posts from groups, side buttons on long videos and four new settings languages, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](docs/patches.md)
 
@@ -63,7 +63,7 @@ Changing one of those brings up a **Restart Facebook** row at the top of the pag
 
 Morphe Manager can back up your patch choices but not these switches. **Export settings** saves them to a JSON file, word lists included, and **Import settings** reads one back on this phone or a new one. It shows what the file would change before anything does. **Reset settings** puts them all back to how a new install has them, and **Undo the reset** brings yours back. **Check for new Hushfacebook releases** under Updates is off until you turn it on. Then it asks GitHub once a day and tells you when there's a newer release, and you update through Morphe Manager as usual.
 
-The settings follow the language Facebook shows. German, Spanish, Indonesian, Italian, Korean, Brazilian Portuguese, Turkish, Vietnamese, Russian, Thai, Arabic, Simplified Chinese and Traditional Chinese (Taiwan) are translated. Other languages get English. [Translating](CONTRIBUTING.md#translating) explains how to fix a string or add a language.
+The settings follow the language Facebook shows, or the one you pick under `Settings language` in Appearance. German, Spanish, French, Indonesian, Italian, Korean, Brazilian Portuguese, Turkish, Vietnamese, Russian, Bulgarian, Thai, Arabic, Simplified Chinese and Traditional Chinese (Taiwan) are translated. Other languages get English. [Translating](CONTRIBUTING.md#translating) explains how to fix a string or add a language.
 
 To keep Reel downloads in More without the sidebar button, leave **Download** on under **Reels and Watch** and turn off **Download button on reels** on the same page.
 
@@ -161,7 +161,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 127 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 587 and 586 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. On a 64-bit phone with Android 9 or 10, take build `707615023` of 588 instead, the (arm64-v8a) (480dpi) (Android 9.0+) bundle. Meta keeps most of that build's code in a compressed archive the patcher can't read, so Hush Unpacker (`helper/`) unpacks it on the phone first. All 127 patches apply to what it makes, where 0.23.0 and older leave a few out that you uncheck before patching. Users on Android 10 have patched it this way, and a copy patched from it loads Home and Reels with the patches working on Android 16. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. On a PC, `scripts/superpack-unpack.ps1` does the same over adb, and with `-Desktop` it doesn't need a phone or emulator at all.
+There are 129 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 587 and 586 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. On a 64-bit phone with Android 9 or 10, take build `707615023` of 588 instead, the (arm64-v8a) (480dpi) (Android 9.0+) bundle. Meta keeps most of that build's code in a compressed archive the patcher can't read, so Hush Unpacker (`helper/`) unpacks it on the phone first. All 129 patches apply to what it makes, where 0.23.0 and older leave a few out that you uncheck before patching. Users on Android 10 have patched it this way, and a copy patched from it loads Home and Reels with the patches working on Android 16. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. On a PC, `scripts/superpack-unpack.ps1` does the same over adb, and with `-Desktop` it doesn't need a phone or emulator at all.
 
 SHA-256 of the .apkm files the patches are checked against:
 

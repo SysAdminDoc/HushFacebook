@@ -54,6 +54,7 @@ public class PostPromptsTest {
         Settings.HIDE_POST_COUNTS.resetToDefault();
         Settings.HIDE_POST_REACTIONS.resetToDefault();
         Settings.HIDE_COMMENT_REACTIONS.resetToDefault();
+        Settings.HIDE_COMMENT_REACTION_COUNTS.resetToDefault();
         Settings.HIDE_REACTION_BUBBLES.resetToDefault();
         Settings.HIDE_REACTOR_NAMES.resetToDefault();
         Settings.SHOW_POST_COMMENT_BUTTON.resetToDefault();
@@ -507,6 +508,47 @@ public class PostPromptsTest {
             PauseForTests.resume();
         }
         assertTrue("resumed, the comment preview didn't go again", PostPrompts.hideReactionPreview(true));
+    }
+
+    /**
+     * A comment's reaction count answers to its own switch (#483): on, its length comes back 0 so
+     * Facebook takes its no-count branch, and the status line counts it. A post's count, an empty
+     * count and the faces' own switch leave the length alone.
+     */
+    @Test
+    public void aCommentsReactionCountGoesOnlyWithItsSwitchOn() {
+        assertFalse("the switch doesn't start on", Settings.HIDE_COMMENT_REACTION_COUNTS.get());
+        assertFalse("asked as each comment is drawn, so no restart", Settings.HIDE_COMMENT_REACTION_COUNTS.rebootApp);
+        assertEquals("a comment's count went with the switch off", 12, PostPrompts.commentReactionCount(12, true));
+
+        Settings.HIDE_COMMENT_REACTIONS.save(true);
+        assertEquals("the faces' switch took the count", 12, PostPrompts.commentReactionCount(12, true));
+        Settings.HIDE_COMMENT_REACTIONS.save(false);
+
+        Settings.HIDE_COMMENT_REACTION_COUNTS.save(true);
+        assertEquals("a comment's count stayed with the switch on", 0, PostPrompts.commentReactionCount(12, true));
+        assertTrue("the status line doesn't count the hidden comment count",
+                statusLine().contains(PostPrompts.COMMENT_COUNT_HIDDEN + " 1"));
+        assertEquals("a post's count went", 56, PostPrompts.commentReactionCount(56, false));
+        assertEquals("an empty count changed", 0, PostPrompts.commentReactionCount(0, true));
+        assertTrue("an empty count was counted as hidden",
+                statusLine().contains(PostPrompts.COMMENT_COUNT_HIDDEN + " 1"));
+
+        Settings.HIDE_COMMENT_REACTION_COUNTS.save(false);
+        assertEquals("turning the switch off didn't bring the count back", 12, PostPrompts.commentReactionCount(12, true));
+    }
+
+    @Test
+    public void pausedACommentsReactionCountStays() {
+        Settings.HIDE_COMMENT_REACTION_COUNTS.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
+            PauseForTests.pause(reason);
+            assertEquals("a Hushfacebook paused by " + reason + " hid a comment's count",
+                    12, PostPrompts.commentReactionCount(12, true));
+            PauseForTests.resume();
+        }
+        assertEquals("resumed, the comment's count didn't go again", 0, PostPrompts.commentReactionCount(12, true));
     }
 
     /** The post switch and the comment switch each answer for their own surface only. */

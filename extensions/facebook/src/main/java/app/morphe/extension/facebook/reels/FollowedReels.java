@@ -4,6 +4,8 @@
  */
 package app.morphe.extension.facebook.reels;
 
+import android.os.SystemClock;
+
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -13,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 
 import app.morphe.extension.facebook.feed.GenAiReelFilter;
 import app.morphe.extension.facebook.feed.PostLanguages;
@@ -51,6 +55,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * remembered, so the viewer opens on something, and once {@link #EMPTIED_PAGES_LIMIT} pages in a row
  * have lost every reel, that viewer stops being filtered and a toast says so. A new viewer starts
  * filtering again.
+ *
+ * <p>The same pages fill the full-screen player a video tapped in the feed opens, or a reel opened
+ * from a link, a chat or Saved. The reel that player opened on is the first one through after
+ * {@link #playerOpening}, and it stays, so the player never loses the video it was opened for (#565).
  *
  * <p>Off, paused, before the settings are ready, or when anything fails, the page goes on as
  * Facebook sent it.
@@ -107,6 +115,22 @@ public final class FollowedReels {
         boolean showingAll;
     }
 
+    /**
+     * How long after a player opens the first reel to come through is taken as the one it opened
+     * on. Its page comes within a second or so of the tap (emulator 2026-11-24, #565).
+     */
+    static final long OPENING_WINDOW_MS = 10_000;
+    /** Counted on a page route for the reel a player opened on, kept without asking any rule. */
+    static final String OPENING_REEL = "reel a player opened on";
+
+    /** When a reels player last opened and no page has brought its first reel yet, or NONE. */
+    private static final AtomicLong OPENED_AT = new AtomicLong(Long.MIN_VALUE);
+    private static final long NONE = Long.MIN_VALUE;
+
+    /** Stands in for the uptime clock when a test sets it. */
+    @Nullable
+    static volatile LongSupplier clockForTests;
+
     /** The Reels controllers seen so far. Weak, so a closed viewer's goes with it. */
     private static final Map<Object, Viewer> VIEWERS = new WeakHashMap<>();
     /** The reels every route keeps: each viewer's first, and every reel of a viewer showing all. */
@@ -135,6 +159,57 @@ public final class FollowedReels {
      */
     public static Object followStatus(Object model, Object unused, boolean fresh) {
         return UNPATCHED;
+    }
+
+    /**
+     * Called as a reels player opens: a video or reel tapped in the feed, or one opened from a link,
+     * a chat or Saved. The first reel a page brings within {@link #OPENING_WINDOW_MS} is the one it
+     * opened on, and it stays whatever the rules say, as a viewer's first reel does. The switch is
+     * about the Reels tab, and a player that lost the video it was opened for showed another video
+     * in its place, or nothing (#565). Never throws.
+     */
+    static void playerOpening() {
+        try {
+            OPENED_AT.set(now());
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "followed reels player opening", failure);
+        }
+    }
+
+    /** Whether a player opened within {@link #OPENING_WINDOW_MS} and no page has brought its reel yet. */
+    private static boolean playerOpenedLately() {
+        long opened = OPENED_AT.get();
+        return opened != NONE && now() - opened <= OPENING_WINDOW_MS;
+    }
+
+    /**
+     * Keeps [first], the first reel of a page, as the reel a player opened on, once per opening, and
+     * counts it on [route]. Nothing without a reel, so a page of cards leaves the opening waiting.
+     */
+    private static void keepOpeningReel(@Nullable Object first, String route) {
+        if (first == null) return;
+        long opened = OPENED_AT.get();
+        if (opened == NONE || now() - opened > OPENING_WINDOW_MS || !OPENED_AT.compareAndSet(opened, NONE)) return;
+        synchronized (VIEWERS) {
+            KEPT.add(first);
+        }
+        FeedFilterCounters.sawKind(route, OPENING_REEL);
+        Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE, () -> "kept the reel a player opened on");
+    }
+
+    /** The first item of [page] holding a reel model of [modelClassName]'s class, or null. */
+    @Nullable
+    private static Object firstReel(Collection<?> page, String modelClassName) {
+        ReelSections.Pick isReel = reels(modelClassName);
+        for (Object item : page) {
+            if (isReel.picks(item)) return item;
+        }
+        return null;
+    }
+
+    private static long now() {
+        LongSupplier clock = clockForTests;
+        return clock != null ? clock.getAsLong() : SystemClock.uptimeMillis();
     }
 
     /**
@@ -176,6 +251,7 @@ public final class FollowedReels {
             boolean countItems = PAGES_ROUTE.equals(route);
             Pass pass = Pass.start(modelClassName, statuses, readers, countItems);
             if (pass == null) return page;
+            if (playerOpenedLately()) keepOpeningReel(firstReel(page, modelClassName), route);
 
             ArrayList<Object> kept = new ArrayList<>(page.size());
             for (Object item : page) {
@@ -235,6 +311,7 @@ public final class FollowedReels {
             if (page == null || page.isEmpty()) return page;
             Pass pass = Pass.start(modelClassName, statuses, readers, true);
             if (pass == null) return page;
+            if (playerOpenedLately()) keepOpeningReel(ReelSections.firstItem(page, reels(modelClassName)), SECTIONS_ROUTE);
             Viewer viewer = viewer(controller);
             if (viewer != null && keepAllFor(viewer, page, modelClassName)) return page;
             if (viewer != null) keepFirstReel(viewer, page, modelClassName);
@@ -349,12 +426,14 @@ public final class FollowedReels {
         }
     }
 
-    /** Forgets every viewer, for a test that opens a new one. */
+    /** Forgets every viewer, any player opening and the stand-in clock, for a test that opens a new one. */
     static void forgetViewers() {
         synchronized (VIEWERS) {
             VIEWERS.clear();
             KEPT.clear();
         }
+        OPENED_AT.set(NONE);
+        clockForTests = null;
     }
 
     /** The switch. Off, unreadable, or asked before the settings are ready, the page passes as it came. */

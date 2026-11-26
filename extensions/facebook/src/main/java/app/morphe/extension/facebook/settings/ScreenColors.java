@@ -40,6 +40,7 @@ import androidx.annotation.Nullable;
 
 import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.theme.ForceDarkMode;
+import app.morphe.extension.facebook.theme.MaterialYouSwitch;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
 import app.morphe.extension.facebook.theme.TonePalette;
 import app.morphe.extension.shared.settings.preference.ImmediateAction;
@@ -214,10 +215,10 @@ final class ScreenColors {
      * The black page's colours: {@link #DEFAULT}, unless the AMOLED theme is in this build with a
      * Background colour other than black. Then they're built from that colour (issue #214), which
      * left the page black with dark blue cards under an app in #0D1117. A Material You build hides
-     * the Background row, so a colour saved before it doesn't count.
+     * the Background row while that theme is switched on, so a colour saved before it doesn't count then.
      */
     static ScreenColors black() {
-        if (!PatchFamily.AMOLED_THEME.inBuild() || PatchFamily.MATERIAL_YOU_THEME.inBuild()) return DEFAULT;
+        if (!PatchFamily.AMOLED_THEME.inBuild() || materialYou()) return DEFAULT;
         int[] surfaces = AmoledTheme.surfaces();
         if (surfaces[0] == Color.BLACK) return DEFAULT;
         ScreenColors colors = tinted;
@@ -271,15 +272,20 @@ final class ScreenColors {
     /**
      * The colours for a screen shown in this context: dark or light as the context's configuration
      * says, and dark while Force dark mode keeps Facebook dark. With the Material You theme in this
-     * build they're the phone's palette. Without it a light screen takes {@link #fixedLight} (#559),
+     * build and switched on they're the phone's palette. Without it a light screen takes {@link #fixedLight} (#559),
      * and a dark one answers null for the black page.
      */
     @Nullable
     static ScreenColors forScreen(Context context) {
         int night = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         boolean light = night != Configuration.UI_MODE_NIGHT_YES && !ForceDarkMode.forcing();
-        if (!PatchFamily.MATERIAL_YOU_THEME.inBuild()) return light ? fixedLight() : null;
+        if (!materialYou()) return light ? fixedLight() : null;
         return new ScreenColors(MaterialYouTheme.phonePalette(context), light);
+    }
+
+    /** Whether the Material You theme is in this build and switched on (D#527). */
+    private static boolean materialYou() {
+        return PatchFamily.MATERIAL_YOU_THEME.inBuild() && MaterialYouSwitch.switchedOn();
     }
 
     /** {@link #fixedLight}, made the first time it's asked for. */

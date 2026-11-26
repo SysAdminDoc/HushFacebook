@@ -100,6 +100,35 @@ public class AutoTranslationTest {
         assertEquals(FamilyNames.AUTO_TRANSLATION + ": invoked 3, 1 found, 0 missing", statusLine());
     }
 
+    /** #579: a Reels query asks the server for captions as written, and every other variable is left alone. */
+    @Test
+    public void onReelsQueriesAskForCaptionsAsWritten() {
+        Settings.TURN_OFF_AUTO_TRANSLATION.save(true);
+        assertSame(Boolean.TRUE, AutoTranslation.queryFlag("skip_ucs_caption_translation", Boolean.FALSE));
+        assertSame(Boolean.TRUE, AutoTranslation.queryFlag("skip_ucs_caption_translation", Boolean.TRUE));
+        assertSame(Boolean.TRUE, AutoTranslation.queryFlag("skip_ucs_caption_translation", null));
+        assertSame(Boolean.FALSE, AutoTranslation.queryFlag("should_fetch_multi_format_content_caption_fragment", Boolean.FALSE));
+        assertNull(AutoTranslation.queryFlag("enable_text", null));
+        assertSame(Boolean.FALSE, AutoTranslation.queryFlag(null, Boolean.FALSE));
+        assertEquals("only the caption variable is reported, once found, each time it was turned on",
+                FamilyNames.AUTO_TRANSLATION + ": invoked 3, 1 found, 0 missing. Counted: "
+                + AutoTranslation.QUERY_KEPT + " 2", statusLine());
+    }
+
+    @Test
+    public void offOrPausedReelsQueriesKeepFacebooksValue() {
+        assertSame(Boolean.FALSE, AutoTranslation.queryFlag("skip_ucs_caption_translation", Boolean.FALSE));
+        Settings.TURN_OFF_AUTO_TRANSLATION.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
+            PauseForTests.pause(reason);
+            assertSame("a Hushfacebook paused by " + reason + " asked for captions as written",
+                    Boolean.FALSE, AutoTranslation.queryFlag("skip_ucs_caption_translation", Boolean.FALSE));
+            PauseForTests.resume();
+        }
+        assertEquals(FamilyNames.AUTO_TRANSLATION + ": invoked 3, 1 found, 0 missing", statusLine());
+    }
+
     @Test
     public void offOrPausedFacebooksTranslationStands() {
         assertSame(Translatability.AUTO_TRANSLATION, AutoTranslation.translationType(Translatability.AUTO_TRANSLATION));

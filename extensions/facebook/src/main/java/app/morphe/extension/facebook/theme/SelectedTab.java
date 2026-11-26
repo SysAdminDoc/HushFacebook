@@ -16,7 +16,7 @@ public final class SelectedTab {
     private SelectedTab() {}
 
     public static int colour(int color) {
-        return colour(color, SettingsStatus.materialYouTheme(), SettingsStatus.markColors());
+        return colour(color, MaterialYouSwitch.on(), SettingsStatus.markColors());
     }
 
     static int colour(int color, boolean materialYou, boolean markColors) {

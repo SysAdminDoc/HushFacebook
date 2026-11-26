@@ -63,8 +63,9 @@ public class SettingsL10nTest {
     /** Text that stays as it is in every language: the product's name and its source's address. */
     private static final Set<String> AS_IS = new LinkedHashSet<>(Arrays.asList(
             "Hushfacebook", "github.com/SysAdminDoc/Hushfacebook",
-            // The Badge, Logo and Selected tab color rows' hint: a color code reads the same in every language.
-            "#2ECC71"));
+            // The Badge, Logo and Selected tab color rows' hint, and the Chat background rows': a color code
+            // reads the same in every language.
+            "#2ECC71", "#1E3A5F"));
 
     @Before
     public void everyPatchIn() {
@@ -158,7 +159,8 @@ public class SettingsL10nTest {
      */
     @Test
     public void inEveryShippedLanguageNothingOnTheScreenStaysEnglish() throws Exception {
-        String[][] languages = {{"ar", "ar"}, {"de", "de"}, {"es", "es"}, {"in-rID", "in"}, {"it", "it"}, {"ko", "ko"},
+        String[][] languages = {{"ar", "ar"}, {"bg", "bg"}, {"de", "de"}, {"es", "es"}, {"fr", "fr"}, {"in-rID", "in"}, {"it", "it"},
+                {"ko", "ko"},
                 {"pt-rBR", "pt-rbr"}, {"tr", "tr"}, {"vi", "vi"}, {"ru", "ru"}, {"th", "th"}, {"zh-rCN", "zh-rcn"},
                 {"zh-rTW", "zh-rtw"}};
         for (String[] language : languages) {
@@ -243,7 +245,8 @@ public class SettingsL10nTest {
                 + "out its patch.";
         String other = "Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and "
                 + "leave out its patch.";
-        String[][] languages = {{"en", null}, {"ar", "ar"}, {"de", "de"}, {"es", "es"}, {"in-rID", "in"}, {"it", "it"},
+        String[][] languages = {{"en", null}, {"ar", "ar"}, {"bg", "bg"}, {"de", "de"}, {"es", "es"}, {"fr", "fr"}, {"in-rID", "in"},
+                {"it", "it"},
                 {"ko", "ko"}, {"pt-rBR", "pt-rbr"}, {"tr", "tr"}, {"vi", "vi"}, {"ru", "ru"}, {"th", "th"},
                 {"zh-rCN", "zh-rcn"}, {"zh-rTW", "zh-rtw"}};
         for (String[] language : languages) {
@@ -292,7 +295,7 @@ public class SettingsL10nTest {
                 "Disable Audience Network"));
 
         List<String> repeats = new ArrayList<>();
-        for (String language : new String[]{"en", "ar", "de", "es", "in-rID", "it", "ko", "pt-rBR", "ru", "th", "tr", "vi",
+        for (String language : new String[]{"en", "ar", "bg", "de", "es", "fr", "in-rID", "it", "ko", "pt-rBR", "ru", "th", "tr", "vi",
                 "zh-rCN", "zh-rTW"}) {
             RuntimeEnvironment.setQualifiers("+" + language);
             for (PatchFamily family : PatchFamily.values()) {

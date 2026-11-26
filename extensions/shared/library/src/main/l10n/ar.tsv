@@ -130,6 +130,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	إظهار المنشورات المحفوظة في التتابع
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	يبقى المنشور المحفوظ في التتابع على الشاشة بدلًا من تخطيه. اسحب لأعلى بعد نهايته للفيديو المحفوظ التالي، أو لأسفل بعد أعلاه للسابق.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	تشغيل صف الريلز في الموجز بالترتيب
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	ريل تفتحه من صف ريلز في موجزك يستمر إلى التالي في ذلك الصف عندما ينتهي أو عندما تسحب لأعلى، بدلًا من ريل مقترح. اسحب لأسفل للعودة واحدًا.
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	ملصق صغير في أعلى ريلز يعرض الدقائق التي شاهدتها. الوقت في التبويبات الأخرى لا يُحسب، و15 دقيقة بعيدًا تبدأ العدّ من جديد.
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	أغنية تضيفها إلى صورة لقصتك تُعرض حتى 30 ثانية بدلًا من 15. تُطبَّق على الأغنية التالية التي تختارها.
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	قصة تجاوزتها في درج القصص تتركه في المرة التالية التي تفتح فيها فيسبوك، حتى لو لم تشاهدها. قصة جديدة تُعيد ذلك الشخص.
@@ -351,6 +355,8 @@ Choose where Facebook opens from its icon. Notifications and links still open th
 Choose which links open here	اختر أي الروابط تفتح هنا
 Clean mode	الوضع النظيف
 Clean mode button on reels	زر الوضع النظيف على ريلز
+Faint Clean mode button	زر الوضع النظيف باهت
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	يظهر زر فيسبوك للخروج من الوضع النظيف باهتًا، فيبقى النص الموجود في الفيديو تحته مقروءًا. ما زال يعمل عند النقر عليه.
 Cleaner reels and video controls	أدوات أنظف للريلز والفيديو
 Clear	مسح
 Clear all	مسح الكل
@@ -446,7 +452,7 @@ Dark box behind folded captions	صندوق داكن خلف الأوصاف الم
 Dark box behind open captions	صندوق داكن خلف الأوصاف المفتوحة
 Dark box behind reel names	صندوق داكن خلف أسماء الريل
 Dark box behind story names	صندوق داكن خلف أسماء القصص
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	الوضع الداكن وهذه الشاشة يستخدمان ألوانًا من خلفية شاشة هاتفك (الأزرق على أندرويد 11). فعّل الوضع الداكن في فيسبوك لتراه.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	الوضع الداكن وهذه الشاشة يستخدمان ألوانًا من خلفية شاشة هاتفك (الأزرق على أندرويد 11). أوقفه لتعود إلى الألوان السابقة دون أن تعدّل مرة أخرى. أعد تشغيل فيسبوك لترى التغيير.
 Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.	الوضع الداكن يستخدم %1$s بدلًا من الرمادي الداكن. فعّل الوضع الداكن في فيسبوك لتراه.
 Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.	الوضع الداكن يستخدم الأسود بدلًا من الرمادي الداكن. فعّل الوضع الداكن في فيسبوك لتراه.
 Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	خلفيات الوضع الداكن تستخدم %1$s. أعد تشغيل فيسبوك لترى التغيير.
@@ -746,6 +752,8 @@ Hide rings on profiles	إخفاء الحلقات على الملفات الشخ�
 Hide Save on reels	إخفاء حفظ على ريلز
 Hide seen stories	إخفاء القصص المرئية
 Hide Send under posts	إخفاء إرسال تحت المنشورات
+Hide Stars and gifts under posts	إخفاء النجوم والهدايا تحت المنشورات
+Hide Save under posts	إخفاء حفظ تحت المنشورات
 Hide Share on reels	إخفاء مشاركة على ريلز
 Hide Share under posts	إخفاء مشاركة تحت المنشورات
 Hide song and effect credits	إخفاء سطر الأغنية والتأثيرات
@@ -814,6 +822,7 @@ Hide the Notifications tab badge	إخفاء شارة تبويب الإشعارا
 Hide the Professional dashboard tab	إخفاء تبويب لوحة الاحتراف
 Hide the pull down to lock hint	إخفاء تلميح اسحب للأسفل للقفل
 Hide the reaction preview on comments	إخفاء معاينة التفاعل على التعليقات
+Hide reaction counts on comments	إخفاء عدد التفاعلات على التعليقات
 Hide the reaction preview on posts	إخفاء معاينة التفاعل على المنشورات
 Hide the Reels tab	إخفاء تبويب الريلز
 Hide the Reels tab dot	إخفاء نقطة تبويب الريلز
@@ -905,8 +914,13 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hides the Imagine me button on posts and the Imagine option when you write a post or create a story. Everything else works as before.	يخفي زر تخيلني على المنشورات وخيار تخيل عندما تكتب منشورًا أو تنشئ قصة. كل شيء آخر يعمل كما كان.
 Hides the Join button next to the group's name on posts from groups you haven't joined, and the Join group bar under their videos. A change shows on the posts drawn after it.	يخفي زر الانضمام بجانب اسم المجموعة على منشورات مجموعات لم تنضم إليها، وشريط الانضمام إلى المجموعة تحت فيديوهاتها. يظهر التغيير على المنشورات المرسومة بعده.
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	يخفي فقاعة الملاحظة الموجودة على الصور الرمزية. يُطبَّق في المرة التالية التي تفتح فيها ملفًا شخصيًا.
+Hide the gift button on profiles	إخفاء زر الهدية في الملفات الشخصية
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	يزيل زر إرسال هدية من الملفات الشخصية للآخرين. يُطبَّق في المرة التالية التي تفتح فيها ملفًا شخصيًا.
 Hides the other Meta AI buttons Facebook puts under posts. The post's next button shows instead, if it has one.	يخفي أزرار Meta AI الأخرى التي يضعها فيسبوك تحت المنشورات. يظهر زر المنشور التالي بدلًا منها، إن وُجد.
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	يخفي صف الأشخاص الذين قد تعرفهم الذي يعرضه فيسبوك عندما تفتح البحث. عمليات بحثك الأخيرة والاقتراحات أثناء الكتابة تبقى.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	إخفاء الأشخاص الذين قد تعرفهم في تبويب الأصدقاء
+Hides the People you may know list in the Friends tab. Your friend requests stay.	يخفي قائمة الأشخاص الذين قد تعرفهم في تبويب الأصدقاء. طلبات الصداقة تبقى.
 Hides the row of groups to join between posts and the groups card between reels. Posts from groups you're in stay.	يخفي صف المجموعات المقترحة للانضمام بين المنشورات وبطاقة المجموعات بين الريلز. منشورات المجموعات التي أنت فيها تبقى.
 Hides the row of groups to join between posts. Posts from groups you're in stay.	يخفي صف المجموعات المقترحة للانضمام بين المنشورات. منشورات المجموعات التي أنت فيها تبقى.
 Hides the row of Meta AI questions under some posts. The post, its link card and its buttons stay.	يخفي صف أسئلة Meta AI تحت بعض المنشورات. المنشور وبطاقة رابطه وأزراره تبقى.
@@ -915,6 +929,7 @@ Hides the row of Stories from people you aren't connected to, between posts. You
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	يخفي اقتراح البحث تحت وصف الريل، والعدسة المكبرة مع سؤال للبحث عنه، والذي في أعلى تعليقاته، وشريط البحث فوق الريل التي تفتحها من ملف شخصي.
 Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions. To take the number off the Like button too, turn on Hide counts on posts.	يخفي أيقونات التفاعل المكدّسة وعدّاد التفاعلات تحت المنشورات. المساحة تبقى، لذلك نقرة حيث كانت ما زالت تفتح قائمة التفاعلات. لإزالة الرقم من زر الإعجاب أيضًا، فعّل إخفاء العدّادات على المنشورات.
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	يخفي أيقونات التفاعل المكدّسة في زاوية تعليق. المساحة تبقى، لذلك نقرة حيث كانت ما زالت تفتح قائمة التفاعلات.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	يخفي الرقم بجانب أيقونات التفاعل على تعليق. تبقى الأيقونات، والنقر عليها ما زال يفتح قائمة التفاعلات.
 Hides the Stories tray card that asks to upload your contacts. Applies when Facebook next loads the tray.	يخفي بطاقة درج القصص التي تطلب رفع جهات اتصالك. يُطبَّق عندما يحمّل فيسبوك الدرج في المرة التالية.
 Hides the strip on some posts, like "Are you interested in this post?" or who recently commented, plus follow and chat suggestions there. The post stays.	يخفي الشريط على بعض المنشورات، مثل هل أنت مهتم بهذا المنشور؟ أو من علّق حديثًا، بالإضافة إلى اقتراحات المتابعة والمحادثة هناك. المنشور يبقى.
 Hides the WhatsApp button beside reels and videos. WhatsApp stays in the Share menu. A change shows from the next video.	يخفي زر WhatsApp بجانب الريلز والفيديوهات. WhatsApp يبقى في قائمة المشاركة. يظهر التغيير من الفيديو التالي.
@@ -1019,7 +1034,7 @@ Keep feed position on return	الاحتفاظ بموضع الخلاصة عند �
 Keep feed videos muted	إبقاء فيديوهات الخلاصة مكتومة
 Keep playing in the background	الاستمرار في التشغيل في الخلفية
 Next reel in the background	الريل التالي في الخلفية
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	عندما ينتهي ريل يعمل في الخلفية، يُشغَّل الريل التالي بدلًا من إعادة الريل نفسه. يمرّ عبر الريلز التي كانت ريلز قد حمّلتها عندما غادرت. يعمل مع تشغيل الاستمرار في التشغيل في الخلفية.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	عندما ينتهي ريل يعمل في الخلفية، يُشغَّل الريل التالي بدلًا من إعادة الريل نفسه، وتواصل ريلز تحميل المزيد أثناء ذلك. يعمل مع تشغيل الاستمرار في التشغيل في الخلفية.
 Keep post dates	الاحتفاظ بتواريخ المنشورات
 Keep seen posts hidden for	إبقاء المنشورات المرئية مخفية لمدة
 Keep Settings and privacy expanded	إبقاء الإعدادات والخصوصية موسّعة
@@ -1049,7 +1064,6 @@ Leave calls and chats to Messenger	اترك المكالمات والمحادث�
 Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.	مغادرة فيسبوك لا تفتح النافذة. اضغط على الصورة داخل الصورة من قائمة المزيد في الريل (النقاط الثلاث) عندما تريد واحدة.
 Left alone: %s	تاركًا كما هو: %s
 Let each post come back once	السماح لكل منشور بالعودة مرة واحدة
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	يتيح لك اختيار أيقونات التطبيقات التي يحتفظ بها فيسبوك لـ Facebook Plus، على صفحة أيقونة التطبيق في فيسبوك. صف اختيار أيقونة التطبيق يفتح تلك الصفحة. اختيار remains if you turn this off, so pick the blue one first to go back.
 Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.	يتيح لك التقاط لقطات شاشة وتسجيلات للشاشة على الصفحات التي يحظر فيها فيسبوك ذلك. أعد فتح صفحة مفتوحة بالفعل.
 Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	يتيح لك كتابة القواعد في بحث Marketplace. ضع كلمة بين علامتي تنصيص، مثل "كلمة"، للاحتفاظ فقط بالعناوين التي تحتويها، ضع ناقصًا أمامها، مثل -كلمة، لإخفاء العناوين التي تحتويها، وأضف in:place للاحتفاظ بالإعلانات في ذلك المكان.
 Licenses	التراخيص
@@ -1104,7 +1118,7 @@ Mark as seen	تمييز كمُشاهد
 Mark as seen button	زر تمييز كمُشاهد
 Mark new settings	تمييز الإعدادات الجديدة
 Marked as seen and sent	موسوم كمُشاهد ومرسل
-Marked as seen. Tap again to undo.	موسوم كمُشاهد. اضغط مرة أخرى للتراجع.
+Marked as seen	موسوم كمُشاهد
 Marketplace	Marketplace
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Marketplace مخفي في إعدادات تبويبات فيسبوك. أظهره ضمن الإعدادات، شريط التبويبات، تخصيص الشريط. تبقى تبويباتك العادية متاحة.
 Marketplace only	Marketplace فقط
@@ -1227,6 +1241,8 @@ On the Reels screen, the buttons, caption and bars fade when you leave them alon
 On the Reels screen, the buttons, caption and bars fade when you leave them alone. Touching one of them brings them back.	على شاشة الريلز، الأزرار والوصف والأشرطة تخفّ عندما تتركها وحدها. لمس أحدهم يعيدها.
 Once a day, when Facebook starts, checks GitHub for a newer Hushfacebook and tells you at the top of this page. Nothing downloads on its own.	مرة واحدة يوميًا، عندما يبدأ فيسبوك، يتحقق من GitHub بحثًا عن Hushfacebook أحدث ويخبرك في أعلى هذه الصفحة. لا شيء يُنزّل من تلقاء نفسه.
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	بمجرد أن يخفت حارس الاحتراق الأزرار، تبقى باهتة على ريلز مهما نقرت أو سحبت، والريل التالي أيضًا. ما زالت تعمل. مغادرة ريلز تعيدها.
+Tap the video to bring them back	انقر على الفيديو لإعادتها
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	بمجرد أن يخفت حارس الاحتراق الأزرار، تعيدها نقرة على الفيديو دون إيقافه مؤقتًا. النقرة التالية توقفه مؤقتًا كالمعتاد.
 Once dimmed, the buttons, caption and bars show at %1$s percent.	بمجرد أن يخفت، الأزرار والوصف والأشرطة تُظهر بنسبة %1$s.
 Once dimmed, the buttons, caption and bars show at %1$s percent. Type a number to change it.	بمجرد أن يخفت، الأزرار والوصف والأشرطة تُظهر بنسبة %1$s. اكتب رقمًا لتغييره.
 One name, ID or site per line	اسم واحد، معرّف أو موقع في كل سطر
@@ -1271,7 +1287,6 @@ Opening supported links is off for this app in Android's settings. Tap to turn i
 Opening the video to save it	فتح الفيديو لحفظه
 Opens a GitHub report with your versions and settings filled in. Add what happened.	يفتح تقرير GitHub مع إصداراتك وإعداداتك محشوّة. أضف ما حدث.
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	يفتح المحادثات في تطبيق Messenger بدلاً من داخل فيسبوك، بما في ذلك زر الرسائل على الملف الشخصي، بينما Messenger مثبت وممكّن. بدون Messenger، تبقى المحادثات في فيسبوك. أعد تشغيل فيسبوك بعد تغييره.
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	يفتح صفحة أيقونة تطبيق فيسبوك، حتى على الحسابات التي لا يسرد فيها فيسبوكها في الإعدادات والخصوصية.
 Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Off by default, since it hasn't been tried on a real account yet.	يفتح الريلز والفيديوهات في وضع فيسبوك النظيف، الذي يخفي الأزرار على الجانب. ما زلت قادرًا على مغادرة الوضع النظيف كالمعتاد. متوقف افتراضيًا، لأنه لم يُجرَّب على حساب حقيقي بعد.
 Opt-out read: %1$s. Triggered read: %2$s.	قراءة إلغاء الاشتراك: %1$s. قراءة محفزة: %2$s.
 Orange	برتقالي
@@ -1306,7 +1321,6 @@ Photos are named %1$s.	تُسمى الصور %1$s.
 Photos go to %1$s.	تذهب الصور إلى %1$s.
 Photos will go in a subfolder named %1$s.	ستذهب الصور إلى مجلد فرعي اسمه %1$s.
 Photos will go in the save folder itself.	ستذهب الصور إلى مجلد الحفظ نفسه.
-Pick an app icon	اختر أيقونة تطبيق
 Pick Custom color again to change it.	اختر لونًا مخصصًا مرة أخرى لتغييره.
 Pick one each time	اختر واحدًا في كل مرة
 Pick one each time. The reactions open by your finger, so slide to one and let go, or let go and tap one. A tap anywhere else closes them.	اختر واحدًا في كل مرة. تفتح التفاعلات بإصبعك، لذا اسحب إلى واحدة واتركها، أو اتركها وانقر على واحدة. نقر في أي مكان آخر يغلقها.
@@ -1364,6 +1378,7 @@ Puts every feature switch but Lock Facebook back the way it started.	يعيد ك
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu.	يضع إعدادات Hushfacebook في القائمة التي تحصل عليها بالضغط المطوّل على أيقونة فيسبوك. متوقف، يترك تلك القائمة.
 Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	يضع سرعة التشغيل في الصفحة الأولى من القائمة، مع حفظ وبلاغ، حتى تكون على بعد نقرة واحدة. متوقف، يبقى تحت خيارات أكثر.
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	يضع المنشورات مرة أخرى في صف فوق نتائج البحث، بعد الريلز، حتى ترى فقط المنشورات لما بحثت عنه.
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	يضع «الفيديوهات» في الصف فوق نتائج البحث، بجانب المنشورات، حتى ترى الفيديوهات فقط لما بحثت عنه.
 Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.	يضع زر مكبر الصوت في العمود الجانبي للريلز، فوق النقاط الثلاث مباشرة. يظهر التغيير من الريل التالي.
 Puts your words or Facebook's logo back at the top of Home. Restart Facebook to see the change.	يضع كلماتك أو شعار فيسبوك مرة أخرى في أعلى الرئيسية. أعد تشغيل فيسبوك لترى التغيير.
 Putting your settings back	إعادة إعداداتك
@@ -1446,6 +1461,7 @@ Removes the saved font file. Restart Facebook to use your phone's font.	يزيل
 Removes the saved font file. Use the system font stays off.	يزيل ملف الخط المحفوظ. استخدام خط النظام يبقى متوقفًا.
 Removes the Threads button when you share something. All other ways to share stay, in the same order.	يزيل زر Threads عندما تشارك شيئًا. كل طرق المشاركة الأخرى تبقى، بنفس الترتيب.
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	يزيل هذا التبويب من شريط التبويبات. صفحته ما زالت في القائمة. أعد تشغيل فيسبوك لترى التغيير.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	يزيل هذا التبويب من شريط التبويبات. صفحته ما زالت في القائمة، إلا إذا اخترتها في بلاطات القائمة المطلوب إخفاؤها. أعد تشغيل فيسبوك لترى التغيير.
 Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.	يزيل علامات التتبع مثل mibextid من الروابط التي تشاركها أو تنسخها. رابط facebook.com/share/ فريد لكل مشاركة، لذلك فيسبوك لا يزال يستطيع تتبعه.
 Replay feed videos in place	إعادة تشغيل فيديوهات الخلاصة في مكانها
 Replay story	إعادة تشغيل القصة
@@ -1609,6 +1625,7 @@ Show only comments that match	إظهار التعليقات المتطابقة �
 Show only watched stories	إظهار القصص المشاهدة فقط
 Show original	إظهار الأصلي
 Show Posts in search	إظهار المنشورات في البحث
+Show Videos in search	إظهار الفيديوهات في البحث
 Show reactions on the Like button	إظهار التفاعلات على زر الإعجاب
 Show Reels in gray	إظهار الريلز باللون الرمادي
 Show Reels in gray will make reels gray from the start.	إظهار الريلز باللون الرمادي سيجعل الريلز رمادية من البداية.
@@ -1632,7 +1649,6 @@ Shows only friends and followed Pages in the Stories tray. Applies when Facebook
 Shows only people's stories in the Stories tray, without the Pages you follow. Applies when Facebook next loads the tray.	يُظهر فقط قصص الأشخاص في درج القصص، دون الصفحات التي تتابعها. يُطبّق عندما يحمّل فيسبوك الدرج في المرة التالية.
 Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	يُظهر فقط منشورات كتبها أصدقاؤك ويخفي الصفحات والمجموعات والإعلانات والمنشورات المقترحة وريلز الخلاصة. منشور لا يستطيع معرفة كاتبه يبقى. شغّل %1$s أيضًا لأحدث المنشورات أولاً.
 Shows Save photo on every photo you open, even where saving is turned off, and saves the biggest size. Off or paused, Facebook decides again.	يُظهر حفظ صورة على كل صورة تفتحها، حتى حيث يكون الحفظ متوقفًا، ويحفظها بأكبر حجم. متوقف أو متوقف مؤقتًا، فيسبوك يقرر مرة أخرى.
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	يُظهر أيقونة التطبيق التي اخترتها في أعلى الرئيسية بدلاً من كلمة فيسبوك. يحتاج إلغاء تأمين أيقونات التطبيقات واختيار غير الأزرق. أعد تشغيل فيسبوك لترى التغيير.
 Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	يُظهر تبويب الخلاصات مباشرة على منشوراته، دون صف العنوان أو الفلاتر. أعد تشغيل فيسبوك لترى التغيير.
 Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	يُظهر أرقام الأصدقاء والمتابعين والمتابعة التي تكتبها أدناه على ملفك الشخصي الخاص، على هذا الهاتف فقط. الملفات الشخصية الأخرى وأرقام فيسبوك الحقيقية لا تُمس. يُطبّق في المرة التالية التي تفتح فيها ملفك الشخصي.
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	يُظهر تاريخ المنشور أسفل اسم الناشر بدلاً من تفاصيل فيسبوك المتناوبة، التي قد تصبح فارغة على بعض الهواتف.
@@ -1697,6 +1713,8 @@ Support Hushfacebook	دعم Hushfacebook
 Support the project	دعم المشروع
 Supported links	الروابط المدعومة
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	السحب إلى قصص الشخص التالي أو السابق يمررها عبرها بدلاً من قلبها كمكعب. يُطبّق من your next swipe.
+Show the time on every story	إظهار الوقت على كل قصة
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	القصص التي لا تذكر منذ متى نُشرت، مثل قصص الصفحات، تعرضه بجانب الاسم كما تفعل قصة صديقك. يسري من القصة التالية التي تفتحها.
 Switches that are on	المفاتيح المفعّلة
 Tab bar	شريط التبويبات
 Tab bar at the bottom	شريط التبويبات في الأسفل
@@ -1850,7 +1868,7 @@ The list is full, so the rest weren't added.	القائمة ممتلئة، لذ�
 The Messenger link test couldn't start. Try again.	تعذّر بدء اختبار رابط Messenger. حاول مرة أخرى.
 The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	اختصار Meta AI يغادر قائمة القائمة مع الخلاصات وMarketplace وريلز والمجموعات، والاختصار التالي يتحرك لأعلى ليأخذ مكانه.
 The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	بطاقة Muse، إعلان Meta لتطبيق وكيل الذكاء الاصطناعي الخاص بها، تغادر أعلى قائمة فيسبوك.
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	الاسم في أسفل الريل يجلس على نفس الصندوق الداكن، بحيث يكون سهل القراءة فوق فيديو ساطع. يظهر التغيير من الريل التالي.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	الاسم في أسفل الريل، مع التاريخ والتفاصيل تحته، يجلس على نفس الصندوق الداكن، بحيث يكون سهل القراءة فوق فيديو ساطع. يظهر التغيير من الريل التالي.
 The newest Hushfacebook release is %1$s.	أحدث إصدار Hushfacebook هو %1$s.
 The phone's font at its regular weight.	خط الهاتف بوزنه العادي.
 The phone's language	لغة الهاتف
@@ -1904,7 +1922,6 @@ They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off
 Thin line seek bar	شريط تقدم بخط رفيع
 This build can't run the Messenger link test.	هذا الإصدار لا يستطيع تشغيل اختبار رابط Messenger.
 This build has no notification sound to save.	هذا الإصدار من فيسبوك ليس به صوت إشعار لحفظه.
-This Facebook build has no App icon page.	هذا الإصدار من فيسبوك ليس به صفحة أيقونة تطبيق.
 This Facebook build has no Whitehat settings screen.	هذا الإصدار من فيسبوك ليس به شاشة إعدادات Whitehat.
 This list needs more room than it has. Shorten it, then save again.	هذه القائمة تحتاج مساحة أكثر مما لديها. اختصرها، ثم احفظ مرة أخرى.
 this person	هذا الشخص
@@ -1950,7 +1967,6 @@ Undo	تراجع
 Undo the reset	التراجع عن إعادة الضبط
 Unfollow	إلغاء المتابعة
 Unlock	إلغاء القفل
-Unlock app icons	إلغاء تأمين أيقونات التطبيقات
 Unlock Facebook	إلغاء قفل فيسبوك
 Until I leave the page	حتى أغادر الصفحة
 Until you clear it	حتى تمسحها
@@ -1960,7 +1976,6 @@ Updates	التحديثات
 Upload Stories in HD	رفع القصص بدقة HD
 Usage statistics uploads	رفع إحصائيات الاستخدام
 Use the Hushfacebook logo	استخدام شعار Hushfacebook
-Use the icon at the top of Home	استخدام الأيقونة في أعلى الرئيسية
 Use the order below. A choice made on a post lasts until restart. Links to comments keep Facebook's order.	استخدام الترتيب أدناه. اختيار يتم على منشور يستمر حتى إعادة التشغيل. روابط التعليقات تحتفظ بترتيب فيسبوك.
 Use the phone's emoji	استخدام رموز الهاتف
 Use the system font	استخدام خط النظام
@@ -2032,7 +2047,7 @@ Weight loss ads	إعلانات فقدان الوزن
 What always comes through	ما يأتي دائمًا
 What you search for, and the pages and profiles you open from a search, aren't added to your Facebook search history. Searches already there stay until you delete them.	ما تبحث عنه، والصفحات والملفات الشخصية التي تفتحها من بحث، لا تُضاف إلى سجل بحث فيسبوك الخاص بك. عمليات البحث الموجودة بالفعل تبقى حتى تحذفها.
 WhatsApp and some editors may not accept this video	WhatsApp وبعض المحررين قد لا يقبلون هذا الفيديو
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	عندما يكون لفيديو في خلاصتك اسم الناشر فوق الفيديو، ذلك الاسم يجلس على نفس الصندوق الداكن. يظهر التغيير على المنشورات المرسومة بعده.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	عندما يكون لفيديو في خلاصتك اسم الناشر فوق الفيديو، يجلس ذلك الاسم والتاريخ تحته على نفس الصندوق الداكن. يظهر التغيير على المنشورات المرسومة بعده.
 When Facebook also sends an HDR video in SDR at the same size, play that version instead. The screen doesn't brighten and the picture stays as sharp. Works with the switch above on or off.	عندما يرسل فيسبوك أيضًا فيديو HDR بصيغة SDR بنفس الحجم، شغّل تلك النسخة بدلاً منه. الشاشة لا تضيء والصورة تبقى حادة. يعمل مع تشغيل أو إيقاف المفتاح أعلاه.
 When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	عندما يتعطّل فيسبوك، يذهب الخطأ في ملف نصي في Download/Hushfacebook، حتى تتمكن من إرساله مع بلاغ خطأ حتى لو لم يفتح فيسبوك. الروابط والمعرّفات تُترك خارجًا. يتم الاحتفاظ بأحدث خمسة.
 When Facebook opens on Feeds, the Feeds tab opens on %1$s. If your Feeds tab doesn't have it, it opens as usual.	عندما يفتح فيسبوك على الخلاصات، تبويب الخلاصات يفتح على %1$s. إذا لم يكن تبويب الخلاصات لديك يحتويه، يُفتح كالمعتاد.
@@ -2230,23 +2245,44 @@ All your notifications are marked as read.	تم تعليم كل إشعاراتك
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	لم يُعلَّم أي شيء، لأن فيسبوك لم يحدد الحساب المسجَّل دخوله. افتح تبويب الإشعارات مرة واحدة، ثم حاول مرة أخرى.
 This build can't mark notifications as read.	لا يستطيع هذا الإصدار تعليم الإشعارات كمقروءة.
 Facebook couldn't mark your notifications as read. Try again in a moment.	لم يتمكن فيسبوك من تعليم إشعاراتك كمقروءة. حاول مرة أخرى بعد قليل.
-# context: the account sharing rows in Hushfacebook settings, and their dialogs
-Export account	تصدير الحساب
-Copies this account's cookies and token to the clipboard.	ينسخ ملفات تعريف الارتباط والرمز المميز لهذا الحساب إلى الحافظة.
-Facebook hasn't built a session yet. Open a post, then try again.	لم يُنشئ فيسبوك جلسة بعد. افتح منشورًا ثم حاول مجددًا.
-Import account	استيراد حساب
-Signs in with an account you paste, or a file.	يسجّل الدخول بحساب تلصقه أو بملف.
-Account copied	تم نسخ الحساب
-Nothing was exported	لم يُصدَّر شيء
-This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	لا يوجد حساب لتصديره في فيسبوك هذا. افتح رابط فيسبوك في متصفحه مرة واحدة ثم حاول مجددًا.
-Paste it into Import account on the other phone, or use the saved file.	الصقه في استيراد حساب على الهاتف الآخر أو استخدم الملف المحفوظ.
-From file	من ملف
-No account file on this phone.	لا يوجد ملف حساب على هذا الهاتف.
-Your account	حسابك
-Copy	نسخ
-Copied.	تم النسخ.
-There's nothing to save.	لا يوجد شيء لحفظه.
-That file couldn't be written.	تعذّرت كتابة هذا الملف.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	المشاركة في محادثات فيسبوك
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	يضيف محادثات فيسبوك إلى قائمة المشاركة في Android. تُحفظ الصورة أو الفيديو الذي تشاركه هناك في معرض الصور ويُنسخ النص، ثم تُفتح محادثاتك لتختار واحدة وترسله.
+Share to Facebook chats is off.	المشاركة في محادثات فيسبوك متوقفة.
+Nothing in it to send.	لا يوجد ما يُرسل.
+Couldn't save it to your gallery.	تعذّر الحفظ في معرض الصور.
+Copied and saved. Paste and attach in a chat.	تم النسخ والحفظ. الصق وأرفق في محادثة.
+Saved to your gallery. Attach it in a chat.	حُفظ في المعرض. أرفقه في محادثة.
+Copied. Pick a chat and paste it.	تم النسخ. اختر محادثة والصقه.
+Open your chats to pick one.	افتح محادثاتك لتختار واحدة.
+Post date after the caption	تاريخ المنشور بعد الوصف
+With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	عند تشغيل "إظهار تاريخ المنشور على الريلز"، يضع التاريخ في نهاية الوصف بدلًا من أسفل الاسم، حيث تزاحمه الأغنية والتسميات الأخرى. يظهر التغيير من الريل التالي.
+Fill every reel	ملء الشاشة بكل الريلز
+With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	عند تشغيل "ملء الشاشة بالريلز"، يملأ كل ريل الشاشة حتى لو قُطع جزء كبير من الحواف. مخصص للأجهزة القابلة للطي والأجهزة اللوحية، حيث كانت معظم الريلز ستبقى بأشرطة سوداء.
+Chat background	خلفية المحادثات
+Last chat's background	خلفية آخر محادثة
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	رمز لون (#RRGGBB) للمساحة خلف الرسائل في كل المحادثات، مثل #1E3A5F. رمزان، مثل #1E3A5F #6A1B9A، يتدرّجان من أحدهما إلى الآخر. لا يظهر إلا على هذا الهاتف. اتركه فارغًا لخلفية فيسبوك.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	رمز لون (#RRGGBB) لـ %1$s فقط، مثل #1E3A5F. رمزان يتدرّجان من أحدهما إلى الآخر. اتركه فارغًا لتأخذ خلفية المحادثات أعلاه.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	تحتفظ المحادثات بخلفية فيسبوك. اكتب رمز لون لتغييرها على هذا الهاتف فقط.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	خلف الرسائل في المحادثات اللون %1$s، على هذا الهاتف فقط. لا يُبلَّغ أحد في المحادثة.
+Open a chat, then come back here to give it a color of its own.	افتح محادثة، ثم عُد إلى هنا لتمنحها لونًا خاصًا بها.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s، آخر محادثة فتحتها، تأخذ خلفية المحادثات أعلاه. اكتب رمز لون لتمنحها لونًا خاصًا بها.
+%1$s, the last chat you opened, is %2$s.	%1$s، آخر محادثة فتحتها، لونها %2$s.
+Type one color code, or two for a fade from top to bottom.	اكتب رمز لون واحدًا، أو رمزين لتدرّج من الأعلى إلى الأسفل.
+Hide the AI content label on reels	إخفاء تسمية "محتوى الذكاء الاصطناعي" على ريلز
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	يزيل تسمية "محتوى الذكاء الاصطناعي" أو "معلومات الذكاء الاصطناعي" من الريلز التي يحددها فيسبوك على أنها مصنوعة بالذكاء الاصطناعي. يظهر التغيير من الريل التالي.
+The %1$s row will be set to %2$s.	سيُضبط صف %1$s إلى %2$s.
+The %1$s row will go back to its default.	سيعود صف %1$s إلى قيمته الافتراضية.
+Save files to Downloads	حفظ الملفات في التنزيلات
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	ملف PDF أو مستند أو أي ملف آخر تنزّله من منشور يذهب إلى مجلد التنزيلات في هاتفك، حيث يمكن لمدير الملفات فتحه. عند الإيقاف، يحتفظ به Facebook في مكان لا يصل إليه أي مدير ملفات.
+Hide hashtags in reel captions	إخفاء الوسوم في تعليقات الريلز
+Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	يزيل الوسوم من تعليقات الريلز، مثل مجموعة الوسوم في آخرها. يبقى الوسم الذي هو جزء من جملة. يظهر التغيير من الريل التالي.
+Keep the keyboard closed when comments open	إبقاء لوحة المفاتيح مغلقة عند فتح التعليقات
+Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	تُفتح التعليقات دون أن تظهر لوحة المفاتيح، حتى في منشور ليس عليه تعليقات بعد. اضغط على صندوق التعليق عندما تريد الكتابة.
+Settings language	لغة الإعدادات
+Same as Facebook	مثل فيسبوك
+Show feed reels uncropped	عرض الريلز في الخلاصة دون قص
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	تظهر الريلز في خلاصتك بالصورة كاملة وبشكلها الأصلي، بدلاً من قصها لتناسب إطار فيسبوك. الريلز المرسومة بعد التغيير تلتقطه.
 Export token	تصدير الرمز المميز
 Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	يعرض رمز الوصول لكل حساب مسجل الدخول على هذا الهاتف. انسخ واحدًا أو احفظها كلها بصيغة JSON.
 Save JSON	حفظ JSON

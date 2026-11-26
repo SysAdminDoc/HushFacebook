@@ -67,7 +67,7 @@ Export settings	Ayarları dışa aktar
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook açıldıktan sonraki bir dakika içinde üst üste üç kez çöktü veya dondu, bu yüzden Hushfacebook kendini duraklattı.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook artık arka planda reklamları veya reklam seçmekte kullandığı verileri indirmez.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook, bu telefondaki diğer uygulamaların içinde reklamlarını göstermez.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Karanlık mod ve bu ekran duvar kağıdınızın renklerini kullanır (Android 11'de mavi). Görmek için Facebook'ta karanlık modu açın.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	Karanlık mod ve bu ekran duvar kağıdınızın renklerini kullanır (Android 11'de mavi). Yeniden yamalamadan eski renklere dönmek için kapatın. Değişikliği görmek için Facebook'u yeniden başlatın.
 Hide Stories between posts	Gönderiler arasındaki Hikayeleri gizle
 Joining the picture and sound	Görüntü ve ses birleştiriliyor
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	Bi
 Hide profile notes	Profil notlarını gizle
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Profil fotoğraflarının üzerindeki not balonunu gizler. Bir profili bir sonraki açışınızda uygulanır.
+Hide the gift button on profiles	Profillerde hediye düğmesini gizle
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Başkalarının profillerinden hediye gönder düğmesini kaldırır. Bir profili bir sonraki açışınızda uygulanır.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Gönderilerin altında Kaydet düğmesi
 # context: summary of that switch; Like, Comment and Share are the buttons under a post
@@ -590,6 +592,8 @@ Hide Repost under posts	Gönderilerin altında Yeniden Paylaş'ı gizle
 Hide Share under posts	Gönderilerin altında Paylaş'ı gizle
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Gönderilerin altında Gönder'i gizle
+Hide Stars and gifts under posts	Gönderilerin altında Yıldızlar ve hediyeleri gizle
+Hide Save under posts	Gönderilerin altında Kaydet'i gizle
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Bu düğmeyi akıştaki gönderilerin altındaki satırdan kaldırır. Diğer düğmeler kalır ve tüm düğmeleri gizlenen bir gönderi satır göstermez.
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
@@ -1003,6 +1007,7 @@ Hide the Create tab	Oluştur sekmesini gizle
 Hide the Explore tab	Keşfet sekmesini gizle
 Hide the Jobs tab	İş İlanları sekmesini gizle
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	Bu sekmeyi sekme çubuğundan kaldırır. Sayfası Menü'de durur. Değişikliği görmek için Facebook'u yeniden başlatın.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	Bu sekmeyi sekme çubuğundan kaldırır. Gizlenecek Menü kutucukları içinde seçmediğiniz sürece sayfası Menü'de durur. Değişikliği görmek için Facebook'u yeniden başlatın.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	“%1$s” açıkken Facebook Ana Sayfa'da açılır, çünkü %2$s sekme çubuğunda yoktur. Seçiminiz kayıtlı kalır.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Bazı hesaplarda Video adıyla görünen Reels sekmesinde nokta ya da yeni sayısı olmaz. Diğer sekmeler kendilerininkini korur.
@@ -1100,7 +1105,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	Reel adlarının arkasına koyu kutu
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Bir reel'in altındaki ad da aynı koyu kutunun üstünde durur, böylece parlak bir videonun üstünde kolayca okunur. Değişiklik bir sonraki reel'den itibaren geçerli olur.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Bir reel'in altındaki ad, altındaki tarih ve ayrıntılarla birlikte aynı koyu kutunun üstünde durur, böylece parlak bir videonun üstünde kolayca okunur. Değişiklik bir sonraki reel'den itibaren geçerli olur.
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	Kutu koyuluğu
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -1243,15 +1248,6 @@ Turn off haptics	Dokunsal titreşimi kapat
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Facebook'un dokunma veya kaydırma sırasında yaptığı küçük titreşimleri durdurur. Klavyenizin ve telefonunuzun titreşimleri etkilenmez.
 Turn off screen transitions	Ekran geçişlerini kapat
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	Sekmeler, Menü, fotoğraflar ve Facebook'un üzerinde açılan ekranlar kayarak ya da yakınlaşarak gelmek yerine hemen görünür. Sekmeler arasında kaydırma yine çalışır.
-Unlock app icons	Uygulama simgelerinin kilidini aç
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Facebook'un Facebook Plus'a ayırdığı uygulama simgelerini, Facebook'un Uygulama simgesi sayfasında seçmenizi sağlar. Uygulama simgesi seç satırı bu sayfayı açar. Bunu kapatsanız da seçiminiz kalır, geri dönmek için önce mavi olanı seçin.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	Uygulama simgesi seç
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	Facebook'un Uygulama simgesi sayfasını, Facebook'un Ayarlar ve gizlilik'te göstermediği hesaplarda da açar.
-Use the icon at the top of Home	Ana sayfanın üstünde simgeyi kullan
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	Seçtiğin uygulama simgesini Facebook yazısı yerine ana sayfanın üstünde gösterir. Uygulama simgelerinin kilidini aç ayarı ve maviden farklı bir seçim gerekir. Değişikliği görmek için Facebook'u yeniden başlat.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	Bu Facebook sürümünde Uygulama simgesi sayfası yok.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Pencere içinde pencere
 # context: summary of that switch
@@ -1463,7 +1459,7 @@ Adds an eye button to the top of each story while you view anonymously. Tap it t
 # context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
 Mark as seen	Görüldü olarak işaretle
 # context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
-Marked as seen. Tap again to undo.	Görüldü olarak işaretlendi. Geri almak için tekrar dokun.
+Marked as seen	Görüldü olarak işaretlendi
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	Görüldü olarak işaretlendi ve gönderildi
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
@@ -1865,7 +1861,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	Arka planda çalmaya devam et
 Next reel in the background	Arka planda sonraki reel
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	Arka planda çalan bir reel bittiğinde aynısı tekrar çalmak yerine sonraki reel çalar. Çıktığında Reels'in yüklemiş olduğu reel'ler sırayla çalar. Arka planda çalmaya devam et açıkken çalışır.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	Arka planda çalan bir reel bittiğinde aynısı tekrar çalmak yerine sonraki reel çalar ve Reels bu sırada yenilerini yüklemeye devam eder. Arka planda çalmaya devam et açıkken çalışır.
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	Bir dokunuşla başlattığın video ya da Reels'te kaydırarak geldiğin reel, Facebook'tan çıktıktan sonra da sesini sürdürür ve bildirimi onu duraklatabilir. Bildirimi kaydırıp kapatmak ya da bir aramayı yanıtlamak onu durdurur.
 # context: title of that notification when the video has none of its own
@@ -1983,8 +1979,10 @@ Show reactions on the Like button	Tepkileri Beğen düğmesinde göster
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	Bir gönderinin tepki simgelerini düğme satırının sonundan Beğen düğmesine, sayının hemen önüne taşır. Beğen düğmesi eskisi gibi beğenir ve tepki verir. Orada izlenme sayısını gösteren bir video tek bir Beğen simgesi alır ya da tepki verdiğinde kendi tepkini. Gönderilerdeki tepki önizlemesini gizle bundan önce gelir. Bir değişiklik, ondan sonra gösterilen gönderilerde görünür.
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	Yorumlardaki tepki önizlemesini gizle
+Hide reaction counts on comments	Yorumlardaki tepki sayılarını gizle
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	Bir yorumun köşesindeki üst üste dizilmiş tepki simgelerini gizler. Boşluk yerinde kalır, bu yüzden eskiden oldukları yere dokunmak yine tepki listesini açar.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Bir yorumdaki tepki simgelerinin yanındaki sayıyı gizler. Simgeler yerinde kalır ve onlara dokunmak tepki listesini yine açar.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Gönderi menülerinde önce İndir
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
@@ -2107,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	Kaydedilen gönderileri sırada göster
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	Sıradaki kaydedilmiş bir gönderi atlanmak yerine ekranda kalır. Sonraki kaydedilmiş video için sonunda yukarı, öncekine dönmek için başında aşağı kaydır.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	Akıştaki Reels sırasını sırayla oynat
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	Akışındaki bir Reels sırasından açtığın bir reel bittiğinde veya yukarı kaydırdığında, önerilen bir reel yerine o sıradaki bir sonrakine geçer. Bir öncekine dönmek için aşağı kaydır.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	"Hâlâ izliyor musun?" sorusunu atla
 # context: summary of that switch; reels and videos go on to the next one by themselves
@@ -2148,6 +2150,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	Aramada “Tanıyor olabileceğin kişiler” bölümünü gizle
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	Aramayı açtığınızda Facebook'un gösterdiği Tanıyor olabileceğin kişiler satırını gizler. Son aramalarınız ve yazarken çıkan öneriler kalır.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	Arkadaşlar sekmesinde “Tanıyor olabileceğin kişiler” bölümünü gizle
+Hides the People you may know list in the Friends tab. Your friend requests stay.	Arkadaşlar sekmesindeki Tanıyor olabileceğin kişiler listesini gizler. Arkadaşlık isteklerin kalır.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	Arama geçmişini kaydetme
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
@@ -2653,6 +2658,8 @@ After %1$d seconds	%1$d saniye sonra
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Dokununca soluk kalsın
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Ekran yanığı koruması düğmeleri soldurduktan sonra, Reels'te neye dokunur ya da kaydırırsan kaydır soluk kalırlar, sonraki reel'de de. Yine çalışırlar. Reels'ten çıkınca geri gelirler.
+Tap the video to bring them back	Videoya dokununca geri gelsin
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	Ekran yanığı koruması düğmeleri soldurduktan sonra, videoya dokunmak onları duraklatmadan geri getirir. Sonraki dokunuş her zamanki gibi duraklatır.
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	Soluklaştırma düzeyi
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Soluklaştıktan sonra düğmelerin, açıklamanın ve çubukların ne kadarının görüneceği, yüzde olarak, %1$s ile %2$s arası. %3$s için boş bırak.
@@ -2725,7 +2732,9 @@ Your tab bar will go in this order: %1$s.	Sekme çubuğunuz şu sırayla olacak:
 Show only watched stories	Yalnızca izlenen hikayeleri göster
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	Hikayeler tepsisi yalnızca izlediğiniz hikayeleri tutar, böylece birini yeniden bulabilirsiniz. Yenileri görmek için kapatın. Bu açıkken İzlenen hikayeleri gizle bekler. Facebook tepsiyi bir sonraki yüklediğinde uygulanır.
 Show Posts in search	Aramada Gönderiler'i göster
+Show Videos in search	Aramada Videoları göster
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	Gönderiler'i arama sonuçlarının üstündeki sıraya, Reels'ten sonra geri koyar, böylece aradığın şey için yalnızca gönderileri görebilirsin.
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	Arama sonuçlarının üstündeki satıra, Gönderiler'in yanına Videolar'ı koyar, böylece aradığın şeyin yalnızca videolarını görürsün.
 Saved button in search	Aramada Kaydedilenler düğmesi
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	Arama çubuğunun sonuna bir Kaydedilenler düğmesi koyar, böylece kaydettiğin gönderiler ve videolar bir dokunuş uzakta olur. Değişikliği görmek için Facebook'u yeniden başlatın.
 Restore feed sound after opened videos	Açılan videolardan sonra akışın sesini geri yükle
@@ -2819,12 +2828,16 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	Hikayelerde sarma çubuğu
 Plain slide between people	Kişiler arasında düz kaydırma
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	Sonraki ya da önceki kişinin hikayelerine kaydırdığında hikayeler küp gibi dönmek yerine yana kayar. Bir sonraki kaydırmandan itibaren uygulanır.
+Show the time on every story	Her hikâyede zamanı göster
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	Ne zaman paylaşıldığını göstermeyen hikâyeler, örneğin bir Sayfanın hikâyesi, bunu bir arkadaşın hikâyesindeki gibi adın yanında gösterir. Açtığın bir sonraki hikâyeden itibaren geçerlidir.
 Fade the story seek bar	Hikaye sarma çubuğunu soldur
 Story position	Hikaye konumu
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Bir video hikayenin altında, içinde ilerlemek için sürükleyebileceğiniz bir çubuk gösterir. Siz sürüklerken hikaye bekler. “Altta ilerleme çubuğu” video hikayelerde ona yer açar.
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	“Hikayelerde sarma çubuğu” açıkken çubuk, hikaye başladıktan ya da ona son dokunuşunuzdan birkaç saniye sonra solar. Bir dokunuş ya da duraklatma onu geri getirir.
 Clean mode	Temiz mod
 Clean mode button on reels	Reels'te temiz mod düğmesi
+Faint Clean mode button	Soluk temiz mod düğmesi
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Facebook'un temiz moddan çıkış düğmesi soluk görünür, böylece altındaki videodaki yazı okunur kalır. Dokununca yine çalışır.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Bir reel'in yanındaki düğmelere bir temiz mod düğmesi ekler. Onları gizlemek için dokun, kaydırırken temiz mod açık kalır. Facebook'un kendi temiz mod düğmesi onları geri getirir.
 Open chats in Messenger	Sohbetleri Messenger'da aç
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Messenger yüklü ve etkin olduğu sürece sohbetleri Facebook'un içinde değil Messenger uygulamasında açar, bir profildeki Mesaj düğmesi de dahil. Messenger yoksa sohbetler Facebook'ta kalır. Değiştirdikten sonra Facebook'u yeniden başlat.
@@ -3146,7 +3159,7 @@ The time or date under the poster's name is bold, like the name.	Gönderi sahibi
 Show full names	Adları tam göster
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	Bir gönderinin üstündeki uzun ad, "..." ile bitmek yerine sonraki satıra geçer. Sığan bir ad yine tek satırda kalır.
 Dark box behind feed video names	Akıştaki video adlarının arkasında koyu kutu
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	Akışındaki bir video, gönderi sahibinin adını videonun üstünde gösterdiğinde bu ad da aynı koyu kutunun üstünde durur. Değişiklik, sonrasında yüklenen gönderilerde görünür.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	Akışındaki bir video, gönderi sahibinin adını videonun üstünde gösterdiğinde bu ad ve altındaki tarih de aynı koyu kutunun üstünde durur. Değişiklik, sonrasında yüklenen gönderilerde görünür.
 Quality settings	Kalite ayarları
 Request community note	Topluluk notu iste
 Something went wrong	Bir şeyler ters gitti
@@ -3157,23 +3170,44 @@ All your notifications are marked as read.	Tüm bildirimlerin okundu olarak işa
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Hiçbir şey işaretlenmedi, çünkü Facebook kimin oturum açtığını bildirmedi. Bildirimler sekmesini bir kez açıp yeniden dene.
 This build can't mark notifications as read.	Bu derleme bildirimleri okundu olarak işaretleyemez.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook bildirimlerini okundu olarak işaretleyemedi. Birazdan yeniden dene.
-# context: the account sharing rows in Hushfacebook settings, and their dialogs
-Export account	Hesabı dışa aktar
-Copies this account's cookies and token to the clipboard.	Bu hesabın çerezlerini ve jetonunu panoya kopyalar.
-Facebook hasn't built a session yet. Open a post, then try again.	Facebook henüz bir oturum oluşturmadı. Bir gönderi açıp yeniden deneyin.
-Import account	Hesabı içe aktar
-Signs in with an account you paste, or a file.	Yapıştırdığınız bir hesapla ya da bir dosyayla oturum açar.
-Account copied	Hesap kopyalandı
-Nothing was exported	Hiçbir şey dışa aktarılmadı
-This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Bu Facebook'ta dışa aktarılacak hesap yok. Tarayıcısında bir kez Facebook bağlantısı açıp yeniden deneyin.
-Paste it into Import account on the other phone, or use the saved file.	Diğer telefonda Hesabı içe aktar bölümüne yapıştırın ya da kaydedilen dosyayı kullanın.
-From file	Dosyadan
-No account file on this phone.	Bu telefonda hesap dosyası yok.
-Your account	Hesabınız
-Copy	Kopyala
-Copied.	Kopyalandı.
-There's nothing to save.	Kaydedilecek bir şey yok.
-That file couldn't be written.	O dosya yazılamadı.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Facebook sohbetlerinde paylaş
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Android'in paylaşım menüsüne Facebook sohbetlerini ekler. Oraya paylaştığın fotoğraf veya video galerine kaydedilir ve metin kopyalanır, ardından sohbetlerin açılır, böylece birini seçip gönderebilirsin.
+Share to Facebook chats is off.	Facebook sohbetlerinde paylaş kapalı.
+Nothing in it to send.	Gönderilecek bir şey yok.
+Couldn't save it to your gallery.	Galeriye kaydedilemedi.
+Copied and saved. Paste and attach in a chat.	Kopyalandı ve kaydedildi. Sohbette yapıştır ve ekle.
+Saved to your gallery. Attach it in a chat.	Galerine kaydedildi. Bir sohbette ekle.
+Copied. Pick a chat and paste it.	Kopyalandı. Bir sohbet seçip yapıştır.
+Open your chats to pick one.	Birini seçmek için sohbetlerini aç.
+Post date after the caption	Paylaşım tarihi açıklamadan sonra
+With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	"Reels'te paylaşım tarihini göster" açıkken tarihi, şarkının ve diğer etiketlerin sıkıştırdığı adın altı yerine açıklamanın sonuna koyar. Değişiklik bir sonraki reel'den itibaren görünür.
+Fill every reel	Tüm Reels ekranı doldursun
+With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	"Reels ekranı doldursun" açıkken her Reels videosu, kenarlarından çok şey kırpılsa bile ekranı doldurur. Çoğu Reels videosunun siyah şeritlerle kalacağı katlanabilir telefonlar ve tabletler için.
+Chat background	Sohbet arka planı
+Last chat's background	Son sohbetin arka planı
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	Her sohbette mesajların arkasındaki alan için bir renk kodu (#RRGGBB), örneğin #1E3A5F. İki kod, örneğin #1E3A5F #6A1B9A, birinden diğerine geçiş yapar. Yalnızca bu telefonda görünür. Facebook'unki için boş bırakın.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	Yalnızca %1$s için bir renk kodu (#RRGGBB), örneğin #1E3A5F. İki kod birinden diğerine geçiş yapar. Boş bırakırsanız yukarıdaki sohbet arka planını kullanır.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	Sohbetler Facebook'un arka planını korur. Yalnızca bu telefonda değiştirmek için bir renk kodu yazın.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	Sohbetlerde mesajların arkası %1$s, yalnızca bu telefonda. Sohbetteki kimseye bildirilmez.
+Open a chat, then come back here to give it a color of its own.	Bir sohbet açın, sonra ona kendi rengini vermek için buraya dönün.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	Son açtığınız sohbet olan %1$s, yukarıdaki sohbet arka planını kullanıyor. Kendi rengini vermek için bir renk kodu yazın.
+%1$s, the last chat you opened, is %2$s.	Son açtığınız sohbet olan %1$s: %2$s.
+Type one color code, or two for a fade from top to bottom.	Bir renk kodu yazın ya da yukarıdan aşağıya geçiş için iki tane.
+Hide the AI content label on reels	Reels'te yapay zeka içeriği etiketini gizle
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Facebook'un yapay zekayla yapıldı olarak işaretlediği reels'lerden "Yapay zeka içeriği" veya "Yapay zeka bilgisi" etiketini kaldırır. Değişiklik bir sonraki reel'den itibaren görünür.
+The %1$s row will be set to %2$s.	%1$s satırı %2$s olarak ayarlanacak.
+The %1$s row will go back to its default.	%1$s satırı varsayılanına dönecek.
+Save files to Downloads	Dosyaları İndirilenler'e kaydet
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	Bir gönderiden indirdiğin PDF, belge veya başka bir dosya telefonunun İndirilenler klasörüne gider ve orada bir dosya yöneticisi onu açabilir. Kapalıyken Facebook onu hiçbir dosya yöneticisinin erişemediği bir yerde tutar.
+Hide hashtags in reel captions	Reels açıklamalarındaki hashtag'leri gizle
+Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	Reels açıklamalarındaki hashtag'leri, sondaki etiket grubu gibi, kaldırır. Bir cümlenin parçası olan hashtag kalır. Değişiklik bir sonraki reel'den itibaren görünür.
+Keep the keyboard closed when comments open	Yorumlar açılınca klavyeyi kapalı tut
+Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	Yorumlar, henüz yorumu olmayan bir gönderide bile klavye açılmadan açılır. Yazmak istediğinde yorum kutusuna dokun.
+Settings language	Ayarlar dili
+Same as Facebook	Facebook ile aynı
+Show feed reels uncropped	Akıştaki reels'leri kırpmadan göster
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	Akışındaki reels'ler Facebook'un çerçevesine göre kırpılmak yerine kendi oranlarıyla görüntünün tamamını gösterir. Değişiklikten sonra yüklenen reels'ler bunu uygular.
 Export token	Jetonu dışa aktar
 Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Bu telefonda oturum açmış her hesabın erişim jetonunu gösterir. Birini kopyalayın veya hepsini JSON olarak kaydedin.
 Save JSON	JSON'u kaydet

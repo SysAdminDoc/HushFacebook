@@ -4,8 +4,11 @@
  */
 package app.morphe.extension.facebook.navigation;
 
+import android.app.Activity;
 import android.view.View;
 import android.widget.ImageView;
+
+import androidx.annotation.Nullable;
 
 import java.util.Collections;
 import java.util.Set;
@@ -79,6 +82,9 @@ public final class TopBarButtons {
     /** The newer bar's Messenger glyphs. Weak, so a rebuilt bar lets the old ones go. */
     private static final Set<View> BAR_MESSENGER_BUTTONS = Collections.newSetFromMap(new WeakHashMap<>());
 
+    /** The classic bar's Messenger buttons, kept the same way for Share to Facebook chats to press (#568). */
+    private static final Set<View> CLASSIC_MESSENGER_BUTTONS = Collections.newSetFromMap(new WeakHashMap<>());
+
     /** The Litho bar's badge store keys for its Messenger button. Weak, so a dropped key goes. */
     private static final Set<Object> BAR_MESSENGER_KEYS = Collections.newSetFromMap(new WeakHashMap<>());
 
@@ -89,10 +95,38 @@ public final class TopBarButtons {
     public static void messengerButton(View button) {
         try {
             HookStatus.invoked(FAMILY);
+            if (button != null) {
+                synchronized (CLASSIC_MESSENGER_BUTTONS) {
+                    CLASSIC_MESSENGER_BUTTONS.add(button);
+                }
+            }
             hideButton(button);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "Messenger button", failure);
         }
+    }
+
+    /**
+     * The Messenger button on screen in [activity]'s top bar, the newer bar's or the classic one's,
+     * or null while there's none: hidden, not built yet, or on a tab whose bar has none. The Litho
+     * bar keeps no view of its own for it, so it never has one. Share to Facebook chats presses it
+     * to open Chats (#568).
+     */
+    @Nullable
+    public static View messengerButtonIn(Activity activity) {
+        View screen = activity.getWindow().getDecorView();
+        View found = shownIn(BAR_MESSENGER_BUTTONS, screen);
+        return found != null ? found : shownIn(CLASSIC_MESSENGER_BUTTONS, screen);
+    }
+
+    @Nullable
+    private static View shownIn(Set<View> buttons, View screen) {
+        synchronized (buttons) {
+            for (View button : buttons) {
+                if (button.isAttachedToWindow() && button.isShown() && button.getRootView() == screen) return button;
+            }
+        }
+        return null;
     }
 
     /**
@@ -273,7 +307,7 @@ public final class TopBarButtons {
             HookStatus.invoked(FAMILY);
             if (logo == null || !Utils.settingsReady() || !Settings.HIDE_FACEBOOK_LOGO.get()) return;
             // Alpha keeps the view's size and its long press. The image alpha also survives a later
-            // drawable swap, such as the app icon the Unlock app icons patch dresses the logo with.
+            // drawable swap, such as the words or picture Home header text dresses the logo with.
             if (logo instanceof ImageView) {
                 ((ImageView) logo).setImageAlpha(0);
             } else {

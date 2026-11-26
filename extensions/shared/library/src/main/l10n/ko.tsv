@@ -67,7 +67,7 @@ Export settings	설정 내보내기
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook이 시작하고 1분 안에 세 번 연속으로 비정상 종료되거나 멈춰서 Hushfacebook이 스스로 일시 정지했어요.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook이 더 이상 백그라운드에서 광고나 광고 선택에 쓰는 데이터를 다운로드하지 않아요.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook이 이 휴대폰의 다른 앱 안에 광고를 표시하지 않아요.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	다크 모드와 이 화면에 배경화면 색상을 사용해요(Android 11에서는 파란색). 확인하려면 Facebook에서 다크 모드를 켜세요.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	다크 모드와 이 화면에 배경화면 색상을 사용해요(Android 11에서는 파란색). 끄면 다시 패치하지 않고도 이전 색상으로 돌아가요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
 Hide Stories between posts	게시물 사이의 스토리 숨기기
 Joining the picture and sound	영상과 소리를 합치는 중
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	�
 Hide profile notes	프로필 노트 숨기기
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	프로필 사진 위의 노트 말풍선을 숨겨요. 다음에 프로필을 열 때부터 적용돼요.
+Hide the gift button on profiles	프로필의 선물 버튼 숨기기
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	다른 사람 프로필에서 선물 보내기 버튼을 없애요. 다음에 프로필을 열 때부터 적용돼요.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	게시물 아래 저장 버튼
 # context: summary of that switch; Like, Comment and Share are the buttons under a post
@@ -590,6 +592,8 @@ Hide Repost under posts	게시물 아래 리포스트 숨기기
 Hide Share under posts	게시물 아래 공유하기 숨기기
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	게시물 아래 보내기 숨기기
+Hide Stars and gifts under posts	게시물 아래 별 및 선물 숨기기
+Hide Save under posts	게시물 아래 저장 숨기기
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	피드 게시물 아래 줄에서 이 버튼을 없애요. 다른 버튼은 그대로 남고, 모든 버튼을 숨긴 게시물에는 줄이 표시되지 않아요.
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
@@ -1003,6 +1007,7 @@ Hide the Create tab	만들기 탭 숨기기
 Hide the Explore tab	탐색 탭 숨기기
 Hide the Jobs tab	채용 정보 탭 숨기기
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	탭 바에서 이 탭을 없애요. 해당 페이지는 메뉴에 그대로 있어요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	탭 바에서 이 탭을 없애요. 해당 페이지는 메뉴에 그대로 있어요. 숨길 메뉴 타일에서 고르면 메뉴에서도 빠져요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	"%1$s" 스위치가 켜져 있으면 %2$s 탭이 탭 바에 없으므로 Facebook이 홈에서 열려요. 선택한 설정은 저장된 상태로 남아요.
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	릴스 탭(일부 계정에서는 동영상)에 점이나 새 항목 수가 표시되지 않아요. 다른 탭은 그대로 표시돼요.
@@ -1100,7 +1105,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	릴스 이름 뒤 어두운 상자
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	릴스 하단의 이름이 같은 어두운 상자 위에 표시되어 밝은 동영상에서도 읽기 쉬워요. 변경 사항은 다음 릴스부터 적용돼요.
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	릴스 하단의 이름과 그 아래의 날짜와 세부 정보가 같은 어두운 상자 위에 표시되어 밝은 동영상에서도 읽기 쉬워요. 변경 사항은 다음 릴스부터 적용돼요.
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	상자 어둡기
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -1243,15 +1248,6 @@ Turn off haptics	햅틱 끄기
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	탭하거나 스와이프할 때 Facebook이 내는 작은 진동을 멈춰요. 키보드와 휴대폰 진동에는 영향이 없어요.
 Turn off screen transitions	화면 전환 효과 끄기
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	탭, 메뉴, 사진, Facebook 위에 열리는 화면이 밀려 들어오거나 확대되지 않고 바로 나타나요. 탭 사이를 스와이프하는 기능은 그대로 작동해요.
-Unlock app icons	앱 아이콘 잠금 해제
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	Facebook의 앱 아이콘 페이지에서 Facebook Plus 전용 앱 아이콘을 선택할 수 있어요. "앱 아이콘 선택" 항목으로 그 페이지를 열 수 있어요. 이 스위치를 꺼도 선택한 아이콘은 유지되므로, 원래대로 돌아가려면 먼저 파란색 아이콘을 선택하세요.
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	앱 아이콘 선택
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	설정 및 개인정보에 표시되지 않는 계정에서도 Facebook의 앱 아이콘 페이지를 열어요.
-Use the icon at the top of Home	홈 상단에 아이콘 사용
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	홈 상단에 Facebook 로고 글자 대신 선택한 앱 아이콘을 표시해요. "앱 아이콘 잠금 해제"가 켜져 있고 파란색이 아닌 아이콘을 선택해야 해요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	이 Facebook 빌드에는 앱 아이콘 페이지가 없어요.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	PIP 모드
 # context: summary of that switch
@@ -1463,7 +1459,7 @@ Adds an eye button to the top of each story while you view anonymously. Tap it t
 # context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
 Mark as seen	읽음으로 표시
 # context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
-Marked as seen. Tap again to undo.	읽음으로 표시하였습니다. 다시 누르면 실행 취소됩니다.
+Marked as seen	읽음으로 표시됨
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	읽음으로 표시하고 전송함
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
@@ -1865,7 +1861,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	백그라운드에서 계속 재생
 Next reel in the background	백그라운드에서 다음 릴스 재생
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	백그라운드에서 재생 중인 릴스가 끝나면 같은 릴스를 반복하지 않고 다음 릴스를 재생해요. 나갈 때 릴스에 불러와 있던 릴스를 차례로 재생해요. "백그라운드에서 계속 재생"이 켜져 있을 때 작동해요.
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	백그라운드에서 재생 중인 릴스가 끝나면 같은 릴스를 반복하지 않고 다음 릴스를 재생하고, 릴스가 계속 더 불러와요. "백그라운드에서 계속 재생"이 켜져 있을 때 작동해요.
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	탭해서 시작한 동영상이나 릴스에서 스와이프해서 넘긴 릴스는 Facebook을 나간 후에도 소리가 계속 나고, 알림에서 일시 정지할 수 있어요. 알림을 밀어서 없애거나 전화를 받으면 멈춰요.
 # context: title of that notification when the video has none of its own
@@ -1983,8 +1979,10 @@ Show reactions on the Like button	좋아요 버튼에 감정 표현 표시
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	게시물 버튼 줄 끝에 있는 감정 표현 아이콘을 좋아요 버튼의 숫자 바로 앞으로 옮겨요. 좋아요 버튼은 이전처럼 좋아요와 감정 표현을 남겨요. 그 자리에 조회수를 표시하는 동영상에는 좋아요 아이콘 하나가 표시되고, 감정 표현을 남기면 내 감정 표현이 표시돼요. "게시물의 감정 표현 미리보기 숨기기"가 우선해요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	댓글의 감정 표현 미리보기 숨기기
+Hide reaction counts on comments	댓글의 감정 표현 수 숨기기
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	댓글 모서리에 겹쳐 표시되는 감정 표현 아이콘을 숨겨요. 공간은 그대로 남아서 그 자리를 탭하면 여전히 감정 표현 목록이 열려요.
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	댓글의 감정 표현 아이콘 옆 숫자를 숨겨요. 아이콘은 그대로 남고, 탭하면 여전히 감정 표현 목록이 열려요.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	게시물 메뉴에서 다운로드를 맨 위로
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
@@ -2107,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	연속 재생에 저장한 게시물 표시
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	연속 재생 중 저장한 게시물이 건너뛰어지지 않고 화면에 표시돼요. 다음 저장한 동영상을 보려면 게시물 끝을 지나 위로, 이전 동영상을 보려면 게시물 맨 위를 지나 아래로 스와이프하세요.
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	피드의 릴스 줄 순서대로 재생
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	피드의 릴스 줄에서 연 릴스가 끝나거나 위로 스와이프하면 추천 릴스 대신 그 줄의 다음 릴스로 넘어가요. 이전 릴스로 돌아가려면 아래로 스와이프하세요.
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	"아직 시청 중이신가요?" 건너뛰기
 # context: summary of that switch; reels and videos go on to the next one by themselves
@@ -2148,6 +2150,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	검색에서 "알 수도 있는 사람" 숨기기
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	검색을 열 때 Facebook이 표시하는 "알 수도 있는 사람" 줄을 숨겨요. 최근 검색과 입력 중 표시되는 추천은 그대로 남아요.
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	친구 탭에서 "알 수도 있는 사람" 숨기기
+Hides the People you may know list in the Friends tab. Your friend requests stay.	친구 탭의 "알 수도 있는 사람" 목록을 숨겨요. 친구 요청은 그대로 남아요.
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	검색 기록 저장 안 함
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
@@ -2653,6 +2658,8 @@ After %1$d seconds	%1$d초 후
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	탭해도 어둡게 유지
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	번인 방지가 버튼을 흐리게 하면, 무엇을 탭하거나 스와이프해도 릴스에서 계속 흐린 상태로 유지되며 다음 릴스에서도 마찬가지입니다. 버튼은 계속 작동합니다. 릴스를 나가면 원래대로 돌아옵니다.
+Tap the video to bring them back	동영상을 탭해 다시 표시
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	번인 방지가 버튼을 흐리게 하면, 동영상을 탭할 때 일시정지하지 않고 버튼이 다시 나타납니다. 다음 탭은 평소처럼 일시정지합니다.
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	흐림 정도
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	흐려진 후 버튼, 캡션, 바가 보이는 정도를 %1$s~%2$s 사이의 퍼센트로 입력하세요. 비워 두면 %3$s(으)로 설정돼요.
@@ -2725,7 +2732,9 @@ Your tab bar will go in this order: %1$s.	탭 바가 다음 순서로 바뀌어�
 Show only watched stories	본 스토리만 표시
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	스토리 영역에 이미 본 스토리만 남겨서 다시 찾을 수 있어요. 새 스토리를 보려면 끄세요. 이 스위치가 켜져 있는 동안 "본 스토리 숨기기"는 작동하지 않아요. Facebook이 다음에 스토리 영역을 불러올 때 적용돼요.
 Show Posts in search	검색에 게시물 표시
+Show Videos in search	검색에 동영상 표시
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	검색 결과 위 줄의 릴스 뒤에 게시물을 다시 넣어서 검색한 내용의 게시물만 볼 수 있어요.
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	검색 결과 위 줄의 게시물 옆에 동영상을 넣어, 검색한 내용의 동영상만 볼 수 있어요.
 Saved button in search	검색의 저장됨 버튼
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	검색창 끝에 저장됨 버튼을 넣어서 저장한 게시물과 동영상을 한 번에 열 수 있어요. 변경 사항을 보려면 Facebook을 다시 시작하세요.
 Restore feed sound after opened videos	연 동영상을 닫으면 피드 소리 복원
@@ -2819,12 +2828,16 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	스토리 탐색 막대
 Plain slide between people	사람 간 단순 슬라이드 전환
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	다음 또는 이전 사람의 스토리로 스와이프할 때 큐브처럼 돌아가지 않고 옆으로 밀려나요. 다음 스와이프부터 적용돼요.
+Show the time on every story	모든 스토리에 시간 표시
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	페이지 스토리처럼 게시된 지 얼마나 됐는지 표시하지 않는 스토리도 친구 스토리처럼 이름 옆에 표시합니다. 다음에 여는 스토리부터 적용됩니다.
 Fade the story seek bar	스토리 탐색 막대 흐리게
 Story position	스토리 위치
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	동영상 스토리 하단에 드래그해서 원하는 위치로 이동할 수 있는 막대를 표시해요. 드래그하는 동안 스토리는 멈춰 있어요. 동영상 스토리에서는 "하단 진행률 바" 대신 이 막대가 표시돼요.
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	"스토리 탐색 막대"가 켜져 있으면 스토리가 시작되거나 마지막으로 터치한 후 몇 초가 지나면 막대가 흐려져요. 터치하거나 일시 정지하면 다시 나타나요.
 Clean mode	클린 모드
 Clean mode button on reels	릴스 클린 모드 버튼
+Faint Clean mode button	흐린 클린 모드 버튼
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	클린 모드를 끄는 Facebook 버튼이 흐리게 표시되어 그 아래 동영상의 글자가 잘 보입니다. 탭하면 그대로 작동합니다.
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	릴스 옆쪽 버튼에 클린 모드 버튼을 추가해요. 탭하면 옆쪽 버튼이 숨겨지고 스와이프해도 클린 모드가 유지돼요. Facebook 자체 클린 모드 버튼을 누르면 다시 나타나요.
 Open chats in Messenger	메신저에서 채팅 열기
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	메신저가 설치되어 있고 사용 중이면 프로필의 메시지 버튼을 포함해 채팅을 Facebook 안이 아닌 메신저 앱에서 열어요. 메신저가 없으면 채팅은 Facebook에서 열려요. 설정을 바꾼 후 Facebook을 다시 시작하세요.
@@ -3146,7 +3159,7 @@ The time or date under the poster's name is bold, like the name.	게시자 이�
 Show full names	전체 이름 표시
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	게시물 상단의 긴 이름이 "..."로 끝나지 않고 다음 줄로 넘어가요. 한 줄에 들어가는 이름은 그대로 한 줄을 차지해요.
 Dark box behind feed video names	피드 동영상 이름 뒤 어두운 상자
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	피드 동영상 위에 게시자 이름이 표시되면 그 이름도 같은 어두운 상자 위에 표시돼요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	피드 동영상 위에 게시자 이름이 표시되면 그 이름과 아래의 날짜도 같은 어두운 상자 위에 표시돼요. 변경 사항은 이후에 표시되는 게시물부터 적용돼요.
 Quality settings	화질 설정
 Request community note	커뮤니티 노트 요청
 Something went wrong	문제가 발생했어요
@@ -3157,23 +3170,44 @@ All your notifications are marked as read.	모든 알림을 읽음으로 표시�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	Facebook이 로그인한 계정을 알려 주지 않아서 아무것도 표시하지 않았어요. 알림 탭을 한 번 연 다음 다시 시도하세요.
 This build can't mark notifications as read.	이 빌드에서는 알림을 읽음으로 표시할 수 없어요.
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook에서 알림을 읽음으로 표시하지 못했어요. 잠시 후 다시 시도하세요.
-# context: the account sharing rows in Hushfacebook settings, and their dialogs
-Export account	계정 내보내기
-Copies this account's cookies and token to the clipboard.	이 계정의 쿠키와 토큰을 클립보드에 복사합니다.
-Facebook hasn't built a session yet. Open a post, then try again.	Facebook이 아직 세션을 만들지 않았습니다. 게시물을 연 뒤 다시 시도하세요.
-Import account	계정 가져오기
-Signs in with an account you paste, or a file.	붙여 넣은 계정이나 파일로 로그인합니다.
-Account copied	계정을 복사했습니다
-Nothing was exported	내보낸 항목이 없습니다
-This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	이 Facebook에는 내보낼 계정이 없습니다. 브라우저에서 Facebook 링크를 한 번 연 뒤 다시 시도하세요.
-Paste it into Import account on the other phone, or use the saved file.	다른 휴대폰의 계정 가져오기에 붙여 넣거나 저장된 파일을 사용하세요.
-From file	파일에서
-No account file on this phone.	이 휴대폰에 계정 파일이 없습니다.
-Your account	내 계정
-Copy	복사
-Copied.	복사했습니다.
-There's nothing to save.	저장할 내용이 없습니다.
-That file couldn't be written.	그 파일을 쓸 수 없습니다.
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	Facebook 채팅으로 공유
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	Android 공유 메뉴에 Facebook 채팅을 추가해요. 여기로 공유한 사진이나 동영상은 갤러리에 저장되고 텍스트는 복사돼요. 그다음 채팅이 열리니 하나를 골라 보내면 돼요.
+Share to Facebook chats is off.	Facebook 채팅으로 공유가 꺼져 있어요.
+Nothing in it to send.	보낼 내용이 없어요.
+Couldn't save it to your gallery.	갤러리에 저장하지 못했어요.
+Copied and saved. Paste and attach in a chat.	복사하고 저장했어요. 채팅에서 붙여넣고 첨부하세요.
+Saved to your gallery. Attach it in a chat.	갤러리에 저장했어요. 채팅에서 첨부하세요.
+Copied. Pick a chat and paste it.	복사했어요. 채팅을 골라 붙여넣으세요.
+Open your chats to pick one.	채팅을 열어 하나를 고르세요.
+Post date after the caption	캡션 뒤에 게시 날짜 표시
+With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	"릴스에 게시 날짜 표시"가 켜져 있으면 날짜를 이름 아래 대신 캡션 끝에 표시해요. 이름 아래에는 노래와 다른 라벨이 몰려 있어요. 변경 사항은 다음 릴스부터 적용돼요.
+Fill every reel	모든 릴스로 화면 채우기
+With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	"릴스로 화면 채우기"가 켜져 있으면 가장자리가 많이 잘리더라도 모든 릴스가 화면을 가득 채워요. 대부분의 릴스에 검은 여백이 남는 폴더블 폰과 태블릿용이에요.
+Chat background	채팅 배경
+Last chat's background	마지막 채팅 배경
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	모든 채팅에서 메시지 뒤 공간에 쓸 색상 코드(#RRGGBB)예요(예: #1E3A5F). 코드 두 개(예: #1E3A5F #6A1B9A)를 쓰면 한 색에서 다른 색으로 이어져요. 이 휴대폰에서만 보여요. Facebook 기본 배경을 쓰려면 비워 두세요.
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	%1$s에만 쓸 색상 코드(#RRGGBB)예요(예: #1E3A5F). 코드 두 개를 쓰면 한 색에서 다른 색으로 이어져요. 비워 두면 위의 채팅 배경을 따라요.
+Chats keep Facebook's background. Type a color code to change it on this phone only.	채팅이 Facebook 배경을 유지해요. 이 휴대폰에서만 바꾸려면 색상 코드를 입력하세요.
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	채팅의 메시지 뒤 색상: %1$s. 이 휴대폰에서만 보이며, 채팅 상대에게는 알리지 않아요.
+Open a chat, then come back here to give it a color of its own.	채팅을 연 다음 여기로 돌아와 그 채팅만의 색상을 정하세요.
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	마지막으로 연 채팅인 %1$s은(는) 위의 채팅 배경을 따라요. 따로 정하려면 색상 코드를 입력하세요.
+%1$s, the last chat you opened, is %2$s.	마지막으로 연 채팅인 %1$s의 색상: %2$s.
+Type one color code, or two for a fade from top to bottom.	색상 코드를 하나 입력하거나, 위에서 아래로 이어지게 하려면 두 개를 입력하세요.
+Hide the AI content label on reels	릴스의 AI 콘텐츠 라벨 숨기기
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	Facebook이 AI로 만들었다고 표시한 릴스에서 "AI 콘텐츠" 또는 "AI 정보" 라벨을 없애요. 변경 사항은 다음 릴스부터 적용돼요.
+The %1$s row will be set to %2$s.	%1$s 항목이 %2$s(으)로 설정돼요.
+The %1$s row will go back to its default.	%1$s 항목이 기본값으로 돌아가요.
+Save files to Downloads	파일을 다운로드 폴더에 저장
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	게시물에서 다운로드한 PDF, 문서 등의 파일이 휴대폰의 다운로드 폴더에 저장되어 파일 관리자로 열 수 있어요. 끄면 Facebook이 파일 관리자가 접근할 수 없는 곳에 보관해요.
+Hide hashtags in reel captions	릴스 설명의 해시태그 숨기기
+Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	릴스 설명에서 끝에 몰려 있는 태그 같은 해시태그를 없애요. 문장의 일부인 해시태그는 그대로 둬요. 변경 사항은 다음 릴스부터 적용돼요.
+Keep the keyboard closed when comments open	댓글을 열 때 키보드 닫아 두기
+Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	아직 댓글이 없는 게시물에서도 키보드가 올라오지 않고 댓글이 열려요. 글을 쓰고 싶을 때 댓글 입력란을 누르세요.
+Settings language	설정 언어
+Same as Facebook	Facebook과 같게
+Show feed reels uncropped	피드 릴스를 자르지 않고 보기
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	피드의 릴스가 Facebook 틀에 맞춰 잘리지 않고 원래 비율로 영상 전체를 보여줘요. 변경 후 표시되는 릴스부터 적용돼요.
 Export token	토큰 내보내기
 Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	이 휴대폰에 로그인된 각 계정의 액세스 토큰을 표시합니다. 하나를 복사하거나 모두 JSON으로 저장하세요.
 Save JSON	JSON 저장

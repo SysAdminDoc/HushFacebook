@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.reels.categoryNames
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -69,6 +70,14 @@ class SearchPostsTabFixtureTest {
         val tabs = FixtureDex.classes(bundle, tabTypes).values.flatMap { categoryNames(it) }.toSet()
         assertTrue("$where: ${table.definingClass}'s table has the posts tab", "BLENDED_STORIES" in tabs)
         assertTrue("$where: ${table.definingClass}'s table has Reels", "REELS" in tabs)
+        // Videos (#483) is in it too, the tab its chip opens.
+        assertTrue("$where: ${table.definingClass}'s table has the videos tab", "BLENDED_SHOWS_HOME" in tabs)
+
+        // A tap's handler: one method looks a String parameter up in the table.
+        val tap = tapHandler(rowClass, table)
+        assertTrue("${bundle.name}: no method of ${rowClass.type} looks a String parameter up in the table", tap != null)
+        val (handler, label) = tap!!
+        val handlerStock = handler.implementation!!.instructions.toList()
 
         val context = PatchContexts.of((holders + rowClass + listOf(
             ExtensionDex.classDef(POSTS_TAB_CLASS),
@@ -95,6 +104,24 @@ class SearchPostsTabFixtureTest {
             ((stub[0] as ReferenceInstruction).reference as MethodReference).toString())
         assertEquals("${bundle.name}: and returns it", listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT),
             stub.take(3).map { it.opcode })
+
+        // The handler hands its label over first thing and is otherwise Facebook's.
+        val handlerPatched = context.mutableClassDefBy(rowClass.type).methods.single { it.descriptor() == handler.descriptor() }
+            .implementation!!.instructions.toList()
+        val handlerWhere = "${bundle.name}: ${handler.descriptor()}"
+        assertEquals("$handlerWhere gains one instruction", handlerStock.size + 1, handlerPatched.size)
+        assertEquals("$handlerWhere: the label goes to the extension first", TAPPED,
+            (handlerPatched[0] as ReferenceInstruction).reference.toString())
+        assertEquals("$handlerWhere: from its String parameter", label, (handlerPatched[0] as RegisterRangeInstruction).startRegister)
+        assertEquals("$handlerWhere: the rest is Facebook's", handlerStock.map { it.opcode }, handlerPatched.drop(1).map { it.opcode })
+    }
+
+    @Test
+    fun `the extension has the tap hook`() {
+        val hook = ExtensionDex.classDef(POSTS_TAB_CLASS).methods.singleOrNull {
+            "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == TAPPED
+        }
+        assertTrue("the extension has no $TAPPED", hook != null && AccessFlags.STATIC.isSet(hook.accessFlags))
     }
 
     @Test

@@ -112,32 +112,32 @@ public class StorySeenTest {
     @Test
     public void onlyTheMarkedCardsGoAndTheRestStayHeld() {
         Settings.MARK_STORIES_SEEN.save(true);
-        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.toggle("100", "c1"));
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.mark("100", "c1"));
         assertEquals(cards("c1"), send(ACCOUNT, cards("c1", "c2")));
         assertEquals(StoryMarks.State.SENT, StorySeen.MARKS.state("100", "c1"));
 
         // c2 was held and counted by Facebook, so it never comes back in a batch: marked now, it
         // goes with the next send, and c3 of that batch stays held.
-        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.toggle("100", "c2"));
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.mark("100", "c2"));
         assertEquals(cards("c2"), send(ACCOUNT, cards("c3")));
         assertNull("a sent card went again", send(ACCOUNT, cards("c1")));
 
-        // A second tap before the send takes the mark back.
-        StorySeen.MARKS.toggle("100", "c4");
-        assertEquals(StoryMarks.State.UNMARKED, StorySeen.MARKS.toggle("100", "c4"));
-        assertNull(send(ACCOUNT, cards("c4")));
+        // A second tap before the send keeps the mark, and it goes (#557).
+        StorySeen.MARKS.mark("100", "c4");
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.mark("100", "c4"));
+        assertEquals(cards("c4"), send(ACCOUNT, cards("c4")));
     }
 
     @Test
     public void withTheButtonOffAMarkChangesNothing() {
-        StorySeen.MARKS.toggle("100", "c1");
+        StorySeen.MARKS.mark("100", "c1");
         assertNull(send(ACCOUNT, cards("c1", "c2")));
     }
 
     @Test
     public void aMarkNeverGoesOutForAnotherAccount() {
         Settings.MARK_STORIES_SEEN.save(true);
-        StorySeen.MARKS.toggle("100", "c1");
+        StorySeen.MARKS.mark("100", "c1");
         assertNull(send(new StorySeenForTests.Session("200"), cards("c1")));
         assertNull("a session with no user ID sent a card", send(new Object(), cards("c1")));
         assertEquals(cards("c1"), send(ACCOUNT, cards("c1")));
@@ -150,7 +150,7 @@ public class StorySeenTest {
         Object listener = new Object();
         assertNull(StorySeen.toSend(sender, listener, ACCOUNT, "a", "b", "c", null, cards("c5"), false));
         assertFalse("a card that was never held was sent", StorySeen.sendHeld("100", "c6"));
-        StorySeen.MARKS.toggle("100", "c5");
+        StorySeen.MARKS.mark("100", "c5");
         assertTrue("the held card had no send to go through", StorySeen.sendHeld("100", "c5"));
         // The patched sender calls the hook again with an empty set; a peek's send isn't one of these.
         assertNull(StorySeen.toSend(sender, listener, ACCOUNT, "a", "b", "c", null, cards(), true));

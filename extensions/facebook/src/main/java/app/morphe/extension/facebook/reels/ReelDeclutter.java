@@ -22,6 +22,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import app.morphe.extension.facebook.ads.MarketplaceListingAge;
+import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.download.PostDetails;
 import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -160,10 +161,24 @@ public final class ReelDeclutter {
     /** Counted under its own name each time the Reels tab's audio line isn't drawn. */
     static final String AUDIO_ROUTE = "Reel audio line";
     static final String AUDIO_LINE = "audio line";
+    /** Counted under the audio line's name each time its song is left off and the line kept for the post date (#496). */
+    static final String AUDIO_LINE_DATE_ONLY = "song left off for the date";
 
     /** Counted under its own name each time a reel's "Made with Edits" line isn't drawn (#314). */
     static final String EDITS_ROUTE = "Reel Edits line";
     static final String EDITS_LABEL = "Made with Edits";
+
+    /**
+     * The GraphQL type of the attribution Facebook draws as a reel's "AI content" or "AI info" label
+     * (#574), and the one Facebook adds itself to a reel its server marks as made with AI.
+     */
+    static final String AI_LABEL_ATTRIBUTION = "XFBFBShortsGenAITransparencyAttribution";
+    /** Counted under its own name each time a reel's attribution list is handed over without its AI label. */
+    static final String AI_LABEL_ROUTE = "Reel AI label";
+
+    /** Counted under its own name for each reel caption built, and each run of hashtags left off one (#594). */
+    static final String HASHTAGS_ROUTE = "Reel caption hashtags";
+    static final String HASHTAG_RUN = "hashtag run";
 
     /** Counted under its own name each time a video's "Made with Edits" pill is answered as not shown (#314). */
     static final String EDITS_PILL_ROUTE = "Video Edits pill";
@@ -238,6 +253,10 @@ public final class ReelDeclutter {
     static final String DATE_HELD = "line held on date";
     /** Counted under the date's name each time Facebook's own date after a reel's caption is left out (#503). */
     static final String DATE_CAPTION_LEFT_OUT = "caption date left out";
+    /** Counted under the date's name each time Facebook's date after a reel's caption is drawn where it wasn't going to be (#490). */
+    static final String DATE_AFTER_CAPTION = "date after caption";
+    /** Counted under the date's name each time the date under a reel's author is left off for the one after its caption (#490). */
+    static final String DATE_MOVED_OFF_AUTHOR = "date moved off author line";
     /** How many date rows {@link #footerDateRow} keeps on one thread until the footer's rows come by. */
     static final int FOOTER_DATES_KEPT = 4;
     /** Counted under its own name each time a reel's "New for you" is left off the line under its author (#520). */
@@ -342,9 +361,10 @@ public final class ReelDeclutter {
     }
 
     /**
-     * Injection point, before each return of the method that builds a reel's chip list. The chips
-     * to keep, when the switch took any out, or null to keep the list Facebook built. The patch
-     * rebuilds its list from the answer. Never throws.
+     * Injection point, before each return of the method that builds a reel's chip list, and where
+     * the chip row under a feed video reads the list it keeps (#314, "Made with Edits" there). The
+     * chips to keep, when the switch took any out, or null to keep the list Facebook built. The
+     * patch rebuilds its list from the answer. Never throws.
      *
      * @param chips the list Facebook is about to return, an ImmutableList of attribution models.
      */
@@ -378,6 +398,70 @@ public final class ReelDeclutter {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel chips", failure);
             Logger.printException(() -> "Reel chips: could not filter the list", failure);
             return null;
+        }
+    }
+
+    /**
+     * Injection point, before each return of the method that hands out a reel's attribution models,
+     * and of the story's own list it starts from (#574). Facebook draws the "AI content" or "AI info"
+     * label from the one of type {@link #AI_LABEL_ATTRIBUTION} in those lists: the footer's chip row
+     * builds its chips from the story's list and draws that one as a button beside the sound line, the
+     * label under a reel's caption walks the full list for it, and the sponsored info row and the
+     * reel's info row look it up by name there. The models to keep, when Hide the AI content label on
+     * reels took that one out, or null to keep the list Facebook built. A model whose type can't be
+     * read stays. Never throws.
+     *
+     * @param attributions the list Facebook is about to return, an ImmutableList of attribution models.
+     */
+    public static Object[] filterAiLabel(Object attributions) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!(attributions instanceof List)) return null;
+            List<?> list = (List<?>) attributions;
+            if (list.isEmpty() || !Utils.settingsReady() || !Settings.HIDE_REEL_AI_LABEL.get()) return null;
+            List<Object> kept = new ArrayList<>(list.size());
+            for (Object attribution : list) {
+                if (attribution == null) return null;
+                if (AI_LABEL_ATTRIBUTION.equals(FeedFilter.typeName(attribution))) continue;
+                kept.add(attribution);
+            }
+            if (kept.size() == list.size()) return null;
+            FeedFilterCounters.sawList(AI_LABEL_ROUTE, list.size());
+            FeedFilterCounters.removed(AI_LABEL_ROUTE, list.size() - kept.size(), AI_LABEL_ATTRIBUTION);
+            logOnce(AI_LABEL_ROUTE, () -> "Reel AI label: left out of the reel's attributions");
+            return kept.toArray();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel AI label", failure);
+            Logger.printException(() -> "Reel AI label: could not filter the attributions", failure);
+            return null;
+        }
+    }
+
+    /**
+     * Injection point, right after the builder of a reel caption's text is handed the caption (#594),
+     * so the collapsed caption, the open one and its dark box all start from what this answers. The
+     * caption without its hashtag runs while Hide hashtags in reel captions is on ({@link ReelHashtags}),
+     * or the one Facebook gave. Never throws: a failure answers Facebook's caption.
+     *
+     * @param caption the caption Facebook put into the builder, null or empty for a reel without one.
+     */
+    @Nullable
+    public static CharSequence captionText(@Nullable CharSequence caption) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (caption == null || caption.length() == 0) return caption;
+            if (!Utils.settingsReady() || !Settings.HIDE_REEL_HASHTAGS.get()) return caption;
+            FeedFilterCounters.sawList(HASHTAGS_ROUTE, 1);
+            int runs = ReelHashtags.runsLeftOff(caption);
+            if (runs == 0) return caption;
+            CharSequence kept = ReelHashtags.without(caption);
+            FeedFilterCounters.removed(HASHTAGS_ROUTE, runs, HASHTAG_RUN);
+            logOnce(HASHTAGS_ROUTE, () -> "Reel caption hashtags: left off a caption");
+            return kept;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel caption hashtags", failure);
+            Logger.printException(() -> "Reel caption hashtags: could not read the caption", failure);
+            return caption;
         }
     }
 
@@ -547,7 +631,9 @@ public final class ReelDeclutter {
      * Injection point, first thing in the component that draws the audio line on the Reels tab
      * (#200). That row picks the soundtrack out of the reel's attribution models on its own, so the
      * chip filter never sees it. True makes it draw nothing, as it does for a reel with no sound
-     * line. Never throws: false draws it as before.
+     * line. The post date rides on this line (#357), so while Show the post date on reels is on it's
+     * drawn anyway and {@link #audioLineText} leaves the song off it (#496). Never throws: false
+     * draws it as before.
      */
     public static boolean hideAudioLine() {
         try {
@@ -555,6 +641,10 @@ public final class ReelDeclutter {
             FeedFilterCounters.sawList(AUDIO_ROUTE, 1);
             FeedFilterCounters.sawKind(AUDIO_ROUTE, AUDIO_LINE);
             boolean hide = Utils.settingsReady() && Settings.HIDE_REEL_AUDIO_LINE.get();
+            if (hide && dateUnderAuthor()) {
+                logOnce(AUDIO_LINE_DATE_ONLY, () -> "Reel audio line: drawn for the post date, its song left off");
+                return false;
+            }
             if (hide) {
                 FeedFilterCounters.removed(AUDIO_ROUTE, 1, AUDIO_LINE);
                 logOnce(AUDIO_LINE, () -> "Reel audio line: not drawn");
@@ -759,12 +849,15 @@ public final class ReelDeclutter {
      * video and the one over a card that isn't a video. True when the pill is one of those and the
      * switch is on: the container is hidden and Facebook returns before it shows it. Any other pill,
      * the 2x speed one included, and any pill once the switch is off, gets a container this hid shown
-     * again first, since Facebook only shows what's inside it. Never throws: false shows the pill.
+     * again first, since Facebook only shows what's inside it. An UP NEXT pill that shows is told to
+     * Hide the video comment box, whose band keeps room for it only where it shows (#585). Never
+     * throws: false shows the pill.
      */
     public static boolean hideUpNextPill(@Nullable View pill, @Nullable Integer kind, int peekKind, int nextKind) {
         boolean upNext = kind != null && (kind == peekKind || kind == nextKind);
         if (!upNext || !hidesUpNext(UP_NEXT_PILL, "Up next: pill not shown")) {
             showHiddenPill(pill);
+            if (upNext) CommentSheetOptions.upNextPillShown();
             return false;
         }
         try {
@@ -915,16 +1008,33 @@ public final class ReelDeclutter {
     }
 
     /**
+     * Whether the post date goes on the line under a reel's author: Show the post date on reels on,
+     * and Post date after the caption off (#490). The second moves it to the row Facebook draws after
+     * the caption, away from the song and the other labels that crowd that line.
+     */
+    static boolean dateUnderAuthor() {
+        return Settings.SHOW_REEL_POST_DATE.get() && !Settings.REEL_POST_DATE_AFTER_CAPTION.get();
+    }
+
+    /**
      * Injection point, in a reel caption's render, handed the server switch's answer to whether the
      * caption gets a date row of its own after it (#503). Accounts in that test saw the date twice
      * with the post date on, under the author and again after the caption. While the date is on this
-     * says no, so it shows under the author only. Never throws: anything going wrong answers what it
+     * says no, so it shows under the author only, and yes while Post date after the caption is on too,
+     * since the date shows there instead (#490). Never throws: anything going wrong answers what it
      * was handed.
      */
     public static boolean captionDateShows(boolean shown) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (!shown || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return shown;
+            if (!Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return shown;
+            if (Settings.REEL_POST_DATE_AFTER_CAPTION.get()) {
+                if (shown) return true;
+                FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_AFTER_CAPTION);
+                logOnce(DATE_AFTER_CAPTION, () -> "Reel post date: drawn after the caption");
+                return true;
+            }
+            if (!shown) return false;
             FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_CAPTION_LEFT_OUT);
             logOnce(DATE_CAPTION_LEFT_OUT, () -> "Reel post date: Facebook's date after the caption left out");
             return false;
@@ -937,13 +1047,21 @@ public final class ReelDeclutter {
     /**
      * Injection point, in the helper that builds the post date under a reel's or a full-screen
      * video's author, handed the server switch's answer to whether that line is drawn, right before
-     * the helper draws nothing for a no (#296). True while the switch is on, so the date shows.
-     * Never throws: anything going wrong answers what it was handed.
+     * the helper draws nothing for a no (#296). True while the switch is on, so the date shows, and
+     * false while Post date after the caption is on as well, since the date shows after the caption
+     * then (#490). Never throws: anything going wrong answers what it was handed.
      */
     public static boolean showsPostDate(boolean shown) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (shown || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return shown;
+            if (!Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return shown;
+            if (Settings.REEL_POST_DATE_AFTER_CAPTION.get()) {
+                if (!shown) return false;
+                FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_MOVED_OFF_AUTHOR);
+                logOnce(DATE_MOVED_OFF_AUTHOR, () -> "Reel post date: left off the line under the author for the caption's");
+                return false;
+            }
+            if (shown) return true;
             FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_HIDDEN);
             logOnce(DATE_HIDDEN, () -> "Reel post date: drawn where the server left it out");
             return true;
@@ -965,7 +1083,7 @@ public final class ReelDeclutter {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             if (!alone || !Utils.settingsReady()) return alone;
-            if (Settings.SHOW_REEL_POST_DATE.get()) {
+            if (dateUnderAuthor()) {
                 FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BESIDE_REASON);
                 logOnce(DATE_BESIDE_REASON, () -> "Reel post date: kept beside a recommendation reason");
                 return false;
@@ -997,7 +1115,7 @@ public final class ReelDeclutter {
                     logOnce(NEW_FOR_YOU_HIDDEN, () -> "Reel New for you: left off the line");
                     return;
                 }
-                if (Settings.SHOW_REEL_POST_DATE.get() && at < line.size()) {
+                if (dateUnderAuthor() && at < line.size()) {
                     place = line.size();
                     FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BEFORE_REASON);
                     logOnce(DATE_BEFORE_REASON, () -> "Reel post date: put ahead of New for you");
@@ -1038,14 +1156,22 @@ public final class ReelDeclutter {
      * and the reel's story (#357). Facebook draws one line under a reel's author, and on a reel with a
      * song that line is the song's, so no date showed on most reels even with the switch on. With the
      * switch on the date goes in front of the song, read from the story's creation time and worded the
-     * way the date style says. Never throws: anything going wrong answers what it was handed.
+     * way the date style says. With Hide the audio line on reels on too, the line is drawn for the date
+     * alone ({@link #hideAudioLine}), so the song is left off it (#496). Never throws: anything going
+     * wrong answers what it was handed.
      */
     @Nullable
     public static String audioLineText(@Nullable String line, @Nullable Object story) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (line == null || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return line;
+            if (line == null || !Utils.settingsReady() || !dateUnderAuthor()) return line;
             Date posted = PostDetails.postedOf(story);
+            if (Settings.HIDE_REEL_AUDIO_LINE.get()) {
+                String alone = dateAlone(posted == null ? 0 : posted.getTime() / 1000, System.currentTimeMillis(),
+                        Settings.REEL_POST_DATE_STYLE.get(), L10n.locale(), TimeZone.getDefault());
+                FeedFilterCounters.removed(AUDIO_ROUTE, 1, AUDIO_LINE_DATE_ONLY);
+                return alone;
+            }
             if (posted == null) return line;
             String dated = audioLine(line, posted.getTime() / 1000, System.currentTimeMillis(),
                     Settings.REEL_POST_DATE_STYLE.get(), L10n.locale(), TimeZone.getDefault());
@@ -1070,7 +1196,7 @@ public final class ReelDeclutter {
         boolean handed = scrolls != 0;
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (!handed || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return handed;
+            if (!handed || !Utils.settingsReady() || !dateUnderAuthor()) return handed;
             FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_SONG_STILL);
             logOnce(DATE_SONG_STILL, () -> "Reel post date: the song line held still");
             return false;
@@ -1118,7 +1244,7 @@ public final class ReelDeclutter {
         FOOTER_DATES.remove();
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (rows == null || rows.size() < 2 || kept == null || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) {
+            if (rows == null || rows.size() < 2 || kept == null || !Utils.settingsReady() || !dateUnderAuthor()) {
                 return rows;
             }
             Object date = heldRow(rows, kept);
@@ -1186,7 +1312,7 @@ public final class ReelDeclutter {
     public static String soundLabelText(@Nullable String label, @Nullable Object attribution, @Nullable Object story) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (label == null || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return label;
+            if (label == null || !Utils.settingsReady() || !dateUnderAuthor()) return label;
             String type = FeedFilter.typeName(attribution);
             if (!SOUNDTRACK.equals(type)) return label;
             Date posted = PostDetails.postedOf(story);
@@ -1246,6 +1372,16 @@ public final class ReelDeclutter {
     static String audioLine(String line, long seconds, long nowMillis, ReelDateStyle style, Locale locale, TimeZone zone) {
         String date = postDate(null, seconds, nowMillis, style, true, locale, zone);
         return date == null || date.isEmpty() ? line : date + DOT + line;
+    }
+
+    /**
+     * What the Reels tab's audio line reads while Hide the audio line on reels is on and the date
+     * rides on it (#496): the day the reel was posted, at [seconds], alone. A time that can't be a
+     * post's reads blank, so the song stays off the line either way.
+     */
+    static String dateAlone(long seconds, long nowMillis, ReelDateStyle style, Locale locale, TimeZone zone) {
+        String date = postDate(null, seconds, nowMillis, style, true, locale, zone);
+        return date == null ? "" : date;
     }
 
     /**

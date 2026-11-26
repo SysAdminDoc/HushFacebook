@@ -677,6 +677,25 @@ private val NightTone.name: String
     get() = "hushfacebook_you_" + (if (accent) "accent" else "neutral") + "_$tone"
 
 /**
+ * What a night style item held before [writeNightStyles] pointed it elsewhere: its value as written,
+ * a colour or a `@color/` reference, and the colour that comes to in the default configuration.
+ */
+internal data class StyleOriginal(val text: String, val colour: Int)
+
+/**
+ * The patch's own colour a night style item points at in place of its value [text], when
+ * [writeNightStyles] is given somewhere to note them: one per value Facebook's styles hold there and
+ * per kind of palette colour ([tone] for a system tone, else a shade), so the theme's switch can give
+ * each item its own value back (D#527). A colour's name holds the colour, a reference's the name it
+ * names.
+ */
+internal fun styleOriginalName(text: String, colour: Int, tone: Boolean): String {
+    val value = text.trim()
+    val held = if (value.startsWith("@color/")) "r_" + value.removePrefix("@color/") else "c_%08x".format(colour)
+    return "hushfacebook_you_was_$held" + if (tone) "_t" else ""
+}
+
+/**
  * Writes into [night] a copy of each style in [family] with an item to change, its items for a
  * listed token and colour pointing at that colour's [NightShade], and adds each shade once to
  * [paletteColours] (the fixed palette, for Android 11) and [stateLists] (the wallpaper's, as the
@@ -685,6 +704,11 @@ private val NightTone.name: String
  * colour in [paletteV31Colours], or stays when no tone is near. [colours] are the default colours by
  * name and [nightColourNames] the ones with a night value. A style [night] already has is left to
  * Facebook. Answers how many items it pointed elsewhere.
+ *
+ * With [originals] given, an item points at the palette colour through a colour of the patch's own
+ * for the value it held ([styleOriginalName]), which holds a reference to the palette colour and goes
+ * in [paletteColours] and in [originals] with that value, so the theme's switch can hand each item
+ * its value back with a table of the colours it put there (D#527).
  *
  * The palette takes no night qualifier: a theme made at night keeps these references when the phone
  * leaves night, and each has to find a value then too (issue #323).
@@ -699,6 +723,7 @@ internal fun writeNightStyles(
     paletteV31Colours: Document,
     stateLists: MutableMap<String, String>,
     plain: Set<String>,
+    originals: MutableMap<String, StyleOriginal>? = null,
 ): Int {
     val listed = listedTokenColours()
     val present = night.documentElement.childElements().map { it.getAttribute("name") }.toSet()
@@ -712,7 +737,7 @@ internal fun writeNightStyles(
             val token = tokens[item.getAttribute("name")] ?: return@mapIndexedNotNull null
             val colour = defaultColour(item.textContent, colours, nightColourNames) ?: return@mapIndexedNotNull null
             if (colour !in listed[token].orEmpty()) return@mapIndexedNotNull null
-            val name = if (token in plain) {
+            val name = (if (token in plain) {
                 nightTone("#%08x".format(colour))?.also { tone ->
                     if (written.add(tone.name)) paletteColours.documentElement.appendChild(paletteColours.colour(tone.name, tone.fallback))
                     if (writtenV31.add(tone.name)) {
@@ -724,8 +749,12 @@ internal fun writeNightStyles(
                     if (written.add(shade.name)) paletteColours.documentElement.appendChild(paletteColours.colour(shade.name, shade.fallback))
                     stateLists.getOrPut(shade.name) { shade.stateList }
                 }?.name
-            }
-            name?.let { index to it }
+            }) ?: return@mapIndexedNotNull null
+            if (originals == null) return@mapIndexedNotNull index to name
+            val held = styleOriginalName(item.textContent, colour, tone = token in plain)
+            if (written.add(held)) paletteColours.documentElement.appendChild(paletteColours.colour(held, "@color/$name"))
+            originals[held] = StyleOriginal(item.textContent.trim(), colour)
+            index to held
         }.toMap()
         if (names.isEmpty()) continue
 

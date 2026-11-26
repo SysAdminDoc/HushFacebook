@@ -20,7 +20,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.ImageView;
@@ -43,7 +42,6 @@ import app.morphe.extension.facebook.font.FontFile;
 import app.morphe.extension.facebook.font.FontFileTest;
 import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.settings.HeaderFont;
-import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.PatchFamilyForTests;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -76,8 +74,6 @@ public class HeaderTextTest {
         HeaderPicture.forget();
         File picture = HeaderPicture.file(RuntimeEnvironment.getApplication());
         if (picture.exists()) assertTrue(picture.delete());
-        Settings.UNLOCK_APP_ICONS.resetToDefault();
-        Settings.USE_APP_ICON_IN_HEADER.resetToDefault();
         HookStatus.clear();
     }
 
@@ -237,29 +233,6 @@ public class HeaderTextTest {
     }
 
     @Test
-    public void wordsKeepThePickedAppIconOutOnlyWithThePatchInTheBuild() {
-        Settings.HEADER_TEXT.save("Home");
-        PatchFamilyForTests.carry(PatchFamily.APP_ICONS);
-        assertFalse("without the patch, saved words step nothing aside", HeaderText.replacesLogo());
-
-        PatchFamilyForTests.carry(PatchFamily.APP_ICONS, PatchFamily.HEADER_TEXT);
-        assertTrue(HeaderText.replacesLogo());
-        Settings.UNLOCK_APP_ICONS.save(true);
-        Settings.USE_APP_ICON_IN_HEADER.save(true);
-        Drawable stock = new ColorDrawable(Color.BLUE);
-        ImageView logo = new ImageView(RuntimeEnvironment.getApplication());
-        logo.setImageDrawable(stock);
-        AppIcons.dressLogo(logo);
-        assertSame("the app icon steps aside for the words", stock, logo.getDrawable());
-
-        Settings.HEADER_TEXT.save(" ");
-        assertFalse("blank words leave the header to the app icon", HeaderText.replacesLogo());
-        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
-        Settings.HEADER_TEXT.save("Home");
-        assertFalse("paused, the words are blank", HeaderText.replacesLogo());
-    }
-
-    @Test
     public void theTextIsOneTrimmedLineOfAtMostThirtyCharacters() {
         assertEquals("", HeaderText.clean(null));
         assertEquals("", HeaderText.clean(" \t\n "));
@@ -402,16 +375,5 @@ public class HeaderTextTest {
         Settings.HEADER_TEXT.save("Home");
         HeaderText.dress(logo);
         assertTrue("no copy, so the words", logo.getDrawable() instanceof HeaderText.TextMark);
-    }
-
-    @Test
-    public void aPictureKeepsThePickedAppIconOutOnlyWhileItsCopyIsThere() throws Exception {
-        pictureSaved(60, 20, Color.RED);
-        PatchFamilyForTests.carry(PatchFamily.APP_ICONS);
-        assertFalse("without the patch, a picture steps nothing aside", HeaderText.replacesLogo());
-        PatchFamilyForTests.carry(PatchFamily.APP_ICONS, PatchFamily.HEADER_TEXT);
-        assertTrue(HeaderText.replacesLogo());
-        assertTrue(HeaderPicture.file(RuntimeEnvironment.getApplication()).delete());
-        assertFalse("the copy is gone", HeaderText.replacesLogo());
     }
 }

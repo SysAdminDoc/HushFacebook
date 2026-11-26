@@ -258,10 +258,6 @@ public final class SettingsStatus {
         return false;
     }
 
-    public static boolean unlockAppIcons() {
-        return false;
-    }
-
     public static boolean headerText() {
         return false;
     }
@@ -287,6 +283,14 @@ public final class SettingsStatus {
     }
 
     public static boolean originalChatMedia() {
+        return false;
+    }
+
+    public static boolean shareToChats() {
+        return false;
+    }
+
+    public static boolean chatBackground() {
         return false;
     }
 
@@ -363,6 +367,10 @@ public final class SettingsStatus {
     }
 
     public static boolean photoDownload() {
+        return false;
+    }
+
+    public static boolean fileDownloads() {
         return false;
     }
 

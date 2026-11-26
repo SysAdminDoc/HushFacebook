@@ -114,6 +114,88 @@ class LauncherIconStyleTest {
         }
     }
 
+    /** A plain version of Hushfacebook's logo: a solid background, the lone H in one color, and the same H as the themed layer. */
+    private fun assertPlainLogo(icon: Document, style: LauncherIconStyle, where: String = "") {
+        val background = icon.layer("background")
+        assertEquals("$where background names a drawable", "", background.getAttribute("android:drawable"))
+        assertEquals("$where background color", style.background, background.children().single().getAttribute("android:color"))
+        val shape = icon.layer("foreground").children().single().paths().single()
+        assertEquals("$where H color", style.glyph, shape.getAttribute("android:fillColor"))
+        assertEquals("$where the H's slots aren't cut out", "evenOdd", shape.getAttribute("android:fillType"))
+        assertEquals("$where the H and its two slots", 3, shape.getAttribute("android:pathData").count { it == 'M' })
+        val themed = icon.layer("monochrome").children().single().paths().single()
+        assertEquals("$where themed layer", shape.getAttribute("android:pathData"), themed.getAttribute("android:pathData"))
+        points(shape.getAttribute("android:pathData")).forEach { (x, y) ->
+            assertTrue("$where ($x, $y) is outside the safe circle", Math.hypot(x - 54, y - 54) <= 33.0)
+        }
+    }
+
+    @Test
+    fun `Hushfacebook's logo comes white on black and black on white too`() {
+        assertEquals(LauncherIconStyle.HUSHFACEBOOK_WHITE_ON_BLACK, pickedIconStyle("hushfacebook-white-on-black"))
+        assertEquals(LauncherIconStyle.HUSHFACEBOOK_BLACK_ON_WHITE, pickedIconStyle(" Hushfacebook black on white "))
+        for (style in listOf(LauncherIconStyle.HUSHFACEBOOK_WHITE_ON_BLACK, LauncherIconStyle.HUSHFACEBOOK_BLACK_ON_WHITE)) {
+            val icon = icon()
+            restyleLauncherIcon(icon, null, style)
+            assertPlainLogo(icon, style, style.key)
+
+            val bare = xml(
+                """<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+                    <background android:drawable="@mipmap/icon_katana_background"/>
+                    <foreground android:drawable="@mipmap/icon_katana_foreground"/>
+                </adaptive-icon>""",
+            )
+            drawHushfacebookIcon(bare, style)
+            assertPlainLogo(bare, style, "${style.key} without a themed layer")
+        }
+        assertThrows(PatchException::class.java) { drawHushfacebookIcon(icon(), LauncherIconStyle.WHITE_ON_BLACK) }
+    }
+
+    @Test
+    fun `a picture takes the shape's place, keeps the style's background and drops the themed layer`() {
+        val picture = "@drawable/$PICTURE_NAME"
+        for (style in LauncherIconStyle.entries) {
+            val icon = icon()
+            restyleLauncherIcon(icon, null, style, picture)
+            val front = icon.layer("foreground")
+            assertEquals(style.key, picture, front.getAttribute("android:drawable"))
+            assertTrue("${style.key} still draws a shape", front.children().isEmpty())
+            assertTrue("${style.key} still has a themed layer", icon.documentElement.children().none { it.tagName == "monochrome" })
+            val back = icon.layer("background")
+            if (style.background == null) {
+                assertEquals("Facebook's own background", "@mipmap/icon_katana_background", back.getAttribute("android:drawable"))
+            } else {
+                assertEquals(style.key, style.background, back.children().single().getAttribute("android:color"))
+            }
+        }
+    }
+
+    @Test
+    fun `a background color goes behind any style or the picture`() {
+        val color = "#ff1e88e5"
+        fun backColor(icon: Document) = icon.layer("background").children().single().getAttribute("android:color")
+
+        val facebook = icon()
+        restyleLauncherIcon(facebook, null, LauncherIconStyle.FACEBOOK, background = color)
+        assertEquals(color, backColor(facebook))
+        assertEquals("Facebook's f stays", "@mipmap/icon_katana_foreground", facebook.layer("foreground").getAttribute("android:drawable"))
+        assertEquals("@drawable/icon_katana_monochrome", facebook.layer("monochrome").getAttribute("android:drawable"))
+
+        val hush = icon()
+        restyleLauncherIcon(hush, null, LauncherIconStyle.HUSHFACEBOOK, background = color)
+        assertEquals(color, backColor(hush))
+        assertEquals("the logo's four shapes", 4, hush.layer("foreground").children().single().paths().size)
+
+        val plain = icon()
+        restyleLauncherIcon(plain, glyph(), LauncherIconStyle.WHITE_ON_BLACK, background = color)
+        assertEquals(color, backColor(plain))
+        assertEquals("#ffffffff", plain.layer("foreground").children().single().paths().single().getAttribute("android:fillColor"))
+
+        val pictured = icon()
+        restyleLauncherIcon(pictured, null, LauncherIconStyle.BLACK_ON_WHITE, "@drawable/$PICTURE_NAME", color)
+        assertEquals(color, backColor(pictured))
+    }
+
     @Test
     fun `Facebook colors and an empty option keep the icon`() {
         assertNull(pickedIconStyle(null))
@@ -252,6 +334,9 @@ class LauncherIconStyleTest {
                     val hush = read(iconPath)
                     restyleLauncherIcon(hush, read(glyphPath), LauncherIconStyle.HUSHFACEBOOK)
                     assertHushfacebook(hush, name)
+                    val plain = read(iconPath)
+                    restyleLauncherIcon(plain, null, LauncherIconStyle.HUSHFACEBOOK_WHITE_ON_BLACK)
+                    assertPlainLogo(plain, LauncherIconStyle.HUSHFACEBOOK_WHITE_ON_BLACK, name)
                 }
                 checked += version
             }

@@ -88,6 +88,7 @@ import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.Setting;
+import app.morphe.extension.shared.settings.StringSetting;
 import app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment;
 import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
@@ -480,6 +481,9 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.headerFontChange() != null) parts.add(headerFontSentence(snapshot.headerFontChange()));
             if (snapshot.logoEmojiChange() != null) parts.add(logoEmojiSentence(snapshot.logoEmojiChange()));
             if (snapshot.accentCustomChange() != null) parts.add(accentCustomSentence(snapshot.accentCustomChange()));
+            for (Map.Entry<StringSetting, String> number : snapshot.numberChanges().entrySet()) {
+                parts.add(numberSentence(number.getKey(), number.getValue()));
+            }
             if (snapshot.seenKeep != null && snapshot.changes().containsKey(SettingsBackup.SEEN_KEEP)) {
                 parts.add(L10n.f("Posts you've seen will stay hidden for %1$s.",
                         HushfacebookPreferenceFragment.seenKeepLabel(snapshot.seenKeep)));
@@ -861,6 +865,27 @@ public class SettingsBackupPreference extends Preference {
         if (emoji.isEmpty()) return L10n.t("The top of Home will show no emoji after the logo.");
         return L10n.f("If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.",
                 L10n.isolate(emoji));
+    }
+
+    /**
+     * The sentence that says what a row taking a typed number ({@link SettingsBackup#NUMBERS}) will hold
+     * after an import, [value] blank or digits (#589).
+     */
+    static String numberSentence(StringSetting row, String value) {
+        String title = numberTitle(row);
+        if (value.isEmpty()) return L10n.f("The %1$s row will go back to its default.", title);
+        return L10n.f("The %1$s row will be set to %2$s.", title, value);
+    }
+
+    /** The title of [row], one of {@link SettingsBackup#NUMBERS}, as its settings screen shows it. */
+    static String numberTitle(StringSetting row) {
+        if (row == SettingsBackup.TRAY_SIZE) return L10n.t("Round picture size");
+        if (row == SettingsBackup.DIM_TO) return L10n.t("Dim to");
+        if (row == SettingsBackup.OPACITY) return L10n.t("Bar opacity");
+        if (row == SettingsBackup.TAB_BAR_WIDTH) return L10n.t("Tab bar width");
+        if (row == SettingsBackup.TAB_BAR_HEIGHT) return L10n.t("Tab bar height");
+        if (row == SettingsBackup.BOX_DARKNESS) return L10n.t("Box darkness");
+        throw new IllegalArgumentException("Not a number row: " + row.key);
     }
 
     /** The sentence that says which color the Accent color row's Custom choice will use after an import, [code] blank or a code. */

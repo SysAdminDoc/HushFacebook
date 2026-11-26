@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.reels.CaptionRoom;
 import app.morphe.extension.facebook.reels.SeekPreviewRoom;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -863,6 +864,7 @@ public final class ProgressBar {
             if (label == null) return;
             CaptionRoom.mounted(label);
             ReelBarFollow.mounted(label);
+            TranslucentBars.controlsMounted();
             SeekPreviewRoom.updated(label);
             HandOver over = handOvers.remove(label);
             watch(label, scrubber, over == null ? null : over.shown);
@@ -885,6 +887,7 @@ public final class ProgressBar {
     public static void loads(@Nullable ViewGroup label, @Nullable Object scrubber, @Nullable String reel) {
         try {
             if (label == null) return;
+            TranslucentBars.controlsMounted();
             HandOver over = handOvers.remove(label);
             watch(label, scrubber, reel);
             boolean back = over != null && showBarAgain(over);

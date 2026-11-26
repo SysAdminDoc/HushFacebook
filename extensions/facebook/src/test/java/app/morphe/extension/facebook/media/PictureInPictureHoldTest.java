@@ -106,6 +106,7 @@ public class PictureInPictureHoldTest {
     public void restore() {
         PauseForTests.resume();
         PictureInPicture.views = PictureInPicture::playerView;
+        PictureInPicture.videoViews = PictureInPicture::videoView;
         Settings.PICTURE_IN_PICTURE.resetToDefault();
         PictureInPicture.forget();
         HookStatus.clear();
@@ -366,6 +367,103 @@ public class PictureInPictureHoldTest {
         assertEquals("the armed reel's own play", Arrays.asList(false, true), screen.autoEnter);
         assertTrue(statusLine(), statusLine().contains(PictureInPicture.OTHER_SCREEN + " 1"));
         assertFalse(statusLine(), statusLine().contains(PictureInPicture.KEPT_OUT));
+    }
+
+    /** Lets the arming check run: past {@link PictureInPicture#TAKE_OVER_MS}. */
+    private void waitForTheArmingCheck() {
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PictureInPicture.TAKE_OVER_MS));
+    }
+
+    /**
+     * #495: a video opened full screen from the feed or a Page's reels grid plays in a player of its
+     * own, then Facebook arms the window for the player it played in before, which has no video view
+     * any more. A moment later the window is armed again for the player that played, which is the
+     * reel on screen from then on.
+     */
+    @Test
+    public void anArmingOfAPlayerWithNoVideoGoesToThePlayerThatPlayed() {
+        View video = new View(screen);
+        PictureInPicture.videoViews = asked -> asked == other ? video : null;
+        PictureInPicture.playerPlaying(other);
+        PictureInPicture.armed(screen, player, new Object[0]);
+        assertSame("before the check", player, PictureInPicture.currentPlayer());
+        waitForTheArmingCheck();
+        assertSame("the reel on screen", other, PictureInPicture.currentPlayer());
+        assertTrue(statusLine(), statusLine().contains(PictureInPicture.TAKEN_OVER + " 1"));
+        // The stub arms nothing in a test, so the arming again shows as the reel kept out.
+        assertTrue(statusLine(), statusLine().contains(PictureInPicture.KEPT_OUT + " 1"));
+        assertEquals("the arming again for the player that played", Collections.singletonList(false), screen.autoEnter);
+        PictureInPicture.playerPaused(player);
+        assertEquals("the old player's pause held", Collections.singletonList(false), screen.autoEnter);
+    }
+
+    /** An armed player that has its video view keeps the window, as Facebook armed it. */
+    @Test
+    public void anArmingOfAPlayerWithItsVideoStays() {
+        View video = new View(screen);
+        PictureInPicture.videoViews = asked -> video;
+        PictureInPicture.playerPlaying(other);
+        PictureInPicture.armed(screen, player, new Object[0]);
+        waitForTheArmingCheck();
+        assertSame("the reel on screen", player, PictureInPicture.currentPlayer());
+        assertEquals("armed again", Collections.emptyList(), screen.autoEnter);
+        assertFalse(String.valueOf(statusLine()), String.valueOf(statusLine()).contains(PictureInPicture.TAKEN_OVER));
+    }
+
+    /**
+     * Nothing is taken when the player that played has no video view either, sits on another screen,
+     * is the armed one, or nothing played at all.
+     */
+    @Test
+    public void anArmingStaysWithoutAPlayerThatPlayedWithItsVideoOnTheScreen() {
+        Activity home = Robolectric.buildActivity(Activity.class).setup().get();
+        View homeVideo = new View(home);
+        PictureInPicture.videoViews = asked -> null;
+        PictureInPicture.armed(screen, player, new Object[0]);
+        waitForTheArmingCheck();
+        assertSame("nothing played", player, PictureInPicture.currentPlayer());
+
+        PictureInPicture.playerPlaying(other);
+        PictureInPicture.armed(screen, player, new Object[0]);
+        waitForTheArmingCheck();
+        assertSame("the player that played has no video", player, PictureInPicture.currentPlayer());
+
+        PictureInPicture.videoViews = asked -> asked == other ? homeVideo : null;
+        PictureInPicture.armed(screen, player, new Object[0]);
+        waitForTheArmingCheck();
+        assertSame("the player that played is on Home", player, PictureInPicture.currentPlayer());
+
+        PictureInPicture.playerPlaying(player);
+        PictureInPicture.armed(screen, player, new Object[0]);
+        waitForTheArmingCheck();
+        assertSame("the armed player played last", player, PictureInPicture.currentPlayer());
+        assertFalse(String.valueOf(statusLine()), String.valueOf(statusLine()).contains(PictureInPicture.TAKEN_OVER));
+    }
+
+    /** With the switch off, or a disarm or another arming before the check, the arming stays. */
+    @Test
+    public void anArmingStaysWithTheSwitchOffOrAfterAnotherArmingOrDisarm() {
+        View video = new View(screen);
+        PictureInPicture.videoViews = asked -> asked == other ? video : null;
+        PictureInPicture.playerPlaying(other);
+        PictureInPicture.armed(screen, player, new Object[0]);
+        Settings.PICTURE_IN_PICTURE.save(false);
+        waitForTheArmingCheck();
+        assertSame("with the switch off", player, PictureInPicture.currentPlayer());
+        Settings.PICTURE_IN_PICTURE.save(true);
+
+        PictureInPicture.armed(screen, player, new Object[0]);
+        PictureInPicture.disarmed();
+        waitForTheArmingCheck();
+        assertNull("after a disarm", PictureInPicture.currentPlayer());
+
+        Object third = new Object();
+        PictureInPicture.armed(screen, player, new Object[0]);
+        PictureInPicture.armed(screen, third, new Object[0]);
+        waitForTheArmingCheck();
+        assertSame("after another arming, its own check", other, PictureInPicture.currentPlayer());
+        assertTrue(statusLine(), statusLine().contains(PictureInPicture.TAKEN_OVER + " 1"));
+        assertEquals("one arming again", Collections.singletonList(false), screen.autoEnter);
     }
 
     @Test

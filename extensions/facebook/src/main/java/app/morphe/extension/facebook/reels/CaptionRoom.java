@@ -105,6 +105,8 @@ public final class CaptionRoom {
         HookStatus.invoked(FAMILY);
         if (watch(page)) Logger.printDebug(() -> "Reel caption: the scrubber's " + from + " found the reel page");
         roomIn(page);
+        // Faint Clean mode button watches the list of every reel page (#519).
+        CleanExitSpot.sawPage(page);
     }
 
     /** [view]'s nearest LithoView ancestor, or null. */

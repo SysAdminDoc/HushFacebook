@@ -20,9 +20,11 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
+import app.morphe.extension.facebook.reels.ReelDeclutter;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
@@ -75,7 +77,11 @@ public class VideoCommentBandTest {
         Settings.KEEP_PROGRESS_BAR_TIME.resetToDefault();
         CommentSheetOptions.pickingShortsBar();
         CommentSheetOptions.inFront(null);
+        CommentSheetOptions.UpNextSeen.AT.resetToDefault();
+        CommentSheetOptions.upNextPillHookForTests = null;
+        CommentSheetOptions.nowForTests = null;
         HookStatus.clear();
+        FeedFilterCounters.clear();
     }
 
     private static String statusLine() {
@@ -211,7 +217,9 @@ public class VideoCommentBandTest {
      * In the Shorts viewer Facebook lays the UP NEXT pill over the comment bar, in its band, so while
      * Hide Up next is off the band stays Facebook's when the bar goes: the video, its caption and its
      * seek bar stay put, and the pill sits where the bar was, not over a lowered seek bar (#552). The
-     * scroller's caption never comes down, so its video takes the band there all the same.
+     * scroller's caption never comes down, so its video takes the band there all the same. This is a
+     * build that can't see the pill; one that can keeps the band only where it shows
+     * (theBandStaysForUpNextOnlyWhereThePillShows).
      */
     @Test
     public void theUpNextPillKeepsTheBand() {
@@ -229,6 +237,57 @@ public class VideoCommentBandTest {
         assertEquals("with Up next hidden the video kept the band", 0, video(viewer));
         assertEquals("with Up next hidden the seek bar stayed over the caption",
                 CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+    }
+
+    /**
+     * Not every account gets the UP NEXT pill, and a band kept for one that never shows left the
+     * seek bar over an empty strip (#585). With the pill's hook in the build the band stays only once
+     * Facebook has shown the pill in the Shorts viewer, for two weeks after the last one, and a pill
+     * Hide Up next hides, one shown over another screen, or the 2x speed pill says nothing.
+     */
+    @Test
+    public void theBandStaysForUpNextOnlyWhereThePillShows() {
+        final int peek = 1;
+        final int next = 2;
+        CommentSheetOptions.upNextPillHookForTests = true;
+        CommentSheetOptions.nowForTests = 1_000_000L;
+        Settings.HIDE_VIDEO_COMMENT_COMPOSER.save(true);
+        Settings.HIDE_UP_NEXT.save(false);
+        assertTrue(render(viewer));
+        assertEquals("the video kept a band for a pill that never showed", 0, video(viewer));
+        assertEquals("the seek bar stayed over an empty band", CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
+
+        assertFalse(ReelDeclutter.hideUpNextPill(null, 3, peek, next));
+        CommentSheetOptions.inFront(MAIN_SCREEN);
+        assertFalse(ReelDeclutter.hideUpNextPill(null, peek, peek, next));
+        CommentSheetOptions.inFront(SHORTS_SCREEN);
+        assertEquals("the 2x speed pill or an Up next pill over the main screen kept the band", 0, video(viewer));
+
+        assertFalse("Up next was hidden with its switch off", ReelDeclutter.hideUpNextPill(null, next, peek, next));
+        assertEquals("the pill shown in the Shorts viewer left the video its band", BAND, video(viewer));
+        assertEquals("the seek bar went under the pill", BAND, seekBar());
+
+        CommentSheetOptions.nowForTests = 1_000_000L + CommentSheetOptions.UP_NEXT_REMEMBERED_MS - 1;
+        assertEquals("the band went before two weeks were up", BAND, video(viewer));
+        CommentSheetOptions.nowForTests = 1_000_000L + CommentSheetOptions.UP_NEXT_REMEMBERED_MS;
+        assertEquals("a pill not seen for two weeks kept the band", 0, video(viewer));
+        assertFalse(ReelDeclutter.hideUpNextPill(null, peek, peek, next));
+        assertEquals("a pill seen again left the video its band", BAND, video(viewer));
+
+        long noted = CommentSheetOptions.UpNextSeen.AT.get();
+        CommentSheetOptions.nowForTests = noted + CommentSheetOptions.UP_NEXT_NOTED_EVERY_MS - 1;
+        ReelDeclutter.hideUpNextPill(null, peek, peek, next);
+        assertEquals("a pill seen again within the minute was written down", noted, (long) CommentSheetOptions.UpNextSeen.AT.get());
+
+        CommentSheetOptions.UpNextSeen.AT.resetToDefault();
+        Settings.HIDE_UP_NEXT.save(true);
+        assertTrue("Hide Up next showed the pill", ReelDeclutter.hideUpNextPill(null, peek, peek, next));
+        Settings.HIDE_UP_NEXT.save(false);
+        assertEquals("a hidden pill kept the band", 0, video(viewer));
+
+        CommentSheetOptions.upNextPillHookForTests = false;
+        assertEquals("a build that can't see the pill gave its band away", BAND, video(viewer));
+        assertEquals(BAND, seekBar());
     }
 
     @Test

@@ -222,14 +222,80 @@ public class MessengerIconTest {
                 + MessengerIcon.OPENED + " 1", statusLine());
     }
 
-    /** With Meta's Messenger and a copy both installed, Meta's opens. */
+    /** With Meta's Messenger and a copy both installed, Facebook itself opens Meta's. */
     @Test
     public void metasMessengerComesBeforeACopy() {
         Settings.OPEN_MESSENGER_APP.save(true);
         MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
         MessengerIconForTests.install();
-        assertTrue(MessengerIcon.open(app, false));
+        assertTrue(MessengerIcon.open(running(MessengerIcon.FACEBOOK), false));
         assertEquals(MessengerIconForTests.HOME, MessengerIconForTests.nextStarted().getComponent());
+    }
+
+    /**
+     * A copy of Facebook, as Clone install makes, opens the copy of Messenger when both Messengers
+     * are installed, and Meta's only when there's no copy (#595: the cloned Facebook opened the
+     * original Messenger).
+     */
+    @Test
+    public void aCopyOfFacebookOpensTheMessengerCopyFirst() {
+        Settings.OPEN_MESSENGER_APP.save(true);
+        MessengerIconForTests.install();
+        Context copy = running("com.facebook.katana.hush");
+        // Meta's Messenger alone is no copy, and opens as before.
+        assertNull("Meta's Messenger was taken for a copy",
+                MessengerIcon.copyLaunch(app.getPackageManager(), "com.facebook.katana.hush"));
+        assertTrue(MessengerIcon.open(copy, false));
+        assertEquals(MessengerIconForTests.HOME, MessengerIconForTests.nextStarted().getComponent());
+
+        MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
+        assertTrue(MessengerIcon.open(copy, false));
+        Intent started = MessengerIconForTests.nextStarted();
+        assertNotNull("nothing was started", started);
+        assertEquals(MessengerIconForTests.CLONE_HOME, started.getComponent());
+        assertTrue("the copy doesn't get a task of its own", (started.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) != 0);
+        assertFalse(MessengerIcon.isFacebookCopy(MessengerIcon.FACEBOOK));
+        assertFalse(MessengerIcon.isFacebookCopy(null));
+    }
+
+    /**
+     * Off, a copy of Facebook opens a copy of Messenger installed beside Meta's, the one Facebook
+     * would hand the tap to (#595). Facebook under its own name, and a copy with no Messenger copy or
+     * with only the copy and no Meta's Messenger, leave the tap to Facebook.
+     */
+    @Test
+    public void offACopyOfFacebookOpensTheMessengerCopyOverMetas() {
+        Context copy = running("com.facebook.katana.hush");
+        MessengerIconForTests.install();
+        assertFalse("Meta's Messenger alone was taken from Facebook", MessengerIcon.open(copy, false));
+        assertNull("something was started", MessengerIconForTests.nextStarted());
+
+        MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
+        assertFalse("Facebook under its own name lost the tap",
+                MessengerIcon.open(running(MessengerIcon.FACEBOOK), false));
+        assertNull("something was started", MessengerIconForTests.nextStarted());
+        assertTrue(MessengerIcon.open(copy, false));
+        Intent started = MessengerIconForTests.nextStarted();
+        assertNotNull("nothing was started", started);
+        assertEquals(MessengerIconForTests.CLONE_HOME, started.getComponent());
+        assertEquals(FamilyNames.MESSENGER_ICON + ": invoked 3, 0 found, 0 missing. Counted: "
+                + MessengerIcon.OPENED_COPY + " 1", statusLine());
+        assertFalse("a long press opened the copy", MessengerIcon.open(copy, true));
+        assertNull(MessengerIconForTests.nextStarted());
+
+        MessengerCardForTests.uninstall();
+        assertFalse("the copy was opened where Facebook shows its own Chats", MessengerIcon.open(copy, false));
+        assertNull("something was started", MessengerIconForTests.nextStarted());
+    }
+
+    /** A context answering [packageName] as the running app's package, the rest from the test app. */
+    private Context running(String packageName) {
+        return new ContextWrapper(app) {
+            @Override
+            public String getPackageName() {
+                return packageName;
+            }
+        };
     }
 
     /** Another app's launcher entry, or Facebook's own Messenger classes, never stand in for Messenger. */

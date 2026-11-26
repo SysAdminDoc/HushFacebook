@@ -62,7 +62,7 @@ public final class StorySeenForTests {
     /** Whether, with a card of the batch marked, only that card goes out. Forgets the mark. */
     public static boolean sendsOnlyTheMarked() {
         try {
-            StorySeen.MARKS.toggle(ACCOUNT.user, "marked");
+            StorySeen.MARKS.mark(ACCOUNT.user, "marked");
             Set<?> sent = send(ACCOUNT, cards("marked", "other"));
             return sent != null && sent.size() == 1 && sent.contains("marked");
         } finally {

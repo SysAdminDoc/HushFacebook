@@ -108,9 +108,9 @@ public class SaveTextL10nTest {
                 SaveControl.elapsedText(3_723_000));
     }
 
-    /** A French phone has no French table: an English sentence, French numbers. */
+    /** A Dutch phone has no Dutch table: an English sentence, Dutch numbers. */
     @Test
-    @Config(qualifiers = "fr-rFR")
+    @Config(qualifiers = "nl-rNL")
     public void aPhoneWithNoTableReadsEnglishWithItsOwnNumbers() {
         long mib = 1024L * 1024L;
         assertEquals("4,2 MB of 100 MB", SaveControl.progressText((long) (4.2 * mib), 100 * mib));

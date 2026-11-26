@@ -71,6 +71,8 @@ public class ReelsTabBarHiddenTest {
         Settings.HIDE_REELS_TAB_BAR.resetToDefault();
         ReelsTabBarHidden.insetsForTests = null;
         ReelsTabBarHidden.forgetWindow();
+        TabBarScrollAway.Stored.BAR_ROOM.resetToDefault();
+        TabBarScrollAway.Stored.WIDE_BAR_ROOM.resetToDefault();
         HookStatus.clear();
     }
 

@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.comments;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -202,6 +203,37 @@ public class FullHeightCommentsTest {
         assertFalse(FullHeightComments.skipSplitScreen());
         assertTrue(FullHeightComments.descriptionOpensComments(true));
         assertFalse(FullHeightComments.fillsScreen(1f));
+    }
+
+    /**
+     * An ad's Comment button or comment bar (#586): at Facebook's height what the gate read about
+     * the ad comes back empty, counted, so the gate checks it like any other post. A post that isn't
+     * an ad read nothing and stays that way, uncounted. At full or half height the split screen is
+     * passed over anyway, so the ad keeps what was read.
+     */
+    @Test
+    public void atFacebooksHeightAnAdsCommentsGoToTheSplitScreenLikeAnyReels() {
+        Object ad = new Object();
+        assertNull("a post that isn't an ad was given an ad", FullHeightComments.sponsoredGate(null));
+        assertNull("an ad kept the regular sheet", FullHeightComments.sponsoredGate(ad));
+        assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 2, 1 found, 0 missing. Counted: "
+                + FullHeightComments.SPONSORED_SPLIT + " 1", statusLine());
+
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
+        assertEquals("at full height an ad lost what was read", ad, FullHeightComments.sponsoredGate(ad));
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.HALF);
+        assertEquals("at half height an ad lost what was read", ad, FullHeightComments.sponsoredGate(ad));
+        assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 4, 1 found, 0 missing. Counted: "
+                + FullHeightComments.SPONSORED_SPLIT + " 1", statusLine());
+    }
+
+    @Test
+    public void pausedOrBeforeTheSettingsAreReadyAnAdKeepsTheRegularSheet() {
+        Object ad = new Object();
+        SettingsContextRule.withoutContext(() ->
+                assertEquals("an ad lost what was read before the settings were ready", ad, FullHeightComments.sponsoredGate(ad)));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, an ad lost what was read", ad, FullHeightComments.sponsoredGate(ad));
     }
 
     @Test

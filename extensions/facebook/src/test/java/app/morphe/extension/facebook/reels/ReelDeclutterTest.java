@@ -81,6 +81,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_SHARE_BUTTON.resetToDefault();
         Settings.SHOW_REEL_COMMENT_BUTTON.resetToDefault();
         Settings.SHOW_REEL_POST_DATE.resetToDefault();
+        Settings.REEL_POST_DATE_AFTER_CAPTION.resetToDefault();
         Settings.HIDE_REEL_NEW_FOR_YOU.resetToDefault();
         Settings.REEL_POST_DATE_STYLE.resetToDefault();
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
@@ -88,6 +89,7 @@ public class ReelDeclutterTest {
         Settings.REEL_SPEAKER_ABOVE_MENU.resetToDefault();
         ReelDeclutter.sideSpeaker(null);
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
+        Settings.HIDE_REEL_AI_LABEL.resetToDefault();
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
         Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.HIDE_REEL_FULLSCREEN_PILL.resetToDefault();
@@ -203,6 +205,43 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_AUDIO_LINE.save(false);
         assertArrayEquals("turning the switch off didn't bring the audio line back", new Object[]{song, location},
                 ReelDeclutter.filterChips(Arrays.asList(remix, song, location)));
+    }
+
+    /**
+     * A reel's "AI info" label (#574) leaves its attributions only while its own switch is on: the
+     * chips switch leaves it, every other attribution stays in the order it came, and it comes back
+     * paused, before the settings are ready and once the switch is off again.
+     */
+    @Test
+    public void theAiLabelLeavesTheAttributionsOnlyWhileItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_REEL_AI_LABEL.defaultValue);
+        TypedFeedUnit ai = chip(ReelDeclutter.AI_LABEL_ATTRIBUTION);
+        TypedFeedUnit song = chip(SONG);
+        TypedFeedUnit location = chip(LOCATION);
+        TypedFeedUnit.Unreadable unreadable = new TypedFeedUnit.Unreadable();
+        assertNull("the chips switch took the AI label", ReelDeclutter.filterAiLabel(Arrays.asList(song, ai, location)));
+
+        Settings.HIDE_REEL_CHIPS.save(false);
+        Settings.HIDE_REEL_AI_LABEL.save(true);
+        assertArrayEquals(new Object[]{unreadable, song, location},
+                ReelDeclutter.filterAiLabel(Arrays.asList(unreadable, song, ai, location)));
+        assertArrayEquals(new Object[0], ReelDeclutter.filterAiLabel(Collections.singletonList(ai)));
+        assertNull("a reel without the label got a new list", ReelDeclutter.filterAiLabel(Arrays.asList(song, location)));
+        assertNull(ReelDeclutter.filterAiLabel(Collections.emptyList()));
+        assertNull("not a list", ReelDeclutter.filterAiLabel(new Object()));
+        assertNull(ReelDeclutter.filterAiLabel(null));
+        assertNull("a null model got dropped", ReelDeclutter.filterAiLabel(Arrays.asList(ai, null)));
+        assertEquals(ReelDeclutter.AI_LABEL_ROUTE + ": 2 lists, 5 items, 2 removed. Last reason: "
+                        + ReelDeclutter.AI_LABEL_ATTRIBUTION + ". Removed: " + ReelDeclutter.AI_LABEL_ATTRIBUTION + " 2",
+                line(ReelDeclutter.AI_LABEL_ROUTE));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("the AI label went while paused", ReelDeclutter.filterAiLabel(Arrays.asList(song, ai)));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertNull("the AI label went before the settings were ready",
+                ReelDeclutter.filterAiLabel(Arrays.asList(song, ai))));
+        Settings.HIDE_REEL_AI_LABEL.save(false);
+        assertNull("turning the switch off didn't bring the AI label back", ReelDeclutter.filterAiLabel(Arrays.asList(song, ai)));
     }
 
     /**
@@ -654,6 +693,54 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * #490: Post date after the caption moves the date to Facebook's row after a reel's caption,
+     * away from the song and the labels that crowd the line under the author. With it and the post
+     * date on, that row shows on every reel and the line under the author is Facebook's own again:
+     * no date, the song first and scrolling, the reason free to take the line, New for you where
+     * Facebook puts it, and Hide the audio line on reels hiding the whole line. With the post date
+     * off, paused, or once it's off again, it changes nothing.
+     */
+    @Test
+    public void thePostDateMovesAfterTheCaptionWithItsSwitch() {
+        assertFalse(Settings.REEL_POST_DATE_AFTER_CAPTION.defaultValue);
+        assertFalse("asked as each reel's caption and footer are built, so no restart",
+                Settings.REEL_POST_DATE_AFTER_CAPTION.rebootApp);
+        String song = "Some Band" + ReelDeclutter.DOT + "Original audio";
+        TreeJNI story = new TreeJNI().with("creation_time", System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60);
+
+        Settings.REEL_POST_DATE_AFTER_CAPTION.save(true);
+        assertFalse("the caption date showed with the post date off", ReelDeclutter.captionDateShows(false));
+        assertTrue(ReelDeclutter.captionDateShows(true));
+        assertTrue(ReelDeclutter.showsPostDate(true));
+        assertFalse(ReelDeclutter.showsPostDate(false));
+
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertTrue("the date didn't show after the caption", ReelDeclutter.captionDateShows(false));
+        assertTrue(ReelDeclutter.captionDateShows(true));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_AFTER_CAPTION));
+        assertFalse("the date showed under the author as well", ReelDeclutter.showsPostDate(true));
+        assertFalse(ReelDeclutter.showsPostDate(false));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_MOVED_OFF_AUTHOR));
+        assertSame("the song got the date in front of it as well", song, ReelDeclutter.audioLineText(song, story));
+        assertTrue("the song held still for a date it doesn't carry", ReelDeclutter.audioLineScrolls(1));
+        assertTrue("the reason lost its line to a date that isn't on it", ReelDeclutter.reasonAlone(true));
+        assertEquals("New for you moved for a date that isn't on the line", "[nfy, date, song]", slotted(0));
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertTrue("the audio line was drawn for a date that isn't on it", ReelDeclutter.hideAudioLine());
+        Settings.HIDE_REEL_AUDIO_LINE.save(false);
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the caption date showed while paused", ReelDeclutter.captionDateShows(false));
+        assertTrue("the date under the author went while paused", ReelDeclutter.showsPostDate(true));
+        PauseForTests.resume();
+
+        Settings.REEL_POST_DATE_AFTER_CAPTION.save(false);
+        assertFalse("turning it off left the date after the caption", ReelDeclutter.captionDateShows(true));
+        assertTrue("turning it off didn't bring the date back under the author", ReelDeclutter.showsPostDate(false));
+        assertEquals("3 weeks ago" + ReelDeclutter.DOT + song, ReelDeclutter.audioLineText(song, story));
+    }
+
+    /**
      * A reel's recommendation reason took the whole line under the author when Facebook's flag said so,
      * date included, so one reel showed its date and the next didn't (#496). With the switch on the
      * flag reads no and the date stays; off, paused, before the settings are ready and when the switch
@@ -846,6 +933,51 @@ public class ReelDeclutterTest {
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() ->
                 assertSame("dated before the settings were ready", song, ReelDeclutter.audioLineText(song, story)));
+    }
+
+    /**
+     * The Reels tab's audio line is where the post date goes (#357), so hiding the line took the date
+     * with it: a reel with "Original audio" showed its name and caption and no date (#496, S22 588,
+     * 2026-11-24). While the date's switch is on the line stays with the date alone on it, the song
+     * still left off. Date off, paused or unready settings: the line goes or stays the way it did.
+     */
+    @Test
+    public void aHiddenAudioLineKeepsThePostDateAlone() {
+        String song = "JulesScenery" + ReelDeclutter.DOT + "Original audio";
+        long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
+        assertEquals("3 weeks ago", ReelDeclutter.dateAlone(threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        assertEquals("Oct 12", ReelDeclutter.dateAlone(1791817200L, NOW, ReelDateStyle.DATE, Locale.US, UTC));
+        for (ReelDateStyle style : ReelDateStyle.values()) {
+            assertEquals("no time, no song either", "", ReelDeclutter.dateAlone(0, NOW, style, Locale.US, UTC));
+            assertEquals("a time to come", "", ReelDeclutter.dateAlone(NOW / 1000 + 3600, NOW, style, Locale.US, UTC));
+        }
+
+        long posted = System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60;
+        TreeJNI story = new TreeJNI().with("creation_time", posted);
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertTrue("the date off, the line goes as before", ReelDeclutter.hideAudioLine());
+        assertSame(song, ReelDeclutter.audioLineText(song, story));
+
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertFalse("the line went and took the date with it", ReelDeclutter.hideAudioLine());
+        assertEquals("the song stayed on the line", "3 weeks ago", ReelDeclutter.audioLineText(song, story));
+        assertEquals("a story with no time showed the song", "", ReelDeclutter.audioLineText(song, new TreeJNI()));
+        assertTrue(line(ReelDeclutter.AUDIO_ROUTE),
+                line(ReelDeclutter.AUDIO_ROUTE).contains(ReelDeclutter.AUDIO_LINE_DATE_ONLY + " 2"));
+
+        Settings.HIDE_REEL_AUDIO_LINE.save(false);
+        assertEquals("the line shown, the date goes in front of the song", "3 weeks ago" + ReelDeclutter.DOT + song,
+                ReelDeclutter.audioLineText(song, story));
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the line went while paused", ReelDeclutter.hideAudioLine());
+        assertSame("the song left off while paused", song, ReelDeclutter.audioLineText(song, story));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> {
+            assertFalse("the line went before the settings were ready", ReelDeclutter.hideAudioLine());
+            assertSame("the song left off before the settings were ready", song, ReelDeclutter.audioLineText(song, story));
+        });
     }
 
     /**

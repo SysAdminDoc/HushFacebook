@@ -10,7 +10,6 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -65,11 +64,13 @@ import app.morphe.extension.facebook.chats.MessengerHandoffForTests;
 import app.morphe.extension.facebook.chats.MessengerIconForTests;
 import app.morphe.extension.facebook.chats.OriginalChatMediaForTests;
 import app.morphe.extension.facebook.chats.ReadReceipts;
+import app.morphe.extension.facebook.chats.ShareToChatsForTests;
 import app.morphe.extension.facebook.chats.TypingIndicator;
 import app.morphe.extension.facebook.download.ClipboardLinkForTests;
 import app.morphe.extension.facebook.download.CommentGifForTests;
 import app.morphe.extension.facebook.download.CommentPhotoForTests;
 import app.morphe.extension.facebook.download.CommentVideoForTests;
+import app.morphe.extension.facebook.download.FileDownloadsForTests;
 import app.morphe.extension.facebook.download.ListingPhotoForTests;
 import app.morphe.extension.facebook.download.MediaDownload;
 import app.morphe.extension.facebook.download.PhotoMenuItemForTests;
@@ -105,6 +106,7 @@ import app.morphe.extension.facebook.feed.PostPrompts;
 import app.morphe.extension.facebook.feed.LikeButtonFaces;
 import app.morphe.extension.facebook.feed.AskBeforeLike;
 import app.morphe.extension.facebook.feed.ProfilePictures;
+import app.morphe.extension.facebook.feed.FriendsTabSuggestionsForTests;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
 import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.feed.TranslateCommentsForTests;
@@ -143,7 +145,6 @@ import app.morphe.extension.facebook.menu.MenuPanel;
 import app.morphe.extension.facebook.menu.MenuSectionsForTests;
 import app.morphe.extension.facebook.misc.MetaUpsells;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
-import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.CarrierBanners;
 import app.morphe.extension.facebook.misc.Haptics;
 import app.morphe.extension.facebook.misc.LocationPrompts;
@@ -208,6 +209,7 @@ import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.theme.DarkMode;
 import app.morphe.extension.facebook.theme.FeedGapsForTests;
 import app.morphe.extension.facebook.theme.ForceDarkModeForTests;
+import app.morphe.extension.facebook.theme.MaterialYouForTests;
 import app.morphe.extension.facebook.updates.UpdatePrompts;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
@@ -447,6 +449,8 @@ public class PausedHooksTest {
                 () -> FeedGuardForTests.hides(Category.ORGANIC, FeedGuardForTests.storiesRow(true)),
                 // Your own profile's People you may know carousel builds nothing.
                 ProfileSuggestionsForTests::hidesTheCarousel,
+                // The Friends tab's list goes without its People you may know section.
+                FriendsTabSuggestionsForTests::dropsTheSuggestions,
                 // A post opened from a notification is asked for without its list of more posts.
                 () -> !NotificationFooter.show(true),
                 // The end of the feed is built without its Find friends card.
@@ -558,6 +562,8 @@ public class PausedHooksTest {
                 // The reaction preview is left undrawn only while the patch runs.
                 PostPrompts::hideReactionPreview,
                 () -> PostPrompts.hideReactionPreview(true),
+                // So is the count beside a comment's faces (#483).
+                () -> PostPrompts.commentReactionCount(12, true) == 0,
                 // A Like button's icon is noted, and with a count it takes the post's faces (#541).
                 // Hide the reaction preview on posts overrules it, so it's off for this probe.
                 () -> {
@@ -599,7 +605,7 @@ public class PausedHooksTest {
                 () -> FullPostText.cut(new SpannableString("x"), "a story") == null,
                 () -> !FullPostText.allowTruncation(true),
                 () -> FullPostText.reelCaptionExpanded(false),
-                () -> app.morphe.extension.facebook.feed.CaptionBackdrop.forCaption(Integer.MAX_VALUE) != null));
+                () -> app.morphe.extension.facebook.feed.CaptionBackdrop.forCaption(Integer.MAX_VALUE, "Sunset at the lake") != null));
         probes.put(PatchFamily.TRANSLATE_POSTS, Collections.singletonList(() -> {
             PostTranslationForTests.noNetwork();
             Spannable post = new SpannableString("Una frase en otro idioma");
@@ -612,12 +618,13 @@ public class PausedHooksTest {
         probes.put(PatchFamily.PHOTO_CAROUSEL, Arrays.asList(() -> PhotoCarousel.carousel(0),
                 () -> PhotoCarousel.skipLayout("com.facebook.feedplugins.attachments.album.PhotoLayoutFramePlugin")));
         // A post marked for automatic translation reads as one to translate on request, the reels
-        // footer hears a caption can't be translated by itself, so it asks for nothing, an
-        // auto-translated comment reads as one shown as written, and a comment's See translation
-        // handler is tapped once the main thread is free.
+        // footer hears a caption can't be translated by itself, so it asks for nothing, a Reels
+        // query asks the server for captions as written, an auto-translated comment reads as one
+        // shown as written, and a comment's See translation handler is tapped once the main thread
+        // is free.
         probes.put(PatchFamily.AUTO_TRANSLATION, Arrays.asList(AutoTranslationForTests::keepsThePost,
-                AutoTranslationForTests::keepsTheCaption, AutoTranslationForTests::keepsTheComment,
-                TranslateCommentsForTests::tapsTheLink));
+                AutoTranslationForTests::keepsTheCaption, AutoTranslationForTests::asksForCaptionsAsWritten,
+                AutoTranslationForTests::keepsTheComment, TranslateCommentsForTests::tapsTheLink));
         // The Feeds tab's yes to a title row is answered as a no, its filters go to a container
         // that's never on screen, and its posts get no room for them. The room follows what the
         // tab did with its filters, so that probe builds a tab first.
@@ -664,6 +671,8 @@ public class PausedHooksTest {
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideFollow,
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideReplyBar,
                 () -> !app.morphe.extension.facebook.stories.StoryViewerCleanup.showUpNext(true),
+                () -> !app.morphe.extension.facebook.stories.StoryViewerCleanup.hideTime(true),
+                () -> app.morphe.extension.facebook.stories.StoryViewerCleanup.showsTimeLine("10h"),
                 app.morphe.extension.facebook.stories.StoryViewerCleanupForTests::dropsACreateCard,
                 app.morphe.extension.facebook.stories.StoryProgressBarForTests::drawsABar,
                 app.morphe.extension.facebook.stories.StoryViewerCleanupForTests::flattensACubeTurn));
@@ -701,11 +710,12 @@ public class PausedHooksTest {
         // Your own profile's count line shows the number you typed.
         probes.put(PatchFamily.LOCAL_PROFILE_COUNTS,
                 Collections.singletonList(app.morphe.extension.facebook.profile.LocalProfileCountsForTests::swapsAFriendsCount));
-        // A post's row gets Save and loses Like, a video post's row gets Download, and the row goes
-        // without its own tap.
+        // A post's row loses Facebook's own Save and Like, a video post's row gets Download, and the
+        // row goes without its own tap. With every switch on, hiding Save wins over adding it (#541).
         probes.put(PatchFamily.POST_ACTION_BUTTONS, Arrays.asList(
-                PostActionButtonsForTests::addsSave,
+                PostActionButtonsForTests::hidesSave,
                 PostActionButtonsForTests::hidesLike,
+                PostActionButtonsForTests::hidesStars,
                 PostActionButtonsForTests::addsDownload,
                 PostActionButtonsForTests::leavesTheTapOff));
         // Marketplace's feed query asks to skip its ads, an ads-only query isn't sent, and a search
@@ -731,10 +741,22 @@ public class PausedHooksTest {
                 () -> ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsRemixAttribution"))) != null,
                 // The audio line goes under its own switch.
                 () -> ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsSoundtrackTitle"))) != null,
-                // So does the Reels tab's own audio line row.
-                ReelDeclutter::hideAudioLine,
+                // So does the Reels tab's own audio line row. With Show the post date on reels on as
+                // well the row stays to carry the date (#496), so it's off for this probe.
+                () -> {
+                    Settings.SHOW_REEL_POST_DATE.save(false);
+                    try {
+                        return ReelDeclutter.hideAudioLine();
+                    } finally {
+                        Settings.SHOW_REEL_POST_DATE.save(true);
+                    }
+                },
                 // And "Made with Edits" under the caption.
                 ReelDeclutter::hideEditsLabel,
+                // A reel's "AI info" label, left out of its attributions (#574).
+                () -> ReelDeclutter.filterAiLabel(Arrays.asList(new TypedFeedUnit("XFBFBShortsGenAITransparencyAttribution"))) != null,
+                // A reel caption's runs of hashtags (#594).
+                () -> !"Drive #a #b".contentEquals(ReelDeclutter.captionText("Drive #a #b")),
                 // And the "Made with Edits" pill over a feed video (#314).
                 ReelDeclutter::hideEditsPill,
                 // A stalled video's slow connection message.
@@ -995,6 +1017,8 @@ public class PausedHooksTest {
                 CommentGifForTests::addsARow,
                 CommentPhotoForTests::addsARow,
                 ListingPhotoForTests::keepsTheAddress));
+        // A file downloaded from a post goes to the Downloads folder.
+        probes.put(PatchFamily.FILE_DOWNLOADS, Collections.singletonList(FileDownloadsForTests::movesAFile));
         // A start from the launcher icon asks Facebook for the chosen tab.
         probes.put(PatchFamily.START_TAB, Collections.singletonList(StartTabRouteForTests::routes));
         // Home's request for its feed goes out for the most recent feed.
@@ -1065,6 +1089,8 @@ public class PausedHooksTest {
                     DarkMode.answer(true);
                     return FeedGapsForTests.drawsTheGap();
                 }));
+        // Material You: a server colour in dark mode takes the palette's (D#527).
+        probes.put(PatchFamily.MATERIAL_YOU_THEME, Collections.singletonList(MaterialYouForTests::recolours));
         // A request for a post's comments that names no order asks for the chosen one, and with
         // All comments chosen, the menu its answer draws is picked in.
         probes.put(PatchFamily.DEFAULT_COMMENT_ORDER, Arrays.asList(
@@ -1109,6 +1135,8 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.incomingTypers(3) == 0,
                 () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty(),
                 CommentSheetOptions::holdsEmojiRow,
+                // Comments open with the keyboard closed (#594).
+                () -> !CommentSheetOptions.keyboardOnFirstLoad(true),
                 () -> {
                     // The bar along the bottom of a live video is held gone (#537).
                     View bar = new View(RuntimeEnvironment.getApplication());
@@ -1288,11 +1316,6 @@ public class PausedHooksTest {
                 PausedHooksTest::letsALiveSeekThrough, ProgressBarForTests::rewindsForTheBarsSeek));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
-        // The app icon benefit is answered yes, at the provider's check and at the picker's own look,
-        // and the update reset leaves a picked icon alone.
-        probes.put(PatchFamily.APP_ICONS, Arrays.asList(
-                () -> AppIcons.unlocked(AppIcons.BENEFIT), () -> AppIcons.entitled(false),
-                () -> AppIcons.keepsIcon(new ComponentName("com.facebook.katana", AppIcons.LAUNCHER + ".vaporwave_ic"))));
         // A window's secure flag comes out.
         probes.put(PatchFamily.SCREENSHOTS, Collections.singletonList(
                 () -> Screenshots.layoutFlags(0x2000) == 0));
@@ -1312,6 +1335,8 @@ public class PausedHooksTest {
         // check says it can skip the re-encode.
         probes.put(PatchFamily.ORIGINAL_CHAT_MEDIA, Arrays.asList(OriginalChatMediaForTests::sendsAPhotoAsIs,
                 OriginalChatMediaForTests::sendsAPhotoAsyncAsIs, OriginalChatMediaForTests::passesAVideo));
+        // The share target is in the share menu only while its switch runs.
+        probes.put(PatchFamily.SHARE_TO_CHATS, Collections.singletonList(ShareToChatsForTests::putsItInTheShareMenu));
         // A push of each kind a notification switch blocks isn't posted, asked at 11 PM, inside
         // the quiet hours every switch on turns on.
         probes.put(PatchFamily.PROMO_NOTIFICATIONS, Arrays.asList(

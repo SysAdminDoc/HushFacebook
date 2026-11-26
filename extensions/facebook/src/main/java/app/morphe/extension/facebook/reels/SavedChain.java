@@ -95,6 +95,15 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, Facebook's viewer
  * goes on as it was. Cards' labels are only compared, never written anywhere.
+ *
+ * <p>With Play the feed's Reels row in order on, the same goes for a Reels row in the feed (#599):
+ * a reel tapped there opens Facebook's own viewer (origin "newsfeed::fb_shorts_viewer"), which went
+ * on to suggested reels too, never the next tile in the row (S22 2026-11-26). A viewer opening from
+ * the feed starts a chain only when the press landed on a tile in a row that goes sideways
+ * ({@link Card#row}), so a reel posted in the feed on its own still plays the way Facebook plays it.
+ * Back on the feed, a next tile off the edge of the row is scrolled into view sideways, and since a
+ * row only holds reels, nothing a tile opens is closed as a post. Stay on a saved video when it ends
+ * is Saved's alone.
  */
 public final class SavedChain {
     static final String FAMILY = FamilyNames.REEL_DECLUTTER;
@@ -110,6 +119,18 @@ public final class SavedChain {
 
     /** The surface Facebook names in a player origin for a video opened from Saved. */
     static final String SAVED_SURFACE = "saved";
+
+    /** The surface Facebook names in a player origin for a reel opened from the feed, a Reels row's included (#599). */
+    static final String FEED_SURFACE = "newsfeed";
+
+    /** The feed's chain's name in the diagnostics report (#599). */
+    static final String ROW_HOOK = "Feed Reels row in order";
+
+    /** Counted each time the next reel in a feed's Reels row is tapped open (#599). */
+    static final String ROW_NEXT = "Next reel in the row opened";
+
+    /** Counted each time a swipe goes back to the reel before in a feed's Reels row (#599). */
+    static final String ROW_PREVIOUS = "Previous reel in the row opened";
 
     /** How long after a press on a card the viewer opening from Saved counts as that card's. */
     static final long TOUCH_WINDOW_MS = 3000;
@@ -203,6 +224,8 @@ public final class SavedChain {
         final int height;
         @Nullable final String label;
         final long at;
+        /** Whether the card sits in a row that goes sideways, like a Reels row in the feed (#599). */
+        final boolean row;
 
         Card(Activity page, ViewGroup list, View card, long at) {
             this.page = new WeakReference<>(page);
@@ -213,6 +236,7 @@ public final class SavedChain {
             height = card.getHeight();
             label = labelOf(card);
             this.at = at;
+            row = inRow(list, card);
         }
     }
 
@@ -232,10 +256,17 @@ public final class SavedChain {
         int postsSkipped;
         /** Whether the chain's own tap opened this viewer, which then stays black while its video settles. */
         boolean chained;
+        /** Whether the viewer opened from a Reels row in the feed rather than from Saved (#599). */
+        final boolean feed;
 
         Chain(Card card, long openedAt) {
+            this(card, openedAt, false);
+        }
+
+        Chain(Card card, long openedAt, boolean feed) {
             this.card = card;
             this.openedAt = openedAt;
+            this.feed = feed;
         }
     }
 
@@ -245,6 +276,8 @@ public final class SavedChain {
         final long at;
         final int direction;
         final int postsSkipped;
+        /** Whether the tap was on a Reels row in the feed, where nothing a tile opens is a post to skip (#599). */
+        final boolean feed;
         /** The dialog windows already over the Saved page when the chain tapped, which aren't the card's. */
         final List<WeakReference<View>> windowsBefore = new ArrayList<>();
         /** The windows the tap brought up over Saved, kept black until it's known what they are. Main thread. */
@@ -252,11 +285,12 @@ public final class SavedChain {
         /** The post window the chain is closing, which keeps its black as it goes. Main thread. */
         WeakReference<View> closing = new WeakReference<>(null);
 
-        Tapped(Activity page, long at, int direction, int postsSkipped, List<View> windowsBefore) {
+        Tapped(Activity page, long at, int direction, int postsSkipped, boolean feed, List<View> windowsBefore) {
             this.page = new WeakReference<>(page);
             this.at = at;
             this.direction = direction;
             this.postsSkipped = postsSkipped;
+            this.feed = feed;
             for (View window : windowsBefore) this.windowsBefore.add(new WeakReference<>(window));
         }
 
@@ -502,7 +536,7 @@ public final class SavedChain {
                     return false;
                 }
             }
-            if (!on()) {
+            if (!on(current.chain)) {
                 drop(current);
                 return false;
             }
@@ -552,7 +586,7 @@ public final class SavedChain {
         if (dy < 0 && (-dy > height * SWIPE_SHARE || -speed > fling)) direction = 1;
         else if (dy > 0 && (dy > height * SWIPE_SHARE || speed > fling)) direction = -1;
         if (direction == -1 && !hasPrevious(current.chain)) {
-            Logger.printDebug(() -> "Saved videos in a row: a swipe down on the first saved video, so it stays");
+            Logger.printDebug(() -> name(current.chain) + ": a swipe down on the first one, so it stays");
             direction = 0;
         }
         if (direction == 0) {
@@ -578,7 +612,10 @@ public final class SavedChain {
         if (moved != null) moved.animate().translationY(0).setDuration(SLIDE_MS);
     }
 
-    /** Whether Saved may hold a card before the chain's: one is shown above it, or the list scrolls up. */
+    /**
+     * Whether Saved, or the feed's Reels row, may hold a card before the chain's: one is shown before
+     * it, or the list scrolls back up or to the left.
+     */
     static boolean hasPrevious(Chain current) {
         return hasPrevious(current.card);
     }
@@ -586,16 +623,19 @@ public final class SavedChain {
     /** The same, for the chain's [card]. */
     static boolean hasPrevious(Card card) {
         ViewGroup list = card.list.get();
-        return list != null && (previousTile(list, card) != null || list.canScrollVertically(-1));
+        return list != null && (previousTile(list, card) != null || list.canScrollVertically(-1)
+                || (card.row && list.canScrollHorizontally(-1)));
     }
 
     /**
      * Called as Facebook's Reels viewer opens, with its player origin as text. One from Saved starts
-     * a chain from the card pressed just before it. One from anywhere else ends any chain. Never throws.
+     * a chain from the card pressed just before it, and so does one from the feed when that card sat
+     * in a Reels row (#599). One from anywhere else ends any chain. Never throws.
      */
     public static void viewerOpening(@Nullable String origin) {
         try {
-            if (origin == null || !fromSaved(origin)) {
+            boolean feed = origin != null && fromFeed(origin);
+            if (origin == null || (!feed && !fromSaved(origin))) {
                 disarm();
                 return;
             }
@@ -609,14 +649,25 @@ public final class SavedChain {
                 chain = null;
                 tapped = null; // A saved video, so the card the chain tapped was no post.
             }
-            if (!on()) return;
-            long at = now();
-            if (card == null || at - card.at > TOUCH_WINDOW_MS || card.page.get() == null) {
-                Logger.printDebug(() -> "Saved videos in a row: a video opened from Saved with no card pressed just before it");
+            // A feed reel that starts no chain still ends any other, as every viewer not from Saved did.
+            if (!(feed ? rowOn() : savedOn())) {
+                if (feed) disarm();
                 return;
             }
-            HookStatus.bound(FAMILY, CHAIN_HOOK);
-            Chain started = new Chain(card, at);
+            String name = feed ? ROW_HOOK : CHAIN_HOOK;
+            long at = now();
+            if (card == null || at - card.at > TOUCH_WINDOW_MS || card.page.get() == null) {
+                if (feed) disarm();
+                Logger.printDebug(() -> name + ": a video opened with no card pressed just before it");
+                return;
+            }
+            if (feed && !card.row) {
+                disarm();
+                Logger.printDebug(() -> name + ": a reel opened from the feed, not from a Reels row");
+                return;
+            }
+            HookStatus.bound(FAMILY, name);
+            Chain started = new Chain(card, at, feed);
             started.chained = byChain;
             synchronized (SavedChain.class) {
                 Activity created = lastCreated.get();
@@ -625,7 +676,7 @@ public final class SavedChain {
                 }
                 chain = started;
             }
-            Logger.printDebug(() -> "Saved videos in a row: a video opened from the card at " + card.left + "," + card.top
+            Logger.printDebug(() -> name + ": a video opened from the card at " + card.left + "," + card.top
                     + " (" + card.width + "x" + card.height + ")");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
@@ -641,7 +692,7 @@ public final class SavedChain {
                 if (current == null || current.moving || !viewerInFront(current)) return;
                 if (now() - current.openedAt < OPEN_GUARD_MS) return;
             }
-            if (Settings.SAVED_VIDEOS_STAY_ON_END.get()) return;
+            if (!current.feed && Settings.SAVED_VIDEOS_STAY_ON_END.get()) return;
             advance(current, "the video ended");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
@@ -680,7 +731,7 @@ public final class SavedChain {
      * none the chain ends there rather than in Facebook's suggestions.
      */
     private static void advance(Chain current, String why) {
-        if (!on()) {
+        if (!on(current)) {
             disarm();
             return;
         }
@@ -699,7 +750,7 @@ public final class SavedChain {
      * Saved taps the card [direction] away from the chain's. False when the viewer stays.
      */
     private static boolean leave(Chain current, String why, int direction) {
-        if (!on()) {
+        if (!on(current)) {
             disarm();
             return false;
         }
@@ -710,7 +761,7 @@ public final class SavedChain {
         }
         if (viewer == null || viewer.isFinishing()) return false;
         if (!viewer.hasWindowFocus()) {
-            Logger.printDebug(() -> "Saved videos in a row: " + why + " with something over the video, so it stays");
+            Logger.printDebug(() -> name(current) + ": " + why + " with something over the video, so it stays");
             return false;
         }
         if (current.card.list.get() == null) {
@@ -721,8 +772,8 @@ public final class SavedChain {
             current.moving = true;
             current.direction = direction;
         }
-        Logger.printDebug(() -> "Saved videos in a row: " + why + ", back to Saved for the "
-                + (direction > 0 ? "next" : "previous") + " one");
+        Logger.printDebug(() -> name(current) + ": " + why + ", back to " + (current.feed ? "the feed" : "Saved")
+                + " for the " + (direction > 0 ? "next" : "previous") + " one");
         coverPage(current.card.page.get());
         viewer.finish();
         viewer.overridePendingTransition(0, 0);
@@ -748,6 +799,7 @@ public final class SavedChain {
                     return;
                 }
             }
+            if (opened.feed) return; // A Reels row's tiles open reels, so nothing they open is closed (#599).
             Chain skipped = skip(opened, page, screen);
             if (skipped == null) {
                 synchronized (SavedChain.class) {
@@ -782,7 +834,7 @@ public final class SavedChain {
                 if (tapped != opened || chain != null) return;
                 page = opened.page.get();
             }
-            if (page == null || page.isFinishing() || !on()) return;
+            if (page == null || page.isFinishing() || !savedOn()) return;
             View post = newDialogOver(page, opened);
             if (post == null) {
                 if (now() - opened.at + POST_CHECK_MS <= TOUCH_WINDOW_MS) {
@@ -924,7 +976,7 @@ public final class SavedChain {
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN) {
                 stop.forget();
-                if (!on() || !Settings.SAVED_POSTS_IN_ROW.get()) return false;
+                if (!savedOn() || !Settings.SAVED_POSTS_IN_ROW.get()) return false;
                 stop.press(event, root);
                 return false;
             }
@@ -1051,7 +1103,7 @@ public final class SavedChain {
     private static boolean leavePost(PostStop stop, int direction) {
         Activity page = stop.page.get();
         View root = stop.window.get();
-        if (page == null || page.isFinishing() || root == null || !root.isShown() || !on()) return false;
+        if (page == null || page.isFinishing() || root == null || !root.isShown() || !savedOn()) return false;
         Chain next = new Chain(stop.card, now());
         next.viewer = new WeakReference<>(page);
         next.moving = true;
@@ -1092,7 +1144,7 @@ public final class SavedChain {
             if (chain != null) return null;
             Card card = lastCard;
             if (card == null || card.page.get() != page || card.at < opened.at) return null;
-            if (!on()) return null;
+            if (!savedOn()) return null;
             if (opened.postsSkipped >= MAX_POSTS_SKIPPED) {
                 Logger.printDebug(() -> "Saved videos in a row: " + MAX_POSTS_SKIPPED
                         + " posts in a row, so it stops on this one");
@@ -1160,7 +1212,7 @@ public final class SavedChain {
             if (tapped != opened) return false;
             page = opened.page.get();
         }
-        if (page == null || page.isFinishing() || !on() || now() - opened.at > TOUCH_WINDOW_MS) return false;
+        if (page == null || page.isFinishing() || !savedOn() || now() - opened.at > TOUCH_WINDOW_MS) return false;
         for (View window : windowsOver(page, false)) {
             if (opened.hadBefore(window) || SettleCover.blackedOut(window)) continue;
             SettleCover.blackOut(window);
@@ -1381,14 +1433,15 @@ public final class SavedChain {
 
     /**
      * Taps the card after the chain's, or the one before it after a swipe down, once the Saved page
-     * is back, scrolling to it first when it has to.
+     * is back, scrolling to it first when it has to. In a Reels row in the feed that scroll goes
+     * sideways along the row (#599).
      */
     static void tapNext(Chain current) {
         try {
             synchronized (SavedChain.class) {
                 if (chain != current) return;
             }
-            if (!on()) {
+            if (!on(current)) {
                 disarm();
                 return;
             }
@@ -1400,18 +1453,21 @@ public final class SavedChain {
                 return;
             }
             boolean back = current.direction < 0;
+            boolean sideways = current.feed && card.row;
+            String where = current.feed ? "the row" : "Saved";
             View next = back ? previousTile(list, card) : nextTile(list, card);
             if (next == null) {
-                int step = Math.max(1, list.getHeight() / 2);
-                if (current.scrolls < MAX_SCROLLS && scroll(list, card, back ? -step : step)) {
+                int step = Math.max(1, (sideways ? list.getWidth() : list.getHeight()) / 2);
+                int by = back ? -step : step;
+                if (current.scrolls < MAX_SCROLLS && (sideways ? scrollRow(list, card, by) : scroll(list, card, by))) {
                     current.scrolls++;
                     Utils.runOnMainThreadDelayed(() -> tapNext(current), SCROLL_SETTLE_MS);
                     return;
                 }
                 disarm();
-                Logger.printDebug(() -> back
-                        ? "Saved videos in a row: no card before the one played, so it ends on Saved"
-                        : "Saved videos in a row: no card after the last one played, so it ends on Saved");
+                Logger.printDebug(() -> name(current) + (back
+                        ? ": no card before the one played, so it ends on " + where
+                        : ": no card after the last one played, so it ends on " + where));
                 return;
             }
             float[] point = tapPoint(next);
@@ -1419,6 +1475,17 @@ public final class SavedChain {
             if (!list.getGlobalVisibleRect(visible)) {
                 disarm();
                 return;
+            }
+            if (sideways) {
+                float side = visible.width() * EDGE_SHARE;
+                if (point[0] < visible.left + side || point[0] > visible.right - side) {
+                    int dx = Math.round(point[0] - visible.exactCenterX());
+                    if (dx != 0 && current.scrolls < MAX_SCROLLS && scrollRow(list, card, dx)) {
+                        current.scrolls++;
+                        Utils.runOnMainThreadDelayed(() -> tapNext(current), SCROLL_SETTLE_MS);
+                        return;
+                    }
+                }
             }
             float edge = visible.height() * EDGE_SHARE;
             boolean inView = point[1] >= visible.top + edge && point[1] <= visible.bottom - edge
@@ -1432,25 +1499,28 @@ public final class SavedChain {
                 }
                 if (!visible.contains(Math.round(point[0]), Math.round(point[1]))) {
                     disarm();
-                    Logger.printDebug(() -> "Saved videos in a row: the next card couldn't be scrolled into view");
+                    Logger.printDebug(() -> name(current) + ": the next card couldn't be scrolled into view");
                     return;
                 }
             }
-            List<View> before = dialogsOver(page);
+            List<View> before = current.feed ? Collections.emptyList() : dialogsOver(page);
             Tapped opened;
             synchronized (SavedChain.class) {
                 if (chain != current) return;
                 chain = null; // The viewer the tap opens starts the next chain.
-                opened = new Tapped(page, now(), back ? -1 : 1, current.postsSkipped, before);
+                opened = new Tapped(page, now(), back ? -1 : 1, current.postsSkipped, current.feed, before);
                 tapped = opened;
             }
             int left = next.getLeft();
             int top = next.getTop();
             tap(page, point[0], point[1]);
-            blackOutNewWindows(opened);
-            Utils.runOnMainThreadDelayed(() -> checkPostWindow(opened), PRESS_MS + POST_CHECK_MS);
-            HookStatus.counted(FAMILY, back ? PREVIOUS : NEXT);
-            Logger.printDebug(() -> "Saved videos in a row: tapped the " + (back ? "previous" : "next") + " card, at "
+            if (!current.feed) {
+                // Saved's posts open over it, and a Reels row only holds reels (#599).
+                blackOutNewWindows(opened);
+                Utils.runOnMainThreadDelayed(() -> checkPostWindow(opened), PRESS_MS + POST_CHECK_MS);
+            }
+            HookStatus.counted(FAMILY, current.feed ? (back ? ROW_PREVIOUS : ROW_NEXT) : (back ? PREVIOUS : NEXT));
+            Logger.printDebug(() -> name(current) + ": tapped the " + (back ? "previous" : "next") + " card, at "
                     + left + "," + top);
         } catch (Throwable failure) {
             disarm();
@@ -1547,6 +1617,40 @@ public final class SavedChain {
             view = parent instanceof View ? (View) parent : null;
         }
         return null;
+    }
+
+    /**
+     * Scrolls a Reels row [list] sideways by [dx] when it goes that way, and moves the card's place in
+     * the row by however far the row's children actually moved (#599). False when the row can't.
+     */
+    static boolean scrollRow(ViewGroup list, Card card, int dx) {
+        if (!list.canScrollHorizontally(dx > 0 ? 1 : -1)) return false;
+        View reference = list.getChildCount() > 0 ? list.getChildAt(0) : null;
+        int before = reference == null ? 0 : reference.getLeft();
+        list.scrollBy(dx, 0);
+        int moved;
+        if (reference != null && reference.getParent() == list) moved = before - reference.getLeft();
+        else moved = dx;
+        card.left -= moved;
+        Logger.printDebug(() -> ROW_HOOK + ": scrolled the row " + dx + " to find the next reel");
+        return true;
+    }
+
+    /**
+     * Whether [child] sits in a row of [list]'s that goes sideways: the list scrolls left or right,
+     * or, scrolling neither up nor down, it shows another child as wide as [child] beside it (#599).
+     * Saved's grid scrolls down and a feed's posts sit one under the other, so neither is a row.
+     */
+    static boolean inRow(ViewGroup list, View child) {
+        if (list.canScrollHorizontally(1) || list.canScrollHorizontally(-1)) return true;
+        if (list.canScrollVertically(1) || list.canScrollVertically(-1)) return false;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View other = list.getChildAt(i);
+            if (other == null || other == child || other.getVisibility() != View.VISIBLE) continue;
+            if (Math.abs(other.getWidth() - child.getWidth()) > SAME_PX) continue;
+            if (Math.abs(other.getTop() - child.getTop()) <= SAME_PX && other.getLeft() != child.getLeft()) return true;
+        }
+        return false;
     }
 
     /** Where in the window to tap [tile]: across its middle, {@link #TAP_DOWN} of the way down. */
@@ -1672,8 +1776,17 @@ public final class SavedChain {
 
     /** Whether [origin], a player origin as text, names Saved as its surface. */
     static boolean fromSaved(String origin) {
+        return SAVED_SURFACE.equals(surface(origin));
+    }
+
+    /** Whether [origin], a player origin as text, names the feed as its surface (#599). */
+    static boolean fromFeed(String origin) {
+        return FEED_SURFACE.equals(surface(origin));
+    }
+
+    private static String surface(String origin) {
         int cut = origin.indexOf("::");
-        return SAVED_SURFACE.equals(cut < 0 ? origin : origin.substring(0, cut));
+        return cut < 0 ? origin : origin.substring(0, cut);
     }
 
     /** Whether the chain's viewer is the screen in front. Called holding the lock. */
@@ -1691,8 +1804,28 @@ public final class SavedChain {
         if (cover.get() != null) uncoverAfter(0);
     }
 
+    /** Whether either chain is switched on: Saved's, or the feed's Reels row's (#599). */
     private static boolean on() {
+        return Utils.settingsReady()
+                && (Settings.SAVED_VIDEOS_IN_ORDER.get() || Settings.FEED_REELS_ROW_IN_ORDER.get());
+    }
+
+    /** Whether [current]'s own switch is on. */
+    private static boolean on(Chain current) {
+        return current.feed ? rowOn() : savedOn();
+    }
+
+    private static boolean savedOn() {
         return Utils.settingsReady() && Settings.SAVED_VIDEOS_IN_ORDER.get();
+    }
+
+    private static boolean rowOn() {
+        return Utils.settingsReady() && Settings.FEED_REELS_ROW_IN_ORDER.get();
+    }
+
+    /** [current]'s name, for the debug log. */
+    private static String name(Chain current) {
+        return current.feed ? ROW_HOOK : CHAIN_HOOK;
     }
 
     static long now() {

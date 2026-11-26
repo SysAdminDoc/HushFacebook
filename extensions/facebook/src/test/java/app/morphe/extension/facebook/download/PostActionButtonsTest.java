@@ -51,16 +51,21 @@ public class PostActionButtonsTest {
 
     private static final String SAVE = PostActionButtonsForTests.SAVE;
 
-    /** Like, Comment, Repost, Share and Send's hide switches, in the order of {@link #ROW}. Read once Settings can load. */
+    /** Like, Comment, Repost, Share, Send and Stars' hide switches, in the order of {@link #ROW}. Read once Settings can load. */
     private static BooleanSetting[] hides() {
         return new BooleanSetting[] {Settings.HIDE_POST_LIKE_BUTTON, Settings.HIDE_POST_COMMENT_BUTTON,
-                Settings.HIDE_POST_REPOST_BUTTON, Settings.HIDE_POST_SHARE_BUTTON, Settings.HIDE_POST_SEND_BUTTON};
+                Settings.HIDE_POST_REPOST_BUTTON, Settings.HIDE_POST_SHARE_BUTTON, Settings.HIDE_POST_SEND_BUTTON,
+                Settings.HIDE_POST_STARS_BUTTON};
     }
 
-    /** Facebook's types as its row hands them: enum constants, Like being REACT and Repost REPOST (587, #450). */
-    private enum Type { REACT, COMMENT, REPOST, SHARE, SEND, SAVE, OVERFLOW }
+    /**
+     * Facebook's types as its row hands them: enum constants, Like being REACT, Repost REPOST (587,
+     * #450) and the Stars and gifts button STARS (588, #483).
+     */
+    private enum Type { REACT, COMMENT, REPOST, SHARE, SEND, STARS, SAVE, OVERFLOW }
 
-    private static final List<Type> ROW = Arrays.asList(Type.REACT, Type.COMMENT, Type.REPOST, Type.SHARE, Type.SEND);
+    private static final List<Type> ROW =
+            Arrays.asList(Type.REACT, Type.COMMENT, Type.REPOST, Type.SHARE, Type.SEND, Type.STARS);
 
     @Before
     public void startClean() {
@@ -81,6 +86,7 @@ public class PostActionButtonsTest {
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
         Settings.DOWNLOAD_PHOTOS.resetToDefault();
         for (BooleanSetting hide : hides()) hide.resetToDefault();
+        Settings.HIDE_POST_SAVE_BUTTON.resetToDefault();
         Settings.IGNORE_POST_ROW_TAPS.resetToDefault();
         PostDownloadButton.videoInBuildForTests = null;
         PostDownloadButton.photoInBuildForTests = null;
@@ -112,6 +118,7 @@ public class PostActionButtonsTest {
         assertFalse(PostActionButtonsForTests.addsSave());
         assertFalse(PostActionButtonsForTests.addsDownload());
         for (BooleanSetting hide : hides()) assertFalse(hide.key, hide.get());
+        assertFalse(Settings.HIDE_POST_SAVE_BUTTON.get());
         Settings.POST_SAVE_BUTTON.save(false);
         assertSame(ROW, PostSaveButton.types(ROW, Type.SAVE));
     }
@@ -143,6 +150,28 @@ public class PostActionButtonsTest {
         assertEquals(Collections.singletonList(Type.SAVE), PostSaveButton.types(ROW, Type.SAVE));
         Settings.POST_SAVE_BUTTON.save(false);
         assertTrue(PostSaveButton.types(ROW, Type.SAVE).isEmpty());
+    }
+
+    /** #541: Facebook sends some accounts Save on its own, and its hide switch takes it out. */
+    @Test
+    public void facebooksOwnSaveGoesWithItsHideSwitch() {
+        Settings.POST_SAVE_BUTTON.save(false);
+        List<Type> row = Arrays.asList(Type.REACT, Type.COMMENT, Type.SAVE, Type.SHARE);
+        assertSame("off, Facebook's Save stays", row, PostSaveButton.types(row, Type.SAVE));
+        Settings.HIDE_POST_SAVE_BUTTON.save(true);
+        assertEquals(Arrays.asList(Type.REACT, Type.COMMENT, Type.SHARE), PostSaveButton.types(row, Type.SAVE));
+    }
+
+    /** #541: with both switches on, hiding Save wins, and a row without it gets none added. */
+    @Test
+    public void hidingSaveWinsOverAddingIt() {
+        Settings.HIDE_POST_SAVE_BUTTON.save(true);
+        assertSame(ROW, PostSaveButton.types(ROW, Type.SAVE));
+        List<Type> withSave = Arrays.asList(Type.REACT, Type.SAVE);
+        assertEquals(Collections.singletonList(Type.REACT), PostSaveButton.types(withSave, Type.SAVE));
+        Settings.HIDE_POST_SAVE_BUTTON.save(false);
+        assertEquals("the control: Save joins again", Type.SAVE,
+                PostSaveButton.types(ROW, Type.SAVE).get(ROW.size()));
     }
 
     @Test

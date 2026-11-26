@@ -66,7 +66,8 @@ public class ReelCleanReturnSettingsTest {
             int back = indexOfKey(rows, Settings.REEL_CLEAN_RETURN.key);
             assertTrue("Clean mode button on reels is missing", button >= 0);
             assertEquals(button + 1, back);
-            assertEquals(back + 1, indexOfKey(rows, Settings.PLAY_REELS_ONCE.key));
+            assertEquals(back + 1, indexOfKey(rows, Settings.REEL_CLEAN_EXIT_FAINT.key));
+            assertEquals(back + 2, indexOfKey(rows, Settings.PLAY_REELS_ONCE.key));
 
             ValueRows.CleanReturnRow row = (ValueRows.CleanReturnRow) rows.get(back);
             assertEquals("Back to Clean mode", String.valueOf(row.getTitle()));

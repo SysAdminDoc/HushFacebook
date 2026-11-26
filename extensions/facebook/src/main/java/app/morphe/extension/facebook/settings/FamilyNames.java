@@ -21,6 +21,8 @@ public final class FamilyNames {
      * guard's reads from the profile section's. Not a patch name: PatchFamily lists the patch once.
      */
     public static final String SUGGESTED_POSTS_PROFILE = "Hide suggested and promoted posts (your profile)";
+    /** The Hook status row of the same patch's hook in the Friends tab (#600). Not a patch name either. */
+    public static final String SUGGESTED_POSTS_FRIENDS_TAB = "Hide suggested and promoted posts (Friends tab)";
     public static final String AI_DETECTED_POSTS = "Hide AI-detected posts";
     /**
      * The Hook status row of the same patch's Reels and Watch hooks, so the report tells the feed
@@ -94,7 +96,6 @@ public final class FamilyNames {
     public static final String HAPTICS = "Turn off haptics";
     public static final String CARRIER_BANNERS = "Hide carrier data banners";
     public static final String SCREEN_TRANSITIONS = "Turn off screen transitions";
-    public static final String APP_ICONS = "Unlock app icons";
     public static final String HEADER_TEXT = "Home header text";
     public static final String EXTERNAL_BROWSER = "Open links in external browser";
     public static final String SANITIZE_SHARING_LINKS = "Sanitize sharing links";
@@ -103,6 +104,7 @@ public final class FamilyNames {
     public static final String REEL_DOWNLOAD = "Download any reel";
     public static final String VIDEO_DOWNLOAD = "Download any video";
     public static final String PHOTO_DOWNLOAD = "Download any photo";
+    public static final String FILE_DOWNLOADS = "Save files to Downloads";
     public static final String START_TAB = "Open on a chosen tab";
     public static final String FOLLOWING_HOME = "Following feed on Home";
     public static final String MARKETPLACE_ONLY = "Marketplace only";
@@ -136,6 +138,8 @@ public final class FamilyNames {
     public static final String TYPING_INDICATOR = "Hide typing indicator";
     public static final String READ_RECEIPTS = "Hide read receipts";
     public static final String ORIGINAL_CHAT_MEDIA = "Send chat photos and videos at original quality";
+    public static final String SHARE_TO_CHATS = "Share to Facebook chats";
+    public static final String CHAT_BACKGROUND = "Chat background";
     public static final String AUDIENCE_NETWORK = "Disable Audience Network";
     public static final String GAME_ADS = "Block Instant Games ads";
     public static final String AMOLED_THEME = "AMOLED black theme";

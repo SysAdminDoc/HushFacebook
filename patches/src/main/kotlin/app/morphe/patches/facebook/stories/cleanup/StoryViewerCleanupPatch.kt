@@ -227,7 +227,8 @@ internal const val HIDE_REPLY_BAR = "$STORY_VIEWER_CLEANUP->hideReplyBar()Z"
 /**
  * Takes the song and effect credits off the line under the poster's name on a story, and the
  * suggested replies off the bottom, and can draw a progress bar along the bottom (#380) and slide
- * from one person's stories to the next without the cube turn (#521).
+ * from one person's stories to the next without the cube turn (#521), and keep the time next to the
+ * name on the stories that leave it out (#563).
  *
  * In the default selection with every switch off, so nothing changes until one is turned on.
  */
@@ -238,7 +239,8 @@ val storyViewerCleanupPatch = patch(
         "story, the suggested replies or the whole reply bar off the bottom, the Up next card off the next " +
         "people's stories, and the cards between stories that ask you to make your own out of the viewer. Two more " +
         "add a thin progress bar along the bottom like the one on Reels and swap the cube turn between people's " +
-        "stories for a plain slide. All start off. Turn them on in Hushfacebook settings > Stories.",
+        "stories for a plain slide. Another puts how long ago a story was posted next to the name on stories that " +
+        "leave it out, like a Page's. All start off. Turn them on in Hushfacebook settings > Stories.",
 ) {
     category("Stories")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -257,6 +259,7 @@ val storyViewerCleanupPatch = patch(
         dropCreateCardsFromViewerList()
         followStoryProgress()
         flattenStoryCube()
+        showStoryTime()
         enableStatus("storyViewerCleanup")
     }
 }

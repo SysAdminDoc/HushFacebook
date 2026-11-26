@@ -941,6 +941,64 @@ final class ValueRows {
     }
 
     /**
+     * A Chat background row (#573): the color behind the messages of every chat, or of the last
+     * chat seen. Its summary follows its text, and Save keeps the dialog open over a code that
+     * {@link app.morphe.extension.facebook.chats.ChatBackground} won't take.
+     */
+    static final class ChatColorRow extends EditTextPreference {
+        /** Says why Save was refused. The page sets it, since its dialogs close with it. */
+        @Nullable Consumer<String> refused;
+
+        /** Whether this is the last chat's row rather than every chat's. */
+        final boolean lastChat;
+
+        /** The last chat as {key, name}, or null for every chat's row or when no chat has been seen. */
+        @Nullable final String[] chat;
+
+        ChatColorRow(Context context, boolean lastChat, @Nullable String[] chat) {
+            super(context);
+            this.lastChat = lastChat;
+            this.chat = chat;
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(HushfacebookPreferenceFragment.chatColorSummary(lastChat, chat, text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its edit dialog takes the screen's colours, as the Background color row's does. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) {
+                AlertDialog dialog = (AlertDialog) getDialog();
+                ScreenColors.dialog(dialog);
+                dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(button -> {
+                    String why = app.morphe.extension.facebook.chats.ChatBackground.problem(
+                            getEditText().getText().toString());
+                    if (why != null) {
+                        if (refused != null) refused.accept(why);
+                        return;
+                    }
+                    Handler main = new Handler(Looper.getMainLooper());
+                    main.post(() -> onClick(dialog, DialogInterface.BUTTON_POSITIVE));
+                    main.post(dialog::dismiss);
+                });
+            }
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
+    /**
      * Home header text's row (#230). Its summary follows its text, whoever sets it, and says what
      * the top of Home shows.
      */
@@ -1169,6 +1227,39 @@ final class ValueRows {
         void showSummary() {
             CharSequence chosen = getEntry();
             setSummary(chosen == null ? L10n.t("The phone's language") : chosen);
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** Settings language (#582), with the picked language's name under the title. */
+    static final class SettingsLanguageRow extends PlainSummaryList {
+        SettingsLanguageRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            CharSequence chosen = getEntry();
+            setSummary(chosen == null ? L10n.t("Same as Facebook") : chosen);
         }
 
         @Override

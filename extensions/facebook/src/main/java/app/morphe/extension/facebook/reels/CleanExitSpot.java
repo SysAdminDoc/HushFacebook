@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.reels;
 
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 
 import androidx.annotation.Nullable;
@@ -20,7 +21,9 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
@@ -38,11 +41,22 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * levels hold exactly one small clickable host in the page's lower right gets that host moved onto
  * the kept spot. A page showing its sidebar has none at those levels, and anything that stops
  * qualifying goes back to where Facebook had it. Off or paused, every host moved goes back.
+ *
+ * <p>Faint Clean mode button (#519): the way out sits over the reel's lower right, where a video's
+ * own text often runs, and covered it. With the switch on, the list of every reel page the scrubber
+ * mounts in ({@link #sawPage}, from {@link CaptionRoom}) or Burn-in guard finds playing on the Reels
+ * screen ({@link #sawReel}) is watched the same way, and each way out
+ * found draws at {@link #FAINT} of Facebook's opacity. It still takes taps. An alpha Facebook sets
+ * since is its own again, faded from there, and off, paused or gone it goes back.
  */
 final class CleanExitSpot {
     static final String HOOK = "Clean mode exit spot";
     /** Counted for each host moved onto the sidebar button's spot. */
     static final String MOVED = "Clean mode exit button moved to the sidebar button's spot";
+    /** Counted for each way out made faint (#519). */
+    static final String FAINTED = "Clean mode exit button made faint";
+    /** How much of Facebook's opacity a faint way out keeps (#519). */
+    static final float FAINT = 0.35f;
 
     /** How many levels under a page the way out is looked for. Two on 588's Reels tab. */
     static final int FIND_DEPTH = 3;
@@ -62,6 +76,51 @@ final class CleanExitSpot {
     static final Map<View, Watch> watched = new WeakHashMap<>();
     /** Each host moved here: Facebook's own translation, then the one set here, x and y. */
     static final Map<View, float[]> moved = new WeakHashMap<>();
+    /** Each way out made faint here: Facebook's own alpha, then the one set here (#519). */
+    static final Map<View, float[]> fainted = new WeakHashMap<>();
+
+    /** Faint Clean mode button is on (#519): off until the settings are read and while paused. */
+    static boolean faintOn() {
+        return Utils.settingsReady() && Settings.REEL_CLEAN_EXIT_FAINT.get();
+    }
+
+    /**
+     * From {@link CaptionRoom} as it looks through a reel's page: with Faint Clean mode button on,
+     * the list holding [page] is watched, so its ways out of Clean mode fade (#519). Never throws.
+     */
+    static void sawPage(@Nullable View page) {
+        try {
+            if (page == null || !faintOn() || !(page.getParent() instanceof ViewGroup)) return;
+            watch((ViewGroup) page.getParent());
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+        }
+    }
+
+    /**
+     * From Burn-in guard's look, with [surface] the video filling the Reels screen: its reel page goes
+     * to {@link #sawPage}. The scrubber's mount hook never ran on 588's Reels tab (S22, 2026-11-23), so
+     * this is what finds the page there. The page is the LithoView over [surface] that sits right in a
+     * RecyclerView, or with none, the nearest one. Never throws.
+     */
+    static void sawReel(@Nullable View surface) {
+        try {
+            if (surface == null || !faintOn()) return;
+            View nearest = null;
+            for (ViewParent up = surface.getParent(); up instanceof View; up = up.getParent()) {
+                View view = (View) up;
+                if (!CaptionRoom.PAGE.equals(view.getClass().getName())) continue;
+                if (nearest == null) nearest = view;
+                if (view.getParent() instanceof View && PostLongPress.isNamed((View) view.getParent(), PostLongPress.LIST)) {
+                    sawPage(view);
+                    return;
+                }
+            }
+            sawPage(nearest);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+        }
+    }
 
     private CleanExitSpot() {
     }
@@ -116,7 +175,7 @@ final class CleanExitSpot {
         @Override
         public void onViewDetachedFromWindow(View view) {
             stop();
-            if (view instanceof ViewGroup) place((ViewGroup) view, false);
+            if (view instanceof ViewGroup) place((ViewGroup) view, false, false);
         }
 
         private void stop() {
@@ -132,7 +191,7 @@ final class CleanExitSpot {
                     stop();
                     return true;
                 }
-                place(list, ReelCleanMode.sidebarButtonOn());
+                place(list, ReelCleanMode.sidebarButtonOn(), faintOn());
             } catch (Throwable failure) {
                 HookStatus.threw(FAMILY, HOOK, failure);
             }
@@ -142,21 +201,35 @@ final class CleanExitSpot {
 
     /**
      * One frame of [list]: with [on], each of its pages with a kept spot and one way out has it moved
-     * there. Every other host moved in those pages goes back. Answers how many are moved.
+     * there, and with [faint] each page's one way out fades (#519). Every other host moved or faded
+     * in those pages goes back. Answers how many are moved.
      */
-    static int place(ViewGroup list, boolean on) {
+    static int place(ViewGroup list, boolean on, boolean faint) {
         Map<View, int[]> shifts = new HashMap<>();
+        List<View> exits = new ArrayList<>();
         List<View> pages = new ArrayList<>();
         for (int i = 0; i < list.getChildCount(); i++) {
             View page = list.getChildAt(i);
             if (!CaptionRoom.PAGE.equals(page.getClass().getName())) continue;
             pages.add(page);
             int[] spot = on ? spots.get(sizeOf(page)) : null;
-            View exit = spot == null ? null : exitIn((ViewGroup) page);
+            View exit = spot == null && !faint ? null : exitIn((ViewGroup) page);
             if (exit == null) continue;
+            if (faint) exits.add(exit);
+            if (spot == null) continue;
             int[] center = centerIn(exit, page);
             shifts.put(exit, new int[] {spot[0] - center[0], spot[1] - center[1]});
         }
+        Iterator<Map.Entry<View, float[]>> faded = fainted.entrySet().iterator();
+        while (faded.hasNext()) {
+            Map.Entry<View, float[]> entry = faded.next();
+            View host = entry.getKey();
+            if (host == null || exits.contains(host)) continue;
+            if (host.isAttachedToWindow() && !inAny(host, pages)) continue;
+            if (host.getAlpha() == entry.getValue()[1]) host.setAlpha(entry.getValue()[0]);
+            faded.remove();
+        }
+        for (View exit : exits) fade(exit);
         Iterator<Map.Entry<View, float[]>> each = moved.entrySet().iterator();
         while (each.hasNext()) {
             Map.Entry<View, float[]> entry = each.next();
@@ -246,6 +319,22 @@ final class CleanExitSpot {
         if (host.getTranslationY() != held[3]) host.setTranslationY(held[3]);
     }
 
+    /** Draws [host] at {@link #FAINT} of Facebook's alpha, taking an alpha Facebook set since as its own. */
+    private static void fade(View host) {
+        float[] held = fainted.get(host);
+        float now = host.getAlpha();
+        if (held != null && now == held[1]) return;
+        if (held == null) {
+            held = new float[2];
+            fainted.put(host, held);
+            HookStatus.bound(FAMILY, HOOK);
+            HookStatus.counted(FAMILY, FAINTED);
+        }
+        held[0] = now;
+        held[1] = now * FAINT;
+        host.setAlpha(held[1]);
+    }
+
     /** [host] back where Facebook has it, unless Facebook moved it since. */
     private static void giveBack(View host, float[] held) {
         if (host.getTranslationX() == held[2]) host.setTranslationX(held[0]);
@@ -257,5 +346,6 @@ final class CleanExitSpot {
         spots.clear();
         watched.clear();
         moved.clear();
+        fainted.clear();
     }
 }

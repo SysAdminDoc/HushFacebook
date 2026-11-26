@@ -60,33 +60,34 @@ final class ControlsLift {
 
     /**
      * Looks under [page] for a host whose bottom is under [edge], the tab bar's laid-out top, in a
-     * window [height] tall, and holds each new one.
+     * window [height] tall, and holds each new one. Answers whether it found one it didn't hold yet.
      */
-    void find(@Nullable View page, int edge, int height) {
-        if (page == null || height <= 0) return;
+    boolean find(@Nullable View page, int edge, int height) {
+        if (page == null || height <= 0) return false;
         page.getLocationInWindow(origin);
-        search(page, origin[0], origin[1], edge, page.getRootView().getWidth(), height, 0);
+        return search(page, origin[0], origin[1], edge, page.getRootView().getWidth(), height, 0);
     }
 
     /** [view] at [left], [top] in the window: views wholly above the edge or off the screen's sides are passed by. */
-    private void search(View view, int left, int top, int edge, int width, int height, int depth) {
-        if (view.getVisibility() != View.VISIBLE || view.getHeight() <= 0) return;
-        if (top + view.getHeight() <= edge || left + view.getWidth() <= 0 || left >= width) return;
+    private boolean search(View view, int left, int top, int edge, int width, int height, int depth) {
+        if (view.getVisibility() != View.VISIBLE || view.getHeight() <= 0) return false;
+        if (top + view.getHeight() <= edge || left + view.getWidth() <= 0 || left >= width) return false;
         if (view instanceof SeekBar) {
             View host = hostOf(view, height);
-            if (host != null && !held.containsKey(host)) {
-                held.put(host, new int[1]);
-                Logger.printDebug(() -> "See-through bars: holding video controls above the tab bar, " + host.getClass().getName());
-            }
-            return;
+            if (host == null || held.containsKey(host)) return false;
+            held.put(host, new int[1]);
+            Logger.printDebug(() -> "See-through bars: holding video controls above the tab bar, " + host.getClass().getName());
+            return true;
         }
-        if (depth >= FIND_DEPTH || !(view instanceof ViewGroup)) return;
+        if (depth >= FIND_DEPTH || !(view instanceof ViewGroup)) return false;
         ViewGroup group = (ViewGroup) view;
+        boolean found = false;
         for (int i = 0; i < group.getChildCount(); i++) {
             View child = group.getChildAt(i);
-            search(child, left + child.getLeft() - group.getScrollX(), top + child.getTop() - group.getScrollY(),
+            found |= search(child, left + child.getLeft() - group.getScrollX(), top + child.getTop() - group.getScrollY(),
                     edge, width, height, depth + 1);
         }
+        return found;
     }
 
     /** The host [bar] is pinned in, in a window [height] tall, or null when it isn't in a whole-screen viewer. */

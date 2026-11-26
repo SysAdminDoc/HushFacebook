@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.reels;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -12,6 +13,7 @@ import static org.robolectric.Shadows.shadowOf;
 import android.app.Activity;
 import android.os.Looper;
 import android.view.Gravity;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -26,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.time.Duration;
@@ -48,20 +51,24 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class CleanExitSpotTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
+    private ActivityController<Activity> controller;
     private Activity activity;
     private FrameLayout list;
     private LithoView page;
     private ComponentHost top;
     private ComponentHost sidebar;
     private ComponentHost button;
+    /** Facebook's Clean mode store, held here: ReelCleanMode keeps it weakly, and a GC lost a bare one. */
+    private final Object store = new Object();
 
     @Before
     public void setUp() {
         CleanExitSpot.reset();
         HookStatus.clear();
-        ReelCleanMode.keepStore(new Object());
+        ReelCleanMode.keepStore(store);
         Settings.REEL_CLEAN_BUTTON.save(true);
-        activity = Robolectric.buildActivity(Activity.class).setup().get();
+        controller = Robolectric.buildActivity(Activity.class).setup();
+        activity = controller.get();
         FrameLayout root = new FrameLayout(activity);
         list = new FrameLayout(activity);
         place(root, list, 0, 0, 1080, 2241);
@@ -91,8 +98,11 @@ public class CleanExitSpotTest {
 
     @After
     public void tearDown() {
+        BurnInGuard.resetForTests();
         PauseForTests.resume();
         Settings.REEL_CLEAN_BUTTON.resetToDefault();
+        Settings.REEL_CLEAN_EXIT_FAINT.resetToDefault();
+        Settings.BURN_IN_GUARD.resetToDefault();
         ReelCleanMode.store = null;
         CleanExitSpot.reset();
         HookStatus.clear();
@@ -217,6 +227,76 @@ public class CleanExitSpotTest {
         ((ViewGroup) list.getParent()).removeView(list);
         assertEquals(0f, exit.getTranslationY(), 0f);
         assertNull(CleanExitSpot.moved.get(exit));
+    }
+
+    /**
+     * Faint Clean mode button (#519): with no sidebar tap at all, as with Always use Clean mode, a
+     * page the scrubber mounts in gets its list watched and its way out fades, still clickable and
+     * where Facebook put it. Facebook's own alpha change is kept under the fade, and off, paused or
+     * taken off the page the way out goes back.
+     */
+    @Test
+    public void faintCleanModeButtonFadesTheWayOut() {
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        Settings.REEL_CLEAN_EXIT_FAINT.save(true);
+        CleanExitSpot.sawPage(page);
+        View exit = goClean(page, top);
+        assertEquals(CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+        assertTrue(exit.isClickable());
+        assertEquals("a faint way out stays where Facebook put it", 0f, exit.getTranslationY(), 0f);
+        assertTrue(reported(CleanExitSpot.FAINTED));
+
+        exit.setAlpha(0.5f);
+        layOut();
+        assertEquals("Facebook's own alpha, faded", 0.5f * CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+
+        Settings.REEL_CLEAN_EXIT_FAINT.save(false);
+        layOut();
+        assertEquals("off", 0.5f, exit.getAlpha(), 0.001f);
+        Settings.REEL_CLEAN_EXIT_FAINT.save(true);
+        layOut();
+        assertEquals(0.5f * CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        layOut();
+        assertEquals("paused", 0.5f, exit.getAlpha(), 0.001f);
+        PauseForTests.resume();
+        layOut();
+        top.removeView(exit);
+        layOut();
+        assertEquals("taken off the page", 0.5f, exit.getAlpha(), 0.001f);
+        assertNull(CleanExitSpot.fainted.get(exit));
+    }
+
+    /**
+     * 588's Reels tab on the S22 (2026-11-23): the scrubber's mount hook never ran there, so nothing
+     * handed the page over and the way out stayed solid. Burn-in guard's look runs with its own choice
+     * off too, finds the reel playing and hands its page over.
+     */
+    @Test
+    public void theReelPlayingOnTheReelsScreenFadesItsWayOut() {
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        Settings.REEL_CLEAN_EXIT_FAINT.save(true);
+        Settings.BURN_IN_GUARD.save(BurnInMode.OFF);
+        controller.windowFocusChanged(true);
+        BurnInGuard.resetForTests();
+        BurnInGuard.resumed(activity);
+        assertTrue("nothing plays yet", CleanExitSpot.watched.isEmpty());
+
+        place(top, new TextureView(activity), 0, 0, 1080, 2041);
+        layOut();
+        assertFalse("the reel's list is watched", CleanExitSpot.watched.isEmpty());
+        View exit = goClean(page, top);
+        assertEquals(CleanExitSpot.FAINT, exit.getAlpha(), 0.001f);
+        assertTrue(exit.isClickable());
+    }
+
+    @Test
+    public void withFaintOffAPageWatchesNothing() {
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        CleanExitSpot.sawPage(page);
+        assertTrue(CleanExitSpot.watched.isEmpty());
+        View exit = goClean(page, top);
+        assertEquals(1f, exit.getAlpha(), 0f);
     }
 
     /** Hides [into]'s sidebar and puts the way out under its top host, as Clean mode does. */

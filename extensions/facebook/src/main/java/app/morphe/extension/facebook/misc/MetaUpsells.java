@@ -37,6 +37,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 public final class MetaUpsells {
     /** Counted under the patch's name each time one of the eight is answered away. */
     static final String EDITS_HIDDEN = "Edits promotion kept out";
+    static final String EDITS_ATTRIBUTION_HIDDEN = "Made with Edits label over a feed video kept out";
+    static final String EDITS_PILL_HIDDEN = "Made with Edits pill under a video kept out";
+    /** The type Facebook gives the pill under a feed video that opens Edits. */
+    static final String EDITS_PILL_TYPE = "edits_app";
     static final String THREADS_HIDDEN = "Threads cross-posting prompt kept out";
     static final String VERIFIED_HIDDEN = "Meta Verified offer kept out";
     static final String AVATAR_HIDDEN = "Avatar sticker promotion kept out";
@@ -105,14 +109,24 @@ public final class MetaUpsells {
     }
 
     /**
+     * Whether the Edits pill over feed videos is left out of the server's answer: the Edits switch, or
+     * Clean up Reels' prompts and promos switch, which hides the same pill wherever else it's drawn
+     * (#314). The request leaves the pill out of what the server sends, and the attribution getter's
+     * hook keeps one that came anyway, or from the cache, from being drawn.
+     */
+    private static boolean hidesEditsPill() {
+        return Utils.settingsReady() && (Settings.HIDE_EDITS_UPSELLS.get() || Settings.HIDE_REEL_CHIPS.get());
+    }
+
+    /**
      * The hook on Facebook's own gate for asking the server for the Edits pill under feed videos,
-     * before it goes into the request. Answers false while the Edits switch is on, so the server
-     * leaves the pill out.
+     * before it goes into the request. Answers false while {@link #hidesEditsPill} says so, so the
+     * server leaves the pill out.
      */
     public static boolean fetchEditsPill(boolean fetch) {
         try {
             HookStatus.invoked(FAMILY);
-            if (!fetch || !(Utils.settingsReady() && Settings.HIDE_EDITS_UPSELLS.get())) return fetch;
+            if (!fetch || !hidesEditsPill()) return fetch;
             hid("Edits pill request", EDITS_HIDDEN);
             return false;
         } catch (Throwable failure) {
@@ -121,13 +135,48 @@ public final class MetaUpsells {
         }
     }
 
+    /**
+     * The hook first thing in the getter of a feed video's Edits attribution, which the "Made with
+     * Edits" pill over the video is drawn from (#314). True makes the getter answer null, as it does
+     * for a video made without Edits, so a pill already sent or cached isn't drawn either.
+     */
+    public static boolean hidesEditsAttribution() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!hidesEditsPill()) return false;
+            hid("Edits attribution", EDITS_ATTRIBUTION_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Edits attribution", failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook first thing in the builder of the pill under a feed video, handed the pill's type. On
+     * 588 a Page's timeline still drew "Made with Edits" from the pill the server sent, with every
+     * request flag off and the attribution getter never asked (#314). True for the Edits pill while
+     * {@link #hidesEditsPill} says so, and the builder draws nothing, as it does for a pill it can't
+     * draw. Every other pill is drawn.
+     */
+    public static boolean hidesDeepDivePill(@Nullable String type) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!EDITS_PILL_TYPE.equals(type) || !hidesEditsPill()) return false;
+            hid("Edits pill", EDITS_PILL_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Edits pill", failure);
+            return false;
+        }
+    }
+
     /** {@link #fetchEditsPill(boolean)} for the video queries, which pass the gate's answer boxed. */
     @Nullable
     public static Boolean fetchEditsPill(@Nullable Boolean fetch) {
         try {
             HookStatus.invoked(FAMILY);
-            if (Boolean.FALSE.equals(fetch) ||
-                    !(Utils.settingsReady() && Settings.HIDE_EDITS_UPSELLS.get())) return fetch;
+            if (Boolean.FALSE.equals(fetch) || !hidesEditsPill()) return fetch;
             hid("Edits pill request", EDITS_HIDDEN);
             return Boolean.FALSE;
         } catch (Throwable failure) {

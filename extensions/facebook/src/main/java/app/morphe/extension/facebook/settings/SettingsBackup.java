@@ -57,6 +57,7 @@ import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
 import app.morphe.extension.facebook.misc.LogoEmoji;
+import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
@@ -91,13 +92,14 @@ import app.morphe.extension.shared.settings.StringSetting;
  * subfolders, the save quality, the video file name, what a tap on Download does, the app links go
  * to, the tab Facebook opens on, the order comments open in, the qualities videos, reels and
  * video stories play at, the hours notification quiet hours start and end, how long the app lock
- * waits, the share sheet items to hide and AMOLED's Background color) go out or come in. Pause, safe mode, the debug settings, the app language
+ * waits, the share sheet items to hide, AMOLED's Background color and the rows that take a typed
+ * number) go out or come in. Pause, safe mode, the debug settings, the app language
  * and the counters Hushfacebook keeps for itself stay out, and so do the log, the diagnostic data
  * and anything about the person or the phone: a file is a format name, a version number, one true
  * or false per switch, two word lists, one top folder, one folder name and two subfolder names,
  * one save quality, one file name template, one download action, one package name or none, one
  * tab, one comment order, three playback qualities, two hours, one lock time, one list of
- * share item types and one color code or none. The word lists go only into the file the
+ * share item types, one color code or none and up to three digits per number row. The word lists go only into the file the
  * person picks, with the rest. An import applies what it read in one preference commit. A file
  * that is too large, isn't JSON, names something twice, holds a value of the wrong type, a word
  * list that isn't one clean list, word lists past the room they share, a folder or a template
@@ -151,6 +153,7 @@ public final class SettingsBackup {
             Settings.HIDE_FIND_FRIENDS_CARD,
             Settings.HIDE_SEARCH_FOR_YOU,
             Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW,
+            Settings.HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW,
             Settings.HIDE_TOP_STORIES_TRAY,
             Settings.HIDE_STORIES_BETWEEN_POSTS,
             Settings.HIDE_HOME_COMPOSER,
@@ -193,6 +196,7 @@ public final class SettingsBackup {
             Settings.HIDE_POST_COUNTS,
             Settings.HIDE_POST_REACTIONS,
             Settings.HIDE_COMMENT_REACTIONS,
+            Settings.HIDE_COMMENT_REACTION_COUNTS,
             Settings.REACTIONS_ON_LIKE_BUTTON,
             Settings.HIDE_REACTION_BUBBLES,
             Settings.HIDE_REACTOR_NAMES,
@@ -249,6 +253,7 @@ public final class SettingsBackup {
             Settings.HIDE_STORY_CREATE_CARDS,
             Settings.STORY_PROGRESS_BAR,
             Settings.STORY_FLAT_SLIDE,
+            Settings.SHOW_STORY_TIME,
             Settings.HIDE_FEED_STORY_RINGS,
             Settings.HIDE_COMMENT_STORY_RINGS,
             Settings.HIDE_PROFILE_STORY_RINGS,
@@ -261,6 +266,7 @@ public final class SettingsBackup {
             Settings.HIDE_SPONSORED_SEARCH_RESULTS,
             Settings.HIDE_SPONSORED_PROFILE_POSTS,
             Settings.HIDE_PROFILE_NOTES,
+            Settings.HIDE_PROFILE_GIFTS,
             Settings.LOCAL_PROFILE_COUNTS,
             Settings.POST_SAVE_BUTTON,
             Settings.POST_DOWNLOAD_BUTTON,
@@ -269,6 +275,8 @@ public final class SettingsBackup {
             Settings.HIDE_POST_REPOST_BUTTON,
             Settings.HIDE_POST_SHARE_BUTTON,
             Settings.HIDE_POST_SEND_BUTTON,
+            Settings.HIDE_POST_STARS_BUTTON,
+            Settings.HIDE_POST_SAVE_BUTTON,
             Settings.IGNORE_POST_ROW_TAPS,
             Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS,
             Settings.MARKETPLACE_ADVANCED_SEARCH,
@@ -289,6 +297,7 @@ public final class SettingsBackup {
             Settings.FOLLOWED_REELS_ONLY,
             Settings.REEL_CLEAN_MODE,
             Settings.REEL_CLEAN_BUTTON,
+            Settings.REEL_CLEAN_EXIT_FAINT,
             Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO,
             Settings.HIDE_REEL_SEARCH_PILL,
@@ -296,6 +305,7 @@ public final class SettingsBackup {
             Settings.HIDE_REELS_TAB_TITLE,
             Settings.HIDE_VIEWER_BACK_BUTTON,
             Settings.BURN_IN_STAY_DIM,
+            Settings.BURN_IN_TAP_BACK,
             Settings.BURN_IN_FADE,
             Settings.GRAY_REELS,
             Settings.REELS_MINUTES,
@@ -309,10 +319,13 @@ public final class SettingsBackup {
             Settings.SHOW_REEL_COMMENT_BUTTON,
             Settings.LONG_VIDEO_BUTTONS,
             Settings.SHOW_REEL_POST_DATE,
+            Settings.REEL_POST_DATE_AFTER_CAPTION,
             Settings.HIDE_REEL_NEW_FOR_YOU,
             Settings.HIDE_REEL_SOUND_BUTTON,
             Settings.REEL_SPEAKER_ABOVE_MENU,
             Settings.HIDE_REEL_AUDIO_LINE,
+            Settings.HIDE_REEL_AI_LABEL,
+            Settings.HIDE_REEL_HASHTAGS,
             Settings.HIDE_SLOW_CONNECTION_MESSAGE,
             Settings.HIDE_UP_NEXT,
             Settings.HIDE_REEL_FULLSCREEN_PILL,
@@ -325,9 +338,12 @@ public final class SettingsBackup {
             Settings.SAVED_VIDEOS_IN_ORDER,
             Settings.SAVED_VIDEOS_STAY_ON_END,
             Settings.SAVED_POSTS_IN_ROW,
+            Settings.FEED_REELS_ROW_IN_ORDER,
             Settings.SKIP_STILL_WATCHING,
             Settings.FILL_REELS,
+            Settings.FILL_EVERY_REEL,
             Settings.PLAY_FEED_REELS_WHOLE,
+            Settings.UNCROPPED_FEED_REELS,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.NEWEST_REELS_FIRST,
             Settings.PROFILE_REELS_MOST_VIEWED,
@@ -338,8 +354,6 @@ public final class SettingsBackup {
             Settings.HIDE_DATA_MODE_BANNER,
             Settings.HIDE_FREE_MODE_BANNER,
             Settings.TURN_OFF_SCREEN_TRANSITIONS,
-            Settings.UNLOCK_APP_ICONS,
-            Settings.USE_APP_ICON_IN_HEADER,
             Settings.BLOCK_SCREENSHOT_DETECTION,
             Settings.SKIP_LOCATION_PROMPTS,
             Settings.HIDE_CHAT_TYPING,
@@ -378,6 +392,7 @@ public final class SettingsBackup {
             Settings.LIKE_ONLY,
             Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS,
             Settings.HIDE_COMMENT_EMOJI_ROW,
+            Settings.KEEP_COMMENT_KEYBOARD_CLOSED,
             Settings.HIDE_COMMENT_BOX_LINE,
             Settings.HIDE_COMMENT_BOX,
             Settings.OPEN_REPLY_THREADS,
@@ -471,6 +486,7 @@ public final class SettingsBackup {
             Settings.POST_MENU_PHOTO_SAVE,
             Settings.POST_MENU_PHOTO_SEARCH,
             Settings.MARKETPLACE_PHOTO_SAVE,
+            Settings.SAVE_FILES_TO_DOWNLOADS,
             Settings.OPEN_IN_ANOTHER_APP,
             Settings.POST_MENU_DOWNLOAD_FIRST,
             Settings.DOWNLOAD_COMPATIBLE,
@@ -543,6 +559,7 @@ public final class SettingsBackup {
             Settings.FORCE_DARK_MODE,
             Settings.AMOLED_FLAT_CARDS,
             Settings.AMOLED_FEED_GAPS,
+            Settings.MATERIAL_YOU,
             Settings.HIDE_REEL_PROMPTS,
             Settings.HIDE_GET_MESSENGER_CARD,
             Settings.HIDE_CHAT_NOTES_TRAY,
@@ -551,6 +568,7 @@ public final class SettingsBackup {
             Settings.OPEN_MESSENGER_APP,
             Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
             Settings.OPEN_CHATS_IN_MESSENGER,
+            Settings.SHARE_TO_CHATS,
             Settings.HIDE_MENU_UPGRADES,
             Settings.HIDE_MENU_ALSO_FROM_META,
             Settings.HIDE_MENU_HELP,
@@ -571,6 +589,7 @@ public final class SettingsBackup {
             Settings.DONT_SAVE_SEARCH_HISTORY,
             Settings.SEARCH_DATE_RANGE,
             Settings.SEARCH_POSTS_TAB,
+            Settings.SEARCH_VIDEOS_TAB,
             Settings.SEARCH_SAVED_BUTTON,
             Settings.BLOCK_TRENDING_VIDEO_NOTIFICATIONS,
             Settings.BLOCK_MEMORY_NOTIFICATIONS,
@@ -907,9 +926,53 @@ public final class SettingsBackup {
      */
     static final StringSetting TAB_ORDER = Settings.TAB_ORDER;
 
+    /**
+     * The rows that take a typed number (#589): Round picture size, Dim to, Bar opacity, Tab bar
+     * width and height, and Box darkness. Each is held in a file exactly as its row stores it, digits
+     * only and at most {@link #MAX_NUMBER_DIGITS} of them, blank for the row's default, and a value its
+     * row would store any other way refuses the whole file, as a switch that isn't true or false does.
+     * They're picked by eye for a screen, so another phone may want one nudged, but a restore after a
+     * reinstall gets every one back.
+     */
+    static final StringSetting TRAY_SIZE = Settings.STORIES_TRAY_SIZE;
+    static final StringSetting DIM_TO = Settings.BURN_IN_LEVEL;
+    static final StringSetting OPACITY = Settings.SEE_THROUGH_OPACITY;
+    static final StringSetting TAB_BAR_WIDTH = Settings.TAB_BAR_WIDTH;
+    static final StringSetting TAB_BAR_HEIGHT = Settings.TAB_BAR_HEIGHT;
+    static final StringSetting BOX_DARKNESS = Settings.TEXT_BOX_DARKNESS;
+
+    /** Those number rows, in the order Settings declares them. */
+    static final List<StringSetting> NUMBERS = Collections.unmodifiableList(
+            Arrays.asList(TRAY_SIZE, DIM_TO, OPACITY, TAB_BAR_WIDTH, TAB_BAR_HEIGHT, BOX_DARKNESS));
+
+    /** The most digits a number row's field takes. */
+    static final int MAX_NUMBER_DIGITS = 3;
+
+    /** Whether [value] is a number as its row stores it: blank, or digits with no leading zero. */
+    static boolean isNumber(@Nullable Object value) {
+        if (!(value instanceof String)) return false;
+        String text = (String) value;
+        return text.length() <= MAX_NUMBER_DIGITS && text.equals(LocalProfileCounts.clean(text));
+    }
+
+    /** [saved] the way a file holds it, blank for one no number row would store. */
+    static String fileNumber(@Nullable String saved) {
+        String clean = LocalProfileCounts.clean(saved);
+        return clean.length() <= MAX_NUMBER_DIGITS ? clean : "";
+    }
+
+    /** The number row a file names [name], or null for any other name. */
+    @Nullable
+    static StringSetting numberNamed(String name) {
+        for (StringSetting number : NUMBERS) {
+            if (number.key.equals(name)) return number;
+        }
+        return null;
+    }
+
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, HEADER_FONT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, FOLD_REEL_CAPTIONS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, TRAY_SIZE, CLEAN_RETURN, BURN_IN, BURN_IN_WAIT, DIM_TO, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, OPACITY, TAB_BAR_WIDTH, TAB_BAR_HEIGHT, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, HEADER_FONT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, FOLD_REEL_CAPTIONS, BOX_DARKNESS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY, VIDEO_BUFFER,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, REFRESH_RATE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -1182,6 +1245,8 @@ public final class SettingsBackup {
         /** The emoji after the logo the file holds, the same way. */
         @Nullable
         String logoEmoji;
+        /** The number rows the file holds ({@link #NUMBERS}), each as its row stores it. Filled as it's read. */
+        final Map<StringSetting, String> numbers = new LinkedHashMap<>();
         /** The Custom accent color the file holds, the same way. */
         @Nullable
         String accentCustom;
@@ -1469,6 +1534,7 @@ public final class SettingsBackup {
             if (headerFontChange != null) changes.put(HEADER_FONT, headerFontChange);
             String logoEmojiChange = logoEmojiChange();
             if (logoEmojiChange != null) changes.put(LOGO_EMOJI, logoEmojiChange);
+            changes.putAll(numberChanges());
             String accentCustomChange = accentCustomChange();
             if (accentCustomChange != null) changes.put(ACCENT_CUSTOM, accentCustomChange);
             ReelsOrder reelsOrderChange = reelsOrderChange();
@@ -1768,6 +1834,16 @@ public final class SettingsBackup {
             return headerFont == null || headerFont == HEADER_FONT.savedValue() ? null : headerFont;
         }
 
+        /** The number rows this file changes, each with the value it sets, in the order Settings declares them. */
+        Map<StringSetting, String> numberChanges() {
+            Map<StringSetting, String> changed = new LinkedHashMap<>();
+            for (StringSetting number : NUMBERS) {
+                String value = numbers.get(number);
+                if (value != null && !value.equals(number.savedValue())) changed.put(number, value);
+            }
+            return changed;
+        }
+
         /** The emoji after the logo this file sets, or null when it names none or the one already set. */
         @Nullable
         String logoEmojiChange() {
@@ -1929,6 +2005,7 @@ public final class SettingsBackup {
             if (headerText != null) state.putString(HEADER_TEXT_NAME, headerText);
             if (headerFont != null) state.putString(HEADER_FONT_NAME, headerFont.fileValue);
             if (logoEmoji != null) state.putString(LOGO_EMOJI_NAME, logoEmoji);
+            for (Map.Entry<StringSetting, String> number : numbers.entrySet()) state.putString(number.getKey().key, number.getValue());
             if (accentCustom != null) state.putString(ACCENT_CUSTOM_NAME, accentCustom);
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
@@ -2048,6 +2125,10 @@ public final class SettingsBackup {
             Object logoEmoji = state.get(LOGO_EMOJI_NAME);
             read.logoEmoji = LogoEmoji.isClean(logoEmoji instanceof String ? (String) logoEmoji : null)
                     ? (String) logoEmoji : null;
+            for (StringSetting number : NUMBERS) {
+                Object value = state.get(number.key);
+                if (isNumber(value)) read.numbers.put(number, (String) value);
+            }
             Object accentCustom = state.get(ACCENT_CUSTOM_NAME);
             read.accentCustom = isAccentCustom(accentCustom) ? (String) accentCustom : null;
             if (read.hidden != null && read.kept != null && !read.wordListsFit()) return null;
@@ -2155,6 +2236,7 @@ public final class SettingsBackup {
             switches.put(HEADER_TEXT.key, HeaderText.clean(of(HEADER_TEXT)));
             switches.put(HEADER_FONT.key, of(HEADER_FONT).fileValue);
             switches.put(LOGO_EMOJI.key, LogoEmoji.clean(of(LOGO_EMOJI)));
+            for (StringSetting number : NUMBERS) switches.put(number.key, fileNumber(of(number)));
             String accentCustom = AccentColor.customStored(of(ACCENT_CUSTOM));
             switches.put(ACCENT_CUSTOM.key, accentCustom == null ? "" : accentCustom);
             return new JSONObject()
@@ -2304,6 +2386,7 @@ public final class SettingsBackup {
         String headerText = null;
         HeaderFont headerFont = null;
         String logoEmoji = null;
+        Map<StringSetting, String> numbers = new LinkedHashMap<>();
         String accentCustom = null;
         ReelsOrder reelsOrder = null;
         BurnInMode burnIn = null;
@@ -2444,6 +2527,13 @@ public final class SettingsBackup {
                     throw new Rejected(Reason.VALUE, "Not an emoji after the logo: " + name);
                 }
                 logoEmoji = (String) value;
+                continue;
+            }
+            StringSetting number = numberNamed(name);
+            if (number != null) {
+                Object value = values.opt(name);
+                if (!isNumber(value)) throw new Rejected(Reason.VALUE, "Not a number its row takes: " + name);
+                numbers.put(number, (String) value);
                 continue;
             }
             if (ACCENT_CUSTOM.key.equals(name)) {
@@ -2738,6 +2828,7 @@ public final class SettingsBackup {
         read.headerText = headerText;
         read.headerFont = headerFont;
         read.logoEmoji = logoEmoji;
+        read.numbers.putAll(numbers);
         read.accentCustom = accentCustom;
         read.reelsOrder = reelsOrder;
         read.burnIn = burnIn;

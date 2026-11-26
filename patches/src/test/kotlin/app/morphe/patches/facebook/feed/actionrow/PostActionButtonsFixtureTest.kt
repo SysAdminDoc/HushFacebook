@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.downloads.video.GRAPHQL_MEDIA
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY_ATTACHMENT
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.namedRegisters
@@ -79,6 +80,10 @@ class PostActionButtonsFixtureTest {
                 val context = PatchContexts.of((owners + classes.values).distinctBy { it.type })
 
                 val row = with(context) { actionRow() }
+                // The type enum also names the Stars and gifts button, which the extension hides by that name (#483).
+                val typeEnum = row.save.substringBefore("->")
+                assertTrue("$name: $typeEnum names no STARS button",
+                    context.classDefByOrNull(typeEnum)?.let { enumConstant(it, "STARS") } != null)
                 val returns = row.typeReturns().size
                 val end = row.rowEnd { call -> context.classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
                 assertEquals("$name: the register of the list the row collects its items in",

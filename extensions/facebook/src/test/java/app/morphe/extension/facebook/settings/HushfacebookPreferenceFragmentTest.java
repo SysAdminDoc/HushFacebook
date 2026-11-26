@@ -43,6 +43,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.FailingStore;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
+import app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment;
 
 import org.junit.After;
 import org.junit.Before;
@@ -1749,6 +1750,46 @@ public class HushfacebookPreferenceFragmentTest {
             Settings.DEFAULT_PLAYBACK_QUALITY.resetToDefault();
             Settings.PLAYBACK_QUALITY.resetToDefault();
             Settings.STORIES_PLAYBACK_QUALITY.resetToDefault();
+        }
+    }
+
+    /**
+     * Settings language (#582): every build has the row, its list offers the language Facebook runs
+     * in and then English and every table by its own name, and a pick saves, owes a restart and has
+     * Hushfacebook's text come out in it. Going back to Facebook's language owes nothing.
+     */
+    @Test
+    public void aPickedSettingsLanguageSavesOwesARestartAndTheTextFollows() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SPONSORED_POSTS);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = new HushfacebookPreferenceFragment();
+            controller.get().getFragmentManager().beginTransaction().add(android.R.id.content, page).commitNow();
+            ListPreference row = (ListPreference) page.findPreference(BaseSettings.SETTINGS_LANGUAGE.key);
+            assertNotNull("no Settings language row", row);
+            assertEquals("Settings language", String.valueOf(row.getTitle()));
+            assertEquals(Arrays.asList("", "en", "ar", "bg", "de", "es", "fr", "in", "it", "ko", "pt-rbr", "ru", "th", "tr",
+                    "vi", "zh-rcn", "zh-rtw"), texts(row.getEntryValues()));
+            List<String> entries = texts(row.getEntries());
+            assertEquals("Same as Facebook", entries.get(0));
+            assertEquals(L10n.isolate("English"), entries.get(1));
+            assertEquals(L10n.isolate("Deutsch"), entries.get(4));
+            assertEquals("Same as Facebook", String.valueOf(row.getSummary()));
+
+            pick(row, "de");
+            assertEquals("de", BaseSettings.SETTINGS_LANGUAGE.savedValue());
+            assertEquals(L10n.isolate("Deutsch"), String.valueOf(row.getSummary()));
+            assertTrue("a pick owes no restart", AbstractPreferenceFragment.restartPending
+                    .contains(BaseSettings.SETTINGS_LANGUAGE.key));
+            assertEquals("Sprache der Einstellungen", L10n.t("Settings language"));
+
+            pick(row, "");
+            assertEquals("", BaseSettings.SETTINGS_LANGUAGE.savedValue());
+            assertEquals("Same as Facebook", String.valueOf(row.getSummary()));
+            assertFalse("going back still owes a restart", AbstractPreferenceFragment.restartPending
+                    .contains(BaseSettings.SETTINGS_LANGUAGE.key));
+            assertEquals("Settings language", L10n.t("Settings language"));
+        } finally {
+            BaseSettings.SETTINGS_LANGUAGE.resetToDefault();
         }
     }
 

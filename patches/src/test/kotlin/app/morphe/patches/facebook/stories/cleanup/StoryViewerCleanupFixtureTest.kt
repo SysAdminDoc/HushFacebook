@@ -808,6 +808,344 @@ class StoryViewerCleanupFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /**
+     * #563: every answer of the check the story line builder asks before it puts in the time goes
+     * through the extension, with no branch skipping the hook, and the rest stays Facebook's.
+     */
+    @Test
+    fun `each declared build's story time check answers through the extension`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val bucket = "Lcom/facebook/stories/model/StoryBucket;"
+        val card = "Lcom/facebook/stories/model/StoryCard;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val shaped = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == bucket } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf(bucket, card)
+                }.distinctBy { "${it.definingClass}->${it.name}" }
+                val checks = shaped.filter(::isStoryTimeCheck)
+                assertEquals("$name: story time checks", 1, checks.size)
+                // Negative control: other checks of a bucket and a card answer a boolean too.
+                assertTrue("$name: no other bucket and card check to tell it from", shaped.size > checks.size)
+                val check = checks.single()
+                val original = check.code()
+                val answers = original.indices.filter { original[it].opcode == Opcode.RETURN }
+                assertTrue("$name: the check never answers", answers.isNotEmpty())
+
+                val (_, row) = timeLineRows(bundle, check.definingClass)
+                val context = PatchContexts.of(storyTimeClasses(bundle, check.definingClass, row.single().definingClass).values.toList())
+                context.showStoryTime()
+                val code = context.mutableClassDefBy(check.definingClass).methods.single { it.signature() == check.signature() }.code()
+                val returns = code.indices.filter { code[it].opcode == Opcode.RETURN }
+                assertEquals("$name: answers", answers.size, returns.size)
+                for (at in returns) {
+                    val register = (code[at] as OneRegisterInstruction).registerA
+                    val asked = (code.getOrNull(at - 2) as? ReferenceInstruction)?.reference?.toString()
+                    assertEquals("$name: the answer at $at doesn't ask the extension", HIDE_STORY_TIME, asked)
+                    assertEquals("$name: the answer at $at hands over another register", register, firstRegister(code[at - 2]))
+                    assertEquals("$name: the answer at $at keeps the extension's answer elsewhere", Opcode.MOVE_RESULT, code[at - 1].opcode)
+                    assertEquals("$name: the answer at $at keeps the extension's answer elsewhere", register,
+                        (code[at - 1] as OneRegisterInstruction).registerA)
+                    assertFalse("$name: a branch skips the hook before the answer at $at", landsOn(code, at - 1) || landsOn(code, at))
+                }
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    code.filterIndexed { at, _ -> returns.none { at == it - 2 || at == it - 1 } }.unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /** The static methods of [bundle] taking [builder], and those of them that return right before reading its line. */
+    private fun timeLineRows(bundle: File, builder: String): Pair<List<Method>, List<Method>> {
+        val taking = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == builder } }) {
+            AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType.startsWith("L") &&
+                it.parameterTypes.any { type -> type.toString() == builder } && it.definingClass != builder
+        }.distinctBy { "${it.definingClass}->${it.signature()}" }
+        return taking to taking.filter { timeLineReturns(it, builder).isNotEmpty() }
+    }
+
+    /** The classes the story time hook patches: the line builder, the header row and the story subtitle. */
+    private fun storyTimeClasses(bundle: File, builder: String, row: String): Map<String, ClassDef> =
+        FixtureDex.classes(bundle, setOf(builder, row)) + FixtureDex.classesHolding(bundle, STORY_SUBTITLE).associateBy { it.type }
+
+    private fun width(type: CharSequence) = if (type.toString() == "J" || type.toString() == "D") 2 else 1
+
+    /** The field [init] keeps declared parameter [index] in, read off the `iput-object`s of its register onto `this`. */
+    private fun keptParameter(init: Method, index: Int): String? {
+        val self = init.implementation!!.registerCount - 1 - init.parameterTypes.sumOf(::width)
+        val register = self + 1 + init.parameterTypes.take(index).sumOf(::width)
+        return init.code().filter {
+            it.opcode == Opcode.IPUT_OBJECT && (it as TwoRegisterInstruction).registerA == register && it.registerB == self
+        }.map { it.reference() }.singleOrNull()
+    }
+
+    /**
+     * #563 on an S22: a Page's story header returned before it read the line the builder put the time
+     * in. The one place a static method taking the builder returns right before reading its line asks
+     * the extension first: a yes goes on to read the line, every branch to the return runs the ask,
+     * and the rest stays Facebook's.
+     */
+    @Test
+    fun `each declared build's story header asks the extension before it skips the time line`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val bucket = "Lcom/facebook/stories/model/StoryBucket;"
+        val card = "Lcom/facebook/stories/model/StoryCard;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val check = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == bucket } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf(bucket, card) && isStoryTimeCheck(it)
+                }.distinctBy { "${it.definingClass}->${it.name}" }.single()
+                val builder = check.definingClass
+                val (taking, rows) = timeLineRows(bundle, builder)
+                assertEquals("$name: header rows returning before the line", 1, rows.size)
+                // Negative control: other static methods take the builder too.
+                assertTrue("$name: no other method takes the builder", taking.size > rows.size)
+                val row = rows.single()
+                val (at, builderRegister, line) = timeLineReturns(row, builder).single()
+                val original = row.code()
+
+                val context = PatchContexts.of(storyTimeClasses(bundle, builder, row.definingClass).values.toList())
+                context.showStoryTime()
+                val code = context.mutableClassDefBy(row.definingClass).methods.single { it.signature() == row.signature() }.code()
+                assertEquals("$name: nothing reads the line before the return", Opcode.IGET_OBJECT, code[at].opcode)
+                val read = code[at] as TwoRegisterInstruction
+                assertEquals("$name: the ask reads the line", line.toString(), code[at].reference())
+                assertEquals("$name: the ask reads the builder", builderRegister, read.registerB)
+                val temp = read.registerA
+                assertEquals("$name: the ask", SHOWS_TIME_LINE, code[at + 1].reference())
+                assertEquals("$name: the ask hands over the line", temp, firstRegister(code[at + 1]))
+                assertEquals("$name: the answer", temp, (code[at + 2] as OneRegisterInstruction).registerA)
+                assertEquals("$name: a no", Opcode.IF_EQZ, code[at + 3].opcode)
+                assertTrue("$name: a no doesn't land on Facebook's return", landsOn(code, at + 5))
+                assertEquals("$name: Facebook's return", Opcode.RETURN_OBJECT, code[at + 6].opcode)
+                assertFalse("$name: a branch skips the ask before the return", landsOn(code, at + 6))
+                assertTrue("$name: a yes doesn't go on to read the line",
+                    landsOn(code, at + 7) && code[at + 4].opcode in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32))
+                assertEquals("$name: the line reads moved", original[at + 1].reference(), code[at + 7].reference())
+                assertTrue("$name: the ask borrows v$temp, the builder's or past v15", temp != builderRegister && temp < 16)
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    code.filterIndexed { index, _ -> index !in at until at + 6 }.unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * #563, "Sometimes working" on 0.25.0: a story with an attachment label got the label alone, since
+     * the line builder keeps it and returns before its time path. Right after the label is built the
+     * builder asks the extension; a no lands on Facebook's next instruction, a yes hands the builder and
+     * the card to the method the patch adds, which formats the time with the builder's own formatter,
+     * and the label and the time go to the extension. The rest stays Facebook's.
+     */
+    @Test
+    fun `each declared build's story label gets the time from the builder's own formatter`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val bucket = "Lcom/facebook/stories/model/StoryBucket;"
+        val card = "Lcom/facebook/stories/model/StoryCard;"
+        val spannable = "Landroid/text/SpannableStringBuilder;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val check = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == bucket } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf(bucket, card) && isStoryTimeCheck(it)
+                }.distinctBy { "${it.definingClass}->${it.name}" }.single()
+                val builder = check.definingClass
+                val (_, rows) = timeLineRows(bundle, builder)
+                val classes = storyTimeClasses(bundle, builder, rows.single().definingClass)
+                val builderClass = classes.getValue(builder)
+                val line = builderClass.methods.single { method ->
+                    method.implementation?.instructions?.any {
+                        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.let { call ->
+                            call.definingClass == builder && call.name == check.name
+                        } == true
+                    } == true
+                }
+                val labels = builderClass.methods.filter { isStoryLabel(it, builder) && labelSites(line, it).isNotEmpty() }
+                assertEquals("$name: attachment labels the line builder keeps", 1, labels.size)
+                // Negative control: the builder makes other lines of its own too.
+                assertTrue("$name: no other line maker to tell it from", builderClass.methods.count { it.returnType == spannable } > 1)
+                val (at, builderRegister, cardRegister, labelRegister) = labelSites(line, labels.single()).single()
+                val sources = storyTimeSources(line, builder)
+                assertTrue("$name: the builder never puts in the time itself", sources.isNotEmpty())
+                val original = line.code()
+
+                val context = PatchContexts.of(classes.values.toList())
+                context.showStoryTime()
+                val patched = context.mutableClassDefBy(builder)
+                val code = patched.methods.single { it.signature() == line.signature() }.code()
+                val helper = "$builder->$STORY_TIME_HELPER($builder$card)Ljava/lang/String;"
+                assertEquals("$name: the ask", SHOWS_TIME_BESIDE_LABEL, code[at + 2].reference())
+                val temp = (code[at + 3] as OneRegisterInstruction).registerA
+                assertEquals("$name: a no", Opcode.IF_EQZ, code[at + 4].opcode)
+                assertEquals("$name: the no reads another register", temp, (code[at + 4] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the time", helper, code[at + 5].reference())
+                val handed = code[at + 5] as FiveRegisterInstruction
+                assertEquals("$name: the time gets the builder and the card", listOf(builderRegister, cardRegister),
+                    listOf(handed.registerC, handed.registerD))
+                assertEquals("$name: the time's answer", temp, (code[at + 6] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the join", WITH_STORY_TIME, code[at + 7].reference())
+                val joined = code[at + 7] as FiveRegisterInstruction
+                assertEquals("$name: the join gets the label and the time", listOf(labelRegister, temp),
+                    listOf(joined.registerC, joined.registerD))
+                assertEquals("$name: the line keeps the join", labelRegister, (code[at + 8] as OneRegisterInstruction).registerA)
+                assertEquals("$name: Facebook's next instruction", original[at + 2].opcode, code[at + 9].opcode)
+                assertTrue("$name: a no doesn't land on Facebook's next instruction", landsOn(code, at + 9))
+                assertFalse("$name: a branch lands inside the hook", (at + 2..at + 8).any { landsOn(code, it) })
+                assertTrue("$name: the hook borrows v$temp, one the label call holds or past v15",
+                    temp !in setOf(builderRegister, cardRegister, labelRegister) && temp < 16)
+                assertEquals("$name: the rest is Facebook's", original.unpadded(),
+                    code.filterIndexed { index, _ -> index !in at + 2..at + 8 }.unpadded())
+
+                val added = patched.methods.single { it.name == STORY_TIME_HELPER }
+                assertTrue("$name: the time method isn't private and static",
+                    AccessFlags.STATIC.isSet(added.accessFlags) && AccessFlags.PRIVATE.isSet(added.accessFlags))
+                assertEquals("$name: the time method's shape", helper, "${added.definingClass}->${added.name}(${added.parameterTypes.joinToString("")})${added.returnType}")
+                val calls = added.code().mapNotNull { ((it as? ReferenceInstruction)?.reference)?.toString() }
+                val source = sources.first()
+                for (read in listOf(source.formatterField.toString(), source.lazyGetter.toString(), source.format.toString(),
+                    "$card->getTimestamp()J")) {
+                    assertTrue("$name: the time method never reads $read", read in calls)
+                }
+                assertTrue("$name: the time method gets no session", calls.any { it in sources.map { s -> s.sessionGetter.toString() } })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * #563, "Sometimes working" on 0.25.0, read on an S22: a shared post's or a reel's story shows
+     * Facebook's subtitle beside the name ("NDTV", "View full reel") in place of the line, and it never
+     * has the time. The subtitle's constructor calls the method the patch adds right before it returns.
+     * That method asks the extension first; a no returns, a yes formats the card's time with the same
+     * lazy formatter the line builder's constructor makes, then hands the second text (or the first when
+     * there's no second) and the screen reader text to the extension and keeps what comes back. The rest
+     * of the constructor stays Facebook's.
+     */
+    @Test
+    fun `each declared build's story subtitle gets the time from the line builder's formatter`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val bucket = "Lcom/facebook/stories/model/StoryBucket;"
+        val card = "Lcom/facebook/stories/model/StoryCard;"
+        val session = "Lcom/facebook/auth/usersession/FbUserSession;"
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val check = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == bucket } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+                        it.parameterTypes.map(CharSequence::toString) == listOf(bucket, card) && isStoryTimeCheck(it)
+                }.distinctBy { "${it.definingClass}->${it.name}" }.single()
+                val builder = check.definingClass
+                val (_, rows) = timeLineRows(bundle, builder)
+                val holders = FixtureDex.classesHolding(bundle, STORY_SUBTITLE)
+                assertEquals("$name: story subtitle components", 1, holders.size)
+                val subtitle = holders.single()
+                val init = subtitle.methods.single { method ->
+                    method.name == "<init>" && method.parameterTypes.map(CharSequence::toString).let { card in it && session in it }
+                }
+                val types = init.parameterTypes.map(CharSequence::toString)
+                val texts = types.indices.filter { types[it] == "Ljava/lang/CharSequence;" }
+                assertTrue("$name: the subtitle takes ${texts.size} texts", texts.size >= 3)
+                val (text, description, secondText) = texts.take(3).map { keptParameter(init, it) }
+                assertNotNull("$name: the subtitle keeps no first text", text)
+                assertNotNull("$name: the subtitle keeps no screen reader text", description)
+                assertNotNull("$name: the subtitle keeps no second text", secondText)
+
+                // The formatter the line builder's constructor keeps in the field its time path reads.
+                val classes = storyTimeClasses(bundle, builder, rows.single().definingClass)
+                val builderClass = classes.getValue(builder)
+                val line = builderClass.methods.single { method ->
+                    method.implementation?.instructions?.any {
+                        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.let { call ->
+                            call.definingClass == builder && call.name == check.name
+                        } == true
+                    } == true
+                }
+                val source = storyTimeSources(line, builder).first()
+                val builderInit = builderClass.methods.single { it.name == "<init>" }.code()
+                val kept = builderInit.indexOfFirst { it.opcode == Opcode.IPUT_OBJECT && it.reference() == source.formatterField.toString() }
+                assertTrue("$name: the builder's constructor never keeps its formatter", kept >= 3)
+                val made = builderInit.subList(kept - 3, kept - 1)
+                val lazies = builderInit.count {
+                    it.opcode == Opcode.INVOKE_STATIC && ((it as ReferenceInstruction).reference as MethodReference).let { call ->
+                        call.parameterTypes.map(CharSequence::toString) == listOf("I") && call.returnType == source.formatterField.type
+                    }
+                }
+                // Negative control: the constructor makes other lazies from numbers, so the field picks the formatter.
+                assertTrue("$name: no other lazy in the builder's constructor", lazies > 1)
+                val original = init.code()
+
+                val context = PatchContexts.of(classes.values.toList())
+                context.showStoryTime()
+                val patched = context.mutableClassDefBy(subtitle.type)
+                val code = patched.methods.single { it.name == "<init>" && it.signature() == init.signature() }.code()
+                val end = code.indexOfLast { it.opcode == Opcode.RETURN_VOID }
+                val adderName = "${subtitle.type}->$SUBTITLE_TIME_ADDER()V"
+                assertEquals("$name: the constructor's last call", adderName, code[end - 1].reference())
+                assertEquals("$name: the call hands over another register than the subtitle",
+                    init.implementation!!.registerCount - 1 - init.parameterTypes.sumOf(::width), firstRegister(code[end - 1]))
+                assertEquals("$name: the rest is Facebook's", original.unpadded(), code.filterIndexed { at, _ -> at != end - 1 }.unpadded())
+
+                val adder = patched.methods.single { it.name == SUBTITLE_TIME_ADDER }
+                assertTrue("$name: the adder isn't private", AccessFlags.PRIVATE.isSet(adder.accessFlags) && !AccessFlags.STATIC.isSet(adder.accessFlags))
+                val steps = adder.code()
+                val helper = "${subtitle.type}->$SUBTITLE_TIME_HELPER($session$card)Ljava/lang/String;"
+                assertEquals("$name: what the adder does", listOf(
+                    SHOWS_TIME_IN_SUBTITLE,
+                    "get ${keptParameter(init, types.indexOf(session))}", "get ${keptParameter(init, types.indexOf(card))}", helper,
+                    "get $secondText", SUBTITLE_WITH_TIME, "put $secondText",
+                    "get $text", SUBTITLE_WITH_TIME, "put $text",
+                    "get $description", SUBTITLE_WITH_TIME, "put $description",
+                ), subtitleFieldsOf(steps))
+                val starts = offsets(steps)
+                fun target(at: Int) = starts.indexOf(starts[at] + (steps[at] as OffsetInstruction).codeOffset)
+                val branches = steps.indices.filter { steps[it].opcode == Opcode.IF_EQZ }
+                assertEquals("$name: the adder's checks", 2, branches.size)
+                assertEquals("$name: a no doesn't return", steps.lastIndex, target(branches[0]))
+                assertEquals("$name: a no", Opcode.RETURN_VOID, steps.last().opcode)
+                assertEquals("$name: no second text doesn't go to the first", "get $text", subtitleFieldsOf(listOf(steps[target(branches[1])])).single())
+                val jump = steps.indexOfFirst { it.opcode in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32) }
+                assertEquals("$name: a second text doesn't skip the first", "get $description", subtitleFieldsOf(listOf(steps[target(jump)])).single())
+
+                val time = patched.methods.single { it.name == SUBTITLE_TIME_HELPER }
+                assertTrue("$name: the time method isn't private and static",
+                    AccessFlags.STATIC.isSet(time.accessFlags) && AccessFlags.PRIVATE.isSet(time.accessFlags))
+                assertEquals("$name: the time method's shape", helper,
+                    "${time.definingClass}->${time.name}(${time.parameterTypes.joinToString("")})${time.returnType}")
+                val timeCode = time.code()
+                assertEquals("$name: the formatter's number", (made[0] as NarrowLiteralInstruction).narrowLiteral,
+                    (timeCode[0] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the formatter's lazy", made[1].reference(), timeCode[1].reference())
+                val calls = timeCode.mapNotNull { ((it as? ReferenceInstruction)?.reference)?.toString() }
+                for (read in listOf(source.lazyGetter.toString(), source.format.toString(), "$card->getTimestamp()J")) {
+                    assertTrue("$name: the time method never reads $read", read in calls)
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /** Each step of [code] that calls, reads or keeps something: the call, or "get"/"put" and the field. */
+    private fun subtitleFieldsOf(code: List<Instruction>): List<String> = code.mapNotNull {
+        when (it.opcode) {
+            Opcode.IGET_OBJECT -> "get ${it.reference()}"
+            Opcode.IPUT_OBJECT -> "put ${it.reference()}"
+            Opcode.INVOKE_STATIC, Opcode.INVOKE_DIRECT, Opcode.INVOKE_VIRTUAL -> it.reference()
+            else -> null
+        }
+    }
+
     @Test
     fun `the extension has every hook`() {
         for ((owner, hook) in listOf(STORY_VIEWER_CLEANUP to HIDE_CREDITS, STORY_VIEWER_CLEANUP to HIDE_REPLY_SUGGESTIONS,
@@ -815,7 +1153,9 @@ class StoryViewerCleanupFixtureTest {
             STORY_VIEWER_CLEANUP to HIDE_CREATE_STORY_CARD, STORY_VIEWER_CLEANUP to HIDE_SONG_PILL,
             STORY_VIEWER_CLEANUP to WITHOUT_CREATE_CARDS, STORY_VIEWER_CLEANUP to IS_CREATE_CARD,
             STORY_VIEWER_CLEANUP to CUBE_TURN, STORY_PROGRESS_BAR to SEGMENTS_MOVED,
-            STORY_VIEWER_CLEANUP to HIDE_FOLLOW, STORY_VIEWER_CLEANUP to SHOW_UP_NEXT, STORY_VIEWER_CLEANUP to HIDE_REPLY_BAR)) {
+            STORY_VIEWER_CLEANUP to HIDE_FOLLOW, STORY_VIEWER_CLEANUP to SHOW_UP_NEXT, STORY_VIEWER_CLEANUP to HIDE_REPLY_BAR,
+            STORY_VIEWER_CLEANUP to HIDE_STORY_TIME, STORY_VIEWER_CLEANUP to SHOWS_TIME_LINE,
+            STORY_VIEWER_CLEANUP to SHOWS_TIME_BESIDE_LABEL, STORY_VIEWER_CLEANUP to WITH_STORY_TIME)) {
             val method = ExtensionDex.classDef(owner).methods.singleOrNull {
                 "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == hook
             }

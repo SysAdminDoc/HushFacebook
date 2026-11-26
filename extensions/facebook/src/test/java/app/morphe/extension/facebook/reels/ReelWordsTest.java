@@ -68,6 +68,8 @@ public class ReelWordsTest {
         PostWordsForTests.forget();
         Settings.HIDDEN_WORDS.save("spoiler");
         Settings.KEPT_WORDS.save("recipe");
+        // A player another test opened would keep the next page's first reel.
+        FollowedReels.forgetViewers();
     }
 
     @After

@@ -182,6 +182,15 @@
     },
     {
       "paths": [
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nLanguages.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for #582: the Settings language picker's languages, each named in itself, and the pick L10n reads in place of Facebook's languages once settings are ready."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AnalyticsEvents.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/analytics/**"
       ],
@@ -326,6 +335,27 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/ShareToChats.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/GalleryCopy.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/chats/ShareToChatsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #568: a Facebook chats share target the manifest declares turned off, which its switch turns on. It puts shared text on the clipboard and copies shared photos and videos into the gallery through the same writer as every save, then brings Facebook forward and presses the top bar's Messaging button so Chats opens to pick one."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/ChatBackground.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/chats/ChatBackgroundPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #573: a hook first in the chat screen fragment's onViewCreated hands the fragment and its root view to the extension, which paints the biggest RecyclerView under the root with a color picked for every chat or for one chat, before each frame, so a theme Facebook sets on it is covered again. Nothing is sent."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/GenAiLabel.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/AiCharacterPosts.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/aidetected/**"
@@ -341,6 +371,7 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/CommentTimeColour.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/MaterialYouSwitch.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/MaterialYouTheme.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/ReactColours.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/ReactionRing.java",
@@ -357,7 +388,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: the Material You theme. Dark-mode colours move to the wallpaper palette (Android 12 and newer) or to a fixed tonal palette of Facebook's blue (Android 11) at the same lightness, through the four colour routes the AMOLED patch uses and after it, and through night copies of Facebook's dark FDS styles for the views it inflates from its own layouts. React Native screens such as Marketplace home, whose colours come from their JavaScript, go through React's own background, border and image tint setters and its text colour span, which both themes hook. The colour tokens and dark surfaces it recolours were read off Facebook's own light and dark themes in the 577 and 580 builds, not taken from another patch source. For issue #65, the colour the tab bar asks for its selected tab, which draws the line over that tab and tints its icon, takes the wallpaper accent at tone 80 in dark mode; it's found through TabBarContainerLayout's colour setter and its Paint, and has exactly two readers on each build. For issue #138, the time on Facebook's older comment row, which TimestampPlugin (a class Redex keeps) colours from one theme attribute read, goes through a check both themes share: in dark mode a colour too close to the page to read becomes Facebook's dark secondary text, themed like the rest. For issue #37, a link box whose MobileConfig colour comes back empty takes its dark colour from a prop, from a second config's grey enum or from FDS's light or dark chooser. The first two, found by the register the config's parse answers into, and the chooser's dark answer go through the same dark-branch rule as the colours Facebook writes after its own dark check. For issue #141, once Facebook says its light mode is on, the grays, blues and pale tints its light FDS style gives those same tokens, read from both 582 inputs, take the palette at the same lightness too, as do the shared and server blues and the selected tab. For issue #147, the ring between a post's overlapping reaction icons goes through a check both themes share: FDSInlineReactions, found by its own component name, resolves the ring from its style's clipColor (a field name Redex keeps) through FDSColors, and in dark mode an opaque answer becomes a clear one, which makes Facebook's own facepile cut the ring out so the page shows through. For issue #37 again, a Bloks bottom sheet such as the account switcher paints its rounded background and its corner view from the dark half of a light and dark colour pair the screen sends; its container is found as the one FrameLayout built from two of Facebook's ColorData and a float array of radii, read from a heap dump of the open sheet on 584, and a dark grey there takes the palette's neutral at the same lightness."
+      "changes": "Written for Hushfacebook: the Material You theme. Dark-mode colours move to the wallpaper palette (Android 12 and newer) or to a fixed tonal palette of Facebook's blue (Android 11) at the same lightness, through the four colour routes the AMOLED patch uses and after it, and through night copies of Facebook's dark FDS styles for the views it inflates from its own layouts. React Native screens such as Marketplace home, whose colours come from their JavaScript, go through React's own background, border and image tint setters and its text colour span, which both themes hook. The colour tokens and dark surfaces it recolours were read off Facebook's own light and dark themes in the 577 and 580 builds, not taken from another patch source. For issue #65, the colour the tab bar asks for its selected tab, which draws the line over that tab and tints its icon, takes the wallpaper accent at tone 80 in dark mode; it's found through TabBarContainerLayout's colour setter and its Paint, and has exactly two readers on each build. For issue #138, the time on Facebook's older comment row, which TimestampPlugin (a class Redex keeps) colours from one theme attribute read, goes through a check both themes share: in dark mode a colour too close to the page to read becomes Facebook's dark secondary text, themed like the rest. For issue #37, a link box whose MobileConfig colour comes back empty takes its dark colour from a prop, from a second config's grey enum or from FDS's light or dark chooser. The first two, found by the register the config's parse answers into, and the chooser's dark answer go through the same dark-branch rule as the colours Facebook writes after its own dark check. For issue #141, once Facebook says its light mode is on, the grays, blues and pale tints its light FDS style gives those same tokens, read from both 582 inputs, take the palette at the same lightness too, as do the shared and server blues and the selected tab. For issue #147, the ring between a post's overlapping reaction icons goes through a check both themes share: FDSInlineReactions, found by its own component name, resolves the ring from its style's clipColor (a field name Redex keeps) through FDSColors, and in dark mode an opaque answer becomes a clear one, which makes Facebook's own facepile cut the ring out so the page shows through. For issue #37 again, a Bloks bottom sheet such as the account switcher paints its rounded background and its corner view from the dark half of a light and dark colour pair the screen sends; its container is found as the one FrameLayout built from two of Facebook's ColorData and a float array of radii, read from a heap dump of the open sheet on 584, and a dark grey there takes the palette's neutral at the same lightness. For discussion #527, a switch turns the theme off without patching again: every route asks it, read once per start, and with it off a resource loader puts back each colour the patch changed, from a list the patch writes beside them."
     },
     {
       "paths": [
@@ -367,7 +398,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook from Facebook 577, 580 and 581: Hide Meta upsells, six switches that start off. With Edits on, every read of the Reels composer landing's two Edits header flags and every fetch_edits_app_deep_dive_pill request flag answers off. With Threads on, the cross-posting onboarding's should-show check answers no. With Meta Verified on, the after-post sheet's eligibility check and the dispatcher's one request for its label answer no. With avatar stickers on, the three avatar sticker upsell components draw nothing. With Imagine on, the post call-to-action selector's check answers no for ImagineMePlugin, every question the post composer asks about its AI_GEN_IMAGINE capability answers no, and Create story's tile builder gets its list of tools without IMAGINE. With the share sheet's Threads switch on, every list of share sheet item types the item picker returns loses SHARE_TO_THREADS, through the share sheet hook it shares with Share sheet items."
+      "changes": "Written for Hushfacebook from Facebook 577, 580 and 581: Hide Meta upsells, six switches that start off. With Edits on, every read of the Reels composer landing's two Edits header flags and every fetch_edits_app_deep_dive_pill request flag answers off. With Threads on, the cross-posting onboarding's should-show check answers no. With Meta Verified on, the after-post sheet's eligibility check and the dispatcher's one request for its label answer no. With avatar stickers on, the three avatar sticker upsell components draw nothing. With Imagine on, the post call-to-action selector's check answers no for ImagineMePlugin, every question the post composer asks about its AI_GEN_IMAGINE capability answers no, and Create story's tile builder gets its list of tools without IMAGINE. With the share sheet's Threads switch on, every list of share sheet item types the item picker returns loses SHARE_TO_THREADS, through the share sheet hook it shares with Share sheet items. On 588 the pill under a Page's timeline video still showed (#314), so the Edits switch or the reels promos switch now also has three more places answer. The getter of a feed video's Edits attribution, found by the constant Facebook counts its reads with (FEED_UNIT_VIDEO_ATTACHMENT_GET_EDITS_ATTRIBUTION), answers null. The pill request gate the 588 feed and video queries ask through a static helper answers off. And the builder of the pill under a feed video, the one naming DeepDivePillSocket, answers null for a pill whose type is \"edits_app\"."
     },
     {
       "paths": [
@@ -500,8 +531,10 @@
       "paths": [
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableAr.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableBg.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableDe.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableEs.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableFr.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIn.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIt.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableKo.java",
@@ -856,12 +889,13 @@
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryProgressBar.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryViewerCleanup.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/stories/cleanup/StoryProgressHook.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/cleanup/StoryTimeHook.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/stories/cleanup/StoryViewerCleanupPatch.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: switches that take the song and effect credits off a story's subtitle line and the suggested replies off its bottom. Facebook 585 draws each as a Litho component that names itself in its class initializer, so the patch finds the one-credit line, the turning credit line and the reply suggestions by those names and asks the extension at the top of each render. On a yes the one-credit line and the suggestions draw nothing, as Facebook's own render already does for a story without them, and the turning line answers the plain subtitle its constructor kept, unless the flag render tests before its Trending or Suggested label is set. A third switch draws a progress bar along the bottom of a story: each listener that writes \"StoryViewerProgressBar.onProgressUpdated\" hands the extension its segments and its own progress argument right after it moves them, and the extension draws the bar in the overlay of the story's card."
+      "changes": "Written for Hushfacebook: switches that take the song and effect credits off a story's subtitle line and the suggested replies off its bottom. Facebook 585 draws each as a Litho component that names itself in its class initializer, so the patch finds the one-credit line, the turning credit line and the reply suggestions by those names and asks the extension at the top of each render. On a yes the one-credit line and the suggestions draw nothing, as Facebook's own render already does for a story without them, and the turning line answers the plain subtitle its constructor kept, unless the flag render tests before its Trending or Suggested label is set. A third switch draws a progress bar along the bottom of a story: each listener that writes \"StoryViewerProgressBar.onProgressUpdated\" hands the extension its segments and its own progress argument right after it moves them, and the extension draws the bar in the overlay of the story's card. Another switch sends every answer of the check a story's header line asks before it puts in how long ago the story was posted through the extension, which turns a yes into a no so a Page's story shows its time too, and the header's title row, where it gives up on that line before reading it, asks the extension and reads the line when the switch is on. On 588 (#563) the line builder's arm for a story with an attachment builds its label line with no time, so with the switch on that label gets \" • \" and the time from the builder's own time source. A story that shares a post or a reel shows Facebook's subtitle component in place of the line (who posted it, \"View full reel\"), and that component's constructor now adds the time to its last text and its description, formatted by the line builder's own formatter."
     },
     {
       "paths": [
@@ -948,6 +982,15 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook: the Related posts list under a post's buttons. In Facebook 584 it is InlineRelatedPostsPlugin, a plugin of the socket that names itself FeedStoryBelowUFIFooterSocket, and the socket's static name table names it along with the Meta AI comment summary. The patch finds that table and the socket's per-plugin check the way Hide Meta AI comment summaries does, and goes first in the check with the plugin's name from the table. The extension answers no for the Related posts plugin while the switch is on, so the socket moves on to its next plugin."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/FriendsTabSuggestions.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: People you may know in the Friends tab. In Facebook 588 the tab is one section naming itself FriendingJewelContentSection, whose rows come from one paginated GraphQL list through a connection section that hands each page to the section's event method as a load result: a status, the ImmutableList of rows so far and a Throwable. The patch finds the one read of that list in a method of the section holding SectionHeaderFriendingTabRow, and right after it hands the list to the extension and copies the answer back with ImmutableList.copyOf into the same register. The extension reads each row's getTypeName() and a header's type field (TreeJNI.getString with the key \"type\".hashCode()) and, while its switch is on, leaves out the header whose type is PEOPLE_YOU_MAY_KNOW, every row under it up to the next header, and any PeopleYouMayKnowFriendingTabRow."
     },
     {
       "paths": [
@@ -1484,13 +1527,12 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AppIcons.java",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/UnlockAppIconsAnchors.kt",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/UnlockAppIconsPatch.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/LogoDressSite.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: Unlock app icons, based on the idea of HushMessenger's patch with the same name and traced here on Facebook 582 for issues #109 and #160. The subscription benefit provider is found by the strings SUBSBenefitDataProvider and subs_active_benefits. Its one (String)Z instance method checks a benefit name against its Set. The hook goes first and answers true for CUSTOM_APP_ICON while the switch is on. The App icon page's (Set)V callback also loads CUSTOM_APP_ICON and calls Set.contains. Its answer passes through the extension. The Home header hook follows Facebook's stock wordmark load and replaces that drawable with the explicitly enabled non-default launcher alias."
+      "changes": "Written for Hushfacebook, traced on Facebook 582. AppIcons finds the launcher entry that's on, LoginActivity or one of its app icon aliases, for the intents the patches send (#119). LogoDressSite finds the Home header's logo after the settings patch gives it its touch listener, right after the builder loads Facebook's stock wordmark, where Home header text and the top bar's logo switch hook."
     },
     {
       "paths": [
@@ -1499,7 +1541,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: the Icon style option of Hushfacebook settings for issue #278, after the idea of Hushfeed's two plain app icons. The resource patch reads the application icon from the manifest, finds its one adaptive-icon configuration and the themed-icon vector its monochrome layer names, and writes a solid background color and a one-color copy of that vector inline into the adaptive icon. The monochrome layer stays. For issue #467 the Hushfacebook style instead writes Hushfacebook's own logo, from HushfacebookLogo.kt, inline as the foreground on Hushfacebook blue, with a one-color H as the themed layer."
+      "changes": "Written for Hushfacebook: the Icon style option of Hushfacebook settings for issue #278, after the idea of Hushfeed's two plain app icons. The resource patch reads the application icon from the manifest, finds its one adaptive-icon configuration and the themed-icon vector its monochrome layer names, and writes a solid background color and a one-color copy of that vector inline into the adaptive icon. The monochrome layer stays. For issue #467 the Hushfacebook style instead writes Hushfacebook's own logo, from HushfacebookLogo.kt, inline as the foreground on Hushfacebook blue, with a one-color H as the themed layer. Two more styles draw that H in one color on black or white, Icon picture puts a PNG of the user's own in the foreground and drops the themed layer, and Icon background sets the color behind any style or picture."
     },
     {
       "paths": [
@@ -1509,6 +1551,16 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Hushfacebook's own logo (assets/icons/icon-1024.png) traced into vector paths for issue #467: the white H with its two blue slots, its light blue and navy copies behind it, and a one-color outline for themed icons, scaled into an adaptive icon's 66 dp safe circle."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/LauncherPicture.kt"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/hushfeed",
+      "commit": "92679641a7a20fb1b62794f83653f948ccc15252",
+      "license": "GPL-3.0-only",
+      "changes": "The custom launcher picture and background color checks of Hushfeed's CustomLauncherIconPatch.kt, taken out into their own file for issue #467: the color parse, the PNG reader with its size, header, palette and scanline checks, and the picture folder lookup, with Hushfacebook's option names in every refusal. The icon itself is written by LauncherIconStyle.kt."
     },
     {
       "paths": [
@@ -1559,7 +1611,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook, for issue #230: Home header text. The hook sits at the same site Unlock app icons uses, right after the Home header's builder loads Facebook's stock wordmark, and hands the logo to HeaderText. That swaps the wordmark for a drawable that draws the saved words at the wordmark's height, in bold sans serif, through the color filter the header gives its wordmark, so the words follow Facebook's light and dark colors. A picture picked in the settings is shrunk to at most 1024 by 256 pixels with ImageDecoder, kept as a PNG in Facebook's files by HeaderPicture, and drawn at the wordmark's height in its own colors in place of the words. A pre-draw listener puts the words or the picture back when Facebook loads its wordmark again, and the picked app icon steps aside while there are either."
+      "changes": "Written for Hushfacebook, for issue #230: Home header text. The hook sits at the logo site in LogoDressSite.kt, right after the Home header's builder loads Facebook's stock wordmark, and hands the logo to HeaderText. That swaps the wordmark for a drawable that draws the saved words at the wordmark's height, in bold sans serif, through the color filter the header gives its wordmark, so the words follow Facebook's light and dark colors. A picture picked in the settings is shrunk to at most 1024 by 256 pixels with ImageDecoder, kept as a PNG in Facebook's files by HeaderPicture, and drawn at the wordmark's height in its own colors in place of the words. A pre-draw listener puts the words or the picture back when Facebook loads its wordmark again."
     },
     {
       "paths": [
@@ -2073,6 +2125,16 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #497: Fold long text. The patch finds the feed post text builder by its cut's shape, the line limit it calls (a static int method taking the user session and the story that reads the line limit's config key), the config factory it builds the cut with (a static (II) call whose answer the cut takes), the one maker in the line limit's class that calls both, and the comment sheet's cut config by its CommentBodyTruncationUtil trace string. Each line limit goes through the extension right after it lands, and each config call hands its characters and lines through it first, at the call's label so every jump to the call lands on the hook. The extension answers Facebook's own numbers unless Fold long posts or Fold long comments names a line count, and for posts while Show full post text is on."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/FileDownloads.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/file/SaveFilesToDownloadsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #590 from Facebook 588: the one method logging that a file's address isn't http or https makes a DownloadManager request from the address and enqueues it with no destination, so the file stayed in DownloadManager's private cache. Right after the request's constructor, the request and the address go to the extension, which while the switch is on points the request at the public Downloads folder under the address's last segment, cleaned by the save folder's rules and cut to 200 bytes of UTF-8 with its ending kept."
     }
   ]
 }

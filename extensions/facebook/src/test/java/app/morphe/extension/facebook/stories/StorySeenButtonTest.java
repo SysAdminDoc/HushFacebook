@@ -34,8 +34,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
@@ -81,6 +83,13 @@ public class StorySeenButtonTest {
     /** The eye's top-left in the window. */
     private static int[] eyeAt(ImageView eye) {
         return new int[] {Math.round(eye.getLeft() + eye.getTranslationX()), Math.round(eye.getTop() + eye.getTranslationY())};
+    }
+
+    private static String statusLine() {
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.STORY_SEEN + ":")) return line;
+        }
+        return "";
     }
 
     private static void frame(Activity activity) {
@@ -247,12 +256,14 @@ public class StorySeenButtonTest {
         assertTrue(eye.performClick());
         assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
         assertEquals(StoryMarks.State.MARKED, ((StorySeenButton.Eye) eye.getDrawable()).state());
-        assertEquals("Marked as seen. Tap again to undo.", eye.getContentDescription());
-        assertTrue(eye.performClick());
-        assertEquals("a second tap kept the mark", StoryMarks.State.UNMARKED, StorySeen.MARKS.state("100", "c1"));
+        assertEquals("Marked as seen", eye.getContentDescription());
+        // Marked, the eye dims and stays on seen: a second tap never takes the mark back (#557).
+        assertFalse(eye.isEnabled());
+        eye.performClick();
+        assertEquals("a second tap took the mark back", StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
+        assertEquals(StoryMarks.State.MARKED, ((StorySeenButton.Eye) eye.getDrawable()).state());
 
-        // Once sent, the eye dims and a tap changes nothing.
-        StorySeen.MARKS.toggle("100", "c1");
+        // Once sent it stays dimmed, and a tap still changes nothing.
         StorySeenForTests.send(StorySeenForTests.ACCOUNT, StorySeenForTests.cards("c1"));
         StorySeenButton.refresh();
         assertFalse(eye.isEnabled());
@@ -381,6 +392,53 @@ public class StorySeenButtonTest {
     }
 
     /**
+     * Issue #557: a reaction tells the story's owner you saw it, so it marks the card like a tap on
+     * the eye. On the card on screen it goes out at once and the eye dims; a reaction sent while the
+     * viewer is on another card only marks it; and with the eye's switch off nothing is marked.
+     */
+    @Test
+    public void aReactionMarksTheStorySeenAndDimsTheEye() {
+        HookStatus.clear();
+        Settings.MARK_STORIES_SEEN.save(true);
+        List<String> sent = new ArrayList<>();
+        StorySeenButton.sendNow = (account, card) -> sent.add(account + "/" + card);
+        ActivityController<StoryViewerActivity> controller = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        StoryViewerActivity viewer = controller.get();
+        StorySeenButton.activityResumed(viewer);
+        StorySeenButton.onActive("c1");
+        StorySeenButton.onCard(StorySeenForTests.ACCOUNT, null, "c1");
+        ShadowLooper.idleMainLooper();
+        ImageView eye = eyeIn(viewer);
+        assertNotNull(eye);
+        assertEquals("Mark as seen", eye.getContentDescription());
+
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c1");
+        ShadowLooper.idleMainLooper();
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
+        assertEquals("the reaction's card wasn't sent at once", Collections.singletonList("100/c1"), sent);
+        assertEquals("Marked as seen", eye.getContentDescription());
+        assertFalse("the eye stayed tappable after a reaction", eye.isEnabled());
+        assertTrue(statusLine(), statusLine().contains(StorySeenButton.REACTED + " 1"));
+
+        // A second reaction on the same story changes nothing and counts nothing new.
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c1");
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c1"));
+        assertTrue(statusLine(), statusLine().contains(StorySeenButton.REACTED + " 1"));
+
+        // Not the card on screen: marked, and it goes with the next batch instead.
+        sent.clear();
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c9");
+        assertEquals(StoryMarks.State.MARKED, StorySeen.MARKS.state("100", "c9"));
+        assertTrue("sent a card that isn't on screen: " + sent, sent.isEmpty());
+
+        // The eye's switch off: a reaction marks nothing.
+        Settings.MARK_STORIES_SEEN.save(false);
+        StorySeenButton.reacted(StorySeenForTests.ACCOUNT, null, "c5");
+        assertEquals(StoryMarks.State.UNMARKED, StorySeen.MARKS.state("100", "c5"));
+        controller.pause().stop().destroy();
+    }
+
+    /**
      * The share sheet, or another screen, over the viewer and gone again: the viewer is still on
      * its card, so the eye comes back on it and a tap sends a held card at once. A viewer that
      * closes forgets its cards.
@@ -505,7 +563,7 @@ public class StorySeenButtonTest {
     public void marksLapseAfterADay() {
         AtomicLong now = new AtomicLong(1_000);
         StoryMarks marks = new StoryMarks(now::get);
-        marks.toggle("100", "c1");
+        marks.mark("100", "c1");
         now.addAndGet(StoryMarks.LIFETIME_MS);
         assertSame(StoryMarks.State.UNMARKED, marks.state("100", "c1"));
         assertNull("a lapsed mark went out", marks.choose("100", StorySeenForTests.cards("c1"),

@@ -4,7 +4,10 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import android.text.SpannableStringBuilder;
 import android.view.View;
+
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +41,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * card built from recent gallery photos, which the viewer's finished list loses on its way out (#521).
  *
  * <p>The flat slide switch keeps the cube Facebook turns between people's stories square to the
- * screen, so the pages slide across instead (#521).
+ * screen, so the pages slide across instead (#521). The time switch puts how long ago a story was
+ * posted next to the name on the stories Facebook leaves it off, like a Page's (#563).
  *
  * <p>Off, paused, settings that aren't ready yet or a failure in here, and Facebook draws its own.
  */
@@ -69,6 +73,21 @@ public final class StoryViewerCleanup {
 
     /** Counted each time the viewer's list of stories is built without the "Add to story" card. */
     static final String CREATE_CARDS_HIDDEN = "story create cards left out";
+
+    /** Counted each time a story keeps the time Facebook would have left out next to its name (#563). */
+    static final String TIME_SHOWN = "story time shown";
+
+    /** Counted each time a story's header shows the line with the time where it would have shown the name alone (#563). */
+    static final String TIME_LINE_SHOWN = "story time line shown";
+
+    /** Counted each time a story's attachment label gets the time after it (#563). */
+    static final String TIME_BESIDE_LABEL = "story time shown after a label";
+
+    /** Counted each time a subtitle beside a story's name (a shared post, a reel, a link) gets the time after it (#563). */
+    static final String TIME_IN_SUBTITLE = "story time shown in a subtitle";
+
+    /** Facebook's own separator between the parts of a story's line. */
+    private static final String LINE_DOT = " " + (char) 0x2022 + " ";
 
     /**
      * The pill types, by Facebook's own names for them, that credit a song, a sound or the effect,
@@ -161,6 +180,115 @@ public final class StoryViewerCleanup {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story Up next card", failure);
             return show;
+        }
+    }
+
+    /**
+     * Injection point, at each answer of the check the line next to a story's name asks before it
+     * puts in how long ago the story was posted: whether to leave the time out (#563). Facebook says
+     * yes for a Page's story and a few other kinds, and with the switch on a yes turns into a no, so
+     * the line gets the time the way a friend's story does. Never throws.
+     */
+    public static boolean hideTime(boolean hide) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story time");
+            if (!hide || !Utils.settingsReady() || !Settings.SHOW_STORY_TIME.get()) return hide;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, TIME_SHOWN);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time", failure);
+            return hide;
+        }
+    }
+
+    /**
+     * Injection point, where the title row of a story's header gives up on the line next to the name
+     * before reading it, as it does for a Page's story (#563). With the switch on, {@link #hideTime}
+     * already had the time put in that line, and a true answer makes the row read it and show it the
+     * way a friend's story does. An empty line keeps Facebook's way. Never throws.
+     *
+     * @param line the line the header built, the time with the switch on.
+     */
+    public static boolean showsTimeLine(@Nullable CharSequence line) {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story time line");
+            if (line == null || line.length() == 0 || !Utils.settingsReady() || !Settings.SHOW_STORY_TIME.get()) return false;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, TIME_LINE_SHOWN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time line", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, right after the story line builder makes the line a story's attachment label
+     * alone, which it does before it ever gets to the time (#563): whether to put the time after the
+     * label. Never throws.
+     */
+    public static boolean showsTimeBesideLabel() {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story time after a label");
+            return Utils.settingsReady() && Settings.SHOW_STORY_TIME.get();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time after a label", failure);
+            return false;
+        }
+    }
+
+    /**
+     * The attachment label and the time, joined with Facebook's dot, the way the builder joins the
+     * parts of a friend's story line. Hands back the label as it was when there's no time. Never throws.
+     */
+    public static CharSequence withTime(@Nullable CharSequence label, @Nullable String time) {
+        try {
+            if (time == null || time.isEmpty()) return label;
+            if (label == null || label.length() == 0) return time;
+            SpannableStringBuilder line = new SpannableStringBuilder(label);
+            line.append(LINE_DOT).append(time);
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, TIME_BESIDE_LABEL);
+            return line;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time after a label", failure);
+            return label;
+        }
+    }
+
+    /**
+     * Injection point, as the subtitle a story shows beside the name in place of the line is made: a
+     * shared post's original poster, "View full reel", a link and the like, which never have the time
+     * (#563, "Sometimes working" on 0.25.0): whether to put the time after it. Never throws.
+     */
+    public static boolean showsTimeInSubtitle() {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story time in a subtitle");
+            return Utils.settingsReady() && Settings.SHOW_STORY_TIME.get();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time in a subtitle", failure);
+            return false;
+        }
+    }
+
+    /**
+     * A story subtitle's text, or what a screen reader says for it, and the time, joined with
+     * Facebook's dot. Hands the text back as it was when either is empty or the text already ends
+     * with the time. Never throws.
+     */
+    public static CharSequence subtitleWithTime(@Nullable CharSequence text, @Nullable String time) {
+        try {
+            if (text == null || text.length() == 0 || time == null || time.isEmpty()) return text;
+            if (text.toString().endsWith(time)) return text;
+            SpannableStringBuilder line = new SpannableStringBuilder(text);
+            line.append(LINE_DOT).append(time);
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, TIME_IN_SUBTITLE);
+            return line;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story time in a subtitle", failure);
+            return text;
         }
     }
 

@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.updates.playstore
 
+import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
@@ -21,6 +22,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.reandroid.apk.ApkModule
 import com.reandroid.apk.ApkModuleXmlDecoder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -176,5 +178,21 @@ class DisablePlayStoreUpdatesFixtureTest {
             }
         }
         assertEquals("$name: every version code read was swapped", intReads + longReads, swapped)
+    }
+
+    /**
+     * Morphe's own Disable Play Store updates (morphe-patches 2.4.0-dev.5 and newer) sends every version
+     * code read outside its own extension class through that class, ours included, and this patch does
+     * the same with Morphe's. With both picked, a read left in our helper went to Morphe's helper, which
+     * this patch had sent back to ours, so Facebook died of a StackOverflowError at its first version read
+     * (#561). The same rewrite, run over the helper as the bundle ships it, has to find nothing to send.
+     */
+    @Test
+    fun `another Disable Play Store updates finds no read to send back into the extension`() {
+        val helper = ExtensionDex.classDef(EXTENSION_CLASS)
+        assertFalse("$EXTENSION_CLASS reads a version code another copy of the patch would swap", readsVersionCode(helper))
+        val context = PatchContexts.of(listOf(ImmutableClassDef.of(helper)))
+        val swapped = context.mutableClassDefBy(EXTENSION_CLASS).methods.sumOf { it.readRealVersionCode() }
+        assertEquals("version code reads in $EXTENSION_CLASS another copy of the patch swaps", 0, swapped)
     }
 }

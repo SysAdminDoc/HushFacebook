@@ -137,7 +137,6 @@
     "Turn off haptics",
     "Turn off HDR brightness",
     "Turn off screen transitions",
-    "Unlock app icons",
     "Use the phone's emoji",
     "Use the system font"
   ],
@@ -147,6 +146,7 @@
     "Block background ad prefetch",
     "Block Instant Games ads",
     "Block promotional notifications",
+    "Chat background",
     "Clean up Facebook's chat list",
     "Clean up the story viewer",
     "Disable Play Store updates",
@@ -169,6 +169,7 @@
     "See who shared",
     "Send chat photos and videos at original quality",
     "Share sheet items",
+    "Share to Facebook chats",
     "Show View profile on Marketplace sellers",
     "Start on x86 devices",
     "Stop Story auto-advance",

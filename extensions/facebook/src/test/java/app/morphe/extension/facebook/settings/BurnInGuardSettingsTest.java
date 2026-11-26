@@ -64,6 +64,7 @@ public class BurnInGuardSettingsTest {
         Settings.BURN_IN_STAY_DIM.resetToDefault();
         Settings.BURN_IN_LEVEL.resetToDefault();
         Settings.BURN_IN_FADE.resetToDefault();
+        Settings.BURN_IN_TAP_BACK.resetToDefault();
     }
 
     @Test
@@ -75,13 +76,15 @@ public class BurnInGuardSettingsTest {
             int wait = indexOfKey(rows, Settings.BURN_IN_WAIT.key);
             int level = indexOfKey(rows, Settings.BURN_IN_LEVEL.key);
             int stay = indexOfKey(rows, Settings.BURN_IN_STAY_DIM.key);
+            int tap = indexOfKey(rows, Settings.BURN_IN_TAP_BACK.key);
             int fade = indexOfKey(rows, Settings.BURN_IN_FADE.key);
             assertTrue("Hide the top right buttons on opened videos is missing", top >= 0);
             assertEquals(top + 1, guard);
             assertEquals(guard + 1, wait);
             assertEquals(wait + 1, level);
             assertEquals(level + 1, stay);
-            assertEquals(stay + 1, fade);
+            assertEquals(stay + 1, tap);
+            assertEquals(tap + 1, fade);
             assertEquals(fade + 1, indexOfKey(rows, Settings.HIDE_REEL_COUNTS.key));
 
             assertTrue(rows.get(guard) instanceof ValueRows.BurnInGuardRow);
@@ -94,6 +97,17 @@ public class BurnInGuardSettingsTest {
                     String.valueOf(stayDim.getSummary()));
             assertFalse(stayDim.isChecked());
             assertFalse(Settings.BURN_IN_STAY_DIM.defaultValue);
+
+            // #523: off to start, and greyed out under Stay dim when I tap, which wins over it.
+            SwitchPreference tapBack = (SwitchPreference) rows.get(tap);
+            assertEquals("Tap the video to bring them back", String.valueOf(tapBack.getTitle()));
+            assertEquals("Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. "
+                    + "The next tap pauses as usual.", String.valueOf(tapBack.getSummary()));
+            assertFalse(tapBack.isChecked());
+            assertFalse(Settings.BURN_IN_TAP_BACK.defaultValue);
+            assertTrue(Settings.BURN_IN_TAP_BACK.isAvailable());
+            Settings.BURN_IN_STAY_DIM.save(true);
+            assertFalse("Stay dim when I tap greys it out", Settings.BURN_IN_TAP_BACK.isAvailable());
 
             SwitchPreference smooth = (SwitchPreference) rows.get(fade);
             assertEquals("Smooth fade", String.valueOf(smooth.getTitle()));
@@ -133,6 +147,7 @@ public class BurnInGuardSettingsTest {
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_GUARD.key));
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_WAIT.key));
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_STAY_DIM.key));
+            assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_TAP_BACK.key));
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_LEVEL.key));
             assertEquals(-1, indexOfKey(rows, Settings.BURN_IN_FADE.key));
         }

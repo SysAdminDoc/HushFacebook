@@ -4,7 +4,6 @@
  */
 package app.morphe.patches.facebook.reels
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
@@ -19,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.executeBytecode
+import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -314,13 +314,7 @@ internal fun BytecodePatchContext.fillPromotionClassStub(binaryName: String) {
         it.name == PROMOTION_CLASS_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == STRING &&
             it.parameterTypes.isEmpty()
     } ?: throw PatchException("$REEL_MID_CARDS has no static String $PROMOTION_CLASS_STUB()")
-    stub.addInstructions(
-        0,
-        """
-            const-string v0, "$binaryName"
-            return-object v0
-        """,
-    )
+    stub.returnEarly(binaryName)
 }
 
 /** The stub's body, on its own so the shapes test can read it. */

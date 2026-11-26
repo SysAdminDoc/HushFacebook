@@ -25,6 +25,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * translation when the reel says its caption can be. While the switch is on, that answer is no, so
  * the request isn't made.
  *
+ * <p>Facebook's server can also send a reel with its caption already translated, unless the Reels
+ * query asks it not to (#579). While the switch is on, the query always asks.
+ *
  * <p>A comment comes with its own translation type and, when Facebook translated it, the
  * translated text. The comment body starts on that text unless the type is ORIGINAL (#372). While
  * the switch is on, the type it reads is ORIGINAL, so the comment starts in its own words and a tap
@@ -52,6 +55,15 @@ public final class AutoTranslation {
     /** The member the report names once the comment body has read a comment's translation type. */
     static final String COMMENT = "comment translation type";
 
+    /** The Reels queries' variable that keeps the server from translating a reel's caption itself. */
+    static final String CAPTION_TRANSLATION_PARAM = "skip_ucs_caption_translation";
+
+    /** The member the report names once a Reels query has set that variable. */
+    static final String QUERY = "reels query caption translation";
+
+    /** Counted each time a Reels query asks the server to send captions as they were written. */
+    static final String QUERY_KEPT = "reels query asked for captions as written";
+
     /** Facebook's GraphQLTranslatabilityType constants, kept as the enum's names. */
     static final String AUTO_TRANSLATION = "AUTO_TRANSLATION";
     static final String SEE_TRANSLATION = "SEE_TRANSLATION";
@@ -72,6 +84,7 @@ public final class AutoTranslation {
     private static volatile boolean loggedPost;
     private static volatile boolean loggedCaption;
     private static volatile boolean loggedComment;
+    private static volatile boolean loggedQuery;
 
     private AutoTranslation() {
     }
@@ -123,6 +136,34 @@ public final class AutoTranslation {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, CAPTION, failure);
             return translatable;
+        }
+    }
+
+    /**
+     * The hook, as any query sets one of its boolean variables. Every variable of every query comes
+     * through here, so only [CAPTION_TRANSLATION_PARAM] is looked at: it answers true while the
+     * switch is on, so the server sends reels with their captions as written. Answers [value]
+     * for every other variable, and for this one while off.
+     */
+    @Nullable
+    public static Boolean queryFlag(@Nullable String name, @Nullable Boolean value) {
+        if (!CAPTION_TRANSLATION_PARAM.equals(name)) return value;
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, QUERY);
+            if (Boolean.TRUE.equals(value) || !Utils.settingsReady() || !Settings.TURN_OFF_AUTO_TRANSLATION.get()) {
+                return value;
+            }
+            HookStatus.counted(FAMILY, QUERY_KEPT);
+            if (!loggedQuery) {
+                loggedQuery = true;
+                Logger.printDebug(() -> "Auto-translation: a Reels query asks for captions as written (" + name + " "
+                        + value + " -> true)");
+            }
+            return Boolean.TRUE;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, QUERY, failure);
+            return value;
         }
     }
 

@@ -5,11 +5,16 @@
 
 package app.morphe.extension.facebook.feed;
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.view.View;
 import android.view.ViewParent;
 
@@ -17,8 +22,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -40,16 +48,27 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * with a count, answers a {@link Faces} drawable that goes in through Facebook's own drawable icon
  * (the one it uses for a reaction it has a picture of). The Comment and Share buttons' icons were
  * never noted, so they keep theirs. The renderer's drawing then asks {@link #isFaces} and widens
- * that icon's box by {@link #widthBits} so three faces fit. The faces at the end of the row are a
+ * that icon's box by {@link #widthBits} so the post's faces fit. The faces at the end of the row are a
  * drawable whose draw asks {@link PostPrompts#hideReactionPreview(Drawable, boolean)} first: with
  * the switch on it lands in {@link #movedFrom}, which notes them against their row and holds them
  * back there while the row's Like button is a {@link Faces}. The button then draws them in its own
  * box.
  *
- * <p>A row whose end shows something else, like a video's view count, has no faces to move, so its
- * button shows the one face Facebook would give it: Like, or the viewer's own reaction. Hide the
- * reaction preview on posts overrules this switch, and a post with no count keeps its thumb. Off,
- * paused, before the settings are ready or on a throw, every hook answers as Facebook does.
+ * <p>The box is as wide as the post's faces need. The builder of a feed post's Like item hands
+ * {@link #pendingStory} the post first: its top reactions that someone used, three at most, are the
+ * faces the row's facepile shows (588's feed footer takes three, so a post with three kinds of
+ * reactions shows three faces on Home), and every icon the builder notes carries that count to its
+ * button. The faces are drawn no larger than the facepile drew them, so every post's faces come out
+ * the same size, and a post with one face has no gap before it. A count that can't be read keeps the
+ * box wide enough for two. Some screens' facepiles draw fewer faces than that (a Page's timeline
+ * draws two of a post's three), so each pile a button finds is noted against its screen's class, and
+ * later boxes on that screen make room for only as many as its piles draw.
+ *
+ * <p>Until a row's faces turn up, and in a row whose end shows something else, the button shows
+ * Facebook's own icon: the thumb glyph, plain until the viewer likes the post, which {@link #glyph}
+ * draws, or the face of the viewer's reaction. Hide the reaction preview on posts overrules this
+ * switch, and a post with no count keeps its thumb. Off, paused, before the settings are ready or on
+ * a throw, every hook answers as Facebook does.
  */
 public final class LikeButtonFaces {
     private LikeButtonFaces() {
@@ -58,8 +77,18 @@ public final class LikeButtonFaces {
     static final String BUTTON = "reactions on the Like button";
     /** Counted under the patch's name each time a row's faces are held back for its Like button. */
     static final String MOVED = "Reaction faces moved to the Like button";
-    /** How wide the faces' box is, in icon heights: three faces, each overlapping the one before. */
-    static final float BOX_WIDTH = 2.4f;
+    /** Each face's share of the box, in icon heights: the facepile's own face size. */
+    static final float FACE_WIDTH = 0.8f;
+    /** The most faces the button row's facepile shows, as 588's feed footer takes them. */
+    static final int MAX_FACES = 3;
+    /** How wide the faces' box is, in icon heights, when the post's count of faces isn't known: two faces. */
+    static final float BOX_WIDTH = FACE_WIDTH * 2;
+    /** A count of faces that wasn't read. */
+    static final int UNKNOWN = 0;
+    /** The GraphQL field of a top reaction edge that says how many people used it. */
+    static final int REACTION_COUNT_KEY = "reaction_count".hashCode();
+    /** How many of the latest Like icons keep their post's count of faces. */
+    private static final int COUNTED = 128;
     /** How far up from a drawable's host a row's LithoView is looked for. */
     private static final int HOPS = 40;
     private static final String FAMILY = FamilyNames.POST_PROMPTS;
@@ -69,6 +98,15 @@ public final class LikeButtonFaces {
     /** Each row's Like button faces, so a row whose faces arrive later redraws its button. */
     private static final Map<View, WeakReference<Faces>> rowButtons = new WeakHashMap<>();
     private static final Map<Class<?>, Boolean> lithoClasses = new HashMap<>();
+    /**
+     * The most faces a facepile drew on each kind of screen where one drew fewer than its post's
+     * count, by the screen's class. 588's Page timeline draws two of a post's three faces while Home
+     * draws three (read on the S22 2026-11-25), and the box is sized before any pile draws.
+     */
+    private static final Map<String, Integer> screenFaces = new HashMap<>();
+    /** The class of the screen in front, followed from the first pile a button finds. */
+    @Nullable private static volatile String frontScreen;
+    private static WeakReference<Application> followed = new WeakReference<>(null);
     /** True while a button draws its row's faces, so their own draw doesn't hold them back. */
     private static boolean drawingFaces;
     private static volatile boolean logged;
@@ -77,6 +115,223 @@ public final class LikeButtonFaces {
      * reaction, or Like. Builders run on Litho's layout threads, so it's read and written locked.
      */
     private static final Map<Object, Drawable> likeIcons = new WeakHashMap<>();
+    /**
+     * The latest Like icons with their post's count of faces, matched by identity: Facebook's icon
+     * equals every other icon of the same reaction, whatever the post. Read and written locked.
+     */
+    private static final WeakReference<?>[] countedIcons = new WeakReference<?>[COUNTED];
+    private static final int[] iconCounts = new int[COUNTED];
+    private static int nextCounted;
+    /** The count of faces of the post whose Like item this thread is building. */
+    private static final ThreadLocal<Integer> pending = new ThreadLocal<>();
+
+    /** Draws a Like icon the way Facebook draws it on the button: the patch's helper, or a test's. */
+    interface Glyphs {
+        @Nullable
+        Drawable draw(Context context, Object icon);
+    }
+
+    static final Glyphs PATCHED_GLYPHS = LikeButtonFaces::glyph;
+
+    /**
+     * Injection point, filled in by the patch: [icon] drawn as a Drawable when it's Facebook's thumb
+     * glyph, in its own color, or null for any other icon.
+     */
+    @Nullable
+    public static Drawable glyph(Context context, Object icon) {
+        return null;
+    }
+
+    /** The three reads a post's faces are counted through: the patch's accessors, or a test's. */
+    static final class Readers {
+        final StoryFlag.Accessor feedback;
+        final StoryFlag.Accessor topReactions;
+        final StoryFlag.Accessor edges;
+
+        Readers(StoryFlag.Accessor feedback, StoryFlag.Accessor topReactions, StoryFlag.Accessor edges) {
+            this.feedback = feedback;
+            this.topReactions = topReactions;
+            this.edges = edges;
+        }
+    }
+
+    private static final Readers PATCHED =
+            new Readers(LikeButtonFaces::feedback, LikeButtonFaces::topReactions, LikeButtonFaces::reactionEdges);
+
+    /** Injection point, filled in by the patch: a GraphQLStory's {@code feedback}, or null. */
+    public static Object feedback(Object story) {
+        return StoryFlag.NOT_PATCHED;
+    }
+
+    /** Injection point, filled in by the patch: a GraphQLFeedback's {@code top_reactions}, or null. */
+    public static Object topReactions(Object feedback) {
+        return StoryFlag.NOT_PATCHED;
+    }
+
+    /** Injection point, filled in by the patch: a top reactions connection's {@code edges}, or null. */
+    public static Object reactionEdges(Object topReactions) {
+        return StoryFlag.NOT_PATCHED;
+    }
+
+    /**
+     * The hook first thing in the builder of a feed post's Like item, handed what it reads as the
+     * post's GraphQLStory: the post's count of faces is read now, for the icons the builder notes.
+     */
+    public static void pendingStory(@Nullable Object story) {
+        pendingStory(story, PATCHED);
+    }
+
+    static void pendingStory(@Nullable Object story, Readers readers) {
+        pending.remove();
+        try {
+            if (story == null || !on()) return;
+            int faces = facesOf(story, readers);
+            if (faces != UNKNOWN) pending.set(faces);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, BUTTON, failure);
+        }
+    }
+
+    /** The hook at every return of that builder: icons noted after it aren't this post's. */
+    public static void clearPending() {
+        pending.remove();
+    }
+
+    /**
+     * How many faces the box of a post counted [faces] makes room for on the screen in front: fewer
+     * when that kind of screen's facepiles were seen drawing fewer than their posts' counts.
+     */
+    static int boxFaces(int faces) {
+        String screen = frontScreen;
+        if (faces == UNKNOWN || screen == null) return faces;
+        synchronized (screenFaces) {
+            Integer most = screenFaces.get(screen);
+            return most != null && most < faces ? most : faces;
+        }
+    }
+
+    /**
+     * Notes that a facepile on [screen] drew [shown] faces for a post counted [counted]. Fewer than
+     * the count sets the screen's most to the largest such pile, and a pile with more than that
+     * lifts it again.
+     */
+    static void piled(String screen, int counted, int shown) {
+        if (counted == UNKNOWN || shown < 1 || shown > MAX_FACES) return;
+        synchronized (screenFaces) {
+            Integer most = screenFaces.get(screen);
+            if (shown < counted) {
+                if (most == null || shown > most) screenFaces.put(screen, shown);
+            } else if (most != null && shown > most) {
+                if (shown >= MAX_FACES) screenFaces.remove(screen);
+                else screenFaces.put(screen, shown);
+            }
+        }
+    }
+
+    /** {@link #piled(String, int, int)} for a pile drawn [pile] wide on [host]'s screen, one face per height. */
+    private static void piled(@Nullable View host, int counted, Rect pile) {
+        Activity screen = activityOf(host == null ? null : host.getContext());
+        if (screen == null || pile.height() <= 0) return;
+        follow(screen);
+        piled(screen.getClass().getName(), counted, Math.round((float) pile.width() / pile.height()));
+    }
+
+    /** Follows the screen in front from [screen] on, so a box knows which screen's piles it sits with. */
+    private static synchronized void follow(Activity screen) {
+        Application app = screen.getApplication();
+        if (app == null || followed.get() == app) return;
+        followed = new WeakReference<>(app);
+        frontScreen = screen.getClass().getName();
+        app.registerActivityLifecycleCallbacks(new Screens());
+    }
+
+    /** Forgets every screen's piles and the screen in front. */
+    static synchronized void forgetScreensForTests() {
+        synchronized (screenFaces) {
+            screenFaces.clear();
+        }
+        frontScreen = null;
+        followed = new WeakReference<>(null);
+    }
+
+    /** The activity [context] wraps, or null. The depth guards against a wrapper that wraps itself. */
+    @Nullable
+    private static Activity activityOf(@Nullable Context context) {
+        for (int depth = 0; context != null && depth < 20; depth++) {
+            if (context instanceof Activity) return (Activity) context;
+            if (!(context instanceof ContextWrapper)) return null;
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
+    }
+
+    /** The screen in front, by its class, as each one resumes. */
+    private static final class Screens implements Application.ActivityLifecycleCallbacks {
+        @Override public void onActivityResumed(@NonNull Activity activity) {
+            frontScreen = activity.getClass().getName();
+        }
+        @Override public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle state) { }
+        @Override public void onActivityStarted(@NonNull Activity activity) { }
+        @Override public void onActivityPaused(@NonNull Activity activity) { }
+        @Override public void onActivityStopped(@NonNull Activity activity) { }
+        @Override public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle state) { }
+        @Override public void onActivityDestroyed(@NonNull Activity activity) { }
+    }
+
+    /**
+     * How many faces the row's facepile shows for [story]: the top reactions somebody used, three at
+     * most, the way Facebook picks them. {@link #UNKNOWN} when they can't be read.
+     */
+    static int facesOf(Object story, Readers readers) throws Exception {
+        PostText.Members found = PostText.members();
+        Class<?> storyClass = found.story;
+        Class<?> treeModel = found.treeModel;
+        if (storyClass == null || !storyClass.isInstance(story) || FeedFilter.released(story)) return UNKNOWN;
+        Method cachedInt = PostReactions.cachedInt(treeModel);
+        if (cachedInt == null) return UNKNOWN;
+        Object feedback = live(readers.feedback.model(story), "the feedback accessor");
+        Object top = feedback == null ? null : live(readers.topReactions.model(feedback), "the top reactions accessor");
+        Object edges = top == null ? null : readers.edges.model(top);
+        if (edges == StoryFlag.NOT_PATCHED) HookStatus.missingMember(FAMILY, "method", "top_reactions", "the edges accessor");
+        if (!(edges instanceof List)) return UNKNOWN;
+        int faces = 0;
+        for (Object edge : (List<?>) edges) {
+            if (!treeModel.isInstance(edge) || FeedFilter.released(edge)) continue;
+            Object used = cachedInt.invoke(edge, REACTION_COUNT_KEY);
+            if (used instanceof Integer && (Integer) used > 0 && ++faces == MAX_FACES) break;
+        }
+        return faces;
+    }
+
+    /** A model a read answered, or null when there's none, it's released or the read wasn't patched. */
+    @Nullable
+    private static Object live(@Nullable Object model, String accessor) {
+        if (model == StoryFlag.NOT_PATCHED) {
+            HookStatus.missingMember(FAMILY, "method", "a post's reactions", accessor);
+            return null;
+        }
+        return model == null || FeedFilter.released(model) ? null : model;
+    }
+
+    /** Notes [icon] as one of a post with [faces] faces. */
+    private static void count(Object icon, int faces) {
+        synchronized (countedIcons) {
+            countedIcons[nextCounted] = new WeakReference<>(icon);
+            iconCounts[nextCounted] = faces;
+            nextCounted = (nextCounted + 1) % COUNTED;
+        }
+    }
+
+    /** The count of faces [icon]'s post was noted with, or {@link #UNKNOWN}. */
+    static int countOf(Object icon) {
+        synchronized (countedIcons) {
+            for (int i = 0; i < COUNTED; i++) {
+                WeakReference<?> held = countedIcons[i];
+                if (held != null && held.get() == icon) return iconCounts[i];
+            }
+        }
+        return UNKNOWN;
+    }
 
     /** The switch, on and ready, and not overruled by Hide the reaction preview on posts. */
     static boolean on() {
@@ -102,6 +357,8 @@ public final class LikeButtonFaces {
             synchronized (likeIcons) {
                 likeIcons.put(icon, face);
             }
+            Integer faces = pending.get();
+            if (faces != null) count(icon, faces);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, BUTTON, failure);
         }
@@ -123,7 +380,7 @@ public final class LikeButtonFaces {
                 face = likeIcons.get(icon);
             }
             HookStatus.bound(FAMILY, BUTTON);
-            return new Faces(face);
+            return new Faces(face, countOf(icon), icon, PATCHED_GLYPHS);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, BUTTON, failure);
             return null;
@@ -144,9 +401,14 @@ public final class LikeButtonFaces {
         return icon instanceof Faces;
     }
 
-    /** The width of a faces icon's box for an icon [size] dp tall, in the bits Facebook's style takes. */
+    /**
+     * The width of a faces icon's box for an icon [size] dp tall, in the bits Facebook's style takes:
+     * room for its post's faces, or for two when their count isn't known.
+     */
     public static long widthBits(@Nullable Drawable icon, float size) {
-        return Double.doubleToRawLongBits(size * BOX_WIDTH);
+        int faces = icon instanceof Faces ? boxFaces(((Faces) icon).faces) : UNKNOWN;
+        float width = faces >= 1 && faces <= MAX_FACES ? FACE_WIDTH * faces : BOX_WIDTH;
+        return Double.doubleToRawLongBits(size * width);
     }
 
     /**
@@ -239,16 +501,40 @@ public final class LikeButtonFaces {
 
     /**
      * The Like button's icon while the switch is on: its row's faces, right-aligned against the
-     * count and scaled to the icon's height, or the one face Facebook would have shown until the row
-     * has faces to give. Equal to another for the same face, so a button drawn again keeps it.
+     * count, fitted to the icon's box and never larger than the facepile drew them. Until the row has
+     * faces to give, the icon Facebook would have shown: its thumb glyph, else the face it noted.
+     * Equal to another for the same face, count of faces and icon, so a button drawn again keeps it
+     * and one the viewer just liked doesn't.
      */
     static final class Faces extends Drawable {
         @Nullable private final Drawable source;
         @Nullable private final Drawable face;
+        /** How many faces the post's facepile shows, or {@link #UNKNOWN}. */
+        final int faces;
+        /** The icon Facebook built for the button, drawn through [glyphs] when it's a glyph. */
+        @Nullable private final Object icon;
+        @Nullable private final Glyphs glyphs;
+        @Nullable private Drawable glyph;
+        private boolean glyphAsked;
+        /** Whether this button's pile has been noted against its screen yet. */
+        private boolean piledNoted;
+        private int alpha = 255;
+        @Nullable private ColorFilter filter;
 
         Faces(@Nullable Drawable source) {
+            this(source, UNKNOWN);
+        }
+
+        Faces(@Nullable Drawable source, int faces) {
+            this(source, faces, null, null);
+        }
+
+        Faces(@Nullable Drawable source, int faces, @Nullable Object icon, @Nullable Glyphs glyphs) {
             this.source = source;
             this.face = own(source);
+            this.faces = faces;
+            this.icon = icon;
+            this.glyphs = glyphs;
         }
 
         @Nullable
@@ -262,7 +548,8 @@ public final class LikeButtonFaces {
         public void draw(@NonNull Canvas canvas) {
             Rect box = getBounds();
             if (box.isEmpty()) return;
-            View row = rowOf(hostOf(this));
+            View host = hostOf(this);
+            View row = rowOf(host);
             Drawable faces = null;
             if (row != null) {
                 WeakReference<Faces> was = rowButtons.put(row, new WeakReference<>(this));
@@ -271,18 +558,43 @@ public final class LikeButtonFaces {
                 // they find this button and hold back there.
                 if (faces != null && (was == null || was.get() != this)) faces.invalidateSelf();
             }
+            if (faces != null && !piledNoted) {
+                piledNoted = true;
+                piled(host, this.faces, faces.getBounds());
+            }
             if (faces != null && drawFaces(canvas, faces, box)) return;
-            if (face == null) return;
+            Drawable shown = glyphFor(host);
+            if (shown == null) shown = face;
+            if (shown == null) return;
             int side = Math.min(box.width(), box.height());
             int top = box.top + (box.height() - side) / 2;
-            face.setBounds(box.right - side, top, box.right, top + side);
-            face.draw(canvas);
+            shown.setBounds(box.right - side, top, box.right, top + side);
+            shown.draw(canvas);
+        }
+
+        /** Facebook's thumb glyph for the button's icon, drawn once with [host]'s context, or null. */
+        @Nullable
+        private Drawable glyphFor(@Nullable View host) {
+            if (glyphAsked || icon == null || glyphs == null || host == null) return glyph;
+            glyphAsked = true;
+            try {
+                Drawable drawn = own(glyphs.draw(host.getContext(), icon));
+                if (drawn != null) {
+                    if (alpha != 255) drawn.setAlpha(alpha);
+                    if (filter != null) drawn.setColorFilter(filter);
+                }
+                glyph = drawn;
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, BUTTON, failure);
+            }
+            return glyph;
         }
 
         private static boolean drawFaces(Canvas canvas, Drawable faces, Rect box) {
             Rect from = faces.getBounds();
             if (from.isEmpty()) return false;
-            float scale = (float) box.height() / from.height();
+            // Fitted to the box, but never larger than the facepile drew them.
+            float scale = Math.min(1f, (float) box.height() / from.height());
             if (from.width() * scale > box.width()) scale = (float) box.width() / from.width();
             float width = from.width() * scale;
             float height = from.height() * scale;
@@ -302,12 +614,16 @@ public final class LikeButtonFaces {
 
         @Override
         public void setAlpha(int alpha) {
+            this.alpha = alpha;
             if (face != null) face.setAlpha(alpha);
+            if (glyph != null) glyph.setAlpha(alpha);
         }
 
         @Override
         public void setColorFilter(@Nullable ColorFilter filter) {
+            this.filter = filter;
             if (face != null) face.setColorFilter(filter);
+            if (glyph != null) glyph.setColorFilter(filter);
         }
 
         @Override
@@ -317,12 +633,13 @@ public final class LikeButtonFaces {
 
         @Override
         public boolean equals(Object other) {
-            return other instanceof Faces && ((Faces) other).source == source;
+            return other instanceof Faces && ((Faces) other).source == source && ((Faces) other).faces == faces
+                    && Objects.equals(((Faces) other).icon, icon);
         }
 
         @Override
         public int hashCode() {
-            return System.identityHashCode(source);
+            return (System.identityHashCode(source) * 31 + faces) * 31 + Objects.hashCode(icon);
         }
     }
 }

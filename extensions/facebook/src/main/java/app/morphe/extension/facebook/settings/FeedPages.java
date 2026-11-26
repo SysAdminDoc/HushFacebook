@@ -234,6 +234,9 @@ final class FeedPages {
                                 ? L10n.t("Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the "
                                         + "Stories tray.")
                                 : L10n.t("Hides friend suggestions between posts and on your own profile.")));
+                // Off until picked: the Friends tab is where people go to find friends (#600).
+                feed.addPreference(toggle(context, Settings.HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW,
+                        L10n.t("Hides the People you may know list in the Friends tab. Your friend requests stay.")));
                 // The groups card between reels goes through the Reels mid-card hook, which only
                 // Clean up Reels and Hide reel interest prompts put in.
                 feed.addPreference(toggle(context, Settings.HIDE_SUGGESTED_GROUPS,
@@ -355,6 +358,8 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_POST_REPOST_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SHARE_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SEND_BUTTON, hides));
+                feed.addPreference(toggle(context, Settings.HIDE_POST_STARS_BUTTON, hides));
+                feed.addPreference(toggle(context, Settings.HIDE_POST_SAVE_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.IGNORE_POST_ROW_TAPS,
                         L10n.t("A tap on the empty part of the row under a post, between the buttons and the reaction "
                                 + "icons, does nothing instead of opening the comments or who reacted. The buttons work as before.")));
@@ -447,6 +452,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_PROFILE_NOTES,
                         L10n.t("Hides the note bubble that sits on profile pictures. Applies the next time you open a "
                                 + "profile.")));
+                feed.addPreference(toggle(context, Settings.HIDE_PROFILE_GIFTS,
+                        L10n.t("Takes the Send a gift button off other people's profiles. Applies the next time you "
+                                + "open a profile.")));
             }
             // Read each time Facebook lays a profile out, so a change shows on the next profile opened.
             if (build.contains(PatchFamily.LOCAL_PROFILE_COUNTS)) {
@@ -990,6 +998,9 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.STORY_FLAT_SLIDE,
                         L10n.t("Swiping to the next or previous person's stories slides them across instead of "
                                 + "turning them like a cube. Applies from your next swipe.")));
+                stories.addPreference(toggle(context, Settings.SHOW_STORY_TIME,
+                        L10n.t("Stories that leave out how long ago they were posted, like a Page's, show it next to "
+                                + "the name the way a friend's story does. Applies from the next story you open.")));
             }
             if (build.contains(PatchFamily.STORY_RINGS)) {
                 // Read each time a picture draws, so a change shows on what's drawn after it.
@@ -1072,6 +1083,9 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REACTIONS,
                     L10n.t("Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap "
                             + "where they were still opens the list of reactions.")));
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REACTION_COUNTS,
+                    L10n.t("Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them "
+                            + "still opens the list of reactions.")));
         }
         if (pictures) {
             // Read as each comment is built, so a change shows on the comments drawn after it.
@@ -1101,6 +1115,8 @@ final class FeedPages {
                     L10n.t("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_EMOJI_ROW,
                     L10n.t("The row of emoji over the comment box goes away. You can still type emoji from your keyboard.")));
+            comments.addPreference(toggle(context, Settings.KEEP_COMMENT_KEYBOARD_CLOSED,
+                    L10n.t("Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_BOX_LINE,
                     L10n.t("The thin line along the top of the comment box goes away.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_BOX,

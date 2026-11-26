@@ -52,6 +52,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * name can get the box from its own switch (#533). A feed post's name can also take a few lines where
  * Facebook cuts it to one ({@link #nameLines}).
  *
+ * <p>When the header puts its name into a column with the line under it (the date, "AI content", a
+ * song), the box goes on that column instead of the name, so it covers the date line too and no box edge
+ * runs through it ({@link #nameBlock}, {@link #forNameBlock}).
+ *
  * <p>Box darkness and Soft box edges set every box's look. With the switch for its kind off, paused,
  * before the settings are ready, or when anything here fails, the text keeps Facebook's look.
  */
@@ -79,6 +83,21 @@ public final class CaptionBackdrop {
 
     /** Counted each time a name drawn over a feed video gets the box (#533). */
     static final String MEDIA_NAMED = "feed video name dimmed";
+
+    /** The member the report names once a header's name and the line under it have asked for one box (#490). */
+    static final String NAME_BLOCK = "post name block backdrop";
+
+    /** The member the report names once a full-screen video's date has asked for its box (#490). */
+    static final String VIEWER_DATE = "full-screen video date backdrop";
+
+    /** Counted each time the date under a full-screen video's caption gets the box. */
+    static final String VIEWER_DATED = "full-screen video date dimmed";
+
+    /** The member the report names once a group reel's name has asked for its box (#490). */
+    static final String GROUP_NAME = "group reel name backdrop";
+
+    /** Counted each time a group reel's name and the line under it get the box. */
+    static final String GROUP_NAMED = "group reel name dimmed";
 
     /** The member the report names once a post header has read its name's line limit (#533). */
     static final String NAME_LINES = "post name lines";
@@ -121,6 +140,9 @@ public final class CaptionBackdrop {
     /** Whether the header building on this thread right now draws a feed post's name over its photo or video. */
     private static final ThreadLocal<Boolean> MEDIA_HEADER = new ThreadLocal<>();
 
+    /** Whether the header building on this thread right now puts its name into a column with the line under it. */
+    private static final ThreadLocal<Boolean> NAME_BLOCK_STARTED = new ThreadLocal<>();
+
     /** The header looks already written to the log, so each shows once. */
     private static final Set<String> LOOKS_LOGGED = Collections.synchronizedSet(new HashSet<>());
 
@@ -130,6 +152,8 @@ public final class CaptionBackdrop {
     private static volatile boolean loggedReel;
     private static volatile boolean loggedMedia;
     private static volatile boolean loggedLines;
+    private static volatile boolean loggedViewerDate;
+    private static volatile boolean loggedGroup;
 
     private CaptionBackdrop() {
     }
@@ -184,17 +208,19 @@ public final class CaptionBackdrop {
     }
 
     /**
-     * The hook, right before a reel caption's text component is built, handed its line limit. Answers
-     * the box for an open caption while Dark box behind open captions is on, and for a folded one
-     * while Dark box behind folded captions is, otherwise null, which keeps Facebook's look.
+     * The hook, right before a reel caption's text component is built, handed its line limit and its
+     * text. Answers the box for an open caption while Dark box behind open captions is on, and for a
+     * folded one while Dark box behind folded captions is, otherwise null, which keeps Facebook's look.
+     * A reel with no caption still builds an empty one, and a box behind it drew as a thin dark line
+     * under the reel's name (#490), so a caption with nothing to show gets null too.
      */
-    public static Drawable forCaption(int maxLines) {
+    public static Drawable forCaption(int maxLines, @Nullable CharSequence text) {
         try {
             HookStatus.bound(FAMILY, BACKDROP);
             boolean open = maxLines == Integer.MAX_VALUE;
             // A folded caption shows a few lines; a limit of none shows no text to put a box behind.
             boolean folded = !open && maxLines > 0;
-            if (!(open || folded) || !Utils.settingsReady()) return null;
+            if (!(open || folded) || !shows(text) || !Utils.settingsReady()) return null;
             if (open ? !Settings.DIM_OPEN_REEL_CAPTIONS.get() : !Settings.DIM_FOLDED_REEL_CAPTIONS.get()) return null;
             HookStatus.invoked(FAMILY);
             if (open) {
@@ -216,6 +242,17 @@ public final class CaptionBackdrop {
             HookStatus.threw(FAMILY, BACKDROP, failure);
             return null;
         }
+    }
+
+    /** Whether [text] has a character that draws: not null, and more than spaces, line breaks and zero-width marks. */
+    static boolean shows(@Nullable CharSequence text) {
+        if (text == null) return false;
+        for (int at = 0; at < text.length(); ) {
+            int c = Character.codePointAt(text, at);
+            if (!Character.isWhitespace(c) && !Character.isSpaceChar(c) && Character.getType(c) != Character.FORMAT) return true;
+            at += Character.charCount(c);
+        }
+        return false;
     }
 
     /**
@@ -316,34 +353,116 @@ public final class CaptionBackdrop {
      * The hook, right after the post header hands its text builder the name. Answers the box while
      * Dark box behind reel names is on and the header builds from a reel author's props, or while Dark
      * box behind feed video names is on and a feed post's header is drawn over its video; otherwise
-     * null.
+     * null. A name going into a column with the line under it gets null: the column takes the box
+     * ({@link #forNameBlock}).
      */
     public static Drawable forReelName() {
         try {
             HookStatus.bound(FAMILY, REEL_NAME);
-            boolean reel = Boolean.TRUE.equals(REEL_HEADER.get());
-            if (!reel && !Boolean.TRUE.equals(MEDIA_HEADER.get())) return null;
-            if (!Utils.settingsReady()) return null;
-            if (reel ? !Settings.DIM_REEL_NAMES.get() : !Settings.DIM_FEED_VIDEO_NAMES.get()) return null;
-            HookStatus.invoked(FAMILY);
-            if (reel) {
-                HookStatus.counted(FAMILY, REEL_NAMED);
-                if (!loggedReel) {
-                    loggedReel = true;
-                    Logger.printDebug(() -> "Full post text: a reel's name got its dark box");
-                }
-            } else {
-                HookStatus.counted(FAMILY, MEDIA_NAMED);
-                if (!loggedMedia) {
-                    loggedMedia = true;
-                    Logger.printDebug(() -> "Full post text: a name over a feed video got its dark box");
-                }
-            }
-            return box();
+            if (Boolean.TRUE.equals(NAME_BLOCK_STARTED.get())) return null;
+            return nameBox();
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, REEL_NAME, failure);
             return null;
         }
+    }
+
+    /**
+     * The hook, as a post header makes the list for the column that holds its name and the line under it
+     * (the date, "AI content", a song). The name built next leaves its box to that column (#490).
+     */
+    public static void nameBlock() {
+        NAME_BLOCK_STARTED.set(true);
+    }
+
+    /**
+     * The hook, right before the post header makes the column holding its name and the line under it.
+     * Answers the box the name alone would have got ({@link #forReelName}), so one box covers the name
+     * and its date line, with no edge running through the date (#490). Null when no column was started
+     * on this thread, or when the name's switch is off.
+     */
+    public static Drawable forNameBlock() {
+        try {
+            HookStatus.bound(FAMILY, NAME_BLOCK);
+            boolean started = Boolean.TRUE.equals(NAME_BLOCK_STARTED.get());
+            NAME_BLOCK_STARTED.set(false);
+            return started ? nameBox() : null;
+        } catch (Throwable failure) {
+            NAME_BLOCK_STARTED.set(false);
+            HookStatus.threw(FAMILY, NAME_BLOCK, failure);
+            return null;
+        }
+    }
+
+    /**
+     * The hook, right before the details of a video open in the full-screen player (a feed video, a Page's
+     * reel) take the post's date, the line under the caption (#490). Answers the box while Dark box behind
+     * open captions or Dark box behind folded captions is on, so the date gets the box the caption above it
+     * has, otherwise null, which keeps Facebook's look. The date goes into its own Litho style, so the box
+     * covers it alone and never doubles up on the caption's.
+     */
+    public static Drawable forViewerDate() {
+        try {
+            HookStatus.bound(FAMILY, VIEWER_DATE);
+            if (!Utils.settingsReady()) return null;
+            if (!Settings.DIM_OPEN_REEL_CAPTIONS.get() && !Settings.DIM_FOLDED_REEL_CAPTIONS.get()) return null;
+            HookStatus.invoked(FAMILY);
+            HookStatus.counted(FAMILY, VIEWER_DATED);
+            if (!loggedViewerDate) {
+                loggedViewerDate = true;
+                Logger.printDebug(() -> "Full post text: a full-screen video's date got its dark box");
+            }
+            return box();
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, VIEWER_DATE, failure);
+            return null;
+        }
+    }
+
+    /**
+     * The hook, right before a group reel's author line makes the column holding the group's name and the
+     * line under it (who posted it, when). Answers the box while Dark box behind reel names is on, otherwise
+     * null. A group reel draws that line with a component of its own, never through the post header the
+     * other reels' names go through, so {@link #forReelName} never sees it (#490).
+     */
+    public static Drawable forGroupName() {
+        try {
+            HookStatus.bound(FAMILY, GROUP_NAME);
+            if (!Utils.settingsReady() || !Settings.DIM_REEL_NAMES.get()) return null;
+            HookStatus.invoked(FAMILY);
+            HookStatus.counted(FAMILY, GROUP_NAMED);
+            if (!loggedGroup) {
+                loggedGroup = true;
+                Logger.printDebug(() -> "Full post text: a group reel's name got its dark box");
+            }
+            return box();
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, GROUP_NAME, failure);
+            return null;
+        }
+    }
+
+    /** The box for the name the header on this thread builds, or null: see {@link #forReelName}. */
+    private static Drawable nameBox() {
+        boolean reel = Boolean.TRUE.equals(REEL_HEADER.get());
+        if (!reel && !Boolean.TRUE.equals(MEDIA_HEADER.get())) return null;
+        if (!Utils.settingsReady()) return null;
+        if (reel ? !Settings.DIM_REEL_NAMES.get() : !Settings.DIM_FEED_VIDEO_NAMES.get()) return null;
+        HookStatus.invoked(FAMILY);
+        if (reel) {
+            HookStatus.counted(FAMILY, REEL_NAMED);
+            if (!loggedReel) {
+                loggedReel = true;
+                Logger.printDebug(() -> "Full post text: a reel's name got its dark box");
+            }
+        } else {
+            HookStatus.counted(FAMILY, MEDIA_NAMED);
+            if (!loggedMedia) {
+                loggedMedia = true;
+                Logger.printDebug(() -> "Full post text: a name over a feed video got its dark box");
+            }
+        }
+        return box();
     }
 
     /**

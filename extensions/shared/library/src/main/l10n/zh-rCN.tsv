@@ -67,7 +67,7 @@ Export settings	导出设置
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook 连续三次在启动后一分钟内崩溃或卡死，因此 Hushfacebook 已自行暂停。
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook 不再在后台下载广告或用于挑选广告的数据。
 Facebook doesn't show its ads inside other apps on this phone.	Facebook 不会在这部手机上的其他应用内展示它的广告。
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	深色模式和此页面使用壁纸中的颜色（Android 11 上为蓝色）。请在 Facebook 中开启深色模式后查看。
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	深色模式和此页面使用壁纸中的颜色（Android 11 上为蓝色）。关闭后无需重新修补即可恢复原来的颜色。重启 Facebook 后可看到更改。
 Hide Stories between posts	隐藏帖子之间的快拍
 Joining the picture and sound	正在合并画面和声音
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	�
 Hide profile notes	隐藏个人主页上的便签
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	隐藏头像上的便签气泡。下次打开个人主页时生效。
+Hide the gift button on profiles	隐藏个人主页上的礼物按钮
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	从别人的个人主页上移除送礼物按钮。下次打开个人主页时生效。
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	帖子下方的收藏按钮
 # context: summary of that switch; Like, Comment and Share are the buttons under a post
@@ -590,6 +592,8 @@ Hide Repost under posts	隐藏帖子下方的转发
 Hide Share under posts	隐藏帖子下方的分享
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	隐藏帖子下方的发送
+Hide Stars and gifts under posts	隐藏帖子下方的星星和礼物
+Hide Save under posts	隐藏帖子下方的保存
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	从动态中帖子下方的按钮行里移除这个按钮。其他按钮保留，所有按钮都隐藏的帖子不显示按钮行。
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
@@ -1000,6 +1004,7 @@ Hide the Create tab	隐藏“创建”标签页
 Hide the Explore tab	隐藏“探索”标签页
 Hide the Jobs tab	隐藏“招聘”标签页
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	从标签栏中移除此标签页。它的页面仍在菜单中。重启 Facebook 后可看到更改。
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	从标签栏中移除此标签页。它的页面仍在菜单中，除非你在“要隐藏的菜单图块”中选中它。重启 Facebook 后可看到更改。
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	开启“%1$s”后，Facebook 会打开主页，因为“%2$s”已不在标签栏上。你的选择仍会保存。
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	Reels 标签页（部分账号称为“视频”）上不显示圆点或新内容数量。其他标签页保持原样。
@@ -1097,7 +1102,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	短视频名字加深色底框
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	短视频底部的名字也会显示在同样的深色底框上，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	短视频底部的名字及其下方的日期和详情也会显示在同样的深色底框上，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	底框深浅
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -1239,15 +1244,6 @@ Turn off haptics	关闭触感反馈
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	停止 Facebook 在你点按或滑动时产生的轻微震动。你的键盘和手机震动不受影响。
 Turn off screen transitions	关闭屏幕转场
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	标签页、菜单、照片和在 Facebook 上方打开的页面会立即出现，而不是滑入或放大。在标签页之间滑动仍然有效。
-Unlock app icons	解锁应用图标
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	让你在 Facebook 的“应用图标”页面中选择 Facebook 为 Facebook Plus 保留的应用图标。“选择应用图标”这一行会打开该页面。即使你关闭此项，你的选择也会保留，所以要换回蓝色图标，请先选择蓝色的那个。
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	选择应用图标
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	打开 Facebook 的“应用图标”页面，即使在 Facebook 没有在“设置和隐私”中列出它的账号上也可以。
-Use the icon at the top of Home	使用主页顶部的图标
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	在主页顶部显示你选择的应用图标，而不是 Facebook 字标。需要开启“解锁应用图标”，并选择蓝色以外的图标。重启 Facebook 后可看到更改。
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	此 Facebook 版本没有“应用图标”页面。
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	画中画
 # context: summary of that switch
@@ -1459,7 +1455,7 @@ Adds an eye button to the top of each story while you view anonymously. Tap it t
 # context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
 Mark as seen	标为已看
 # context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
-Marked as seen. Tap again to undo.	已标为已看。再次点按可撤销。
+Marked as seen	已标为已看
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	已标为已看并已发送
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
@@ -1860,7 +1856,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	在后台继续播放
 Next reel in the background	在后台播放下一个 Reels
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	在后台播放的 Reels 结束后，会播放下一个，而不是重复播放同一个。会依次播放你离开时 Reels 已加载的内容。需开启“在后台继续播放”。
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	在后台播放的 Reels 结束后，会播放下一个，而不是重复播放同一个，Reels 也会继续加载更多。需开启“在后台继续播放”。
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	你点按开始播放的视频，或在 Reels 中滑到的短视频，在离开 Facebook 后仍会继续播放声音，可通过其通知暂停。滑走通知或接听电话会停止播放。
 # context: title of that notification when the video has none of its own
@@ -1978,8 +1974,10 @@ Show reactions on the Like button	在“赞”按钮上显示回应
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	把帖子的回应图标从按钮行的末尾移到“赞”按钮上，紧挨在数字前面。“赞”按钮仍像以前一样点赞和回应。在那里显示播放次数的视频会显示一个“赞”图标，你回应后则显示你自己的回应。“隐藏帖子上的回应预览”优先。更改会在之后显示的帖子上生效。
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	隐藏评论上的回应预览
+Hide reaction counts on comments	隐藏评论上的回应数
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	隐藏评论角落里叠放的回应图标。空间仍保留，因此点按它们原来所在的位置仍会打开回应列表。
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	隐藏评论上回应图标旁的数字。图标仍保留，点按它们仍会打开回应列表。
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	帖子菜单中下载优先
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
@@ -2102,6 +2100,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	在连播中显示已保存的帖子
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	连播中的已保存帖子会留在屏幕上，而不是被跳过。到帖子末尾时上滑可播放下一个已保存视频，在顶部时下滑可回到上一个。
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	按顺序播放动态中的 Reels 栏
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	从动态中的 Reels 栏打开的视频播完或向上滑动时，会接着播放这一栏中的下一个，而不是推荐的视频。向下滑动可返回上一个。
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	跳过“你还在看吗？”
 # context: summary of that switch; reels and videos go on to the next one by themselves
@@ -2143,6 +2145,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	在搜索中隐藏“你可能认识的人”
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	打开搜索时不再显示 Facebook 的“你可能认识的人”一栏。你的最近搜索和输入时的建议会保留。
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	在“好友”标签页中隐藏“你可能认识的人”
+Hides the People you may know list in the Friends tab. Your friend requests stay.	不再显示“好友”标签页中的“你可能认识的人”列表。你的好友请求会保留。
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	不保存搜索记录
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
@@ -2648,6 +2653,8 @@ After %1$d seconds	%1$d 秒后
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	点按时保持淡化
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	防烧屏保护淡化按钮后，无论在 Reels 点按或滑动什么，按钮都会保持淡化，下一个 Reel 也一样。按钮仍可使用，离开 Reels 后会恢复显示。
+Tap the video to bring them back	点按视频即可恢复
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	防烧屏保护淡化按钮后，点按视频即可恢复显示，且不会暂停视频。再次点按会照常暂停。
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	淡化程度
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	按钮、说明文字和栏淡化后仍显示的程度，按百分比计，范围 %1$s 到 %2$s。留空则使用 %3$s。
@@ -2720,7 +2727,9 @@ Your tab bar will go in this order: %1$s.	你的标签栏将按此顺序排列�
 Show only watched stories	只显示看过的快拍
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	快拍栏只保留你已经看过的快拍，方便你再找到某一个。关闭后可看到新的快拍。开启时“隐藏已看过的快拍”暂不生效。在 Facebook 下次加载快拍栏时生效。
 Show Posts in search	在搜索中显示帖子
+Show Videos in search	在搜索中显示视频
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	把“帖子”放回搜索结果上方的那一行，排在 Reels 之后，这样你可以只看与搜索内容相关的帖子。
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	把“视频”放进搜索结果上方的那一行，排在“帖子”旁边，这样你可以只看搜索内容的视频。
 Saved button in search	搜索中的收藏按钮
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	在搜索栏末尾放一个“收藏”按钮，点一下就能看到你收藏的帖子和视频。重启 Facebook 后可看到更改。
 Restore feed sound after opened videos	打开视频后恢复动态的声音
@@ -2814,12 +2823,16 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	快拍上的进度条
 Plain slide between people	不同人之间改为平移切换
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	滑到下一个或上一个人的快拍时，画面会平移过去，而不是像立方体那样转动。从你下一次滑动开始生效。
+Show the time on every story	在每条快拍上显示时间
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	没有显示发布时间的快拍（例如公共主页的快拍）会像好友的快拍一样在名字旁显示。从你打开的下一条快拍开始生效。
 Fade the story seek bar	淡化快拍进度条
 Story position	快拍播放位置
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	在视频快拍底部显示一条可以拖动的进度条，用来在快拍里前后移动。拖动时快拍会等你松手。在视频快拍上，“底部进度条”会给它让位。
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	开启“快拍上的进度条”后，进度条会在快拍开始或你最后一次触碰几秒后变淡。触碰或暂停就会恢复。
 Clean mode	简洁模式
 Clean mode button on reels	短视频上的简洁模式按钮
+Faint Clean mode button	淡化简洁模式按钮
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	Facebook 用于退出简洁模式的按钮会淡化显示，下方视频里的文字依然清晰可读。点按它仍然有效。
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	在短视频侧边的按钮中添加简洁模式按钮。点按它即可隐藏这些按钮，滑动时简洁模式会保持开启。Facebook 自带的简洁模式按钮可让它们重新显示。
 Open chats in Messenger	在 Messenger 中打开聊天
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	在 Messenger 应用中打开聊天，而不是在 Facebook 内打开，包括个人主页上的“发消息”按钮，前提是 Messenger 已安装并启用。没有 Messenger 时，聊天仍在 Facebook 中打开。更改后请重新启动 Facebook。
@@ -3141,7 +3154,7 @@ The time or date under the poster's name is bold, like the name.	发布者姓名
 Show full names	显示完整名字
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	帖子顶部的长名字会换到下一行，而不是以“...”结尾。放得下的名字仍只占一行。
 Dark box behind feed video names	动态消息视频名字的深色底框
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	当动态消息中的视频把发布者姓名显示在视频上时，这个名字也会显示在同样的深色底框上。更改在之后加载的帖子上生效。
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	当动态消息中的视频把发布者姓名显示在视频上时，这个名字和下方的日期也会显示在同样的深色底框上。更改在之后加载的帖子上生效。
 Quality settings	画质设置
 Request community note	申请社区笔记
 Something went wrong	出了点问题
@@ -3152,23 +3165,44 @@ All your notifications are marked as read.	你的所有通知都已标为已读�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	没有标记任何通知，因为 Facebook 没有告知当前登录的是谁。请先打开一次“通知”标签，然后再试。
 This build can't mark notifications as read.	此版本无法将通知标为已读。
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook 无法将你的通知标为已读。请稍后再试。
-# context: the account sharing rows in Hushfacebook settings, and their dialogs
-Export account	导出账户
-Copies this account's cookies and token to the clipboard.	将此账户的 Cookie 和令牌复制到剪贴板。
-Facebook hasn't built a session yet. Open a post, then try again.	Facebook 尚未建立会话。请打开一条帖子，然后重试。
-Import account	导入账户
-Signs in with an account you paste, or a file.	用你粘贴的账户或文件登录。
-Account copied	已复制账户
-Nothing was exported	没有导出任何内容
-This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	此 Facebook 没有可导出的账户。请先在其浏览器中打开一次 Facebook 链接，然后重试。
-Paste it into Import account on the other phone, or use the saved file.	粘贴到另一台手机的导入账户中，或使用已保存的文件。
-From file	从文件
-No account file on this phone.	此手机上没有任何账户文件。
-Your account	你的账户
-Copy	复制
-Copied.	已复制。
-There's nothing to save.	没有可保存的内容。
-That file couldn't be written.	无法写入该文件。
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	分享到 Facebook 聊天
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	在 Android 的分享菜单中加入 Facebook 聊天。分享到这里的照片或视频会保存到图库，文字会被复制，然后打开你的聊天，选一个发送即可。
+Share to Facebook chats is off.	分享到 Facebook 聊天已关闭。
+Nothing in it to send.	没有可发送的内容。
+Couldn't save it to your gallery.	无法保存到图库。
+Copied and saved. Paste and attach in a chat.	已复制并保存。请在聊天中粘贴并添加附件。
+Saved to your gallery. Attach it in a chat.	已保存到图库。请在聊天中添加附件。
+Copied. Pick a chat and paste it.	已复制。选择聊天后粘贴。
+Open your chats to pick one.	打开聊天列表选择一个。
+Post date after the caption	发布日期放在说明后
+With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	开启“在 Reels 上显示发布日期”时，把日期放在说明末尾，而不是名字下方那行（那里挤着歌曲和其他标签）。更改会从下一个 Reels 开始显示。
+Fill every reel	让所有 Reels 填满屏幕
+With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	开启“让 Reels 填满屏幕”时，每个 Reels 都会填满屏幕，即使边缘会被裁掉很多。适用于折叠屏手机和平板，这些设备上大多数 Reels 原本会保留黑边。
+Chat background	聊天背景
+Last chat's background	最近聊天的背景
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	所有聊天中消息后方区域的颜色代码（#RRGGBB），例如 #1E3A5F。填两个代码，例如 #1E3A5F #6A1B9A，会从一种颜色渐变到另一种。只有这部手机会显示。留空则使用 Facebook 的背景。
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	仅用于 %1$s 的颜色代码（#RRGGBB），例如 #1E3A5F。填两个代码会从一种颜色渐变到另一种。留空则使用上方的聊天背景。
+Chats keep Facebook's background. Type a color code to change it on this phone only.	聊天保持 Facebook 的背景。输入颜色代码即可仅在这部手机上更改。
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	聊天中消息后方为 %1$s，仅在这部手机上显示。聊天中的其他人不会收到通知。
+Open a chat, then come back here to give it a color of its own.	先打开一个聊天，再回到这里为它设置专属颜色。
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s 是你最近打开的聊天，使用上方的聊天背景。输入颜色代码即可为它设置专属颜色。
+%1$s, the last chat you opened, is %2$s.	%1$s 是你最近打开的聊天，颜色为 %2$s。
+Type one color code, or two for a fade from top to bottom.	输入一个颜色代码，或输入两个以从上到下渐变。
+Hide the AI content label on reels	隐藏 Reels 上的 AI 内容标签
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	去掉 Facebook 标记为用 AI 制作的 Reels 上的“AI 内容”或“AI 信息”标签。更改会从下一个 Reels 开始显示。
+The %1$s row will be set to %2$s.	%1$s 将设为 %2$s。
+The %1$s row will go back to its default.	%1$s 将恢复为默认值。
+Save files to Downloads	将文件保存到下载文件夹
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	你从帖子下载的 PDF、文档或其他文件会存入手机的下载文件夹，文件管理器可以打开它。关闭后，Facebook 会把它放在文件管理器无法访问的地方。
+Hide hashtags in reel captions	隐藏 Reels 说明中的话题标签
+Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	去掉 Reels 说明中的话题标签，比如末尾的一串标签。句子里的话题标签会保留。更改会从下一个 Reels 开始显示。
+Keep the keyboard closed when comments open	打开评论时不弹出键盘
+Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	打开评论时不会弹出键盘，即使帖子还没有评论也一样。想写评论时点一下评论框。
+Settings language	设置语言
+Same as Facebook	与 Facebook 相同
+Show feed reels uncropped	动态中的 Reels 不裁剪
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	动态中的 Reels 按原本比例显示完整画面，不再被裁成 Facebook 的框。更改后新显示的 Reels 会生效。
 Export token	导出令牌
 Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	显示此手机上已登录的每个账户的访问令牌。复制其中一个，或将全部保存为 JSON。
 Save JSON	保存 JSON

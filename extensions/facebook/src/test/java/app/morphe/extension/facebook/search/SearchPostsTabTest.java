@@ -46,7 +46,8 @@ public class SearchPostsTabTest {
 
     /** Stands in for Facebook's tab enum. */
     public enum Tab {
-        UNSET_OR_UNRECOGNIZED_ENUM_VALUE, BLENDED, BLENDED_STORIES, REELS, USERS, GROUPS
+        UNSET_OR_UNRECOGNIZED_ENUM_VALUE, BLENDED, BLENDED_STORIES, REELS, USERS, GROUPS, BLENDED_PHOTOS,
+        BLENDED_SHOWS_HOME
     }
 
     /** Stands in for a chip: selected, then its id and label, as Facebook makes them. */
@@ -70,6 +71,8 @@ public class SearchPostsTabTest {
         out.put("People", Tab.USERS);
         out.put("Groups", Tab.GROUPS);
         out.put("Reels", Tab.REELS);
+        out.put("Photos", Tab.BLENDED_PHOTOS);
+        out.put("Videos", Tab.BLENDED_SHOWS_HOME);
         return out;
     }
 
@@ -84,6 +87,8 @@ public class SearchPostsTabTest {
         SearchPostsTab.testLabels = null;
         PauseForTests.resume();
         Settings.SEARCH_POSTS_TAB.resetToDefault();
+        Settings.SEARCH_VIDEOS_TAB.resetToDefault();
+        SearchPostsTab.tapped = null;
         HookStatus.clear();
     }
 
@@ -194,6 +199,109 @@ public class SearchPostsTabTest {
         assertNull(SearchPostsTab.tabLabels(RuntimeEnvironment.getApplication()));
         List<Chip> served = row("All", "Reels");
         assertSame(served, SearchPostsTab.chips(served));
+    }
+
+    private static List<Chip> unmarked(String... labels) {
+        List<Chip> out = new ArrayList<>();
+        for (String label : labels) out.add(new Chip(false, label, label));
+        return out;
+    }
+
+    /**
+     * Videos (#483) follows Posts, labelled as the table labels its tab, and both are counted. The
+     * table's Photos label gets no chip: Facebook answers its photo tabs with nothing.
+     */
+    @Test
+    public void videosGoesInAfterPosts() {
+        Settings.SEARCH_VIDEOS_TAB.save(true);
+        List<Chip> served = row("All", "Reels", "People");
+        List<?> out = SearchPostsTab.chips(served);
+        assertEquals(Arrays.asList("All", "Reels", "Posts", "Videos", "People"), labelsOf(out));
+        assertSame("Facebook's own chips stay", served.get(2), out.get(4));
+        assertEquals("the id is the label", "Videos", ((Chip) out.get(3)).id);
+        String line = statusLine();
+        assertNotNull(line);
+        for (String counted : Arrays.asList(SearchPostsTab.ADDED, SearchPostsTab.VIDEOS_ADDED)) {
+            assertTrue(line, line.contains(counted + " 1"));
+        }
+    }
+
+    @Test
+    public void eachChipAnswersToItsOwnSwitch() {
+        Settings.SEARCH_POSTS_TAB.save(false);
+        Settings.SEARCH_VIDEOS_TAB.save(true);
+        assertEquals("with Posts off, Videos goes after Reels", Arrays.asList("All", "Reels", "Videos", "People"),
+                labelsOf(SearchPostsTab.chips(row("All", "Reels", "People"))));
+        assertEquals(Arrays.asList("All", "Videos", "People"), labelsOf(SearchPostsTab.chips(row("All", "People"))));
+        Settings.SEARCH_VIDEOS_TAB.save(false);
+        List<Chip> served = row("All", "Reels");
+        assertSame("both off, the row stays", served, SearchPostsTab.chips(served));
+    }
+
+    @Test
+    public void aChipTheRowHasIsNotAddedAgainAndTheNextFollowsIt() {
+        Settings.SEARCH_VIDEOS_TAB.save(true);
+        assertEquals(Arrays.asList("All", "Posts", "Videos", "Reels"),
+                labelsOf(SearchPostsTab.chips(row("All", "Posts", "Reels"))));
+        List<Chip> full = row("All", "Reels", "Posts", "Videos");
+        assertSame(full, SearchPostsTab.chips(full));
+    }
+
+    @Test
+    public void aTableWithoutVideosStillAddsPosts() {
+        Settings.SEARCH_VIDEOS_TAB.save(true);
+        Map<String, Tab> noVideos = labels();
+        noVideos.remove("Videos");
+        SearchPostsTab.testLabels = noVideos;
+        assertEquals(Arrays.asList("All", "Reels", "Posts"), labelsOf(SearchPostsTab.chips(row("All", "Reels"))));
+    }
+
+    /**
+     * A tap rebuilds the row from Facebook's own chips, so the added tab it opened comes with none
+     * marked. With one chip added that one is marked, and with both the one tapped last.
+     */
+    @Test
+    public void withNoneMarkedTheTappedChipIsMarked() {
+        Settings.SEARCH_VIDEOS_TAB.save(true);
+        SearchPostsTab.tapped("Videos");
+        List<?> out = SearchPostsTab.chips(unmarked("All", "Reels", "People"));
+        assertEquals(Arrays.asList("All", "Reels", "Posts", "Videos", "People"), labelsOf(out));
+        assertFalse("Posts was marked", ((Chip) out.get(2)).selected);
+        assertTrue("the tapped Videos wasn't marked", ((Chip) out.get(3)).selected);
+
+        SearchPostsTab.tapped("Posts");
+        out = SearchPostsTab.chips(unmarked("All", "Reels", "People"));
+        assertTrue("the tapped Posts wasn't marked", ((Chip) out.get(2)).selected);
+        assertFalse("Videos was marked", ((Chip) out.get(3)).selected);
+
+        SearchPostsTab.tapped("People");
+        for (Object chip : SearchPostsTab.chips(unmarked("All", "Reels", "People"))) {
+            assertFalse("a tap on Facebook's own chip marked an added one", ((Chip) chip).selected);
+        }
+
+        SearchPostsTab.tapped("Videos");
+        List<?> facebookMarked = SearchPostsTab.chips(row("All", "Reels", "People"));
+        assertFalse("a row Facebook marked got an added chip marked", ((Chip) facebookMarked.get(3)).selected);
+
+        Settings.SEARCH_VIDEOS_TAB.save(false);
+        assertTrue("with Posts alone it's marked whatever was tapped",
+                ((Chip) SearchPostsTab.chips(unmarked("All", "Reels")).get(2)).selected);
+    }
+
+    @Test
+    public void theTapHookKeepsTheLabel() {
+        SearchPostsTab.tapped("Videos");
+        assertEquals("Videos", SearchPostsTab.tapped);
+        SearchPostsTab.tapped(null);
+        assertNull(SearchPostsTab.tapped);
+        String line = statusLine();
+        assertNotNull(line);
+        assertTrue("the report doesn't count the tap hook as found: " + line, line.contains("1 found"));
+    }
+
+    @Test
+    public void videosIsOffByDefault() {
+        assertFalse(Settings.SEARCH_VIDEOS_TAB.get());
     }
 
     @Test

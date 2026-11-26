@@ -35,6 +35,14 @@ permission-removed com.facebook.receiver.permission.ACCESS
 # drops, so another app reaches nothing through it that a facebook.com link it opens couldn't.
 exported-added activity:app.morphe.extension.facebook.misc.OpenInFacebook
 
+# Facebook chats in the share menu (#568). A share target has to be exported for another app's
+# share sheet to list it, and the patch declares it disabled, so it's reachable only after the
+# Share to Facebook chats switch turns it on. It takes text, photos and videos. Text goes to the
+# clipboard. A photo or video is copied to the gallery only from a content address the sharing app
+# granted, never a file address and never one of Facebook's own providers (ShareToChats.ownProvider),
+# so another app can't have it copy Facebook's private files out. Then it opens Facebook's chats.
+exported-added activity:app.morphe.extension.facebook.chats.ShareToChats
+
 # GmsCore support, for phones without Google Play services. Push comes from microG-RE there, which
 # sends under its own app.revanced.android.c2dm names, so Facebook asks for that RECEIVE permission
 # in place of Google's. Nothing is granted that Google's name didn't grant, to a different sender.

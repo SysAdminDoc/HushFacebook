@@ -56,6 +56,7 @@ public class ReelDetailsLiftTest {
         Settings.TRANSLUCENT_BARS.resetToDefault();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
         TabBarScrollAway.forgetBuilt();
+        TabBarScrollAway.mainScreenCreated(null);
         HookStatus.clear();
     }
 
@@ -184,6 +185,28 @@ public class ReelDetailsLiftTest {
         assertTrue(screen.bars.details.held.isEmpty());
     }
 
+    /**
+     * #594: as the Reels tab first opens, Facebook makes the first rows before the list is in the
+     * window, and no row read the list until the second reel loaded. The first reel's name, caption
+     * and buttons sat behind the tab bar until then and jumped up a moment after showing. The list
+     * is found by its id on the first frame now.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aListNoRowHasReadYetIsFoundOnTheFirstFrame() {
+        Settings.TRANSLUCENT_BARS.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        Reels reels = new Reels(screen, 1600);
+        TabBarScrollAway.reelsList = new WeakReference<>(null);
+        reels.list.setId(0x7f0a2358);
+        TabBarScrollAway.listIdForTests = 0x7f0a2358;
+        TabBarScrollAway.mainScreenCreated(screen.activity);
+
+        screen.bars.update();
+        assertEquals("lifted on the first frame", -160f, reels.shown.details.getTranslationY(), 0f);
+        assertSame("and remembered", reels.list, TabBarScrollAway.reelsList.get());
+    }
+
     @Test
     @Config(qualifiers = "w720dp-h1800dp")
     public void roundedTabBarLiftsThemTooAndKeepsFacebooksOwnMove() {
@@ -215,6 +238,32 @@ public class ReelDetailsLiftTest {
         assertEquals("Litho's slide lands where it meant, under the lift", -98f, name.getTranslationY(), 0f);
         screen.bars.update();
         assertEquals(-98f, name.getTranslationY(), 0f);
+        assertEquals(-160f, reels.shown.details.getTranslationY(), 0f);
+    }
+
+    /**
+     * #503: a row taller than its list, as rows made ahead are before the page runs under the tab
+     * bar, or while Facebook keeps putting the page's gap back, was lifted only as far as the list's
+     * bottom. With the list still stopping at the bar that's nothing, and the name, caption and
+     * buttons stayed cut off behind it. The row's own bottom counts, so they sit above the bar.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aRowTallerThanItsListStillHasItsDetailsAboveTheBar() {
+        Settings.TRANSLUCENT_BARS.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        Reels reels = new Reels(screen, 1600);
+        ((FrameLayout.LayoutParams) reels.list.getLayoutParams()).bottomMargin = 160;
+        reels.list.requestLayout();
+        screen.layOut();
+        int[] at = new int[2];
+        screen.tabBar.getLocationInWindow(at);
+        int tabsTop = at[1];
+        assertEquals("the page still stops at the tab bar", tabsTop, bottomOnScreen(reels.list));
+        assertEquals("the row runs on past it", tabsTop + 160, bottomOnScreen(reels.shown.row));
+
+        screen.bars.details.place(reels.list, tabsTop);
+        assertEquals("the buttons end where the tabs start", tabsTop, bottomOnScreen(reels.shown.like));
         assertEquals(-160f, reels.shown.details.getTranslationY(), 0f);
     }
 

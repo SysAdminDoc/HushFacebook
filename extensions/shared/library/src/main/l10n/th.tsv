@@ -67,7 +67,7 @@ Export settings	ส่งออกการตั้งค่า
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook ขัดข้องหรือค้างภายในหนึ่งนาทีหลังเริ่มทำงานติดต่อกัน 3 ครั้ง Hushfacebook จึงหยุดการทำงานชั่วคราวโดยอัตโนมัติ
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook จะไม่ดาวน์โหลดโฆษณาหรือข้อมูลที่ใช้สำหรับเลือกโฆษณาในเบื้องหลังอีกต่อไป
 Facebook doesn't show its ads inside other apps on this phone.	Facebook จะไม่แสดงโฆษณาของตนภายในแอปอื่นๆ บนโทรศัพท์เครื่องนี้
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	โหมดมืดและหน้าจอนี้จะใช้สีจากวอลเปเปอร์ของคุณ (สีน้ำเงินบน Android 11) เปิดโหมดมืดใน Facebook เพื่อดูผลลัพธ์
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn it off to go back to the old colors without patching again. Restart Facebook to see the change.	โหมดมืดและหน้าจอนี้จะใช้สีจากวอลเปเปอร์ของคุณ (สีน้ำเงินบน Android 11) ปิดเพื่อกลับไปใช้สีเดิมโดยไม่ต้องแพตช์ใหม่ เริ่มต้น Facebook ใหม่อีกครั้งเพื่อดูการเปลี่ยนแปลง
 Hide Stories between posts	ซ่อนสตอรี่ระหว่างโพสต์
 Joining the picture and sound	กำลังรวมภาพและเสียงเข้าด้วยกัน
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	�
 Hide profile notes	ซ่อนโน้ตบนโปรไฟล์
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	ซ่อนบับเบิลโน้ตบนรูปโปรไฟล์ จะมีผลในครั้งถัดไปที่คุณเปิดโปรไฟล์
+Hide the gift button on profiles	ซ่อนปุ่มของขวัญในโปรไฟล์
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	นำปุ่มส่งของขวัญออกจากโปรไฟล์ของคนอื่น จะมีผลในครั้งถัดไปที่คุณเปิดโปรไฟล์
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	ปุ่มบันทึกใต้โพสต์
 # context: summary of that switch; Like, Comment and Share are the buttons under a post
@@ -590,6 +592,8 @@ Hide Repost under posts	ซ่อน "รีโพสต์" ใต้โพส�
 Hide Share under posts	ซ่อน "แชร์" ใต้โพสต์
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	ซ่อน "ส่ง" ใต้โพสต์
+Hide Stars and gifts under posts	ซ่อน "ดาว" และของขวัญใต้โพสต์
+Hide Save under posts	ซ่อน "บันทึก" ใต้โพสต์
 # context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	นำปุ่มนี้ออกจากแถวใต้โพสต์ในฟีด ปุ่มอื่นๆ จะยังคงอยู่ และโพสต์ที่ซ่อนปุ่มทั้งหมดจะไม่แสดงแถวปุ่ม
 # context: switch title under News feed; the buttons are Like, Comment, Share and the others in the row under a post
@@ -1003,6 +1007,7 @@ Hide the Create tab	ซ่อนแท็บสร้าง
 Hide the Explore tab	ซ่อนแท็บสำรวจ
 Hide the Jobs tab	ซ่อนแท็บงาน
 Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	นำแท็บนี้ออกจากแถบแท็บ แต่หน้าของแท็บนี้จะยังคงอยู่ในเมนู โปรดรีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
+Removes this tab from the tab bar. Its page is still in the Menu, unless you pick it in Menu tiles to hide. Restart Facebook to see the change.	นำแท็บนี้ออกจากแถบแท็บ แต่หน้าของแท็บนี้จะยังคงอยู่ในเมนู เว้นแต่คุณจะเลือกไว้ใน ไทล์เมนูที่ต้องการซ่อน โปรดรีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
 Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	Facebook จะเปิดไปที่หน้าหลักในขณะที่เปิด "%1$s" เนื่องจาก %2$s ไม่ได้อยู่บนแถบแท็บ ตัวเลือกของคุณจะยังคงได้รับการบันทึกไว้
 # context: summary of that switch; Video is Facebook's name for the tab on some accounts
 No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	ไม่แสดงจุดหรือจำนวนรายการใหม่บนแท็บ Reels ซึ่งบางบัญชีจะเรียกว่าแท็บวิดีโอ ส่วนแท็บอื่นๆ จะยังคงแสดงตามปกติ
@@ -1100,7 +1105,7 @@ A folded reel caption, the short one with more at the end, sits on the same dark
 # context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
 Dark box behind reel names	กล่องสีเข้มด้านหลังชื่อใน Reels
 # context: summary of that switch
-The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	ชื่อที่ด้านล่างของ Reels จะอยู่บนกล่องสีเข้มเดียวกัน จึงอ่านง่ายบนวิดีโอที่สว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reels ถัดไป
+The name at the bottom of a reel, with the date and details under it, sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	ชื่อที่ด้านล่างของ Reels พร้อมวันที่และรายละเอียดด้านล่างชื่อ จะอยู่บนกล่องสีเข้มเดียวกัน จึงอ่านง่ายบนวิดีโอที่สว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reels ถัดไป
 # context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
 Box darkness	ความเข้มของกล่อง
 # context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
@@ -1243,15 +1248,6 @@ Turn off haptics	ปิดการตอบสนองแบบสัมผั
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	หยุดการสั่นเตือนเล็กๆ ที่ Facebook สร้างขึ้นเมื่อคุณแตะหรือปัด การสั่นของแป้นพิมพ์และโทรศัพท์จะไม่ได้รับผลกระทบ
 Turn off screen transitions	ปิดเอฟเฟกต์การเปลี่ยนหน้าจอ
 Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	แท็บ เมนู รูปภาพ และหน้าจอที่เปิดขึ้นมาบน Facebook จะปรากฏขึ้นทันทีแทนที่จะเลื่อนหรือซูมเข้ามา การปัดสลับระหว่างแท็บจะยังคงใช้งานได้
-Unlock app icons	ปลดล็อกไอคอนแอป
-Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	ช่วยให้คุณเลือกไอคอนแอปที่ Facebook สงวนไว้สำหรับ Facebook Plus ได้ในหน้า "ไอคอนแอป" ของ Facebook โดยแถว "เลือกไอคอนแอป" จะเปิดหน้านั้น การเลือกของคุณจะยังคงอยู่แม้จะปิดตัวเลือกนี้ ดังนั้นโปรดเลือกไอคอนสีน้ำเงินก่อนเพื่อเปลี่ยนกลับ
-# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
-Pick an app icon	เลือกไอคอนแอป
-Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	เปิดหน้าไอคอนแอปของ Facebook แม้กระทั่งในบัญชีที่ Facebook ไม่ได้ระบุไว้ในการตั้งค่าและความเป็นส่วนตัว
-Use the icon at the top of Home	ใช้ไอคอนที่ด้านบนของหน้าหลัก
-Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	แสดงไอคอนแอปที่คุณเลือกไว้ที่ด้านบนของหน้าหลักแทนคำว่า Facebook จำเป็นต้องเปิด "ปลดล็อกไอคอนแอป" และเลือกไอคอนอื่นที่ไม่ใช่สีน้ำเงิน รีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
-# context: toast when the row above finds no App icon page in this Facebook build
-This Facebook build has no App icon page.	เวอร์ชันบิลด์ของ Facebook นี้ไม่มีหน้าไอคอนแอป
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	การแสดงภาพซ้อนภาพ
 # context: summary of that switch
@@ -1463,7 +1459,7 @@ Adds an eye button to the top of each story while you view anonymously. Tap it t
 # context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
 Mark as seen	ทำเครื่องหมายว่าดูแล้ว
 # context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
-Marked as seen. Tap again to undo.	ทำเครื่องหมายว่าดูแล้ว แตะอีกครั้งเพื่อเลิกทำ
+Marked as seen	ทำเครื่องหมายว่าดูแล้ว
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	ทำเครื่องหมายว่าดูแล้วและส่งแล้ว
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
@@ -1865,7 +1861,7 @@ Shows a small button at the left edge of a reel or video that has the window rea
 # context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
 Keep playing in the background	เล่นต่อในเบื้องหลัง
 Next reel in the background	Reel ถัดไปในเบื้องหลัง
-When a reel playing in the background ends, the next reel plays instead of the same one again. It goes through the reels Reels had loaded when you left. Works with Keep playing in the background on.	เมื่อ Reel ที่เล่นในเบื้องหลังจบ Reel ถัดไปจะเล่นแทนการเล่นซ้ำ Reel เดิม โดยจะเล่นไปตาม Reel ที่ Reels โหลดไว้ตอนที่คุณออก ใช้งานได้เมื่อเปิด "เล่นต่อในเบื้องหลัง"
+When a reel playing in the background ends, the next reel plays instead of the same one again, and Reels keeps loading more as it goes. Works with Keep playing in the background on.	เมื่อ Reel ที่เล่นในเบื้องหลังจบ Reel ถัดไปจะเล่นแทนการเล่นซ้ำ Reel เดิม และ Reels จะโหลดเพิ่มไปเรื่อย ๆ ใช้งานได้เมื่อเปิด "เล่นต่อในเบื้องหลัง"
 # context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
 A video you started with a tap, or a reel you swiped to in Reels, keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	วิดีโอที่คุณแตะเพื่อเริ่มเล่น หรือรีลที่คุณปัดไปถึงใน Reels จะยังคงมีเสียงหลังจากคุณออกจาก Facebook และสามารถหยุดชั่วคราวได้จากการแจ้งเตือนของวิดีโอนั้น การปัดการแจ้งเตือนทิ้งหรือการรับสายจะหยุดการเล่น
 # context: title of that notification when the video has none of its own
@@ -1983,8 +1979,10 @@ Show reactions on the Like button	แสดงความรู้สึกบ�
 Moves a post's reaction faces from the end of its button row onto the Like button, right before the count. The Like button likes and reacts as before. A video showing its views there gets one Like face, or your own reaction once you react. Hide the reaction preview on posts overrules it. A change shows on the posts drawn after it.	ย้ายไอคอนความรู้สึกของโพสต์จากท้ายแถวปุ่มไปไว้บนปุ่ม "ถูกใจ" ก่อนตัวเลขพอดี ปุ่ม "ถูกใจ" ยังกดถูกใจและแสดงความรู้สึกได้เหมือนเดิม วิดีโอที่แสดงยอดการดูตรงนั้นจะได้ไอคอนถูกใจหนึ่งอัน หรือความรู้สึกของคุณเองเมื่อคุณแสดงความรู้สึก "ซ่อนการแสดงตัวอย่างความรู้สึกบนโพสต์" มีผลเหนือกว่า การเปลี่ยนแปลงจะเห็นได้ในโพสต์ที่แสดงหลังจากนั้น
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	ซ่อนการแสดงตัวอย่างความรู้สึกในความคิดเห็น
+Hide reaction counts on comments	ซ่อนจำนวนความรู้สึกในความคิดเห็น
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	ซ่อนไอคอนความรู้สึกที่ซ้อนกันที่มุมของความคิดเห็น โดยพื้นที่ว่างจะยังคงอยู่ ดังนั้นการแตะบริเวณนั้นจะยังคงเปิดรายการความรู้สึก
+Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	ซ่อนตัวเลขข้างไอคอนความรู้สึกในความคิดเห็น โดยไอคอนจะยังคงอยู่ และการแตะไอคอนจะยังคงเปิดรายการความรู้สึก
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	ดาวน์โหลดเป็นอันดับแรกในเมนูโพสต์
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
@@ -2107,6 +2105,10 @@ A saved video that ends stays on screen instead of opening the next one. Swipe u
 Show saved posts in the row	แสดงโพสต์ที่บันทึกไว้ในลำดับ
 # context: summary of that switch
 A saved post in the row stays on screen instead of being skipped. Swipe up past its end for the next saved video, or down past its top for the one before.	โพสต์ที่บันทึกไว้ในลำดับจะอยู่บนหน้าจอแทนที่จะถูกข้าม ปัดขึ้นเมื่อถึงท้ายโพสต์เพื่อไปวิดีโอที่บันทึกไว้ถัดไป หรือปัดลงเมื่ออยู่บนสุดเพื่อกลับไปรายการก่อนหน้า
+# context: switch title under Reels and Watch; on, a reel opened from a Reels row in the news feed (the strip of reels you scroll sideways) goes on to the next reel in that row instead of a suggested reel
+Play the feed's Reels row in order	เล่นแถว Reels ในฟีดตามลำดับ
+# context: summary of that switch; the feed is Facebook's News Feed, so use Facebook's name for it in your language if you know it
+A reel you open from a Reels row in your feed goes on to the next one in that row when it ends or when you swipe up, instead of a suggested reel. Swipe down to go back one.	Reel ที่คุณเปิดจากแถว Reels ในฟีดจะเล่นต่อไปยัง Reel ถัดไปในแถวนั้นเมื่อเล่นจบหรือเมื่อคุณปัดขึ้น แทนที่จะเป็น Reel แนะนำ ปัดลงเพื่อย้อนกลับไป Reel ก่อนหน้า
 # context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
 Skip "Are you still watching?"	ข้าม "คุณยังดูอยู่หรือไม่"
 # context: summary of that switch; reels and videos go on to the next one by themselves
@@ -2148,6 +2150,9 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Hide "People you may know" in search	ซ่อน "คนที่คุณอาจรู้จัก" ในการค้นหา
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	ซ่อนแถว "คนที่คุณอาจรู้จัก" ที่ Facebook แสดงเมื่อคุณเปิดการค้นหา การค้นหาล่าสุดของคุณและคำแนะนำขณะพิมพ์จะยังคงอยู่
+# context: switch title under News feed; People you may know is the list of friend suggestions Facebook shows in its Friends tab below your friend requests, as in Hide "People you may know"
+Hide "People you may know" in the Friends tab	ซ่อน "คนที่คุณอาจรู้จัก" ในแท็บเพื่อน
+Hides the People you may know list in the Friends tab. Your friend requests stay.	ซ่อนรายการ "คนที่คุณอาจรู้จัก" ในแท็บเพื่อน คำขอเป็นเพื่อนของคุณจะยังคงอยู่
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	ไม่บันทึกประวัติการค้นหา
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
@@ -2653,6 +2658,8 @@ After %1$d seconds	หลังจาก %1$d วินาที
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	คงความหรี่แสงไว้เมื่อฉันแตะ
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	เมื่อการป้องกันหน้าจอเบิร์นทำให้ปุ่มจางลงแล้ว ปุ่มจะยังคงจางอยู่บน Reels ไม่ว่าคุณจะแตะหรือปัด รวมถึงใน Reel ถัดไปด้วย ปุ่มยังคงทำงานได้ตามปกติ การออกจาก Reels จะเรียกปุ่มกลับมา
+Tap the video to bring them back	แตะวิดีโอเพื่อเรียกปุ่มกลับมา
+Once Burn-in guard fades the buttons, a tap on the video brings them back without pausing it. The next tap pauses as usual.	เมื่อการป้องกันหน้าจอเบิร์นทำให้ปุ่มจางลงแล้ว การแตะที่วิดีโอจะเรียกปุ่มกลับมาโดยไม่หยุดวิดีโอชั่วคราว การแตะครั้งถัดไปจะหยุดชั่วคราวตามปกติ
 # context: Reels: Burn-in guard's row for how much of the dimmed buttons, caption and bars still shows, a percent typed in
 Dim to	หรี่แสงเหลือ
 How much of the buttons, caption and bars still shows once they dim, in percent, from %1$s to %2$s. Leave it blank for %3$s.	ปุ่ม คำบรรยาย และแถบต่างๆ ยังมองเห็นได้มากแค่ไหนหลังหรี่แสง เป็นเปอร์เซ็นต์ ตั้งแต่ %1$s ถึง %2$s เว้นว่างไว้เพื่อใช้ %3$s
@@ -2725,7 +2732,9 @@ Your tab bar will go in this order: %1$s.	แถบแท็บของคุ�
 Show only watched stories	แสดงเฉพาะสตอรี่ที่ดูแล้ว
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	ถาดสตอรี่จะเก็บเฉพาะสตอรี่ที่คุณดูแล้วเพื่อให้คุณค้นหาอีกครั้งได้ ปิดตัวเลือกนี้เพื่อดูสตอรี่ใหม่ ตัวเลือก "ซ่อนสตอรี่ที่ดูแล้ว" จะหยุดทำงานชั่วคราวขณะเปิดใช้งานตัวเลือกนี้ จะมีผลเมื่อ Facebook โหลดถาดสตอรี่ในครั้งต่อไป
 Show Posts in search	แสดงโพสต์ในการค้นหา
+Show Videos in search	แสดงวิดีโอในการค้นหา
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	นำแท็บ "โพสต์" กลับมาไว้ในแถวเหนือผลการค้นหาต่อจาก Reels เพื่อให้คุณดูเฉพาะโพสต์สำหรับสิ่งที่คุณค้นหาได้
+Puts Videos in the row over search results, next to Posts, so you can see only videos for what you searched.	ใส่ วิดีโอ ในแถวเหนือผลการค้นหา ถัดจาก โพสต์ เพื่อให้คุณดูเฉพาะวิดีโอของสิ่งที่ค้นหา
 Saved button in search	ปุ่ม "ที่บันทึกไว้" ในการค้นหา
 Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	เพิ่มปุ่ม "ที่บันทึกไว้" ที่ท้ายแถบค้นหา เพื่อให้คุณเปิดโพสต์และวิดีโอที่บันทึกไว้ได้ด้วยการแตะเพียงครั้งเดียว รีสตาร์ท Facebook เพื่อดูการเปลี่ยนแปลง
 Restore feed sound after opened videos	คืนค่าเสียงของฟีดหลังจากเปิดดูวิดีโอ
@@ -2819,12 +2828,16 @@ Shows a thin bar along the bottom of a story that fills as it plays, like the on
 Seek bar on stories	แถบเลื่อนในสตอรี่
 Plain slide between people	เลื่อนแบบธรรมดาระหว่างแต่ละคน
 Swiping to the next or previous person's stories slides them across instead of turning them like a cube. Applies from your next swipe.	เมื่อปัดไปยังสตอรี่ของคนถัดไปหรือคนก่อนหน้า สตอรี่จะเลื่อนผ่านไปด้านข้างแทนการหมุนแบบลูกบาศก์ จะมีผลตั้งแต่การปัดครั้งถัดไป
+Show the time on every story	แสดงเวลาบนทุกสตอรี่
+Stories that leave out how long ago they were posted, like a Page's, show it next to the name the way a friend's story does. Applies from the next story you open.	สตอรี่ที่ไม่บอกว่าโพสต์มานานเท่าไร เช่น สตอรี่ของเพจ จะแสดงเวลาข้างชื่อเหมือนสตอรี่ของเพื่อน มีผลตั้งแต่สตอรี่ถัดไปที่คุณเปิด
 Fade the story seek bar	จางแถบเลื่อนในสตอรี่
 Story position	ตำแหน่งในสตอรี่
 Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	แสดงแถบที่ด้านล่างของสตอรี่วิดีโอที่คุณสามารถลากเพื่อเลื่อนดูได้ โดยสตอรี่จะหยุดรอขณะที่คุณลาก ทั้งนี้ "แถบแสดงความคืบหน้าที่ด้านล่าง" จะเปิดทางให้แถบนี้ในสตอรี่วิดีโอ
 With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	เมื่อเปิดใช้งาน "แถบเลื่อนในสตอรี่" แถบจะจางลงหลังจากสตอรี่เริ่มเล่นหรือสัมผัสครั้งล่าสุดไม่กี่วินาที สัมผัสหรือหยุดชั่วคราวเพื่อเรียกแถบกลับมา
 Clean mode	โหมดสะอาด
 Clean mode button on reels	ปุ่มโหมดสะอาดใน Reels
+Faint Clean mode button	ปุ่มโหมดสะอาดแบบจาง
+Facebook's button for leaving Clean mode shows faint, so the text in the video under it stays readable. It still works when you tap it.	ปุ่มของ Facebook สำหรับออกจากโหมดสะอาดจะแสดงแบบจาง ข้อความในวิดีโอที่อยู่ใต้ปุ่มจึงยังอ่านได้ ปุ่มยังใช้งานได้เมื่อคุณแตะ
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	เพิ่มปุ่มโหมดสะอาดในแถบปุ่มด้านข้างของ Reel แตะปุ่มเพื่อซ่อน และโหมดสะอาดจะยังคงเปิดใช้งานอยู่เมื่อคุณปัด ปุ่มโหมดสะอาดของ Facebook เองจะเรียกปุ่มเหล่านั้นกลับมา
 Open chats in Messenger	เปิดแชทใน Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	เปิดแชทในแอป Messenger แทนภายใน Facebook รวมถึงปุ่มส่งข้อความบนโปรไฟล์ ตราบใดที่ Messenger ติดตั้งและเปิดใช้งานอยู่ หากไม่มี Messenger แชทจะยังคงเปิดใน Facebook เริ่มระบบ Facebook ใหม่อีกครั้งหลังจากเปลี่ยนการตั้งค่านี้
@@ -3146,7 +3159,7 @@ The time or date under the poster's name is bold, like the name.	เวลาห
 Show full names	แสดงชื่อเต็ม
 A long name at the top of a post wraps onto the next line instead of ending in "...". A name that fits still takes one line.	ชื่อยาวที่ด้านบนของโพสต์จะขึ้นบรรทัดใหม่แทนการลงท้ายด้วย "..." ส่วนชื่อที่พอดีจะยังอยู่ในบรรทัดเดียว
 Dark box behind feed video names	กล่องสีเข้มหลังชื่อบนวิดีโอในฟีด
-When a video in your feed has the poster's name on top of the video, that name sits on the same dark box. A change shows on the posts drawn after it.	เมื่อวิดีโอในฟีดข่าวแสดงชื่อของผู้โพสต์ทับอยู่บนวิดีโอ ชื่อนั้นจะอยู่บนกล่องสีเข้มเดียวกัน การเปลี่ยนแปลงจะเห็นในโพสต์ที่โหลดหลังจากนั้น
+When a video in your feed has the poster's name on top of the video, that name and the date under it sit on the same dark box. A change shows on the posts drawn after it.	เมื่อวิดีโอในฟีดข่าวแสดงชื่อของผู้โพสต์ทับอยู่บนวิดีโอ ชื่อนั้นและวันที่ด้านล่างจะอยู่บนกล่องสีเข้มเดียวกัน การเปลี่ยนแปลงจะเห็นในโพสต์ที่โหลดหลังจากนั้น
 Quality settings	การตั้งค่าคุณภาพ
 Request community note	ขอบันทึกจากชุมชน
 Something went wrong	เกิดข้อผิดพลาดบางอย่าง
@@ -3157,23 +3170,44 @@ All your notifications are marked as read.	ทำเครื่องหมา�
 Nothing was marked, since Facebook didn't say who's signed in. Open the Notifications tab once, then try again.	ยังไม่ได้ทำเครื่องหมายอะไร เพราะ Facebook ไม่ได้บอกว่าใครลงชื่อเข้าใช้อยู่ เปิดแท็บการแจ้งเตือนหนึ่งครั้ง แล้วลองอีกครั้ง
 This build can't mark notifications as read.	เวอร์ชันบิลด์นี้ทำเครื่องหมายว่าอ่านการแจ้งเตือนแล้วไม่ได้
 Facebook couldn't mark your notifications as read. Try again in a moment.	Facebook ทำเครื่องหมายว่าอ่านการแจ้งเตือนของคุณแล้วไม่ได้ โปรดลองอีกครั้งในอีกสักครู่
-# context: the account sharing rows in Hushfacebook settings, and their dialogs
-Export account	ส่งออกบัญชี
-Copies this account's cookies and token to the clipboard.	คัดลอกคุกกี้และโทเคนของบัญชีนี้ไปยังคลิปบอร์ด
-Facebook hasn't built a session yet. Open a post, then try again.	Facebook ยังไม่ได้สร้างเซสชัน เปิดโพสต์หนึ่งครั้ง แล้วลองใหม่
-Import account	นำเข้าบัญชี
-Signs in with an account you paste, or a file.	ลงชื่อเข้าใช้ด้วยบัญชีที่วาง หรือไฟล์
-Account copied	คัดลอกบัญชีแล้ว
-Nothing was exported	ไม่มีอะไรถูกส่งออก
-This Facebook has no account to export. Open a Facebook link in its browser once, then try again.	Facebook นี้ไม่มีบัญชีให้ส่งออก เปิดลิงก์ Facebook ในเบราว์เซอร์ของมันหนึ่งครั้ง แล้วลองใหม่
-Paste it into Import account on the other phone, or use the saved file.	วางในนำเข้าบัญชีบนโทรศัพท์อีกเครื่อง หรือใช้ไฟล์ที่บันทึกไว้
-From file	จากไฟล์
-No account file on this phone.	ไม่มีไฟล์บัญชีบนโทรศัพท์นี้
-Your account	บัญชีของคุณ
-Copy	คัดลอก
-Copied.	คัดลอกแล้ว
-There's nothing to save.	ไม่มีอะไรให้บันทึก
-That file couldn't be written.	เขียนไฟล์นั้นไม่ได้
+# context: Share to Facebook chats, a switch on the Chats page and the share target it adds; the notes are short toasts
+Share to Facebook chats	แชร์ไปยังแชท Facebook
+Adds Facebook chats to Android's share menu. A photo or video you share there is saved to your gallery and text is copied, then your chats open so you can pick one and send it.	เพิ่มแชท Facebook ในเมนูแชร์ของ Android รูปภาพหรือวิดีโอที่คุณแชร์ไปที่นั่นจะถูกบันทึกลงในแกลเลอรีและข้อความจะถูกคัดลอก จากนั้นแชทของคุณจะเปิดขึ้นให้คุณเลือกแชทแล้วส่ง
+Share to Facebook chats is off.	แชร์ไปยังแชท Facebook ปิดอยู่
+Nothing in it to send.	ไม่มีอะไรให้ส่ง
+Couldn't save it to your gallery.	บันทึกลงแกลเลอรีไม่ได้
+Copied and saved. Paste and attach in a chat.	คัดลอกและบันทึกแล้ว วางและแนบในแชท
+Saved to your gallery. Attach it in a chat.	บันทึกลงแกลเลอรีแล้ว แนบในแชทได้เลย
+Copied. Pick a chat and paste it.	คัดลอกแล้ว เลือกแชทแล้ววาง
+Open your chats to pick one.	เปิดแชทเพื่อเลือกหนึ่งแชท
+Post date after the caption	วันที่โพสต์หลังคำบรรยาย
+With Show the post date on reels on, puts the date at the end of the caption instead of under the name, where the song and other labels crowd it. A change shows from the next reel.	เมื่อเปิด "แสดงวันที่โพสต์ใน Reels" จะแสดงวันที่ท้ายคำบรรยายแทนใต้ชื่อ ซึ่งมีเพลงและป้ายอื่นๆ แย่งที่อยู่ การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
+Fill every reel	ให้ Reels ทุกอันเต็มหน้าจอ
+With Fill the screen with reels on, every reel fills the screen, even when that cuts a lot off the edges. Made for foldables and tablets, where most reels would keep their bars.	เมื่อเปิด "ให้ Reels เต็มหน้าจอ" Reels ทุกอันจะเต็มหน้าจอ แม้จะต้องตัดขอบออกไปมาก เหมาะสำหรับมือถือพับได้และแท็บเล็ต ที่ Reels ส่วนใหญ่จะยังมีแถบสีดำอยู่
+Chat background	พื้นหลังแชท
+Last chat's background	พื้นหลังของแชทล่าสุด
+A color code (#RRGGBB) for the space behind the messages in every chat, like #1E3A5F. Two codes, like #1E3A5F #6A1B9A, fade from one to the other. Only this phone sees it. Leave it blank for Facebook's own.	รหัสสี (#RRGGBB) สำหรับพื้นที่ด้านหลังข้อความในทุกแชท เช่น #1E3A5F ใส่สองรหัส เช่น #1E3A5F #6A1B9A เพื่อไล่สีจากสีหนึ่งไปอีกสีหนึ่ง แสดงเฉพาะบนโทรศัพท์เครื่องนี้ เว้นว่างไว้เพื่อใช้พื้นหลังของ Facebook
+A color code (#RRGGBB) for %1$s only, like #1E3A5F. Two codes fade from one to the other. Leave it blank and it takes the chat background above.	รหัสสี (#RRGGBB) สำหรับ %1$s เท่านั้น เช่น #1E3A5F ใส่สองรหัสเพื่อไล่สีจากสีหนึ่งไปอีกสีหนึ่ง เว้นว่างไว้เพื่อใช้พื้นหลังแชทด้านบน
+Chats keep Facebook's background. Type a color code to change it on this phone only.	แชทจะใช้พื้นหลังของ Facebook ต่อไป พิมพ์รหัสสีเพื่อเปลี่ยนบนโทรศัพท์เครื่องนี้เท่านั้น
+Chats are %1$s behind the messages, on this phone only. Nobody in the chat is told.	ด้านหลังข้อความในแชทเป็นสี %1$s เฉพาะบนโทรศัพท์เครื่องนี้ ไม่มีใครในแชทได้รับแจ้ง
+Open a chat, then come back here to give it a color of its own.	เปิดแชท แล้วกลับมาที่นี่เพื่อตั้งสีเฉพาะให้แชทนั้น
+%1$s, the last chat you opened, takes the chat background above. Type a color code to give it its own.	%1$s ซึ่งเป็นแชทล่าสุดที่คุณเปิด ใช้พื้นหลังแชทด้านบน พิมพ์รหัสสีเพื่อตั้งสีเฉพาะให้
+%1$s, the last chat you opened, is %2$s.	%1$s ซึ่งเป็นแชทล่าสุดที่คุณเปิด เป็นสี %2$s
+Type one color code, or two for a fade from top to bottom.	พิมพ์รหัสสีหนึ่งรหัส หรือสองรหัสเพื่อไล่สีจากบนลงล่าง
+Hide the AI content label on reels	ซ่อนป้ายเนื้อหา AI บน Reels
+Takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. A change shows from the next reel.	นำป้าย "เนื้อหา AI" หรือ "ข้อมูล AI" ออกจาก Reels ที่ Facebook ระบุว่าสร้างด้วย AI การเปลี่ยนแปลงจะแสดงตั้งแต่ Reel ถัดไป
+The %1$s row will be set to %2$s.	แถว %1$s จะถูกตั้งค่าเป็น %2$s
+The %1$s row will go back to its default.	แถว %1$s จะกลับเป็นค่าเริ่มต้น
+Save files to Downloads	บันทึกไฟล์ลงในโฟลเดอร์ดาวน์โหลด
+A PDF, document or other file you download from a post goes to your phone's Downloads folder, where a file manager can open it. Off, Facebook keeps it where no file manager can reach it.	ไฟล์ PDF เอกสาร หรือไฟล์อื่นที่คุณดาวน์โหลดจากโพสต์จะไปอยู่ในโฟลเดอร์ดาวน์โหลดของโทรศัพท์ ซึ่งแอปจัดการไฟล์เปิดได้ หากปิด Facebook จะเก็บไฟล์ไว้ในที่ที่แอปจัดการไฟล์เข้าไม่ถึง
+Hide hashtags in reel captions	ซ่อนแฮชแท็กในคำบรรยาย Reels
+Takes the hashtags off reel captions, like the block of tags at the end. A hashtag that's part of a sentence stays. A change shows from the next reel.	นำแฮชแท็กออกจากคำบรรยาย Reels เช่น กลุ่มแท็กท้ายคำบรรยาย แฮชแท็กที่เป็นส่วนหนึ่งของประโยคยังอยู่ การเปลี่ยนแปลงจะแสดงตั้งแต่ Reel ถัดไป
+Keep the keyboard closed when comments open	ปิดแป้นพิมพ์ไว้เมื่อเปิดความคิดเห็น
+Comments open without the keyboard popping up, even on a post with no comments yet. Tap the comment box when you want to write.	ความคิดเห็นเปิดขึ้นโดยไม่มีแป้นพิมพ์เด้งขึ้นมา แม้ในโพสต์ที่ยังไม่มีความคิดเห็น แตะช่องแสดงความคิดเห็นเมื่อต้องการเขียน
+Settings language	ภาษาของการตั้งค่า
+Same as Facebook	เหมือนกับ Facebook
+Show feed reels uncropped	แสดง Reels ในฟีดแบบไม่ครอป
+Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	Reels ในฟีดของคุณจะแสดงภาพเต็มตามสัดส่วนของตัวเอง แทนที่จะถูกครอปให้พอดีกับกรอบของ Facebook Reels ที่โหลดขึ้นมาหลังจากนี้จะเริ่มใช้การตั้งค่าดังกล่าว
 Export token	ส่งออกโทเคน
 Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	แสดงโทเคนการเข้าถึงของแต่ละบัญชีที่ลงชื่อเข้าใช้บนโทรศัพท์นี้ คัดลอกอันหนึ่ง หรือบันทึกทั้งหมดเป็น JSON
 Save JSON	บันทึก JSON

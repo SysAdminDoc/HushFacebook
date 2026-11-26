@@ -11,7 +11,8 @@
  * suggested groups type names, and the flag Facebook's own Discover unit reads to tell a row of
  * Stories you might like from other rows of Stories, which four more switches read. The People you
  * may know switch also reaches the carousel on your own profile, through a hook in that section's
- * children builder. It also fills the two accessors the switch for posts from groups you're not in
+ * children builder, and a switch of its own reaches the Friends tab's People you may know list
+ * through a hook where that tab reads its rows. It also fills the two accessors the switch for posts from groups you're not in
  * reads: a story's group and that group's join state. On the search screen, before anything is
  * typed, it hands each row to the extension, which draws the For you section or People you may know
  * as an empty row while its search switch is on, and names every row for Debug logging. Under a
@@ -185,6 +186,12 @@ val hideSuggestedPostsPatch = patch(
 
         // The carousel on your own profile is a section of its own, not a feed unit.
         hideProfileSuggestions()
+        // The Friends tab's People you may know is a section of its own list, not a feed unit (#600).
+        try {
+            hookFriendsTabSuggestions()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the Friends tab keeps People you may know.")
+        }
         // The list of more posts under a post opened from a notification is asked for with the post, not a feed unit (#163).
         try {
             hookNotificationFooter()

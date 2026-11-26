@@ -106,7 +106,8 @@ private val SWITCHES = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH)
  * An open reel caption can also sit on a dark box (#419): right before the caption's text is built,
  * [CAPTION_BACKDROP] gets the builder's line limit and hands back a background for the one built with
  * no limit. See [findCaptionBackdrop]. The names in the stories row, on an open story and on a reel can
- * get the same box (#490): see [findTrayNames], [findOpenStoryNames] and [findReelNames].
+ * get the same box (#490): see [findTrayNames], [findOpenStoryNames] and [findReelNames]. Where a header
+ * puts its name and the line under it into one column, the box goes on the column ([findNameBlocks]).
  */
 @Suppress("unused")
 val showFullPostTextPatch = patch(
@@ -160,10 +161,11 @@ val showFullPostTextPatch = patch(
             """,
         )
         // The dark box is its own switch's; a build missing one of its anchors keeps the rest.
-        try {
-            addCaptionBackdrop(findCaptionBackdrop())
+        val captionBuilder = try {
+            findCaptionBackdrop().also { addCaptionBackdrop(it) }.builder
         } catch (missing: PatchException) {
             patchLog.warning("${missing.message}, so the dark box behind open reel captions isn't in this build")
+            null
         }
         // The name boxes are their own switches' too (#490): each place found before any is changed.
         try {
@@ -180,10 +182,27 @@ val showFullPostTextPatch = patch(
                 patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
                 null
             }
+            // The date under a full-screen video's caption gets the caption's box, laid out the way an open
+            // story's title is (#490), found before the story names change.
+            val viewerDates = if (captionBuilder == null || openStory.isEmpty()) null else try {
+                val style = findBoxStyle(tray.text.definingClass)
+                val wrap = findStyleWrap(openStory, style.background.substringAfterLast(')'))
+                Triple(findViewerDates(captionBuilder, wrap), wrap, style)
+            } catch (missing: PatchException) {
+                patchLog.warning("${missing.message}, so the date under a full-screen video's caption keeps Facebook's look")
+                null
+            }
             try {
                 addStoryNameBoxes(tray.text, tray.places, openStory)
             } catch (missing: PatchException) {
                 patchLog.warning("${missing.message}, so the dark box behind story names isn't in this build")
+            }
+            viewerDates?.let { (dates, wrap, style) ->
+                try {
+                    addViewerDateBoxes(dates, wrap, style)
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so the date under a full-screen video's caption keeps Facebook's look")
+                }
             }
             if (reel != null) {
                 // A long post name and a feed video's name ride on the reel name's hooks (#533).
@@ -206,16 +225,51 @@ val showFullPostTextPatch = patch(
                     patchLog.warning("${missing.message}, so a feed post's name keeps Facebook's look and line limit")
                     null
                 }
+                // A name and the line under it (the date, a song) share one box where Facebook puts them in a column (#490).
+                val blocks = if (feed == null) emptyList() else try {
+                    findNameBlocks(reel, feed, findBoxStyle(tray.text.definingClass).background.substringAfterLast(')'))
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so a boxed name's date line keeps Facebook's look")
+                    emptyList()
+                }
+                // A group reel's name and the line under it sit in a column of a component of their own (#490).
+                val group = blocks.firstOrNull()?.let { block ->
+                    try {
+                        findGroupNameBlock(block.columnType, findBoxStyle(tray.text.definingClass).background.substringAfterLast(')'))
+                    } catch (missing: PatchException) {
+                        patchLog.warning("${missing.message}, so a group reel's name keeps Facebook's look")
+                        null
+                    }
+                }
+                // Each header's column is boxed only where its name hooks went in: they say whose name it is.
+                val named = mutableSetOf<String>()
                 try {
                     addReelNameBoxes(tray.text, reel, lines, look)
+                    named += reel.names.map { it.method.definingClass }
+                    if (group != null) {
+                        try {
+                            addGroupNameBox(tray.text, group)
+                        } catch (missing: PatchException) {
+                            patchLog.warning("${missing.message}, so a group reel's name keeps Facebook's look")
+                        }
+                    }
                 } catch (missing: PatchException) {
                     patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
                 }
                 if (feed != null) {
                     try {
                         addFeedNameBoxes(tray.text, feed)
+                        named += feed.build.definingClass
                     } catch (missing: PatchException) {
                         patchLog.warning("${missing.message}, so a feed post's name keeps Facebook's look and line limit")
+                    }
+                }
+                val hooked = blocks.filter { it.column.method.definingClass in named }
+                if (hooked.isNotEmpty()) {
+                    try {
+                        addNameBlockBoxes(tray.text, hooked)
+                    } catch (missing: PatchException) {
+                        patchLog.warning("${missing.message}, so a boxed name's date line keeps Facebook's look")
                     }
                 }
             }
@@ -824,19 +878,22 @@ internal const val CAPTION_DESCRIPTION = "description"
 internal const val CALLER_CONTEXT = "Lcom/facebook/common/callercontext/CallerContext;"
 internal const val DRAWABLE = "Landroid/graphics/drawable/Drawable;"
 private const val RECT = "Landroid/graphics/Rect;"
-internal const val FOR_CAPTION = "$CAPTION_BACKDROP->forCaption(I)$DRAWABLE"
+private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+internal const val FOR_CAPTION = "$CAPTION_BACKDROP->forCaption(I$CHAR_SEQUENCE)$DRAWABLE"
 
 /**
  * Where an open reel caption gets its dark box (#419). [builder] makes the caption's Litho text
- * builder (a [builderType]) in v[register], sets its line limit [maxLines], and builds it at
- * [buildIndex] by handing it a [CALLER_CONTEXT]. Litho takes a background as a style: [background]
- * makes one from a drawable on top of [emptyStyle], and [setter] hands a style to the builder.
+ * builder (a [builderType]) in v[register], puts the caption into its [text] field, sets its line limit
+ * [maxLines], and builds it at [buildIndex] by handing it a [CALLER_CONTEXT]. Litho takes a background
+ * as a style: [background] makes one from a drawable on top of [emptyStyle], and [setter] hands a style
+ * to the builder.
  */
 internal class Backdrop(
     val builder: Method,
     val buildIndex: Int,
     val register: Int,
     val builderType: String,
+    val text: String,
     val maxLines: String,
     val setter: String,
     val background: String,
@@ -860,13 +917,29 @@ private fun readsPadding(method: Method) = method.implementation?.instructions?.
 internal fun appClass(type: String) = type.startsWith("L") && !type.startsWith("Ljava/") && !type.startsWith("Landroid/")
 
 /**
- * Finds where an open reel caption gets its dark box. The caption's text is built in the one static
- * method loading [CAPTION_COMPONENT], [CAPTION_ROLE] and [CAPTION_DESCRIPTION] (585 `LX/09Uk;->A01`).
- * It sets one int field, the line limit, on a text builder it makes there and keeps in that register
- * up to the build, the one call handing that builder a [CALLER_CONTEXT] (585 `LX/0IoR;->A1y`). The
- * box goes on through the builder's background style ([findBoxStyle]).
+ * Where a reel caption's text is built: [builder] makes a [builderType] text builder in v[register]
+ * and keeps it there up to the build at [buildIndex], puts the caption into its [text] field at
+ * [textIndex], and sets its line limit [maxLines]. The dark box (#419) and the hashtags (#594) both
+ * start from it.
  */
-internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
+internal class CaptionBuild(
+    val builder: Method,
+    val buildIndex: Int,
+    val register: Int,
+    val builderType: String,
+    val textIndex: Int,
+    val text: FieldReference,
+    val maxLines: FieldReference,
+)
+
+/**
+ * Finds where a reel caption's text is built: the one static method loading [CAPTION_COMPONENT],
+ * [CAPTION_ROLE] and [CAPTION_DESCRIPTION] (585 `LX/09Uk;->A01`). It sets one int field, the line
+ * limit, on a text builder it makes there and keeps in that register up to the build, the one call
+ * handing that builder a [CALLER_CONTEXT] (585 `LX/0IoR;->A1y`). The caption goes into the builder's
+ * one text field in between.
+ */
+internal fun BytecodePatchContext.findCaptionBuild(): CaptionBuild {
     val builders = methodsWithString(CAPTION_COMPONENT).filter {
         AccessFlags.STATIC.isSet(it.accessFlags) && loadsString(it, CAPTION_ROLE) && loadsString(it, CAPTION_DESCRIPTION)
     }
@@ -902,6 +975,15 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     ) {
         refuse("$where doesn't keep one new $builderType in v$register from its line limit to its build")
     }
+    // The caption goes into the builder's text field between making it and setting its line limit (588
+    // `LX/0458;->A0A`); a reel with no caption builds an empty one, which gets no box (#490).
+    val texts = (creation + 1 until limit).filter { index ->
+        code[index].opcode == Opcode.IPUT_OBJECT && (code[index] as TwoRegisterInstruction).registerB == register &&
+            ((code[index] as ReferenceInstruction).reference as FieldReference).type == CHAR_SEQUENCE
+    }
+    val textIndex = texts.singleOrNull()
+        ?: refuse("expected $where to put one text into v$register before its line limit, found ${texts.size}")
+    val text = (code[textIndex] as ReferenceInstruction).reference as FieldReference
     val flow = Flow(code, where)
     if (build in flow.targets) refuse("$where jumps straight to where it builds its caption")
     // Dex can lay a block out after the build and jump back from it (the Android 9 build's 09VI does), so
@@ -911,7 +993,18 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     if (leadsToBuild.any { it > build && writes(code[it], register) }) {
         refuse("$where sets v$register again on a way back to its caption's build")
     }
+    return CaptionBuild(builder, build, register, builderType, textIndex, text, maxLines)
+}
 
+/**
+ * Finds where an open reel caption gets its dark box: where its text is built ([findCaptionBuild]),
+ * with the box going on through the builder's background style ([findBoxStyle]).
+ */
+internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
+    val caption = findCaptionBuild()
+    val builder = caption.builder
+    val builderType = caption.builderType
+    val host = builder.definingClass
     val style = findBoxStyle(builderType)
     requireReachable(style, host)
     val extension = classDefByOrNull(CAPTION_BACKDROP) ?: refuse("the extension has no $CAPTION_BACKDROP")
@@ -920,8 +1013,9 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     }
     if (classDefByOrNull(host)!!.methods.any { it.name == BACKDROP_HELPER }) refuse("$host already has $BACKDROP_HELPER")
     return Backdrop(
-        builder, build, register, builderType,
-        "$builderType->${maxLines.name}:I",
+        builder, caption.buildIndex, caption.register, builderType,
+        "${caption.text.definingClass}->${caption.text.name}:$CHAR_SEQUENCE",
+        "$builderType->${caption.maxLines.name}:I",
         style.setter,
         style.background,
         style.emptyStyle,
@@ -1002,9 +1096,9 @@ internal fun BytecodePatchContext.findBoxStyle(builderType: String): BoxStyle {
 
 /**
  * Gives an open reel caption its dark box: right before [Backdrop.builder] builds the caption, a
- * helper on its class reads the builder's line limit and asks [CAPTION_BACKDROP] for a drawable. An
- * open caption is the one built with no line limit. A drawable comes back as a background style on
- * the builder, and null leaves Facebook's caption as it is.
+ * helper on its class reads the builder's line limit and text and asks [CAPTION_BACKDROP] for a
+ * drawable. An open caption is the one built with no line limit. A drawable comes back as a background
+ * style on the builder, and null leaves Facebook's caption as it is.
  */
 internal fun BytecodePatchContext.addCaptionBackdrop(backdrop: Backdrop) {
     val host = backdrop.builder.definingClass
@@ -1022,7 +1116,8 @@ internal fun BytecodePatchContext.addCaptionBackdrop(backdrop: Backdrop) {
             0,
             """
                 iget v1, p0, ${backdrop.maxLines}
-                invoke-static { v1 }, $FOR_CAPTION
+                iget-object v0, p0, ${backdrop.text}
+                invoke-static { v1, v0 }, $FOR_CAPTION
                 move-result-object v0
                 if-eqz v0, :facebook
                 sget-object v1, ${backdrop.emptyStyle}

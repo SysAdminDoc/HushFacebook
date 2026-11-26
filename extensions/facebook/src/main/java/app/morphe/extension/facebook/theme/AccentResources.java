@@ -159,13 +159,54 @@ public final class AccentResources {
     /** Package-visible for tests, which have no memory files ({@link #loaderFor}) to read a table from. */
     static LoaderMaker maker = AccentResources::loaderFor;
 
+    /** The Material You patch's string resource listing what its switch puts back when it's off (D#527). */
+    static final String YOU_ORIGINALS = "hushfacebook_you_originals";
+
+    /** Reads one of the Material You patch's string resources, or null when the app has none. */
+    interface ListReader {
+        @Nullable
+        String read(Resources resources, String packageName);
+    }
+
+    /** {@link #YOU_ORIGINALS}' text. Package-visible for tests, whose app has no such string. */
+    static ListReader originalsList = (resources, packageName) -> {
+        int list = resources.getIdentifier(YOU_ORIGINALS, "string", packageName);
+        return list == 0 ? null : resources.getString(list);
+    };
+
     private AccentResources() {}
+
+    /** One colour resource the Material You switch puts back when it's off ({@link #parseOriginals}). */
+    static final class Original {
+        final int id;
+        /** One of Facebook's night colours, which changed at night alone; otherwise one of the patch's own. */
+        final boolean night;
+        /** Whether {@link #value} is the id of the colour resource the style named, not a colour. */
+        final boolean reference;
+        final int value;
+
+        Original(int id, boolean night, boolean reference, int value) {
+            this.id = id;
+            this.night = night;
+            this.reference = reference;
+            this.value = value;
+        }
+    }
+
+    /** The Material You switch's loader, made once. Main thread only. */
+    @Nullable
+    private static ResourcesLoader offLoader;
+
+    /** Whether the Material You patch listed nothing to put back, so no loader is made. Main thread only. */
+    private static boolean nothingToPutBack;
 
     /** Forgets the loaders made so far and the Material You list read, so a test's maker makes the next ones. */
     static synchronized void forgetLoadersForTests() {
         LOADERS.clear();
         YOU_LOADERS.clear();
         youAccents = null;
+        offLoader = null;
+        nothingToPutBack = false;
     }
 
     /**
@@ -335,6 +376,67 @@ public final class AccentResources {
                 new ColourTable.Config(0, 0, colours, own), new ColourTable.Config(0, 31, colours, own));
     }
 
+    /**
+     * The Material You patch's list of what its switch puts back ({@link #YOU_ORIGINALS}): Facebook's
+     * night colours by id in hex, the patch's own colours that night style items point at by name,
+     * which {@code idOf} answers with an id or 0, each with {@code #} and the colour it had in hex,
+     * or {@code @} and the id of the colour resource the style named, as
+     * {@code "7f0601ab=#ff252728;hushfacebook_you_was_r_blue=@7f0601d5"}. An entry it can't read, or
+     * a name with no id, is left out.
+     */
+    static List<Original> parseOriginals(@Nullable String table, ToIntFunction<String> idOf) {
+        if (table == null || table.isEmpty()) return Collections.emptyList();
+        List<Original> originals = new ArrayList<>();
+        for (String entry : table.split(";")) {
+            int equals = entry.indexOf('=');
+            if (equals <= 0 || equals + 2 > entry.length()) continue;
+            String key = entry.substring(0, equals);
+            char kind = entry.charAt(equals + 1);
+            if (kind != '#' && kind != '@') continue;
+            try {
+                boolean night = !key.startsWith(OWN_COLOUR);
+                int id = night ? (int) Long.parseLong(key, 16) : idOf.applyAsInt(key);
+                if (id == 0) continue;
+                int value = (int) Long.parseLong(entry.substring(equals + 2), 16);
+                if (kind == '@' && value == 0) continue;
+                originals.add(new Original(id, night, kind == '@', value));
+            } catch (NumberFormatException unreadable) {
+                Logger.printInfo(() -> "Material You theme: left out an unreadable entry of what its switch puts back", unreadable);
+            }
+        }
+        return Collections.unmodifiableList(originals);
+    }
+
+    /**
+     * The table that puts {@code originals} back: Facebook's night colours at night, as night,
+     * night-v8 and night-v31, so it wins the tie with the patch's system colour on Android 12 and
+     * newer; the patch's own colours at every time of day, as the default, where it wrote them. A
+     * colour resource the style named goes back as a reference to it, so a table another patch gives
+     * that resource, such as Accent color's, still answers through it. Null for nothing to put back.
+     */
+    @Nullable
+    static byte[] originalsTable(String packageName, List<Original> originals) {
+        if (originals.isEmpty()) return null;
+        int count = originals.size();
+        int[] ids = new int[count];
+        int[] values = new int[count];
+        boolean[] references = new boolean[count];
+        boolean[] night = new boolean[count];
+        boolean[] own = new boolean[count];
+        for (int i = 0; i < count; i++) {
+            Original original = originals.get(i);
+            ids[i] = original.id;
+            values[i] = original.value;
+            references[i] = original.reference;
+            night[i] = original.night;
+            own[i] = !original.night;
+        }
+        int dark = ColourTable.UI_MODE_NIGHT_YES;
+        return ColourTable.write(packageName, ids,
+                new ColourTable.Config(dark, 0, values, night, references), new ColourTable.Config(dark, 8, values, night, references),
+                new ColourTable.Config(dark, 31, values, night, references), new ColourTable.Config(0, 0, values, own, references));
+    }
+
     /** Package-visible for tests: puts a table of {@link #resourceBlues}'s form in use. */
     static void useTable(@Nullable String table) {
         blues = parse(table);
@@ -405,6 +507,10 @@ public final class AccentResources {
      *
      * <p>Under the Material You theme the accent picked for it gives its own table instead ({@link #youTable}).
      *
+     * <p>With the Material You theme's switch off (D#527), the resources first take back the colours
+     * that theme changed when the app was patched ({@link #originalsTable}), and an accent picked in
+     * the row works as it does without that theme.
+     *
      * <p>Resource loaders came in Android 11. On Android 9 and 10 the accent reaches only the
      * colours Facebook's code resolves.
      */
@@ -412,10 +518,11 @@ public final class AccentResources {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
         try {
             Preset preset = Utils.settingsReady() ? AccentColor.chosen() : null;
-            Preset you = SettingsStatus.materialYouTheme() ? AccentColor.pickedForMaterialYou() : null;
+            Preset you = MaterialYouSwitch.on() ? AccentColor.pickedForMaterialYou() : null;
             ResourcesLoader wanted = preset == null ? null : loader(context.getPackageName(), preset);
             ResourcesLoader wantedYou = you == null ? null : youLoader(context, you);
-            if (wanted == null && wantedYou == null && LOADERS.isEmpty() && YOU_LOADERS.isEmpty()) return;
+            ResourcesLoader wantedOff = MaterialYouSwitch.off() ? offLoader(context) : null;
+            if (wanted == null && wantedYou == null && wantedOff == null && LOADERS.isEmpty() && YOU_LOADERS.isEmpty()) return;
             Resources onAssets = onAssets(context.getResources());
             for (ResourcesLoader other : LOADERS.values()) {
                 if (other != wanted) onAssets.removeLoaders(other);
@@ -423,6 +530,8 @@ public final class AccentResources {
             for (ResourcesLoader other : YOU_LOADERS.values()) {
                 if (other != wantedYou) onAssets.removeLoaders(other);
             }
+            // Before the accent's, so a picked accent's night blue wins the tie with Facebook's.
+            if (wantedOff != null) onAssets.addLoaders(wantedOff);
             if (wanted != null) onAssets.addLoaders(wanted);
             if (wantedYou != null) onAssets.addLoaders(wantedYou);
         } catch (Throwable failure) {
@@ -455,7 +564,9 @@ public final class AccentResources {
         if (known != null) return known;
         Answer answer = answer(preset);
         if (answer.ids.length == 0) return null;
-        byte[] table = ColourTable.write(packageName, answer.ids, answer.colours, answer.nights, answer.hasNight);
+        // A Material You build, its switch off here, gave Facebook's night blues a night-v31 value too.
+        byte[] table = ColourTable.write(packageName, answer.ids, answer.colours, answer.nights, answer.hasNight,
+                MaterialYouSwitch.inBuild());
         ResourcesLoader loader = maker.make("hushfacebook-accent.arsc", table);
         LOADERS.put(preset, loader);
         Logger.printDebug(() -> "Accent color: " + answer.ids.length + " colour resources take " + preset.fileValue);
@@ -487,6 +598,29 @@ public final class AccentResources {
         int count = accents.size();
         Logger.printDebug(() -> "Accent color: " + count + " Material You colour resources take " + preset.fileValue);
         return loader;
+    }
+
+    /**
+     * The Material You switch's loader, made the first time, or null when the patch listed nothing
+     * to put back. The list is read through {@link #onAssets}' Resources, as {@link #youLoader}'s is.
+     */
+    @Nullable
+    private static ResourcesLoader offLoader(Context context) throws Exception {
+        if (offLoader != null || nothingToPutBack) return offLoader;
+        Resources resources = onAssets(context.getResources());
+        String packageName = context.getPackageName();
+        List<Original> originals = parseOriginals(originalsList.read(resources, packageName),
+                name -> resources.getIdentifier(name, "color", packageName));
+        byte[] table = originalsTable(packageName, originals);
+        if (table == null) {
+            nothingToPutBack = true;
+            Logger.printInfo(() -> "Material You theme: switched off, but the patch listed no colours to put back");
+            return null;
+        }
+        offLoader = maker.make("hushfacebook-you-off.arsc", table);
+        int count = originals.size();
+        Logger.printDebug(() -> "Material You theme: switched off, " + count + " colour resources go back to Facebook's");
+        return offLoader;
     }
 
     /** A loader for the resource {@code table}, read from memory named {@code name}. AMOLED's Background color makes its own the same way. */

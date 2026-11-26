@@ -37,7 +37,7 @@ public final class ReactionRing {
     /** The ring colour the facepile was about to be made with. Gives the colour to make it with. */
     public static int ring(int color) {
         boolean amoled = SettingsStatus.amoledTheme();
-        boolean materialYou = SettingsStatus.materialYouTheme();
+        boolean materialYou = MaterialYouSwitch.on();
         if (!amoled && !materialYou) return color;
         HookStatus.invoked(amoled ? FamilyNames.AMOLED_THEME : FamilyNames.MATERIAL_YOU_THEME);
         return ring(color, true, DarkMode.on());
@@ -64,7 +64,7 @@ public final class ReactionRing {
      */
     public static int pile(int color) {
         boolean amoled = SettingsStatus.amoledTheme();
-        boolean materialYou = SettingsStatus.materialYouTheme();
+        boolean materialYou = MaterialYouSwitch.on();
         if (!amoled && !materialYou) return color;
         HookStatus.invoked(amoled ? FamilyNames.AMOLED_THEME : FamilyNames.MATERIAL_YOU_THEME);
         return pile(color, amoled, DarkMode.on(), amoled ? AmoledTheme.background() : CUT);

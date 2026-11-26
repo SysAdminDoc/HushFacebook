@@ -1024,6 +1024,30 @@ internal fun MutableMethod.reportState() {
     addInstructions(0, "invoke-static/range { p1 .. p1 }, $ON_STATE")
 }
 
+/**
+ * Facebook's story viewer sends a quick reaction (the emoji row under someone else's story) from
+ * one static void method, whatever taps it: it logs the reaction's name as "story_reaction_name"
+ * and takes its own class, the FbUserSession, the StoryBucket and the StoryCard first (586 to 588,
+ * every ABI). It can still drop the reaction past its first check, but a reaction tapped shows the
+ * owner you saw the story, so the hook goes first and hands the session, the bucket and the card to
+ * the button, which marks the card seen (#557).
+ */
+internal const val REACTION_NAME = "story_reaction_name"
+internal const val ON_REACTED = "$STORY_SEEN_BUTTON->reacted(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V"
+
+/** Whether [method] is the story viewer's reaction send: static void (owner, FbUserSession, StoryBucket, StoryCard, ...) loading [REACTION_NAME]. */
+internal fun isReactionSend(method: Method): Boolean {
+    val types = method.parameterTypes.map(Any::toString)
+    return AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" && types.size >= 4 &&
+        types[0] == method.definingClass && types.subList(1, 4) == listOf(FB_USER_SESSION, STORY_BUCKET, STORY_CARD) &&
+        holdsString(method, REACTION_NAME)
+}
+
+/** First thing in the reaction send: hand the button the session, the bucket and the card (p1 to p3). */
+internal fun MutableMethod.reportReaction() {
+    addInstructions(0, "invoke-static/range { p1 .. p3 }, $ON_REACTED")
+}
+
 /** The listener the seen helper makes to count a card once it plays, and the helper's session field. */
 internal class CountLater(val listener: ClassDef, val constructor: Method, val session: Field)
 

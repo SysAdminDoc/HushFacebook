@@ -30,6 +30,7 @@ import android.widget.FrameLayout;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
@@ -48,6 +49,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import app.morphe.extension.shared.SettingsContextRule;
 
 /**
  * The Material You theme's rules: what it recolours in each mode, that a colour keeps its lightness,
@@ -84,10 +87,14 @@ public class MaterialYouThemeTest {
     /** Facebook's own blue on its logo, maps and charts, which no theme route changes. */
     private static final Token[] BRAND = {Token.FB_LOGO, Token.MAP_HIGHLIGHT_BORDER, Token.DATAVIZ_BLUE_PRIMARY};
 
+    /** The theme's switch reads off until the settings are ready (D#527). */
+    @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
+
     private TonePalette palette;
 
     @Before
     public void usePalette() {
+        MaterialYouSwitch.forgetForTests();
         palette = TonePalette.fallback();
         MaterialYouTheme.use(palette, false);
     }

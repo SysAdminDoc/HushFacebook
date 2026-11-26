@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
@@ -24,6 +25,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.value.ImmutableStringEncodedValue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -359,6 +361,84 @@ class CleanUpReelsShapesTest {
         assertEquals("the goto skipped the filter", returns.last() - 6, builder.target(goto))
     }
 
+    /**
+     * A reel's attribution list (#574) is told from the "AI info" label's readers, which name the
+     * GenAI type alone, and from the chip builder, which takes a list in, and its returns go through
+     * the AI label filter, not the chip filter.
+     */
+    @Test
+    fun `the attribution list is matched and its returns go through the AI label filter`() {
+        val adds = (listOf(AI_LABEL_ATTRIBUTION) + ADDED_ATTRIBUTIONS).joinToString("\n") { "const-string v1, \"$it\"" }
+        val list = method(
+            "attributions", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 4, static = false,
+            """
+                $adds
+                invoke-static { }, $IMMUTABLE_LIST->of()$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertTrue(isAttributionList(list))
+        val reader = method(
+            "label", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 3, static = false,
+            """
+                const-string v1, "$AI_LABEL_ATTRIBUTION"
+                invoke-static { }, $IMMUTABLE_LIST->of()$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertFalse("a reader naming the GenAI type alone matched", isAttributionList(reader))
+        val chips = method(
+            "chips", listOf(IMMUTABLE_LIST), IMMUTABLE_LIST, 3, static = true,
+            """
+                $adds
+                return-object p0
+            """,
+        )
+        assertFalse("the chip builder matched", isAttributionList(chips))
+
+        list.filterChipsBeforeEveryReturn(FILTER_AI_LABEL)
+        val body = list.body()
+        val hook = body.indexOfFirst { it.opcode == Opcode.RETURN_OBJECT } - 6
+        assertEquals(FILTER_AI_LABEL, body[hook].call)
+        assertTrue("the chip filter went in too", body.none { it is ReferenceInstruction && it.call == FILTER_CHIPS })
+        assertEquals(COPY_OF, body[hook + 3].call)
+    }
+
+    /**
+     * The footer's chip row reads the story's own attributions itself, so a reel whose story carries
+     * the GenAI attribution kept its "AI content" button with only the list built on top filtered
+     * (#574). That list is the attribution list's first static call taking the reel first and
+     * answering an ImmutableList: not a void check on the reel ahead of it, nor the copyOf after it.
+     */
+    @Test
+    fun `the story's own attributions are the static list the attribution list starts from`() {
+        val own = "Lfixture/Attributions;->own(Lfixture/Story;Lfixture/Viewer;)$IMMUTABLE_LIST"
+        val list = method(
+            "attributions", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 4, static = false,
+            """
+                const/4 v0, 0x0
+                invoke-static { p1, v0 }, Lfixture/Checks;->notNull(Ljava/lang/Object;I)V
+                invoke-static { p1, v0 }, $own
+                move-result-object v0
+                invoke-static { v0 }, $IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertEquals(own, storyAttributions(list)!!.let { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" })
+        val none = method(
+            "attributions", listOf("Lfixture/Story;"), IMMUTABLE_LIST, 3, static = false,
+            """
+                invoke-static { }, $IMMUTABLE_LIST->of()$IMMUTABLE_LIST
+                move-result-object v0
+                return-object v0
+            """,
+        )
+        assertNull("a list built from nothing of the story's found one", storyAttributions(none))
+    }
+
     @Test
     fun `a chip list with no spare local stops the patch`() {
         val builder = method("build", listOf("Ljava/util/List;"), IMMUTABLE_LIST, 2, static = true,
@@ -653,6 +733,68 @@ class CleanUpReelsShapesTest {
         assertEquals(Opcode.IF_EQZ, body[2].opcode)
         assertEquals("the hook answers false", 0, (body[3] as NarrowLiteralInstruction).narrowLiteral)
         assertEquals(Opcode.RETURN, body[4].opcode)
+    }
+
+    /** Loads every chip type the switches hide, and the sound's, as a row's render does before it walks its list. */
+    private val namesEveryChip = (HIDDEN_CHIPS + SOUNDTRACK_CHIP).joinToString("\n") { "const-string v0, \"$it\"" }
+
+    /** A feed video chip row: p0 the row, p1 the context; it reads its list out of a state, casts and walks it. */
+    private fun chipRow(names: String = namesEveryChip, read: String = "invoke-static { p1 }, Lfixture/State;->read(Ljava/lang/Object;)Ljava/lang/Object;", between: String = "", static: Boolean = false) =
+        method("render", listOf("Lfixture/Context;"), "Lfixture/Component;", 6, static, """
+            $names
+            $read
+            move-result-object v2
+            check-cast v2, Ljava/util/AbstractCollection;
+            const/4 v3, 0x0
+            $between
+            if-eqz v2, :none
+            invoke-virtual { v2 }, Ljava/util/AbstractCollection;->iterator()Ljava/util/Iterator;
+            move-result-object v1
+            :none
+            return-object v3
+        """)
+
+    /**
+     * The chip row under a feed video (#314 on 588) keeps its list in a state and never sees the reel
+     * chip builder, so its list goes through the same filter right before the row casts it. Rows
+     * reading a field, missing a chip, reading the list from an instance call, overwriting it before
+     * the walk, or static, are not it.
+     */
+    @Test
+    fun `the feed chip row's list goes through the filter before its cast`() {
+        val row = chipRow()
+        assertTrue(isFeedChipRow(row) { null })
+        val missing = namesEveryChip.lines().filterNot { "XFBFBShortsEditsAppAttribution" in it }.joinToString("\n")
+        assertTrue("a row missing a chip was taken", !isFeedChipRow(chipRow(names = missing)) { null })
+        val instanceRead = "invoke-virtual { p1 }, Lfixture/Context;->read()Ljava/lang/Object;"
+        assertTrue("a list from an instance call was taken", !isFeedChipRow(chipRow(read = instanceRead)) { null })
+        assertTrue("a list overwritten before the walk was taken", !isFeedChipRow(chipRow(between = "move-object v2, v3")) { null })
+        assertTrue("a static method was taken", !isFeedChipRow(chipRow(static = true)) { null })
+        val field = method("render", listOf("Lfixture/Context;"), "Lfixture/Component;", 6, static = false, """
+            $namesEveryChip
+            iget-object v2, p0, Lfixture/Host;->A06:$IMMUTABLE_LIST
+            invoke-virtual { v2 }, Ljava/util/AbstractCollection;->iterator()Ljava/util/Iterator;
+            move-result-object v1
+            const/4 v3, 0x0
+            return-object v3
+        """)
+        assertTrue("a reel row reading its field was taken", !isFeedChipRow(field) { null })
+
+        val cast = feedChipListCast(row)!!
+        row.filterFeedChipList()
+        val body = row.body()
+        assertEquals(FILTER_CHIPS, body[cast].call)
+        assertEquals(2, (body[cast] as RegisterRangeInstruction).startRegister)
+        val answer = (body[cast + 1] as OneRegisterInstruction).registerA
+        assertTrue("the answer took v$answer, which the row reads", answer != 2 && answer < 4)
+        assertEquals(Opcode.IF_EQZ, body[cast + 2].opcode)
+        assertEquals("null keeps the list", cast + 5, row.target(cast + 2))
+        assertEquals(COPY_OF, body[cast + 3].call)
+        assertEquals(answer, (body[cast + 3] as RegisterRangeInstruction).startRegister)
+        assertEquals(2, (body[cast + 4] as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.NOP, body[cast + 5].opcode)
+        assertEquals(Opcode.CHECK_CAST, body[cast + 6].opcode)
+        assertEquals(2, (body[cast + 6] as OneRegisterInstruction).registerA)
     }
 
     /** A reel header: p0 the row, p1 the search bar, p2 its send button, each wrapped and tagged when there is one. */

@@ -111,19 +111,6 @@ public final class HeaderPicture {
     }
 
     /**
-     * Whether a picture takes the header: one is named, Hushfacebook isn't paused, and its copy is
-     * there. Never throws.
-     */
-    public static boolean chosen(@Nullable Context context) {
-        try {
-            return context != null && !Settings.HEADER_PICTURE.get().isEmpty() && file(context).isFile();
-        } catch (Throwable failure) {
-            Logger.printException(() -> "Header picture: could not read the header picture", failure);
-            return false;
-        }
-    }
-
-    /**
      * The picture for the header, or null to keep the words or the wordmark: nothing picked, Pause,
      * and a copy that's missing or won't decode. The bitmap read last is handed back while the file
      * hasn't changed. Never throws.

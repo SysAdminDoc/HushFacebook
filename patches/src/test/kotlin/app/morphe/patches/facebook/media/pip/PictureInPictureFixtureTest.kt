@@ -55,7 +55,8 @@ import java.io.File
  * settings fetch and lambda cases) before the check, and the flag after the name whose no falls
  * into a disarm, both answered through the extension in their own registers. And the viewer
  * opening's hide of each view of the screen, heard by the extension first, and the one method that
- * shows them again, through the extension (#126).
+ * shows them again, through the extension (#126). And the video view stub making the window
+ * handler's own call for the armed player's view (#495).
  */
 class PictureInPictureFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -376,6 +377,18 @@ class PictureInPictureFixtureTest {
                     (viewStub[0] as ReferenceInstruction).reference.toString())
                 assertEquals("$name: the view stub reads the attached view", viewField.toString(),
                     (viewStub[1] as ReferenceInstruction).reference.toString())
+                // #495: the video view stub makes the one call by which the window's handler asks the armed player
+                // for its view.
+                val videoViews = videoViewCalls(viewers, play.definingClass)
+                assertEquals("$name: the views the window's classes ask the player for", 1, videoViews.size)
+                val videoStub = context.mutableClassDefBy(PICTURE_IN_PICTURE).methods.single { it.name == VIDEO_VIEW_STUB }.code()
+                assertEquals("$name: the video view stub's shape",
+                    listOf(Opcode.CHECK_CAST, Opcode.INVOKE_VIRTUAL, Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT),
+                    videoStub.take(4).map { it.opcode })
+                assertEquals("$name: the video view stub casts to the player", play.definingClass,
+                    (videoStub[0] as ReferenceInstruction).reference.toString())
+                assertEquals("$name: the video view stub asks what the handler asks", videoViews.single().toString(),
+                    videoStub[1].call.toString())
                 for (disarm in disarms) {
                     assertEquals("$name: ${disarm.name}'s first call", DISARMED, patchedOf(disarm).code()[0].call.toString())
                 }

@@ -144,6 +144,81 @@ public class MetaUpsellsTest {
         assertTrue(line, line.contains(MetaUpsells.CAPTION_DEEP_DIVE_HIDDEN + " 1"));
     }
 
+    /**
+     * The Edits pill over feed videos (#314) is left out of the request under Clean up Reels'
+     * prompts and promos switch too. The Reels composer's Edits header stays the Edits switch's own.
+     */
+    @Test
+    public void theEditsPillRequestAlsoGoesWithTheReelChipsSwitch() {
+        try {
+            Settings.HIDE_REEL_CHIPS.save(true);
+            assertFalse("the chips switch kept the pill in the feed's request", MetaUpsells.fetchEditsPill(true));
+            assertEquals("the chips switch kept the pill in the video queries", Boolean.FALSE, MetaUpsells.fetchEditsPill(Boolean.TRUE));
+            assertTrue("the chips switch took the composer's Edits header", MetaUpsells.editsHeader(true));
+            assertFalse("a request that didn't ask was turned around", MetaUpsells.fetchEditsPill(false));
+            SettingsContextRule.withoutContext(() -> assertTrue("the pill went before the settings were ready",
+                    MetaUpsells.fetchEditsPill(true)));
+            Settings.HIDE_REEL_CHIPS.save(false);
+            assertTrue("turning the switch off didn't bring the pill back", MetaUpsells.fetchEditsPill(true));
+        } finally {
+            Settings.HIDE_REEL_CHIPS.resetToDefault();
+        }
+    }
+
+    /**
+     * #314 on 588: the pill over a feed video is drawn from the video's Edits attribution, so its
+     * getter answers none with either switch on, a pill already sent or cached included.
+     */
+    @Test
+    public void theEditsAttributionGoesWithEitherSwitch() {
+        try {
+            assertFalse("the attribution went with both switches off", MetaUpsells.hidesEditsAttribution());
+            Settings.HIDE_EDITS_UPSELLS.save(true);
+            assertTrue("the Edits switch kept the attribution", MetaUpsells.hidesEditsAttribution());
+            Settings.HIDE_EDITS_UPSELLS.save(false);
+            Settings.HIDE_REEL_CHIPS.save(true);
+            assertTrue("the chips switch kept the attribution", MetaUpsells.hidesEditsAttribution());
+            SettingsContextRule.withoutContext(() -> assertFalse("the attribution went before the settings were ready",
+                    MetaUpsells.hidesEditsAttribution()));
+            Settings.HIDE_REEL_CHIPS.save(false);
+            assertFalse("turning the switch off didn't bring the attribution back", MetaUpsells.hidesEditsAttribution());
+        } finally {
+            Settings.HIDE_EDITS_UPSELLS.resetToDefault();
+            Settings.HIDE_REEL_CHIPS.resetToDefault();
+        }
+    }
+
+    /**
+     * #314 on 588: a Page's timeline builds the "Made with Edits" pill under a video from the pill the
+     * server sent, so the builder hands over the pill's type and draws nothing for the Edits one with
+     * either switch on. Every other pill stays.
+     */
+    @Test
+    public void onlyTheEditsPillUnderAVideoGoesWithEitherSwitch() {
+        try {
+            assertFalse("the Edits pill went with both switches off", MetaUpsells.hidesDeepDivePill("edits_app"));
+            Settings.HIDE_EDITS_UPSELLS.save(true);
+            assertTrue("the Edits switch kept the Edits pill", MetaUpsells.hidesDeepDivePill("edits_app"));
+            assertFalse("the Edits switch took the stars pill", MetaUpsells.hidesDeepDivePill("stars"));
+            assertFalse("a pill with no type went", MetaUpsells.hidesDeepDivePill(null));
+            Settings.HIDE_EDITS_UPSELLS.save(false);
+            Settings.HIDE_REEL_CHIPS.save(true);
+            assertTrue("the chips switch kept the Edits pill", MetaUpsells.hidesDeepDivePill("edits_app"));
+            SettingsContextRule.withoutContext(() -> assertFalse("the Edits pill went before the settings were ready",
+                    MetaUpsells.hidesDeepDivePill("edits_app")));
+            PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+            assertFalse("a paused Hushfacebook took the Edits pill", MetaUpsells.hidesDeepDivePill("edits_app"));
+            PauseForTests.resume();
+            Settings.HIDE_REEL_CHIPS.save(false);
+            assertFalse("turning the switch off didn't bring the Edits pill back", MetaUpsells.hidesDeepDivePill("edits_app"));
+            String line = statusLine();
+            assertTrue(line, line.contains(MetaUpsells.EDITS_PILL_HIDDEN + " 2"));
+        } finally {
+            Settings.HIDE_EDITS_UPSELLS.resetToDefault();
+            Settings.HIDE_REEL_CHIPS.resetToDefault();
+        }
+    }
+
     @Test
     public void theShareSheetKeepsItsOtherItemsInOrder() {
         Settings.HIDE_THREADS_SHARE_BUTTON.save(true);

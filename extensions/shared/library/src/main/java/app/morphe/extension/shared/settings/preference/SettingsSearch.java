@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * How the settings search matches a row: every word typed has to appear somewhere in the row's
@@ -53,10 +54,27 @@ public final class SettingsSearch {
         }
     }
 
-    /** Text as the search compares it: accents taken off, lower case in no particular language. */
+    /** The marks {@link #normalized} takes off, compiled once: String.replaceAll compiled it again for every text. */
+    private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+
+    /**
+     * Text as the search compares it: accents taken off, lower case in no particular language.
+     * Plain ASCII has no accents to take off, so it skips the decomposition. Each letter typed in
+     * the settings search normalizes every row's texts, about five thousand of them, and with a
+     * pattern compiled per text that made typing lag (#601).
+     */
     public static String normalized(@Nullable CharSequence value) {
         if (value == null) return "";
-        return Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+        String text = value.toString();
+        if (ascii(text)) return text.toLowerCase(Locale.ROOT);
+        return MARKS.matcher(Normalizer.normalize(text, Normalizer.Form.NFD)).replaceAll("").toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean ascii(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) >= 0x80) return false;
+        }
+        return true;
     }
 
     /** The words of [query], normalized. None for a blank query. */

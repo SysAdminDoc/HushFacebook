@@ -50,6 +50,7 @@ public class ControlsLiftTest {
 
     @After
     public void restore() {
+        TranslucentBars.forgetControlsDueForTests();
         Settings.TRANSLUCENT_BARS.resetToDefault();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
         HookStatus.clear();
@@ -140,6 +141,28 @@ public class ControlsLiftTest {
         Settings.TRANSLUCENT_BARS.save(false);
         screen.bars.update();
         assertEquals(0f, reels.host.getTranslationY(), 0f);
+    }
+
+    /**
+     * #594: controls that show up between the stretch's looks, a second apart, were held only at the
+     * next look, so a reel's time and seek bar jumped up a moment after they appeared, on the first
+     * reel and on the first one after an ad. A scrubber's mount has the very next frame look.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void controlsMountedBetweenLooksAreHeldOnTheNextFrame() {
+        Settings.TRANSLUCENT_BARS.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        screen.bars.update();
+        Reels reels = new Reels(screen);
+        int tabsTop = topOnScreen(screen.tabBar);
+
+        screen.bars.update();
+        assertEquals("a frame between looks doesn't look for them on its own", 0f, reels.host.getTranslationY(), 0f);
+
+        TranslucentBars.controlsMounted();
+        screen.bars.update();
+        assertEquals("held on the frame after the scrubber's mount", tabsTop, bottomOnScreen(reels.host));
     }
 
     @Test

@@ -51,7 +51,8 @@ public enum PatchFamily {
             Settings.HIDE_STORIES_YOU_MIGHT_LIKE,
             Settings.HIDE_FEED_MEMORIES, Settings.HIDE_FEED_FRIEND_REQUESTS, Settings.HIDE_FRIENDS_LOCATIONS,
             Settings.HIDE_NOTIFICATION_POST_FOOTER, Settings.HIDE_FIND_FRIENDS_CARD, Settings.HIDE_SEARCH_FOR_YOU,
-            Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW, Settings.HIDE_RELATED_POSTS),
+            Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW, Settings.HIDE_FRIENDS_TAB_PEOPLE_YOU_MAY_KNOW,
+            Settings.HIDE_RELATED_POSTS),
     STORIES_TRAY(FamilyNames.STORIES_TRAY, "storiesTray", null,
             Settings.HIDE_TOP_STORIES_TRAY, Settings.HIDE_STORIES_BETWEEN_POSTS, Settings.HIDE_HOME_COMPOSER),
     FEED_REELS(FamilyNames.FEED_REELS, "feedReels", null,
@@ -74,7 +75,7 @@ public enum PatchFamily {
             Settings.HIDE_POST_PROMPTS, Settings.HIDE_POST_FOLLOW_LINK, Settings.HIDE_POST_SUBSCRIBE_LINK,
             Settings.HIDE_POST_JOIN_BUTTON, Settings.HIDE_POST_X,
             Settings.HIDE_POST_COUNTS, Settings.HIDE_POST_REACTIONS, Settings.HIDE_COMMENT_REACTIONS,
-            Settings.REACTIONS_ON_LIKE_BUTTON, Settings.HIDE_REACTION_BUBBLES, Settings.HIDE_REACTOR_NAMES,
+            Settings.HIDE_COMMENT_REACTION_COUNTS, Settings.REACTIONS_ON_LIKE_BUTTON, Settings.HIDE_REACTION_BUBBLES, Settings.HIDE_REACTOR_NAMES,
             Settings.SHOW_POST_COMMENT_BUTTON),
     PROFILE_PICTURES(FamilyNames.PROFILE_PICTURES, "profilePictures", null,
             Settings.HIDE_FEED_PROFILE_PICTURES, Settings.HIDE_COMMENT_PROFILE_PICTURES),
@@ -121,7 +122,8 @@ public enum PatchFamily {
     STORY_VIEWER_CLEANUP(FamilyNames.STORY_VIEWER_CLEANUP, "storyViewerCleanup", null,
             Settings.HIDE_STORY_CREDITS, Settings.HIDE_STORY_REPLY_SUGGESTIONS, Settings.HIDE_STORY_SUBSCRIBE,
             Settings.HIDE_STORY_FOLLOW, Settings.HIDE_STORY_REPLY_BAR, Settings.HIDE_STORY_UP_NEXT,
-            Settings.HIDE_STORY_CREATE_CARDS, Settings.STORY_PROGRESS_BAR, Settings.STORY_FLAT_SLIDE),
+            Settings.HIDE_STORY_CREATE_CARDS, Settings.STORY_PROGRESS_BAR, Settings.STORY_FLAT_SLIDE,
+            Settings.SHOW_STORY_TIME),
     STORY_RINGS(FamilyNames.STORY_RINGS, "storyRings", null,
             Settings.HIDE_FEED_STORY_RINGS, Settings.HIDE_COMMENT_STORY_RINGS, Settings.HIDE_PROFILE_STORY_RINGS),
     PINCH_TO_ZOOM(FamilyNames.PINCH_TO_ZOOM, "pinchToZoom", null,
@@ -134,13 +136,14 @@ public enum PatchFamily {
     SPONSORED_PROFILE_POSTS(FamilyNames.SPONSORED_PROFILE_POSTS, "sponsoredProfilePosts", null,
             Settings.HIDE_SPONSORED_PROFILE_POSTS),
     PROFILE_NOTES(FamilyNames.PROFILE_NOTES, "profileNotes", null,
-            Settings.HIDE_PROFILE_NOTES),
+            Settings.HIDE_PROFILE_NOTES, Settings.HIDE_PROFILE_GIFTS),
     LOCAL_PROFILE_COUNTS(FamilyNames.LOCAL_PROFILE_COUNTS, "localProfileCounts", null,
             Settings.LOCAL_PROFILE_COUNTS),
     POST_ACTION_BUTTONS(FamilyNames.POST_ACTION_BUTTONS, "postActionButtons", null,
             Settings.POST_SAVE_BUTTON, Settings.POST_DOWNLOAD_BUTTON, Settings.HIDE_POST_LIKE_BUTTON,
             Settings.HIDE_POST_COMMENT_BUTTON, Settings.HIDE_POST_REPOST_BUTTON, Settings.HIDE_POST_SHARE_BUTTON,
-            Settings.HIDE_POST_SEND_BUTTON, Settings.IGNORE_POST_ROW_TAPS),
+            Settings.HIDE_POST_SEND_BUTTON, Settings.HIDE_POST_STARS_BUTTON, Settings.HIDE_POST_SAVE_BUTTON,
+            Settings.IGNORE_POST_ROW_TAPS),
     SPONSORED_MARKETPLACE(FamilyNames.SPONSORED_MARKETPLACE, "sponsoredMarketplace", null,
             Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS, Settings.MARKETPLACE_ADVANCED_SEARCH,
             Settings.MARKETPLACE_FILTERS_BUTTON, Settings.MARKETPLACE_LISTING_DATE),
@@ -152,21 +155,23 @@ public enum PatchFamily {
             Settings.HIDE_REEL_CHIPS, Settings.HIDE_REEL_FOLLOW_BUTTON, Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON,
             Settings.HIDE_REEL_SOCIAL_FOOTER, Settings.HIDE_REEL_THREADS_CARDS, Settings.HIDE_REEL_POST_CARDS,
             Settings.FOLLOWED_REELS_ONLY,
-            Settings.REEL_CLEAN_MODE, Settings.REEL_CLEAN_BUTTON, Settings.PLAY_REELS_ONCE,
+            Settings.REEL_CLEAN_MODE, Settings.REEL_CLEAN_BUTTON, Settings.REEL_CLEAN_EXIT_FAINT, Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO, Settings.HIDE_REEL_SEARCH_PILL, Settings.HIDE_VIEWER_TOP_BUTTONS, Settings.HIDE_REELS_TAB_TITLE,
-            Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM, Settings.BURN_IN_FADE,
+            Settings.HIDE_VIEWER_BACK_BUTTON, Settings.BURN_IN_STAY_DIM, Settings.BURN_IN_TAP_BACK, Settings.BURN_IN_FADE,
             Settings.GRAY_REELS, Settings.REELS_MINUTES, Settings.HIDE_REEL_COUNTS,
             Settings.HIDE_REEL_SAVE_BUTTON, Settings.HIDE_REEL_WHATSAPP_BUTTON, Settings.HIDE_REEL_LIKE_BUTTON,
             Settings.HIDE_REEL_COMMENT_BUTTON, Settings.HIDE_REEL_REPOST_BUTTON, Settings.HIDE_REEL_SHARE_BUTTON,
             Settings.SHOW_REEL_COMMENT_BUTTON, Settings.LONG_VIDEO_BUTTONS,
-            Settings.SHOW_REEL_POST_DATE, Settings.HIDE_REEL_NEW_FOR_YOU,
-            Settings.HIDE_REEL_SOUND_BUTTON, Settings.REEL_SPEAKER_ABOVE_MENU, Settings.HIDE_REEL_AUDIO_LINE,
+            Settings.SHOW_REEL_POST_DATE, Settings.REEL_POST_DATE_AFTER_CAPTION, Settings.HIDE_REEL_NEW_FOR_YOU,
+            Settings.HIDE_REEL_SOUND_BUTTON, Settings.REEL_SPEAKER_ABOVE_MENU, Settings.HIDE_REEL_AUDIO_LINE, Settings.HIDE_REEL_AI_LABEL,
+            Settings.HIDE_REEL_HASHTAGS,
             Settings.HIDE_SLOW_CONNECTION_MESSAGE, Settings.HIDE_UP_NEXT, Settings.HIDE_REEL_FULLSCREEN_PILL, Settings.HIDE_FEED_VIDEO_BUTTONS,
             Settings.FEED_VIDEOS_ALONE, Settings.SHARED_REELS_ALONE, Settings.HIDE_SHARED_REEL_FRIEND_SHEET,
             Settings.WATCH_AGAIN_IN_PLACE,
             Settings.SAVED_VIDEOS_IN_PLAYER, Settings.SAVED_VIDEOS_IN_ORDER, Settings.SAVED_VIDEOS_STAY_ON_END,
-            Settings.SAVED_POSTS_IN_ROW, Settings.SKIP_STILL_WATCHING,
-            Settings.FILL_REELS, Settings.PLAY_FEED_REELS_WHOLE),
+            Settings.SAVED_POSTS_IN_ROW, Settings.FEED_REELS_ROW_IN_ORDER, Settings.SKIP_STILL_WATCHING,
+            Settings.FILL_REELS, Settings.FILL_EVERY_REEL, Settings.PLAY_FEED_REELS_WHOLE,
+            Settings.UNCROPPED_FEED_REELS),
     REEL_PROMPTS(FamilyNames.REEL_PROMPTS, "reelPrompts", null,
             Settings.HIDE_REEL_PROMPTS),
     REEL_WATCH_HISTORY(FamilyNames.REEL_WATCH_HISTORY, "reelWatchHistory", null,
@@ -205,7 +210,7 @@ public enum PatchFamily {
             Settings.HIDE_VIDEO_COMMENT_COMPOSER, Settings.HIDE_LIVE_COMMENT_BAR, Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES,
             Settings.HIDE_POST_COMMENT_PREVIEWS, Settings.HIDE_COMMENT_DOWNVOTE_BUTTON,
             Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_REPLY_BUTTON, Settings.HIDE_COMMENTER_BADGES,
-            Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE,
+            Settings.HIDE_COMMENT_EMOJI_ROW, Settings.KEEP_COMMENT_KEYBOARD_CLOSED, Settings.HIDE_COMMENT_BOX_LINE,
             Settings.HIDE_COMMENT_BOX,
             Settings.COMMENT_BLOCK_BUTTON, Settings.REACTOR_BLOCK_BUTTON, Settings.FILTER_COMMENT_SEARCH),
     // Open comments at is a list, Facebook's height, full or half (#179); the rest are switches.
@@ -255,8 +260,6 @@ public enum PatchFamily {
             Settings.HIDE_DATA_MODE_BANNER, Settings.HIDE_FREE_MODE_BANNER),
     SCREEN_TRANSITIONS(FamilyNames.SCREEN_TRANSITIONS, "turnOffScreenTransitions", null,
             Settings.TURN_OFF_SCREEN_TRANSITIONS),
-    APP_ICONS(FamilyNames.APP_ICONS, "unlockAppIcons", null,
-            Settings.UNLOCK_APP_ICONS, Settings.USE_APP_ICON_IN_HEADER),
     // No switch: the typed text is the choice, and Pause makes it read blank, Facebook's wordmark.
     HEADER_TEXT(FamilyNames.HEADER_TEXT, "headerText", Settings.HEADER_TEXT),
     EXTERNAL_BROWSER(FamilyNames.EXTERNAL_BROWSER, "externalBrowser", null,
@@ -276,6 +279,10 @@ public enum PatchFamily {
     PHOTO_DOWNLOAD(FamilyNames.PHOTO_DOWNLOAD, "photoDownload", null,
             Settings.DOWNLOAD_PHOTOS, Settings.POST_MENU_PHOTO_SAVE, Settings.POST_MENU_PHOTO_SEARCH,
             Settings.MARKETPLACE_PHOTO_SAVE),
+    // Not a media download: it only picks the folder Facebook's own file download goes to, so it
+    // reads none of DOWNLOAD_SWITCHES and stays out of DOWNLOADS.
+    FILE_DOWNLOADS(FamilyNames.FILE_DOWNLOADS, "fileDownloads", null,
+            Settings.SAVE_FILES_TO_DOWNLOADS),
     START_TAB(FamilyNames.START_TAB, "startTab", null,
             Settings.OPEN_ON_CHOSEN_TAB),
     FOLLOWING_HOME(FamilyNames.FOLLOWING_HOME, "followingHome", null,
@@ -333,7 +340,7 @@ public enum PatchFamily {
     SEARCH_DATE_RANGE(FamilyNames.SEARCH_DATE_RANGE, "searchDateRange", null,
             Settings.SEARCH_DATE_RANGE),
     SEARCH_POSTS_TAB(FamilyNames.SEARCH_POSTS_TAB, "searchPostsTab", null,
-            Settings.SEARCH_POSTS_TAB),
+            Settings.SEARCH_POSTS_TAB, Settings.SEARCH_VIDEOS_TAB),
     SEARCH_SAVED_BUTTON(FamilyNames.SEARCH_SAVED_BUTTON, "searchSavedButton", null,
             Settings.SEARCH_SAVED_BUTTON),
     ANALYTICS_UPLOADS(FamilyNames.ANALYTICS_UPLOADS, "analyticsUploads", null,
@@ -350,6 +357,10 @@ public enum PatchFamily {
             Settings.HIDE_READ_RECEIPTS),
     ORIGINAL_CHAT_MEDIA(FamilyNames.ORIGINAL_CHAT_MEDIA, "originalChatMedia", null,
             Settings.ORIGINAL_CHAT_MEDIA),
+    SHARE_TO_CHATS(FamilyNames.SHARE_TO_CHATS, "shareToChats", null,
+            Settings.SHARE_TO_CHATS),
+    // No switch: color codes pick the colors, and Pause makes them read blank, so chats keep Facebook's own.
+    CHAT_BACKGROUND(FamilyNames.CHAT_BACKGROUND, "chatBackground", Settings.CHAT_BACKGROUND_COLOR),
     PROMO_NOTIFICATIONS(FamilyNames.PROMO_NOTIFICATIONS, "promoNotifications", null,
             Settings.BLOCK_TRENDING_VIDEO_NOTIFICATIONS, Settings.BLOCK_MEMORY_NOTIFICATIONS,
             Settings.BLOCK_BIRTHDAY_NOTIFICATIONS, Settings.BLOCK_HIGHLIGHT_NOTIFICATIONS,
@@ -363,7 +374,8 @@ public enum PatchFamily {
     // The theme is written into the APK and stays; Pause takes Black cards back to near black and the lines away.
     AMOLED_THEME(FamilyNames.AMOLED_THEME, "amoledTheme", FamilyNames.AMOLED_THEME, Settings.AMOLED_FLAT_CARDS,
             Settings.AMOLED_FEED_GAPS),
-    MATERIAL_YOU_THEME(FamilyNames.MATERIAL_YOU_THEME, "materialYouTheme", FamilyNames.MATERIAL_YOU_THEME),
+    // Written into the APK too, but its switch puts Facebook's colours back at the next start (D#527), and Pause with it.
+    MATERIAL_YOU_THEME(FamilyNames.MATERIAL_YOU_THEME, "materialYouTheme", null, Settings.MATERIAL_YOU),
     // No switch: a list picks the accent, and Pause makes it read Facebook's blue, so nothing stays in.
     ACCENT_COLOR(FamilyNames.ACCENT_COLOR, "accentColor", Settings.ACCENT_COLOR),
     // No switch: three color codes pick the colors, and Pause makes them read Facebook's own.
@@ -639,11 +651,13 @@ public enum PatchFamily {
                 if (setting != Settings.NOTIFICATION_QUIET_HOURS) anyOn |= setting.savedValue();
             }
         }
-        // Burn-in guard runs by its list; Stay dim when I tap and Smooth fade do nothing with the guard off (#288, #523).
+        // Burn-in guard runs by its list; Stay dim when I tap, Tap the video to bring them back and Smooth fade
+        // do nothing with the guard off (#288, #523).
         if (this == REEL_DECLUTTER) {
             anyOn = Settings.BURN_IN_GUARD.savedValue() != BurnInMode.OFF;
             for (BooleanSetting setting : switches) {
-                if (setting != Settings.BURN_IN_STAY_DIM && setting != Settings.BURN_IN_FADE) {
+                if (setting != Settings.BURN_IN_STAY_DIM && setting != Settings.BURN_IN_TAP_BACK
+                        && setting != Settings.BURN_IN_FADE) {
                     anyOn |= setting.savedValue();
                 }
             }
@@ -702,6 +716,7 @@ public enum PatchFamily {
         LogBufferManager.registerReportSection(SupportedLinks.REPORT);
         LogBufferManager.registerReportSection(LastScreen.REPORT);
         LogBufferManager.registerReportSection(ScreenLog.REPORT);
+        LogBufferManager.registerReportSection(BurnInGuard.REPORT);
         LogBufferManager.registerReportSection(MaterialYouTheme.REPORT);
         LogBufferManager.registerReportSection(SeenPosts.REPORT);
         LogBufferManager.registerReportSection(AppLock.REPORT);

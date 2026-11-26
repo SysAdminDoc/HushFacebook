@@ -14,9 +14,12 @@ import static android.os.Looper.getMainLooper;
 import android.app.Activity;
 import android.os.SystemClock;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.facebook.litho.ComponentTree;
+import com.facebook.litho.LithoView;
 import com.facebook.video.engine.api.VideoPlayerParams;
 
 import org.junit.After;
@@ -329,10 +332,10 @@ public class NextReelTest {
     }
 
     /**
-     * Stands in for the Reels viewer's pager, a list of pages the screen's size: [onScroll] is what
-     * Facebook binds when it's scrolled a page, a page it had built ahead, [onReturn] what it binds
-     * when it's scrolled on again after a step back, and [onLaidOut] what it binds once a page the
-     * scroll built is laid out and the pager nudged.
+     * Stands in for the Reels viewer's pager, a list of pages the screen's size or [pageHeight] tall:
+     * [onScroll] is what Facebook binds when it's scrolled a page, a page it had built ahead, [onReturn]
+     * what it binds when it's scrolled on again after a step back, and [onLaidOut] what it binds once a
+     * page the scroll built is laid out and the pager nudged.
      */
     static final class ReelsPager extends RecyclerView {
         String onScroll;
@@ -343,18 +346,23 @@ public class NextReelTest {
         int backs;
         private final PlayerOrigin origin;
 
-        ReelsPager(Activity screen, PlayerOrigin origin) {
+        ReelsPager(Activity screen, PlayerOrigin origin, int pageHeight) {
             super(screen, true);
             this.origin = origin;
-            addView(new View(screen), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            addView(new View(screen), new LayoutParams(LayoutParams.MATCH_PARENT, pageHeight));
+        }
+
+        /** One page's height, the pager's own unless a reel runs under the tab bar. */
+        int page() {
+            return getChildAt(0).getHeight();
         }
 
         @Override
         public void scrollBy(int x, int y) {
-            if (y == getHeight()) {
+            if (y == page()) {
                 String binds = ++scrolls == 1 ? onScroll : backs > 0 ? onReturn : null;
                 if (binds != null) NextReel.bound(new Object(), origin, new RichParams(binds));
-            } else if (y == -getHeight()) {
+            } else if (y == -page()) {
                 backs++;
             } else if (y > 0) {
                 nudges++;
@@ -365,10 +373,25 @@ public class NextReelTest {
 
     /** The screen you leave on, holding the Reels viewer's pager, laid out and then stopped. */
     private ReelsPager leaveScreen() {
+        return leaveScreen(ViewGroup.LayoutParams.MATCH_PARENT, null);
+    }
+
+    /**
+     * The screen you leave on, its Reels viewer's pages [pageHeight] tall, the pager in a Litho view
+     * rendering [tree] when there's one, laid out and then stopped.
+     */
+    private ReelsPager leaveScreen(int pageHeight, ComponentTree tree) {
         ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();
         Activity screen = controller.get();
-        ReelsPager pager = new ReelsPager(screen, reels);
-        screen.setContentView(pager);
+        ReelsPager pager = new ReelsPager(screen, reels, pageHeight);
+        if (tree == null) {
+            screen.setContentView(pager);
+        } else {
+            LithoView surface = new LithoView(screen);
+            surface.tree = tree;
+            surface.addView(pager);
+            screen.setContentView(surface);
+        }
         View decor = screen.getWindow().getDecorView();
         decor.measure(View.MeasureSpec.makeMeasureSpec(720, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(1600, View.MeasureSpec.EXACTLY));
@@ -392,6 +415,23 @@ public class NextReelTest {
 
         assertEquals("the reel Facebook bound after the end", List.of("1", "2"), askedVideos());
         assertEquals(List.of(first), released);
+    }
+
+    @Test
+    public void aPageTallerThanTheViewerMovesItOnByThePage() {
+        // A reel can run under the tab bar, its page taller than the viewer (emulator, 588: 2272 in 2062).
+        ReelsPager pager = leaveScreen(2000, null);
+        assertTrue("the page is taller than the viewer", pager.page() > pager.getHeight());
+        pager.onScroll = "2";
+        bind("1");
+        Player first = leaveOn("1");
+
+        playTo(first, first.length - 100);
+        idle(50);
+
+        assertEquals("the viewer was scrolled a page", 1, pager.scrolls);
+        assertEquals("the reel the viewer bound once scrolled", List.of("1", "2"), askedVideos());
+        assertEquals("the one that ended was let go", List.of(first), released);
     }
 
     @Test
@@ -492,6 +532,156 @@ public class NextReelTest {
         assertEquals("moved on past the limit", 2 * NextReel.MOVES, pager.scrolls);
         assertEquals(List.of("1"), askedVideos());
         assertSame("the reel plays again", first, BackgroundPlay.currentBackgroundPlayer());
+    }
+
+    /**
+     * Stands in for the handler 588's loading page runs when it shows (a kotlin Function1 case of a
+     * shared lambda class), which asks for more reels; [loads] is what Facebook does once asked.
+     */
+    public static final class ShownHandler {
+        int runs;
+        Runnable loads;
+
+        public Object invoke(Object event) {
+            runs++;
+            if (loads != null) loads.run();
+            return null;
+        }
+    }
+
+    /** Stands in for one of Facebook's surfaces (588 SurfaceManager), which renders [tree] and was resumed [resumes] times. */
+    static final class Surface {
+        final ComponentTree tree;
+        int resumes;
+
+        Surface(ComponentTree tree) {
+            this.tree = tree;
+        }
+    }
+
+    /** Stands in for the surface's resume (588 SurfaceManager$6), the runnable made with just the surface. */
+    static final class Resume implements Runnable {
+        private final Surface surface;
+
+        Resume(Surface surface) {
+            this.surface = surface;
+        }
+
+        @Override
+        public void run() {
+            surface.resumes++;
+        }
+    }
+
+    @Test
+    public void withNoReelLoadedTheViewersPausedSurfaceResumesSoTheReelFacebookLoadsReachesIt() {
+        ComponentTree tree = new ComponentTree();
+        ReelsPager pager = leaveScreen(ViewGroup.LayoutParams.MATCH_PARENT, tree);
+        Surface viewer = new Surface(tree);
+        Surface elsewhere = new Surface(new ComponentTree());
+        NextReel.surfacePaused(elsewhere, Resume.class);
+        NextReel.surfacePaused(viewer, Resume.class);
+        ShownHandler shown = new ShownHandler();
+        // Facebook loads a reel once asked, but only a resumed surface shows it in the viewer.
+        shown.loads = () -> {
+            if (viewer.resumes > 0) pager.onReturn = "2";
+        };
+        NextReel.loadingPage(shown);
+        bind("1");
+        Player first = leaveOn("1");
+        idle(50);
+        assertEquals("resumed before the end", 0, viewer.resumes);
+
+        playTo(first, first.length - 100);
+        idle(NextReel.SCROLL_WAIT_MS + 50);
+
+        assertEquals("the viewer's surface resumed", 1, viewer.resumes);
+        assertEquals("another surface resumed", 0, elsewhere.resumes);
+        assertEquals("the reel Facebook loaded", List.of("1", "2"), askedVideos());
+        assertEquals(List.of(first), released);
+        Player second = handler.started.get(1);
+        playTo(second, second.length - 100);
+        assertEquals("resumed again", 1, viewer.resumes);
+    }
+
+    @Test
+    public void withNoReelLoadedAfterTheEndFacebookIsAskedForMoreAndTheReelItLoadsPlays() {
+        ReelsPager pager = leaveScreen();
+        ShownHandler shown = new ShownHandler();
+        // Once asked, Facebook loads a reel onto the loading page, which binds when the pager comes back to it.
+        shown.loads = () -> pager.onReturn = "2";
+        NextReel.loadingPage(shown);
+        bind("1");
+        Player first = leaveOn("1");
+        idle(50);
+        assertEquals("asked before the end", 0, shown.runs);
+
+        playTo(first, first.length - 100);
+        assertEquals("Facebook was asked for more at the end", 1, shown.runs);
+        idle(NextReel.SCROLL_WAIT_MS + 50);
+
+        assertEquals("the reel Facebook loaded", List.of("1", "2"), askedVideos());
+        assertEquals(List.of(first), released);
+        Player second = handler.started.get(1);
+        playTo(second, second.length - 100);
+        assertEquals("the same loading page run twice", 1, shown.runs);
+    }
+
+    @Test
+    public void aLoadingPageMadeAfterTheEndIsRunToo() {
+        ReelsPager pager = leaveScreen();
+        bind("1");
+        Player first = leaveOn("1");
+        playTo(first, first.length - 100);
+
+        // The scroll built the loading page, off the main thread.
+        ShownHandler shown = new ShownHandler();
+        shown.loads = () -> pager.onReturn = "2";
+        NextReel.loadingPage(shown);
+        assertEquals("run before the main thread got to it", 0, shown.runs);
+        idle(50);
+        assertEquals(1, shown.runs);
+        idle(NextReel.SCROLL_WAIT_MS + 50);
+        assertEquals(List.of("1", "2"), askedVideos());
+
+        // A reel ready again: a loading page made now waits for the next end with none.
+        ShownHandler later = new ShownHandler();
+        NextReel.loadingPage(later);
+        idle(50);
+        assertEquals("run with a reel playing on", 0, later.runs);
+    }
+
+    @Test
+    public void eachEndRunsAFewLoadingPagesAtMostAndNoneInFacebookOrWithTheSwitchOff() {
+        ShownHandler foreground = new ShownHandler();
+        NextReel.loadingPage(foreground);
+        idle(50);
+        assertEquals("run with Facebook on screen", 0, foreground.runs);
+
+        leaveScreen();
+        bind("1");
+        Player first = leaveOn("1");
+        playTo(first, first.length - 100);
+        assertEquals("the page made before you left", 1, foreground.runs);
+
+        Settings.NEXT_REEL_IN_BACKGROUND.save(false);
+        ShownHandler off = new ShownHandler();
+        NextReel.loadingPage(off);
+        idle(50);
+        assertEquals("run with the switch off", 0, off.runs);
+        Settings.NEXT_REEL_IN_BACKGROUND.save(true);
+
+        List<ShownHandler> renders = new ArrayList<>();
+        for (int render = 0; render < NextReel.ASKS + 1; render++) {
+            ShownHandler again = new ShownHandler();
+            renders.add(again);
+            NextReel.loadingPage(again);
+            idle(50);
+        }
+        int ran = foreground.runs;
+        for (ShownHandler each : renders) ran += each.runs;
+        assertEquals("loading pages one end ran", NextReel.ASKS, ran);
+        assertEquals("the first page made again", 1, renders.get(0).runs);
     }
 
     @Test

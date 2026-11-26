@@ -7,8 +7,10 @@ package app.morphe.extension.facebook.navigation;
 import android.app.Activity;
 import android.app.Application;
 import android.content.res.Configuration;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 
@@ -146,6 +148,8 @@ public final class TabBarScrollAway {
         droppedTop = 0;
         loggedUnder = false;
         reelsList = new WeakReference<>(null);
+        reelsTabList = new WeakReference<>(null);
+        listIdForTests = 0;
     }
 
     /**
@@ -166,6 +170,7 @@ public final class TabBarScrollAway {
     static void mainScreenCreated(Activity screen) {
         mainScreen = new WeakReference<>(screen);
         frontScreen = new WeakReference<>(screen);
+        ReelsStatusBar.mainScreenCreated(screen);
         if (screen != null) watchScreens(screen.getApplication());
     }
 
@@ -338,12 +343,21 @@ public final class TabBarScrollAway {
                     + " for a screen over the main one, left as Facebook made it");
             return height;
         }
-        boolean tabsOnTop = tabsOnTop();
         boolean shown = onReelsTab();
+        if (!shown && reelsOpenedOverTab() != null) {
+            Logger.printDebug(() -> "Top bars: a Reels row of " + height
+                    + " for reels opened from a post over another tab, left as Facebook made it");
+            return height;
+        }
+        boolean tabsOnTop = tabsOnTop();
         boolean under = shown ? reelUnderBars(tabsOnTop) : reelsWillRunUnderBars(tabsOnTop);
         int dropped = droppedTop;
+        // A list not laid out yet runs down past the bar Hide the tab bar on the Reels tab takes
+        // away (#566); a list laid out says how tall it is.
+        int freed = list > 0 || tabsOnTop ? 0 : ReelsTabBarHidden.roomFreed();
         Logger.printDebug(() -> "Top bars: a Reels row of " + height + (shown ? " on the Reels tab" : " made ahead")
-                + ", under the bars " + under + ", list " + list + ", tab padding " + tabPad + ", padding dropped " + dropped);
+                + ", under the bars " + under + ", list " + list + ", tab padding " + tabPad + ", padding dropped " + dropped
+                + ", room the hidden tab bar frees " + freed);
         if (list > 0 && window > 0 && height > window) {
             Logger.printDebug(() -> "Top bars: a Reels row of " + height + " is taller than the window's "
                     + window + ", worked out for the screen held the other way, made " + list);
@@ -357,16 +371,31 @@ public final class TabBarScrollAway {
         IntegerSetting listSeen = wide ? Stored.WIDE_LIST_HEIGHT : Stored.LIST_HEIGHT;
         IntegerSetting setupSeen = wide ? Stored.WIDE_ROW_SETUP : Stored.ROW_SETUP;
         int wanted;
-        if (list > height) {
+        boolean seenFits = rowMade.get() == height && listSeen.get() > height
+                && (setupSeen.get() == setup || sameListUnderTabBar(setupSeen.get(), setup));
+        // A list laid out while another tab shows is laid out for that tab. With the tab bar kept on
+        // screen under See-through bars, Home leaves the Reels list its whole height, only pushed
+        // down below the status bar's strip, so the strip's room was counted twice: the first reel
+        // came out taller than its page and its caption, time and seek bar sat behind the bar (#554,
+        // S22 2026-11-26: rows made 2391 for a list of 2316). The height seen under the same switches
+        // wins for those rows, so once the Reels tab has shown, its list is the one they get.
+        if (list > height && (shown || !seenFits)) {
             wanted = list;
             if (rowMade.get() != height) rowMade.save(height);
             if (listSeen.get() != list) listSeen.save(list);
             if (setupSeen.get() != setup) setupSeen.save(setup);
-        } else if (rowMade.get() == height && listSeen.get() > height
-                && (setupSeen.get() == setup || sameListUnderTabBar(setupSeen.get(), setup))) {
+        } else if (seenFits) {
             wanted = listSeen.get();
-        } else if (under) {
-            wanted = height + (tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0);
+        } else if (under || freed > 0) {
+            int grown = height + (!under ? 0 : tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0) + freed;
+            if (under && list <= 0 && window > 0 && ReelsTabBarHidden.on() && !Settings.KEEP_TOP_BAR.get()) {
+                // The list a reel under the bars runs in once the tab bar is hidden on Reels: the
+                // window down to the navigation bar its page keeps. With no list seen for this
+                // setup yet, as on the first start after the switch goes on, Facebook's height
+                // stopped short of it by the tab bar it was worked out for (#566).
+                grown = Math.max(grown, window - ReelsTabBarHidden.navigationStrip());
+            }
+            wanted = grown;
         } else {
             return height;
         }
@@ -407,11 +436,40 @@ public final class TabBarScrollAway {
     /** The Reels list last found, held weakly, so each row doesn't search the main screen again. */
     static volatile WeakReference<View> reelsList = new WeakReference<>(null);
 
-    /** The Reels list last found while it's shown, or null. */
+    /**
+     * The Reels list while it's shown, or null. One not found yet, or no longer in the window, is
+     * looked up by its id: as the Reels tab first opens, Facebook makes the first rows ahead, before
+     * its list is in the window, and the next row only as the second reel loads, about a second and
+     * a half later. Until then {@link ReelDetailsLift} had no list, so the first reel's name, caption
+     * and buttons sat behind the see-through tab bar and jumped up 200 px a moment later (#594).
+     */
     @Nullable
     static View reelsListShown() {
         View list = reelsList.get();
+        if (list == null || !list.isAttachedToWindow()) list = findReelsList();
         return list != null && list.isAttachedToWindow() && list.isShown() ? list : null;
+    }
+
+    /**
+     * The Reels list by its id in the main screen, remembered when found, or null. Facebook makes
+     * rows off the main thread too and reads the list there itself, so a search that meets the view
+     * tree mid-change finds nothing.
+     */
+    @Nullable
+    private static View findReelsList() {
+        int id = reelsListId();
+        if (id == 0) id = listIdForTests;
+        Activity screen = mainScreen.get();
+        if (id == 0 || screen == null) return null;
+        View list;
+        try {
+            list = screen.findViewById(id);
+        } catch (RuntimeException midChange) {
+            Logger.printDebug(() -> "Top bars: the Reels list couldn't be read: " + midChange);
+            return null;
+        }
+        if (list != null) reelsList = new WeakReference<>(list);
+        return list;
     }
 
     /**
@@ -430,21 +488,69 @@ public final class TabBarScrollAway {
     static int reelsListHeight() {
         View list = reelsList.get();
         if (list == null || !list.isAttachedToWindow()) {
-            int id = reelsListId();
-            Activity screen = mainScreen.get();
-            if (id == 0 || screen == null) return 0;
-            try {
-                list = screen.findViewById(id);
-            } catch (RuntimeException midChange) {
-                Logger.printDebug(() -> "Top bars: the Reels list couldn't be read: " + midChange);
-                return 0;
-            }
+            list = findReelsList();
             if (list == null) return 0;
-            reelsList = new WeakReference<>(list);
         }
+        if (list.isShown() && onReelsTab()) reelsTabList = new WeakReference<>(list);
         if (list.getWindowVisibility() != View.VISIBLE) return 0;
         int height = list.getHeight() - list.getPaddingTop() - list.getPaddingBottom();
         return height <= 0 ? 0 : height + ReelsStatusBar.roomAbove(list);
+    }
+
+    /** The Reels tab's own list, as last read while that tab showed, held weakly. */
+    static volatile WeakReference<View> reelsTabList = new WeakReference<>(null);
+
+    /** The Reels list's view id for tests, where the patch hasn't filled {@link #reelsListId}. */
+    static volatile int listIdForTests;
+
+    /**
+     * A Reels list on screen in the main screen that isn't the Reels tab's own, or null: Facebook's
+     * reels scroller, which some phones open inside the main screen over Home when a reel in a post
+     * is tapped (a OnePlus 13, #505), where others open a screen of their own. Facebook worked its
+     * rows out from that list, laid out already, so they fit it. The height kept from the Reels tab,
+     * where See-through bars and Rounded tab bar run the list down under the tab bar, made each of
+     * its rows 210 px taller than the list there: every reel slid down over its seek bar, and
+     * Facebook only called a reel fully in view a swipe later, so the seek bar stayed on the reel
+     * before. Facebook makes rows off the main thread too, so a search that meets the view tree
+     * mid-change finds nothing for that row.
+     */
+    @Nullable
+    static View reelsOpenedOverTab() {
+        View tabList = reelsTabList.get();
+        View list = reelsList.get();
+        if (list != tabList && onScreen(list)) return list;
+        int id = reelsListId();
+        if (id == 0) id = listIdForTests;
+        Activity screen = mainScreen.get();
+        Window window = screen == null ? null : screen.getWindow();
+        View decor = window == null ? null : window.peekDecorView();
+        if (id == 0 || decor == null) return null;
+        try {
+            return onScreenWithId(decor, id, tabList);
+        } catch (RuntimeException midChange) {
+            return null;
+        }
+    }
+
+    /** The first view under [view] with [id] that's on screen and isn't [skip], or null. */
+    @Nullable
+    private static View onScreenWithId(View view, int id, @Nullable View skip) {
+        if (view.getVisibility() != View.VISIBLE) return null;
+        if (view.getId() == id && view != skip && onScreen(view)) return view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0, count = group.getChildCount(); i < count; i++) {
+            View child = group.getChildAt(i);
+            View found = child == null ? null : onScreenWithId(child, id, skip);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /** Whether [view] shows on screen now, some part of it inside the window. */
+    private static boolean onScreen(@Nullable View view) {
+        return view != null && view.isAttachedToWindow() && view.isShown()
+                && view.getWindowVisibility() == View.VISIBLE && view.getGlobalVisibleRect(new Rect());
     }
 
     /** The main screen's window height, or 0 when there's no main screen or it isn't laid out. */
@@ -477,11 +583,21 @@ public final class TabBarScrollAway {
     }
 
     /**
+     * Set in every {@link #barSetup}, so a list height kept before the setup counted Rounded tab bar
+     * and Hide the tab bar on the Reels tab matches none, and is seen again once (#551).
+     */
+    static final int COUNTS_REELS_BAR_SWITCHES = 1 << 10;
+
+    /**
      * The bar switches that change how tall the Reels list runs while Facebook's row stays the same,
      * as one number, so a list height seen under one setup isn't handed to rows under another.
+     * Rounded tab bar and Hide the tab bar on the Reels tab both run the list down to the screen's
+     * bottom. Left out, the height seen with either on stayed the setup's after it was turned off,
+     * so every start grew Facebook's rows by the tab bar's height and the reel's name, caption and
+     * buttons sat behind the bar (#551; emulator 2026-11-24: rows of 2062 made 2272 in a 2062 list).
      */
     static int barSetup() {
-        int bits = 0;
+        int bits = COUNTS_REELS_BAR_SWITCHES;
         if (Settings.TOP_TAB_BAR.get()) bits |= 1;
         if (Settings.BOTTOM_TAB_BAR.get()) bits |= 1 << 1;
         if (Settings.TAB_BAR_SCROLL_AWAY.get()) bits |= 1 << 2;
@@ -491,6 +607,8 @@ public final class TabBarScrollAway {
         if (Settings.HIDE_STATUS_BAR.get()) bits |= 1 << 6;
         // The Reels list runs up under the status bar too (#466), so a height seen before doesn't fit.
         if (ReelsStatusBar.wanted()) bits |= 1 << 7;
+        if (Settings.ROUNDED_TAB_BAR.get()) bits |= 1 << 8;
+        if (Settings.HIDE_REELS_TAB_BAR.get()) bits |= 1 << 9;
         return bits;
     }
 
@@ -510,9 +628,17 @@ public final class TabBarScrollAway {
         static final IntegerSetting WIDE_ROW_MADE = new IntegerSetting("hushfacebook_reels_wide_row_made", 0, false, false);
         static final IntegerSetting WIDE_LIST_HEIGHT = new IntegerSetting("hushfacebook_reels_wide_list_height", 0, false, false);
         static final IntegerSetting WIDE_ROW_SETUP = new IntegerSetting("hushfacebook_reels_wide_row_setup", -1, false, false);
+        /**
+         * The room the tab bar takes above the phone's navigation bar, held upright and on its side,
+         * last read off a laid out bar ({@link ReelsTabBarHidden#roomFreed}). Facebook makes the first
+         * Reels rows as it starts, before its bar is laid out (#566).
+         */
+        static final IntegerSetting BAR_ROOM = new IntegerSetting("hushfacebook_reels_bar_room", 0, false, false);
+        static final IntegerSetting WIDE_BAR_ROOM = new IntegerSetting("hushfacebook_reels_wide_bar_room", 0, false, false);
 
         static {
-            Setting.keepWhenPaused(ROW_MADE, LIST_HEIGHT, ROW_SETUP, WIDE_ROW_MADE, WIDE_LIST_HEIGHT, WIDE_ROW_SETUP);
+            Setting.keepWhenPaused(ROW_MADE, LIST_HEIGHT, ROW_SETUP, WIDE_ROW_MADE, WIDE_LIST_HEIGHT, WIDE_ROW_SETUP,
+                    BAR_ROOM, WIDE_BAR_ROOM);
         }
 
         private Stored() {

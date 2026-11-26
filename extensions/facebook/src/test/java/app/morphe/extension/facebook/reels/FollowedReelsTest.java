@@ -16,6 +16,7 @@ import android.os.Looper;
 import com.facebook.graphql.model.GraphQLStory;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,11 +63,18 @@ public class FollowedReelsTest {
         }
     }
 
+    @Before
+    public void start() {
+        // A player another test opened would keep the next page's first reel.
+        FollowedReels.forgetViewers();
+    }
+
     @After
     public void restore() {
         PauseForTests.resume();
         Settings.FOLLOWED_REELS_ONLY.resetToDefault();
         FollowedReels.forgetViewers();
+        FeedVideoAlone.forgetForTests();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -233,6 +241,51 @@ public class FollowedReelsTest {
 
     private static List<Object> page(Object... items) {
         return Arrays.asList(items);
+    }
+
+    /**
+     * A video tapped in the feed opens a player whose first page is that video alone. With the switch
+     * on, a video from someone you don't follow came off that page, so the player showed another
+     * video, or stayed black with Open feed videos on their own (#565). The first reel after a player
+     * opens stays, from a link as from the feed, and only that one: the reels after it are filtered.
+     */
+    @Test
+    public void theVideoAPlayerOpensOnStays() {
+        Settings.FOLLOWED_REELS_ONLY.save(true);
+        FeedVideoAlone.feedVideoTapped();
+        Item tapped = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        List<Object> opening = page(tapped);
+        assertSame(opening, FollowedReelsForTests.followedOnly(opening));
+        assertTrue(FollowedReelsForTests.followedOnly(page(FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))).isEmpty());
+
+        FeedVideoAlone.reelsViewerOpening("external_deeplink::fb_shorts_viewer");
+        Object card = new Object();
+        Item shared = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        List<?> sharedPage = new ArrayList<>(FollowedReelsForTests.followedOnly(
+                page(card, shared, FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))));
+        assertEquals(Arrays.asList(card, shared), sharedPage);
+    }
+
+    /**
+     * Only a page soon after a player opens brings the reel it opened on, so a page long after is
+     * filtered as usual, and a page of cards alone leaves the opening waiting for its reel.
+     */
+    @Test
+    public void onlyTheFirstReelSoonAfterAPlayerOpensStays() {
+        Settings.FOLLOWED_REELS_ONLY.save(true);
+        long[] clock = {1_000L};
+        FollowedReels.clockForTests = () -> clock[0];
+        FeedVideoAlone.feedVideoTapped();
+        clock[0] += FollowedReels.OPENING_WINDOW_MS + 1;
+        assertTrue(FollowedReelsForTests.followedOnly(page(FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))).isEmpty());
+
+        FeedVideoAlone.feedVideoTapped();
+        Object card = new Object();
+        assertEquals(page(card), new ArrayList<>(FollowedReelsForTests.followedOnly(page(card))));
+        Item tapped = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        assertEquals(page(tapped), new ArrayList<>(FollowedReelsForTests.followedOnly(page(tapped))));
+        String pages = line(FollowedReels.PAGES_ROUTE);
+        assertTrue(pages, pages != null && pages.contains(FollowedReels.OPENING_REEL + " 1"));
     }
 
     /** The Reels tab fills slower with it on, so it waits to be asked for. */

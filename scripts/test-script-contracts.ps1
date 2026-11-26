@@ -642,12 +642,12 @@ $unchanged = Get-ManifestDelta -Stock $facts -Patched $facts
 Assert-True (@(ConvertTo-ManifestDeltaEntries -Delta $unchanged).Count -eq 0) `
     'An unchanged manifest produced a delta.'
 
-# The checked-in allowlist approves four reviewed changes and nothing else. Install beside Meta's
+# The checked-in allowlist approves five reviewed changes and nothing else. Install beside Meta's
 # apps renames the two permissions Facebook shares with Messenger, Lite, Business Suite and
 # Workplace, which the receipt reads as the two new names asked for and the two old ones no longer
-# asked for. Open in Facebook exports its share target, GmsCore support swaps Google's push
-# RECEIVE permission for microG-RE's, and Clone install (#417) moves Facebook's own five
-# permissions to the copy's package.
+# asked for. Open in Facebook and Share to Facebook chats (#568) each export a share target,
+# GmsCore support swaps Google's push RECEIVE permission for microG-RE's, and Clone install (#417)
+# moves Facebook's own five permissions to the copy's package.
 $checkedInAllowlist = @(Read-ManifestDeltaAllowlist -Path (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt') |
     Where-Object { $_ })
 $clonePermissionNames = @('DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION', 'permission.CREATE_SHORTCUT',
@@ -660,14 +660,15 @@ $reviewedEntries = @(
     'permission-removed com.facebook.permission.prod.FB_APP_COMMUNICATION',
     'permission-removed com.facebook.receiver.permission.ACCESS',
     'exported-added activity:app.morphe.extension.facebook.misc.OpenInFacebook',
+    'exported-added activity:app.morphe.extension.facebook.chats.ShareToChats',
     'permission-added app.revanced.android.c2dm.permission.RECEIVE',
     'permission-removed com.google.android.c2dm.permission.RECEIVE') +
     @($clonePermissionsAdded | ForEach-Object { "permission-added $_" }) +
     @($clonePermissionsRemoved | ForEach-Object { "permission-removed $_" })
-Assert-True ($reviewedEntries.Count -eq 17) "The reviewed allowlist entries number $($reviewedEntries.Count), not 17."
+Assert-True ($reviewedEntries.Count -eq 18) "The reviewed allowlist entries number $($reviewedEntries.Count), not 18."
 Assert-True ((@($checkedInAllowlist | Sort-Object -CaseSensitive) -join "`n") -ceq
         (@($reviewedEntries | Sort-Object -CaseSensitive) -join "`n")) `
-    ('The checked-in manifest delta allowlist approves something besides the four reviewed changes, or ' +
+    ('The checked-in manifest delta allowlist approves something besides the five reviewed changes, or ' +
      "less than all of them: $($checkedInAllowlist -join ', ')")
 
 $allowlistRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("receipt-" + [guid]::NewGuid().ToString('N'))
@@ -1206,9 +1207,9 @@ try {
     Assert-True ($stale.Reason -like '*any more*') `
         "The stale allowlist entry was refused for the wrong reason: $($stale.Reason)"
 
-    # The checked-in allowlist, against receipts that carry its four reviewed changes on both
-    # builds: the permission rename, the share target export, the microG push permission and Clone
-    # install's moved permissions. They pass. They plus any other change are refused, naming only
+    # The checked-in allowlist, against receipts that carry its five reviewed changes on both
+    # builds: the permission rename, the two share target exports, the microG push permission and
+    # Clone install's moved permissions. They pass. They plus any other change are refused, naming only
     # the other, and a rename that stopped halfway is refused for the half no patch makes any more.
     $withRename = {
         param($r)
@@ -1219,7 +1220,8 @@ try {
             $target.manifestDelta.permissionsRemoved = @('com.facebook.permission.prod.FB_APP_COMMUNICATION',
                 'com.facebook.receiver.permission.ACCESS', 'com.google.android.c2dm.permission.RECEIVE') +
                 $clonePermissionsRemoved
-            $target.manifestDelta.exportedComponentsAdded = @('activity:app.morphe.extension.facebook.misc.OpenInFacebook')
+            $target.manifestDelta.exportedComponentsAdded = @('activity:app.morphe.extension.facebook.misc.OpenInFacebook',
+                'activity:app.morphe.extension.facebook.chats.ShareToChats')
         }
     }
     $renamed = Test-TestReceipt -Receipt (New-TestReceipt -Mutate $withRename) -Approved $checkedInAllowlist
@@ -5827,8 +5829,9 @@ try {
     # Facebook asks for the two permissions it shares with Meta's other apps, for Google's push and
     # for five of its own, and the patched build asks for the two under the names Install beside
     # Meta's apps gives them, for microG-RE's push in place of Google's and for its own five under
-    # the copy's package (Clone install), and exports Open in Facebook's share target: the changes
-    # the checked-in allowlist approves, and the only ones the patches make here.
+    # the copy's package (Clone install), and exports the share targets of Open in Facebook and
+    # Share to Facebook chats: the changes the checked-in allowlist approves, and the only ones the
+    # patches make here.
     function Get-FixtureManifest([string]$Build, [string]$Code, [switch]$WithSplit, [switch]$Renamed,
             [string]$Package = $releaseTarget.PackageName) {
         $prefix = if ($Renamed) { 'app.hushfacebook.' } else { 'com.facebook.' }
@@ -5858,6 +5861,9 @@ try {
         if ($Renamed) {
             $lines += @('        E: activity (line=30)',
                 "          A: $androidName`"app.morphe.extension.facebook.misc.OpenInFacebook`" (Raw: `"app.morphe.extension.facebook.misc.OpenInFacebook`")",
+                $androidExported,
+                '        E: activity (line=31)',
+                "          A: $androidName`"app.morphe.extension.facebook.chats.ShareToChats`" (Raw: `"app.morphe.extension.facebook.chats.ShareToChats`")",
                 $androidExported)
         }
         if ($WithSplit) {
@@ -7357,6 +7363,10 @@ function Invoke-InBuildQueue {
             Assert-True ($now -eq (@($Builds | Sort-Object) -join ', ')) "The $Case changed patches/build/release: $now"
         }
         Copy-Item -LiteralPath $PSScriptRoot -Destination (Join-Path $releaseRepo 'scripts') -Recurse
+        # A release that removes or renames a patch declares it in patch-catalog-compatibility.json
+        # against the real published release. This fixture's published release is its own commit,
+        # so a copied declaration names a baseline it doesn't have.
+        Remove-Item -LiteralPath (Join-Path $releaseRepo 'scripts/patch-catalog-compatibility.json') -ErrorAction SilentlyContinue
         foreach ($results in @(
                 @{ Folder = 'extensions/facebook/build/test-results/testDebugUnitTest'; Suite = 'RuntimeTest'; Quote = '\b(\d+) runtime tests passed\b' },
                 @{ Folder = 'patches/build/test-results/test'; Suite = 'PatchTest'; Quote = '\b(\d+) patch tests passed\b' })) {

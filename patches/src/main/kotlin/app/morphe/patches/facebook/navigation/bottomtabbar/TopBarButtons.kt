@@ -64,7 +64,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
  * - The button class has one (I)V instance method (arm64 F32) and one (FbUserSession, I, Z)V
  *   instance method (arm64 F33), both of which set the unread count, and a kept
  *   "badgableGlyphView" string. The count hooks go first in each and replace the int.
- * - The logo is dressed by the same site the Unlock app icons patch uses ([logoDressSite]): the hook
+ * - The logo is dressed by the same site Home header text uses ([logoDressSite]): the hook
  *   goes right after the stock wordmark load, with the logo register that holds the touch listener.
  * - Behind a MobileConfig flag the bar skips that Messenger block and shows the newer bar instead
  *   (the S22's account, 2026-10-17): NavigationBar (a kept class) makes every button from a spec
@@ -1012,7 +1012,7 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         val buttonClass = mutableClassDefByOrNull(button.buttonType)
             ?: refuse("this Facebook has no ${button.buttonType}, the Messenger button")
         val counts = countMethods(buttonClass)
-        logoDressSite(logoBuilder)
+        logoDressSite(logoBuilder, TOP_BAR)
         val createBuilders = buildersHolding(bar, SETUP_CREATE_GLYPH_VIEW)
         val createBuilder = createBuilders.singleOrNull()
             ?: refuse("expected one method of $WORDMARK_NAVIGATION_BAR holding \"$SETUP_CREATE_GLYPH_VIEW\", found ${createBuilders.size}")
@@ -1037,7 +1037,7 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         val searchMethod = bar.methods.single { it.isLike(searchBuilder) }
         searchMethod.hideSearchButtonAfter(searchButtonSite(searchMethod))
         val logoMethod = bar.methods.single { it.isLike(logoBuilder) }
-        val site = logoDressSite(logoMethod)
+        val site = logoDressSite(logoMethod, TOP_BAR)
         logoMethod.hideLogoAfter(site.stockLoad, site.logo)
     }
     run {

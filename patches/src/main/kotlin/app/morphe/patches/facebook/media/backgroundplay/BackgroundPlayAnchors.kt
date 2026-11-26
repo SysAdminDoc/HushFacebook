@@ -13,6 +13,8 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -90,8 +92,45 @@ internal const val NEXT_REEL = "$EXTENSION_PACKAGE/media/NextReel;"
 internal const val CHECKING = "$NEXT_REEL->checking(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V"
 internal const val BOUND = "$NEXT_REEL->bound(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V"
 
+internal const val LOADING_PAGE = "$NEXT_REEL->loadingPage(Ljava/lang/Object;)V"
+
 /** NextReel's stub the patch fills in: the name of the player's release. */
 internal const val RELEASE_METHOD = "releaseMethod"
+
+/**
+ * The Reels viewer's loading page, the page after the last reel loaded, which only its render holds
+ * (588 `LX/09fq;->render`), and the log line of the handler Facebook runs when that page shows, which
+ * only that handler's case holds (588 `LX/0QR1;->A03`, $t 0x3b of a shared lambda class). Facebook asks
+ * for more reels there and nowhere else, and a stopped screen shows nothing (D#524).
+ */
+internal const val LOADING_SPINNER = "watch_tail_load_spinner"
+internal const val LOADING_SHOWN = "pagination component visible "
+
+internal const val SURFACE_PAUSED = "$NEXT_REEL->surfacePaused(Ljava/lang/Object;Ljava/lang/Class;)V"
+
+/**
+ * The log line of Facebook's SurfaceManager taking a new list (588 `LX/0CD0;->KWk`), which only it
+ * holds, and Redex's name for its runnables, numbered. One pauses a surface with its screen (588
+ * `SurfaceManager$7`, `LX/09Rm;`) and one resumes it (588 `SurfaceManager$6`, `LX/09S0;`). A paused
+ * surface keeps each new list without rendering it, so a stopped Reels viewer never shows the reels
+ * Facebook loads meanwhile, and resuming renders the newest at once (D#524).
+ */
+internal const val SURFACE_RECEIVES = "SurfaceManager_receiveAdditional"
+internal const val SURFACE_RUNNABLE = "SurfaceManager$"
+private const val RUNNABLE_TYPE = "Ljava/lang/Runnable;"
+
+/**
+ * What one of the SurfaceManager's runnables does: the [surface] field it holds (of [surfaceType]), the
+ * surface [flag] its run sets to [value], and whether it [renders], running a runnable itself.
+ */
+internal data class SurfaceStep(
+    val runnable: String,
+    val surface: String,
+    val surfaceType: String,
+    val flag: String,
+    val value: Int,
+    val renders: Boolean,
+)
 
 internal const val WINDOW_ACTIONS =
     "$EXTENSION_PACKAGE/media/BackgroundPlayButton;->windowActions(Ljava/util/List;)Ljava/util/List;"
@@ -503,3 +542,64 @@ internal fun objectReturns(method: Method): List<Int> =
 
 /** A type descriptor as a binary class name: `La/b/C;` is `a.b.C`. */
 internal fun binaryName(type: String): String = type.removePrefix("L").removeSuffix(";").replace('/', '.')
+
+/**
+ * Where the loading page's [render] makes its shown handler: the constructor call of the one
+ * `new-instance` of [handler] there, with the register holding it, or null when the render makes none,
+ * more than one, or doesn't construct it next.
+ */
+internal fun shownHandlerMade(render: Method, handler: String): Pair<Int, Int>? {
+    val code = render.code()
+    val made = code.indices.filter {
+        code[it].opcode == Opcode.NEW_INSTANCE && ((code[it] as ReferenceInstruction).reference as TypeReference).type == handler
+    }
+    val at = made.singleOrNull() ?: return null
+    val register = (code[at] as OneRegisterInstruction).registerA
+    for (index in at + 1 until code.size) {
+        val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+        if (code[index].opcode in setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE) &&
+            call?.definingClass == handler && call.name == "<init>"
+        ) {
+            return if (code[index].arguments().firstOrNull() == register) index to register else null
+        }
+        // Anything else that writes the register first, or leaves the straight line, isn't the making.
+        if (code[index].opcode.setsRegister() && (code[index] as? OneRegisterInstruction)?.registerA == register) return null
+        if (!code[index].opcode.canContinue() || code[index] is OffsetInstruction) return null
+    }
+    return null
+}
+
+/**
+ * The [SurfaceStep] of [classDef]'s [run] when [classDef] holds just one field, of [surfaceType], and
+ * the run sets one boolean of it to a constant loaded right before; otherwise null.
+ */
+internal fun surfaceStep(classDef: ClassDef, run: Method, surfaceType: String): SurfaceStep? {
+    val held = classDef.fields.filterNot { AccessFlags.STATIC.isSet(it.accessFlags) }.singleOrNull() ?: return null
+    if (held.type != surfaceType) return null
+    val code = run.code()
+    val sets = code.indices.mapNotNull { at ->
+        val field = (code[at] as? ReferenceInstruction)?.reference as? FieldReference
+        if (code[at].opcode != Opcode.IPUT_BOOLEAN || field?.definingClass != surfaceType) return@mapNotNull null
+        val constant = code.getOrNull(at - 1)
+        val register = (code[at] as TwoRegisterInstruction).registerA
+        if (constant?.opcode != Opcode.CONST_4 || (constant as OneRegisterInstruction).registerA != register) return@mapNotNull null
+        "${field.name}:${field.type}" to (constant as NarrowLiteralInstruction).narrowLiteral
+    }
+    val (flag, value) = sets.singleOrNull() ?: return null
+    val renders = code.any {
+        val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+        it.opcode == Opcode.INVOKE_INTERFACE && call?.definingClass == RUNNABLE_TYPE && call.name == "run"
+    }
+    return SurfaceStep(classDef.type, "${held.definingClass}->${held.name}:${held.type}", surfaceType, flag, value, renders)
+}
+
+/**
+ * The pause and the resume among [steps]: for one surface flag, the one step setting it false that
+ * renders nothing and the one setting it true that renders. Null unless exactly one flag has both.
+ */
+internal fun surfacePauseResume(steps: List<SurfaceStep>): Pair<SurfaceStep, SurfaceStep>? =
+    steps.groupBy { it.surfaceType to it.flag }.values.mapNotNull { same ->
+        val pause = same.singleOrNull { it.value == 0 && !it.renders }
+        val resume = same.singleOrNull { it.value == 1 && it.renders }
+        if (pause != null && resume != null) pause to resume else null
+    }.singleOrNull()

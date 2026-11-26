@@ -342,6 +342,14 @@ class DownloadReelFixtureTest {
                     0,
                     helperBody.count { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == actionType },
                 )
+                // With the phone's font size above default, the factory's first Boolean asks for
+                // Facebook's long-press label, which shows the caption. Ours is blank, so that long
+                // press opened an empty gray box (#518): every button passes no there.
+                assertEquals(
+                    "${bundle.name}: no button asks for the large-text long-press label",
+                    0,
+                    helperBody.count { it.opcode == Opcode.SGET_OBJECT && it.field()?.toString() == "Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;" },
+                )
                 val handlerFlags = helperBody.indices.filter { at ->
                     helperBody[at].called()?.let { it.definingClass == reelDownload && it.name == "<init>" } == true
                 }.map { at -> (helperBody[at - 1] as NarrowLiteralInstruction).narrowLiteral }

@@ -32,11 +32,14 @@ import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.reels.ReactionHold;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.SettingsStatus;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BooleanSetting;
+import app.morphe.extension.shared.settings.LongSetting;
+import app.morphe.extension.shared.settings.Setting;
 
 /**
  * Comment sheet options: the comment box without its GIF and sticker buttons, Like without the
@@ -318,6 +321,39 @@ public final class CommentSheetOptions {
     @Nullable
     private static volatile String screenInFront;
 
+    /**
+     * How long, in milliseconds, an UP NEXT pill seen in the Shorts viewer keeps the band there
+     * Facebook's (#585): two weeks.
+     */
+    static final long UP_NEXT_REMEMBERED_MS = 14L * 24 * 60 * 60 * 1000;
+
+    /** How often, at most, a pill seen again is written down: once a minute. */
+    static final long UP_NEXT_NOTED_EVERY_MS = 60_000L;
+
+    /** Whether this build carries the UP NEXT pill's hook, or null to ask the build. A test sets it. */
+    @Nullable
+    static volatile Boolean upNextPillHookForTests;
+
+    /** The time now, in milliseconds, or null for the clock. A test sets it. */
+    @Nullable
+    static volatile Long nowForTests;
+
+    /**
+     * When Facebook last showed its UP NEXT pill with the Shorts viewer in front, or 0 for never
+     * (#585). Hushfacebook's own state, kept while paused and never in a settings file. A class of
+     * its own, so nothing here loads a setting before the context is set.
+     */
+    static final class UpNextSeen {
+        static final LongSetting AT = new LongSetting("hushfacebook_up_next_pill_seen", 0L, false, false);
+
+        static {
+            Setting.keepWhenPaused(AT);
+        }
+
+        private UpNextSeen() {
+        }
+    }
+
     private static boolean watchingScreens;
 
     /**
@@ -335,6 +371,18 @@ public final class CommentSheetOptions {
 
     /** Counted each time the emoji row is kept out from over the comment box. */
     static final String EMOJI_ROW_HIDDEN = "Comment emoji row kept out";
+
+    /** The member the report names once the comments' params have asked whether the keyboard opens first (#594). */
+    static final String KEYBOARD = "keyboard as comments open";
+
+    /** Counted each time comments that would open with the keyboard up are opened with it closed. */
+    static final String KEYBOARD_KEPT_CLOSED = "Comments opened with the keyboard closed";
+
+    /** The member the report names once the comments' params have asked whether a post with no comments skips the keyboard (#594). */
+    static final String EMPTY_KEYBOARD = "keyboard on posts with no comments";
+
+    /** Counted each time comments are set to keep the keyboard closed even when the post has none yet. */
+    static final String EMPTY_KEYBOARD_KEPT_CLOSED = "Comments set to skip the keyboard on posts with none";
 
     /** The member the report names once the comment box has set its background (#344). */
     static final String BOX_LINE = "line over the comment box";
@@ -571,6 +619,46 @@ public final class CommentSheetOptions {
     }
 
     /**
+     * The hook, as the params comments open with are built (#594): Facebook's pick of whether the
+     * keyboard comes up as the comments first load, which it makes for a Comment tap and for a post
+     * with no comments yet. While the switch is on the answer is no, so the comments open with the
+     * keyboard closed and a tap on the comment box opens it. Off, paused, or before the settings are
+     * ready, Facebook's pick stands.
+     */
+    public static boolean keyboardOnFirstLoad(boolean show) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, KEYBOARD);
+            if (!show || !Utils.settingsReady() || !Settings.KEEP_COMMENT_KEYBOARD_CLOSED.get()) return show;
+            HookStatus.counted(FAMILY, KEYBOARD_KEPT_CLOSED);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comment keyboard", failure);
+            return show;
+        }
+    }
+
+    /**
+     * The hook, as the params comments open with are built (#594): whether the comments skip the
+     * keyboard Facebook raises on a post with no comments yet, once they've loaded. That's a second
+     * path past {@link #keyboardOnFirstLoad}: the comment fragment focuses the comment box itself
+     * when the post has none, unless the params say to skip it. While the switch is on the answer is
+     * yes. Off, paused, or before the settings are ready, Facebook's pick stands.
+     */
+    public static boolean suppressKeyboard(boolean suppress) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, EMPTY_KEYBOARD);
+            if (suppress || !Utils.settingsReady() || !Settings.KEEP_COMMENT_KEYBOARD_CLOSED.get()) return suppress;
+            HookStatus.counted(FAMILY, EMPTY_KEYBOARD_KEPT_CLOSED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comment keyboard on posts with no comments", failure);
+            return suppress;
+        }
+    }
+
+    /**
      * The hook, right after the comment box sets its background as it's built (#344). Facebook
      * draws the box as layers: the line's color filling the whole box, and the box's own color over
      * it, pushed down from the top, so the strip left showing is the line. While the switch is on,
@@ -798,14 +886,50 @@ public final class CommentSheetOptions {
 
     /**
      * Whether the band stays Facebook's for the UP NEXT pill: in the Shorts viewer, while Hide Up
-     * next is off. Facebook lays that pill over the comment bar, in its band (S22 588, 2026-11-23:
-     * "Add a comment" at 2105 to 2274 under "UP NEXT:" at 2147, the seek bar at 2048 to 2166 above
-     * both). Given to the video, the band took the caption down and the seek bar under the pill
-     * (#552), so the video, its caption and its seek bar stay where Facebook puts them, with the
-     * pill where the comment bar was.
+     * next is off, once the pill has shown there in the last {@link #UP_NEXT_REMEMBERED_MS}.
+     * Facebook lays that pill over the comment bar, in its band (S22 588, 2026-11-23: "Add a
+     * comment" at 2105 to 2274 under "UP NEXT:" at 2147, the seek bar at 2048 to 2166 above both).
+     * Given to the video, the band took the caption down and the seek bar under the pill (#552), so
+     * the video, its caption and its seek bar stay where Facebook puts them, with the pill where the
+     * comment bar was. Not every account gets the pill, though, and kept for one that never shows,
+     * the band left the seek bar over an empty strip (#585). The list sizes the videos before any
+     * pill shows, so a pill seen once decides for the viewers after it. A build without the pill's
+     * hook (Clean up Reels) can't see one, and keeps the band whenever Hide Up next is off.
      */
     private static boolean bandKeptForUpNext() {
-        return shortsScreenInFront() && !Settings.HIDE_UP_NEXT.get();
+        if (!shortsScreenInFront() || Settings.HIDE_UP_NEXT.get()) return false;
+        if (!upNextPillHook()) return true;
+        long seen = UpNextSeen.AT.get();
+        return seen > 0 && now() - seen < UP_NEXT_REMEMBERED_MS;
+    }
+
+    /**
+     * Called by Clean up Reels each time Facebook shows its UP NEXT pill rather than Hide Up next
+     * hiding it (#585). With a full-screen player in front that's written down, at most once a
+     * minute, so the Shorts viewer keeps the band the pill sits in from its next video list on.
+     */
+    public static void upNextPillShown() {
+        try {
+            if (!Utils.settingsReady() || !shortsScreenInFront()) return;
+            long now = now();
+            long seen = UpNextSeen.AT.get();
+            if (seen > 0 && now >= seen && now - seen < UP_NEXT_NOTED_EVERY_MS) return;
+            UpNextSeen.AT.save(now);
+            if (seen == 0) Logger.printDebug(() -> "Hide the video comment box: Up next shows in the Shorts viewer, so its band stays");
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Hide the video comment box: could not note the Up next pill", failure);
+        }
+    }
+
+    /** Whether this build carries the UP NEXT pill's hook, which comes with Clean up Reels. */
+    private static boolean upNextPillHook() {
+        Boolean forced = upNextPillHookForTests;
+        return forced != null ? forced : SettingsStatus.reelDeclutter();
+    }
+
+    private static long now() {
+        Long forced = nowForTests;
+        return forced != null ? forced : System.currentTimeMillis();
     }
 
     /**

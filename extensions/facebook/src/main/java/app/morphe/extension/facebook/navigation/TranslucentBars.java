@@ -194,6 +194,45 @@ public final class TranslucentBars {
     /** Each main screen's window and its bars. */
     static final Map<View, Bars> WINDOWS = new WeakHashMap<>();
 
+    /**
+     * Until when, in uptime ms, each frame looks for the host of Facebook's video controls, after a
+     * reel's scrubber was mounted or took a reel (#594). The stretch looks once a second, so the
+     * Reels tab's host was found up to a second after a reel's time showed: the time and seek bar sat
+     * where the reel bar's own lift put them, then jumped about 30 px up when the host was lifted to
+     * the tab bar's rows, closer to the caption. That happened on the first reel and on the first one
+     * after an ad.
+     */
+    private static volatile long controlsDueUntil;
+
+    /** A reel's scrubber was mounted or took a reel: look for its controls' host on every frame for a while. Never throws. */
+    public static void controlsMounted() {
+        controlsDueUntil = SystemClock.uptimeMillis() + RESCAN_MS;
+    }
+
+    static void forgetControlsDueForTests() {
+        controlsDueUntil = 0;
+    }
+
+    /**
+     * Until when, in uptime ms, each frame looks for a page stopping at the tab bar, after Facebook
+     * restyled the tab bar for the tab it shows (#503). The stretch looks once a second, so a tab
+     * opened just after a look kept its page stopping at the bar for up to a second, the see-through
+     * bar over black. On the Reels tab that cut the first reel off: its row, made ahead to run under
+     * the bar, had its name, caption and buttons behind the bar until the page was stretched, then
+     * they jumped up (S22, 2026-11-26: 0.8 s after the tap). The first look that takes a page ends
+     * it, so Facebook putting a gap back is still counted a look a second.
+     */
+    private static volatile long stretchDueUntil;
+
+    /** Facebook restyled the tab bar for the tab it shows: look for its page on every frame for a while. Never throws. */
+    public static void tabShown() {
+        stretchDueUntil = SystemClock.uptimeMillis() + RESCAN_MS;
+    }
+
+    static void forgetStretchDueForTests() {
+        stretchDueUntil = 0;
+    }
+
     private TranslucentBars() {
     }
 
@@ -946,14 +985,15 @@ public final class TranslucentBars {
                 }
                 boolean tabsBelow = tabBar.equals(anchor.getClass().getName()) && rows.top > height / 2;
                 if (tabsBelow) cover = Math.min(cover, rows.top);
-                if (tabsBelow && now >= nextStretch) {
+                if (tabsBelow && (now >= nextStretch || now < stretchDueUntil)) {
                     nextStretch = now + RESCAN_MS;
                     stretchLooked = true;
                     int edge = laidOutTop(anchor);
-                    reachUnder(bar, edge, rows.height(), height, now);
-                    controls.find(under(bar), edge, height);
+                    if (reachUnder(bar, edge, rows.height(), height, now)) stretchDueUntil = 0;
+                    if (controls.find(under(bar), edge, height)) controlsDueUntil = 0;
                 } else if (tabsBelow) {
                     stretchWaits = true;
+                    if (now < controlsDueUntil && controls.find(under(bar), laidOutTop(anchor), height)) controlsDueUntil = 0;
                 }
                 if (!seeThrough) continue;
                 View under = blurs ? underNow(bar, rows) : null;
@@ -1024,16 +1064,19 @@ public final class TranslucentBars {
          * #PUT_BACK_MS}, is left as Facebook has it for {@link #LEFT_ALONE_MS}, then tried again
          * (#468). Every page found counts, and one left alone
          * doesn't stop the rest. A list that pages keeps its gap with black under it ({@link #back}).
+         * Answers whether a page found runs under the bar now or has its black.
          */
-        private void reachUnder(View bar, int edge, int rows, int height, long now) {
+        private boolean reachUnder(View bar, int edge, int rows, int height, long now) {
             unstretchPaging();
             View page = under(bar);
-            if (page == null) return;
+            if (page == null) return false;
             found.clear();
             stopsAt(page, edge, height / 2, rows, origin, 0, found);
-            for (int i = 0; i < found.size(); i++) reach(found.get(i), now);
+            boolean took = false;
+            for (int i = 0; i < found.size(); i++) took |= reach(found.get(i), now);
             found.clear();
             backPagingInside(edge);
+            return took;
         }
 
         /**
@@ -1070,18 +1113,21 @@ public final class TranslucentBars {
             }
         }
 
-        /** Stretches [content], one page that stops at the tab bar, unless it pages or is left alone. */
-        private void reach(View content, long now) {
+        /**
+         * Stretches [content], one page that stops at the tab bar, unless it pages or is left alone.
+         * Answers whether it runs under the bar now or has its black.
+         */
+        private boolean reach(View content, long now) {
             Backdrop backdrop = backdrops.get(content);
             if (backdrop != null) {
                 backdrop.fit();
-                return;
+                return true;
             }
             // A list with no rows yet can't say whether it pages, so it waits for them.
-            if (isList(content) && ((ViewGroup) content).getChildCount() == 0) return;
+            if (isList(content) && ((ViewGroup) content).getChildCount() == 0) return false;
             if (pages(content, 0)) {
                 back(content);
-                return;
+                return true;
             }
             Stretch stretch = stretched.get(content);
             if (stretch == null) {
@@ -1091,7 +1137,7 @@ public final class TranslucentBars {
                 long waited = now - stretch.leftAt;
                 if (waited < LEFT_ALONE_MS) {
                     retryAfter(LEFT_ALONE_MS - waited);
-                    return;
+                    return false;
                 }
                 stretch.leftAlone = false;
                 stretch.putBacks = 0;
@@ -1104,12 +1150,13 @@ public final class TranslucentBars {
                 retryAfter(LEFT_ALONE_MS);
                 HookStatus.counted(FAMILY, LEFT_SHORT);
                 Logger.printDebug(() -> "See-through bars: Facebook keeps a page's gap, left alone for now");
-                return;
+                return false;
             }
             stretch.take(content, now);
             int gap = stretch.padding + stretch.margin;
             HookStatus.counted(FAMILY, STRETCHED);
             Logger.printDebug(() -> "See-through bars: stretched a page " + gap + " px under the tab bar");
+            return true;
         }
 
         /**

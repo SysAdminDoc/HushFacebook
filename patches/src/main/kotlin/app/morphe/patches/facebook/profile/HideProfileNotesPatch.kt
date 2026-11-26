@@ -53,15 +53,17 @@ internal val NODE_ACCESSORS = setOf(
  * Hides the note bubble on profile pictures. Facebook lays the top of a profile out with Bloks, and
  * the bubble is a Bloks node whose own attributes name the note actions. Every list of children
  * the node class hands out goes through the extension's ProfileNotes, which leaves those nodes out
- * while the switch is on.
+ * while the switch is on. A second switch leaves out the Send a gift button on other people's
+ * profiles the same way, a node whose own attributes name a gift (#576).
  *
- * In the default selection with its switch off, so nothing changes until it's turned on.
+ * In the default selection with its switches off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
 val hideProfileNotesPatch = patch(
     name = "Hide profile notes",
     description = "Hides the note bubble on profile pictures, the Drop a thought prompt on your own profile " +
-        "included. Starts off. Turn it on in Hushfacebook settings > News feed.",
+        "included, and with its own switch the Send a gift button on other people's profiles. Both start off. " +
+        "Turn them on in Hushfacebook settings > News feed.",
 ) {
     category("Interface")
     dependsOn(settingsPatch, facebookExtensionPatch)

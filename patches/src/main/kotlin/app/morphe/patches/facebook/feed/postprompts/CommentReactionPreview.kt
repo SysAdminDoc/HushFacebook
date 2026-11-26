@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.util.ControlFlow
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -311,4 +312,118 @@ internal fun BytecodePatchContext.tagCommentFaces(component: ClassDef, facepile:
                     "${component.type}->$COMMENT_STASH(${component.type})V",
             )
         }
+}
+
+/*
+ * The count beside a comment's faces (#483). Read from 588 arm64, 2026-11-24. FDSInlineReactions
+ * (arm64 LX/03nV;) draws its own count: its render takes the count text from a String field (Facebook's
+ * override) or formats its int count, calls length() on it and, when that is above zero, builds the
+ * text component beside the faces. Facebook's own setting for reaction counts doesn't reach it. The
+ * length goes through an added static helper on the component, handed the component, so a comment's
+ * (flagged by tagCommentFaces) can answer 0 and take Facebook's no-count branch. TalkBack's
+ * description is built elsewhere (arm64 A0D) and keeps the number.
+ */
+
+internal const val COMMENT_COUNT = "hushCommentCount"
+internal const val COMMENT_REACTION_COUNT = "$POST_PROMPTS->commentReactionCount(IZ)I"
+private const val STRING_TYPE = "Ljava/lang/String;"
+private val objectMoves = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/** The count text's length check in the render: the if-lez to hook, the length's register and the component's. */
+internal data class CountCheck(val gate: Int, val length: Int, val self: Int)
+
+/** The register an instance method gets `this` in. */
+private fun thisRegister(method: Method): Int =
+    method.implementation!!.registerCount - 1 - method.parameterTypes.size -
+        method.parameterTypes.count { it.toString() == "J" || it.toString() == "D" }
+
+/**
+ * Whether [register] holds [method]'s `this` as the instruction at [index] starts, on every way in:
+ * it is the parameter register itself, never written, or every write reaching there copies it from
+ * that parameter register while that is still unwritten.
+ */
+private fun holdsThis(method: Method, index: Int, register: Int): Boolean {
+    val self = thisRegister(method)
+    val code = method.implementation!!.instructions.toList()
+    val writers = method.writersReaching(index, register)
+    return writers.isNotEmpty() && writers.all { writer ->
+        if (writer == -1) return@all register == self
+        val write = code[writer]
+        write.opcode in objectMoves && (write as TwoRegisterInstruction).registerB == self &&
+            method.writersReaching(writer, self) == listOf(-1)
+    }
+}
+
+/**
+ * [method]'s one `String.length()` whose result an if-lez tests right after, on text that a read of a
+ * String field of [component] can supply, where the if-lez is reached only by falling through and the
+ * read's object register holds `this` there. Null unless there is exactly one, or when a register is
+ * past v15 (the hook's call takes them as they are).
+ */
+internal fun commentCountCheck(method: Method, component: String): CountCheck? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags) || method.definingClass != component) return null
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val flow by lazy { ControlFlow.of(method) }
+    val found = code.indices.mapNotNull { at ->
+        val call = code[at]
+        if (call.opcode != Opcode.INVOKE_VIRTUAL) return@mapNotNull null
+        val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
+        if (ref.definingClass != STRING_TYPE || ref.name != "length" || ref.parameterTypes.isNotEmpty()) return@mapNotNull null
+        val result = code.getOrNull(at + 1) ?: return@mapNotNull null
+        val gate = code.getOrNull(at + 2) ?: return@mapNotNull null
+        if (result.opcode != Opcode.MOVE_RESULT || gate.opcode != Opcode.IF_LEZ) return@mapNotNull null
+        val length = (result as OneRegisterInstruction).registerA
+        if ((gate as OneRegisterInstruction).registerA != length || !onlyFallsInto(flow, at + 2)) return@mapNotNull null
+        val text = (call as FiveRegisterInstruction).registerC
+        val read = method.writersReaching(at, text).filter { it >= 0 }.map { code[it] }.singleOrNull {
+            it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as? FieldReference)?.let { field ->
+                field.definingClass == component && field.type == STRING_TYPE
+            } == true
+        } ?: return@mapNotNull null
+        val self = (read as TwoRegisterInstruction).registerB
+        if (length > 15 || self > 15 || !holdsThis(method, at + 2, self)) return@mapNotNull null
+        CountCheck(at + 2, length, self)
+    }
+    return found.singleOrNull()
+}
+
+/**
+ * Hands the length of the count text in [component]'s render, with the component, to an added helper
+ * that asks the extension with the component's comment flag, and keeps the answer in the length's
+ * register before Facebook's if-lez. Needs the flag tagCommentFaces adds.
+ */
+internal fun BytecodePatchContext.hideCommentCounts(component: ClassDef) {
+    val checks = component.methods.mapNotNull { method -> commentCountCheck(method, component.type)?.let { method to it } }
+    val (render, check) = checks.singleOrNull() ?: refuse(
+        "expected one method of ${component.type} testing its count text's length right after taking it, found ${checks.size}",
+    )
+    val componentClass = mutableClassDefBy(component.type)
+    // instanceFields, as fields doesn't list one added in this run.
+    if (componentClass.instanceFields.none { it.name == COMMENT_FLAG }) refuse("${component.type} has no $COMMENT_FLAG to ask with")
+    if (componentClass.methods.any { it.name == COMMENT_COUNT }) refuse("${component.type} already has $COMMENT_COUNT")
+    // One local (v0), then the length and the component.
+    componentClass.methods.add(
+        ImmutableMethod(
+            component.type, COMMENT_COUNT,
+            listOf(ImmutableMethodParameter("I", null, null), ImmutableMethodParameter(component.type, null, null)), "I",
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null, MutableMethodImplementation(3),
+        ).toMutable().apply {
+            addInstructions(
+                0,
+                """
+                    iget-boolean v0, p1, ${component.type}->$COMMENT_FLAG:Z
+                    invoke-static { p0, v0 }, $COMMENT_REACTION_COUNT
+                    move-result p0
+                    return p0
+                """,
+            )
+        },
+    )
+    componentClass.methods.first { it.name == render.name && it.parameterTypes == render.parameterTypes }.addInstructions(
+        check.gate,
+        """
+            invoke-static { v${check.length}, v${check.self} }, ${component.type}->$COMMENT_COUNT(I${component.type})I
+            move-result v${check.length}
+        """,
+    )
 }

@@ -550,6 +550,37 @@ public final class PostPrompts {
         }
     }
 
+    /** Counted under the patch's name each time a comment's reaction count is left out. */
+    static final String COMMENT_COUNT_HIDDEN = "Comment reaction count kept out";
+
+    private static volatile boolean commentCountLogged;
+
+    /**
+     * The hook, right after FDSInlineReactions reads the length of the count it would write beside
+     * its faces, handed that length and whether the faces belong to a comment (#483). Facebook only
+     * draws the count when the length is above zero, so 0 leaves a comment's faces with no number
+     * beside them, while the faces, their tap and what TalkBack reads stay. A post's count, a
+     * comment's with the switch off, paused, before the settings are ready or when anything here
+     * fails, keeps Facebook's length.
+     */
+    public static int commentReactionCount(int length, boolean comment) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!comment || length <= 0) return length;
+            if (!Utils.settingsReady() || !Settings.HIDE_COMMENT_REACTION_COUNTS.get()) return length;
+            HookStatus.bound(FAMILY, "comment reaction count");
+            HookStatus.counted(FAMILY, COMMENT_COUNT_HIDDEN);
+            if (!commentCountLogged) {
+                commentCountLogged = true;
+                Logger.printDebug(() -> "Post prompts: a comment's reaction count was left out");
+            }
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comment reaction count", failure);
+            return length;
+        }
+    }
+
     private static volatile boolean bubblesLogged;
 
     /** Counted under the patch's name each time the friend bubbles over a post's media are left out. */

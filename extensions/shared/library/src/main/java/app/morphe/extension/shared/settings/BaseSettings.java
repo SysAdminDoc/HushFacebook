@@ -67,11 +67,22 @@ public class BaseSettings {
     public static final BooleanSetting HIDE_QUICK_SETUPS =
             new BooleanSetting("hushfacebook_hide_quick_setups", FALSE, false, false, null, null);
 
+    /**
+     * The language Hushfacebook's own text comes out in (#582): blank for the language Facebook
+     * runs in, or a tag from {@link app.morphe.extension.shared.L10nLanguages#tags} ("en", "de",
+     * "pt-rbr"), picked under Appearance. Takes a restart, so a screen doesn't stay in two
+     * languages. Left out of backups like the rest of Hushfacebook's own state, so a restore never
+     * changes a phone's language.
+     */
+    public static final StringSetting SETTINGS_LANGUAGE =
+            new StringSetting("hushfacebook_settings_language", "", true);
+
     static {
         // Hushfacebook's own state and its diagnostics, which keep working while it is paused.
         Setting.keepWhenPaused(DEBUG, DEBUG_LOG_FILTERS, CAPTURE_JAVA_CRASHES, DEBUG_STACKTRACE,
                 DEBUG_TOAST_ON_ERROR, CHECK_ENVIRONMENT_WARNINGS_ISSUED, MORPHE_LANGUAGE, SHOW_MENU_ICONS,
-                FIRST_TIME_APP_LAUNCHED, EXPERIMENTAL_APP_CONFIRMED, PAUSED, SAFE_MODE, HIDE_QUICK_SETUPS);
+                FIRST_TIME_APP_LAUNCHED, EXPERIMENTAL_APP_CONFIRMED, PAUSED, SAFE_MODE, HIDE_QUICK_SETUPS,
+                SETTINGS_LANGUAGE);
 
         final long now = System.currentTimeMillis();
 

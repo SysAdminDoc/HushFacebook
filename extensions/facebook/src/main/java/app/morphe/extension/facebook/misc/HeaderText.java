@@ -27,7 +27,6 @@ import java.lang.ref.WeakReference;
 import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.HeaderFont;
-import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -118,20 +117,6 @@ public final class HeaderText {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.HEADER_TEXT, "header text", failure);
             Logger.printException(() -> "Header text: could not put the text at the top of Home", failure);
-        }
-    }
-
-    /**
-     * Whether a picture or text takes the header's place, so the picked app icon stays out of it: the
-     * patch is in this build and a picture's copy or text is saved. Never throws.
-     */
-    public static boolean replacesLogo() {
-        try {
-            return Utils.settingsReady() && PatchFamily.HEADER_TEXT.inBuild()
-                    && (!clean(Settings.HEADER_TEXT.get()).isEmpty() || HeaderPicture.chosen(Utils.getContext()));
-        } catch (Throwable failure) {
-            Logger.printException(() -> "Header text: could not read the header text", failure);
-            return false;
         }
     }
 

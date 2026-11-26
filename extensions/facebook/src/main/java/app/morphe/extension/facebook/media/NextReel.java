@@ -20,7 +20,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -48,6 +50,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * binds is handed on to, and so is one the viewer binds by itself (Facebook's Scroll to next reel
  * automatically), so you come back to Facebook on the last reel played. With none, the pager goes
  * back a page.
+ *
+ * Facebook loads more reels only when the viewer's loading page, the page after the last reel loaded,
+ * shows (588's "pagination component visible "), and a stopped screen shows nothing, so a run used to
+ * end on the few reels Facebook had loaded (emulator, 588, 2026-11-23: two). The patch hands over the
+ * handler Facebook runs when that page shows, and with no reel ready the run runs it, as Facebook would
+ * if you had scrolled there, then moves the viewer on onto what loads. The viewer's surface paused with
+ * its screen and keeps what loads to itself, so the run resumes it first, as coming back would.
  */
 public final class NextReel {
     /** How often the background reel is looked at while it plays. */
@@ -72,15 +81,20 @@ public final class NextReel {
     static final int MAX_VIEWS = 4000;
     /** How many times one reel's end moves the viewer on before it just plays again. */
     static final int MOVES = 3;
+    /** How many loading pages one reel's end may run, so a page Facebook renders again and again can't ask on and on. */
+    static final int ASKS = 2;
     /** The most views counted in one page for the log. */
     private static final int PAGE_VIEWS = 500;
 
     static final String VIDEO_PLAYER_PARAMS = "com.facebook.video.engine.api.VideoPlayerParams";
     static final String LIST = "androidx.recyclerview.widget.RecyclerView";
+    /** Litho's component tree, which keeps its name: a surface and the views it renders into each hold one. */
+    static final String COMPONENT_TREE = "com.facebook.litho.ComponentTree";
     private static final String PLAYER_ORIGIN = "PlayerOrigin";
 
     private static final String SOURCE = "BackgroundPlay";
     private static final String HOOK = "next reel";
+    private static final String HOOK_SURFACE = "surface pause";
 
     /** A reel the Reels viewer bound to a player, in the order bound. */
     static final class Bound {
@@ -135,11 +149,31 @@ public final class NextReel {
     /** How many times the reel playing in the background moved the viewer on. */
     private static int moves;
     private static WeakReference<ViewGroup> movedPager = new WeakReference<>(null);
+    /** How far the move scrolled: one page, which can be taller than the pager when a reel runs under the tab bar. */
+    private static int movedBy;
     /**
      * The round whose reel came to its end with no reel ready: the next reel the viewer binds is
      * handed on to, whether the run moved it or Facebook did (its Scroll to next reel automatically).
      */
     private static int waitingRound = -1;
+    /** The handler Facebook runs when the Reels viewer's loading page shows, from the page's last render. */
+    private static WeakReference<Object> loadingShown = new WeakReference<>(null);
+    /** The last of those the run ran: Facebook runs each once, when its page shows. */
+    private static WeakReference<Object> ranShown = new WeakReference<>(null);
+    /** True while the reel playing in the background has come to its end with no reel ready after it. */
+    private static volatile boolean wantMore;
+    /** The round whose reel ran a loading page, and how many it ran. */
+    private static int askedRound = -1;
+    private static int asks;
+    /**
+     * Facebook's surfaces that paused with their screen and weren't resumed here. A paused surface
+     * keeps each new list of reels it hears about without showing it, so the Reels viewer only gets
+     * the reels Facebook loads once its surface resumes.
+     */
+    private static final List<WeakReference<Object>> PAUSED_SURFACES = new ArrayList<>();
+    /** Makes Facebook's runnable that resumes a surface, found from the first surface that paused. */
+    @Nullable
+    private static volatile Constructor<?> resumer;
 
     @Nullable
     private static Field paramsField;
@@ -195,6 +229,59 @@ public final class NextReel {
         }
     }
 
+    /**
+     * The Reels viewer's loading page made the handler Facebook runs when the page shows, the one that
+     * asks for more reels. Pages render off the main thread too.
+     */
+    public static void loadingPage(Object shown) {
+        try {
+            if (shown == null) return;
+            loadingShown = new WeakReference<>(shown);
+            HookStatus.bound(FamilyNames.BACKGROUND_PLAY, "loading page");
+            if (wantMore) Utils.runOnMainThread(NextReel::askForMore);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, "loading page", failure);
+        }
+    }
+
+    /** First thing in one of Facebook's surfaces pausing with its screen, with the class of the runnable that resumes one. */
+    public static void surfacePaused(Object surface, Class<?> resume) {
+        try {
+            if (surface == null || resume == null) return;
+            HookStatus.bound(FamilyNames.BACKGROUND_PLAY, HOOK_SURFACE);
+            if (resumer == null) resumer = resumerOf(resume, surface.getClass());
+            synchronized (PAUSED_SURFACES) {
+                dropSurface(surface);
+                if (PAUSED_SURFACES.size() >= KEPT) PAUSED_SURFACES.remove(0);
+                PAUSED_SURFACES.add(new WeakReference<>(surface));
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, HOOK_SURFACE, failure);
+        }
+    }
+
+    /** The constructor of [resume] that takes just a [surface], when [resume] is a Runnable; otherwise null. */
+    @Nullable
+    static Constructor<?> resumerOf(Class<?> resume, Class<?> surface) {
+        if (!Runnable.class.isAssignableFrom(resume)) return null;
+        for (Constructor<?> each : resume.getDeclaredConstructors()) {
+            Class<?>[] takes = each.getParameterTypes();
+            if (takes.length == 1 && takes[0].isAssignableFrom(surface)) {
+                each.setAccessible(true);
+                return each;
+            }
+        }
+        return null;
+    }
+
+    /** Drops [surface] and any surface let go from the paused ones. Under PAUSED_SURFACES. */
+    private static void dropSurface(Object surface) {
+        for (Iterator<WeakReference<Object>> each = PAUSED_SURFACES.iterator(); each.hasNext(); ) {
+            Object held = each.next().get();
+            if (held == null || held == surface) each.remove();
+        }
+    }
+
     // What the background player hooks call.
 
     /** Facebook's background player took a reel on: from now on it's looked at until it nears its end. */
@@ -233,6 +320,7 @@ public final class NextReel {
         lastAt = -1;
         moveStage = 0;
         waitingRound = -1;
+        wantMore = false;
     }
 
     /** A Facebook screen stopped: the last one is the one you left, with the Reels viewer in it. */
@@ -303,6 +391,8 @@ public final class NextReel {
         Next next = next(record);
         if (next == null) {
             waitingRound = look;
+            wantMore = true;
+            askForMore();
             boolean moved = moves < MOVES && moveOn(look);
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: the reel came to its end at "
                     + at + " of " + length + " with no reel ready after it, "
@@ -360,10 +450,102 @@ public final class NextReel {
                     () -> "Background play: the next reel didn't start (" + why + "), the one that ended plays again");
             return;
         }
+        wantMore = false;
         Object started = BackgroundPlay.currentBackgroundPlayer();
         if (started != ended) release(ended);
         Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: the reel came to its end at "
                 + at + " of " + length + ", the next one plays (" + (next.waiting - 1) + " more ready)");
+    }
+
+    // Asking Facebook for more reels.
+
+    /**
+     * Runs the loading page's shown handler, as Facebook does when the page shows, so Facebook loads
+     * more reels for the stopped screen. Each handler runs once, since a render makes a new one, and
+     * one reel's ends run at most {@link #ASKS}. The viewer's paused surface resumes first, or the
+     * reels Facebook loads would reach the viewer only once you came back.
+     */
+    static void askForMore() {
+        try {
+            if (!wantMore || !BackgroundPlay.session || !on()) return;
+            resumeSurface();
+            Object shown = loadingShown.get();
+            if (shown == null || shown == ranShown.get()) return;
+            int look = round;
+            if (askedRound != look) {
+                askedRound = look;
+                asks = 0;
+            }
+            if (asks >= ASKS) return;
+            asks++;
+            ranShown = new WeakReference<>(shown);
+            shown.getClass().getMethod("invoke", Object.class).invoke(shown, (Object) null);
+            Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                    () -> "Background play: no reel ready, so Facebook was asked for more reels");
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, "loading page", failure);
+        }
+    }
+
+    /**
+     * Resumes the paused surface that renders the Reels viewer, with Facebook's own runnable, as the
+     * screen starting would: it shows the reels Facebook loaded meanwhile and then each new list as it
+     * comes. Facebook resuming it again when you come back finds it resumed and leaves it.
+     */
+    static void resumeSurface() {
+        Constructor<?> make = resumer;
+        Activity screen = stoppedScreen.get();
+        if (make == null || screen == null) return;
+        ViewGroup pager = pagerIn(screen);
+        if (pager == null) return;
+        Set<Object> above = treesAbove(pager);
+        List<Object> viewers = new ArrayList<>();
+        synchronized (PAUSED_SURFACES) {
+            for (WeakReference<Object> each : PAUSED_SURFACES) {
+                Object held = each.get();
+                if (held != null && above.contains(treeOf(held))) viewers.add(held);
+            }
+        }
+        for (Object surface : viewers) {
+            synchronized (PAUSED_SURFACES) {
+                dropSurface(surface);
+            }
+            try {
+                ((Runnable) make.newInstance(surface)).run();
+                Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: the Reels viewer's "
+                        + "surface was resumed, so it shows the reels Facebook loads");
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.BACKGROUND_PLAY, HOOK_SURFACE, failure);
+            }
+        }
+    }
+
+    /** The component trees [view] and the views above it hold. */
+    static Set<Object> treesAbove(View view) {
+        Set<Object> trees = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Object at = view; at instanceof View; at = ((View) at).getParent()) {
+            Object tree = treeOf(at);
+            if (tree != null) trees.add(tree);
+        }
+        return trees;
+    }
+
+    /** The component tree [owner] holds in a field of its own or a superclass's, or null. */
+    @Nullable
+    static Object treeOf(Object owner) {
+        for (Class<?> type = owner.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || !COMPONENT_TREE.equals(field.getType().getName())) continue;
+                try {
+                    field.setAccessible(true);
+                    Object tree = field.get(owner);
+                    if (tree != null) return tree;
+                } catch (Throwable unreadable) {
+                    // Another field may hold it.
+                }
+            }
+        }
+        return null;
     }
 
     // Moving the Reels viewer on.
@@ -386,10 +568,11 @@ public final class NextReel {
         moveStage = 1;
         moves++;
         movedPager = new WeakReference<>(pager);
+        movedBy = pageHeight(pager);
         String before = pages(pager);
-        pager.scrollBy(0, pager.getHeight());
+        pager.scrollBy(0, movedBy);
         Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: scrolled the Reels viewer "
-                + pager.getWidth() + "x" + pager.getHeight() + " from " + before + " to " + pages(pager));
+                + pager.getWidth() + "x" + pager.getHeight() + " a " + movedBy + " page from " + before + " to " + pages(pager));
         Utils.runOnMainThreadDelayed(() -> afterMove(look, 1), SCROLL_WAIT_MS);
         return true;
     }
@@ -415,9 +598,9 @@ public final class NextReel {
             }
             if (stage == 1) {
                 moveStage = 2;
-                pager.scrollBy(0, -pager.getHeight());
+                pager.scrollBy(0, -movedBy);
                 String back = pages(pager);
-                pager.scrollBy(0, pager.getHeight());
+                pager.scrollBy(0, movedBy);
                 Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: moved the Reels viewer back to "
                         + back + " and on again to " + pages(pager));
                 Utils.runOnMainThreadDelayed(() -> afterMove(look, 2), SCROLL_WAIT_MS);
@@ -432,7 +615,7 @@ public final class NextReel {
                 return;
             }
             moveStage = 0;
-            pager.scrollBy(0, -pager.getHeight());
+            pager.scrollBy(0, -movedBy);
             boolean again = moves < MOVES;
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: the Reels viewer bound no "
                     + "reel after it moved, so it went back to " + pages(pager) + " and the reel plays again"
@@ -518,12 +701,24 @@ public final class NextReel {
         return false;
     }
 
+    /**
+     * Whether [pager] holds a page: as wide as it and at least as tall. A reel runs under the tab bar
+     * in some Reels layouts, so its page is taller than the pager (emulator, 588, 2026-11-23: 2272 in 2062).
+     */
     private static boolean holdsAPage(ViewGroup pager) {
+        return pageHeight(pager) > 0;
+    }
+
+    /** The height of [pager]'s pages, from the tallest one it holds, or 0 with none. */
+    static int pageHeight(ViewGroup pager) {
+        int tallest = 0;
         for (int i = 0; i < pager.getChildCount(); i++) {
             View page = pager.getChildAt(i);
-            if (page.getWidth() == pager.getWidth() && page.getHeight() == pager.getHeight()) return true;
+            if (page.getWidth() == pager.getWidth() && page.getHeight() >= pager.getHeight()) {
+                tallest = Math.max(tallest, page.getHeight());
+            }
         }
-        return false;
+        return tallest;
     }
 
     /** The pager's scroll offset, for the log, or -1. RecyclerView makes View's protected one public. */
@@ -788,5 +983,14 @@ public final class NextReel {
         moveStage = 0;
         moves = 0;
         waitingRound = -1;
+        loadingShown = new WeakReference<>(null);
+        ranShown = new WeakReference<>(null);
+        wantMore = false;
+        askedRound = -1;
+        asks = 0;
+        synchronized (PAUSED_SURFACES) {
+            PAUSED_SURFACES.clear();
+        }
+        resumer = null;
     }
 }
