@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	Bl
 Hide profile notes	Profilnotizen ausblenden
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Blendet die Notizblase auf Profilbildern aus. Gilt ab dem nächsten Öffnen eines Profils.
+Hide the gift button on profiles	Geschenk-Button auf Profilen ausblenden
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Entfernt den Button zum Senden eines Geschenks von den Profilen anderer. Gilt ab dem nächsten Öffnen eines Profils.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Speichern-Button unter Beiträgen
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

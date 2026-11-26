@@ -1734,7 +1734,7 @@
     },
     {
       "name": "Hide profile notes",
-      "description": "Hides the note bubble on profile pictures, the Drop a thought prompt on your own profile included. Starts off. Turn it on in Hushfacebook settings > News feed.",
+      "description": "Hides the note bubble on profile pictures, the Drop a thought prompt on your own profile included, and with its own switch the Send a gift button on other people's profiles. Both start off. Turn them on in Hushfacebook settings > News feed.",
       "category": "Interface",
       "use": true,
       "dependencies": [

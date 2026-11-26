@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -37,11 +38,18 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * class's child getters return to {@link #children}, and while the switch is on that answers the
  * list without those nodes, so Facebook never draws the bubble or loads its content.
  *
+ * <p>The Send a gift button on someone else's profile (#576) goes the same way under its own switch.
+ * Its node is told apart by what its own scripts open: one of Facebook's gift addresses, a Bloks
+ * app whose name holds "gift", or a name holding both "profile" and "gift", the way the note
+ * bubble's names its entry point. That button never showed on the accounts this was written
+ * against, so what it opens is read from the gift addresses 588 knows, and every node left out is
+ * counted under {@link #GIFT_REASON} and logged with what it named.
+ *
  * <p>Only a node's own string attributes are read, never the ones of its children, so a node that
  * holds the bubble somewhere below it, the profile picture's stack among them, is kept. A node's
  * answer is kept by the node, since the getters run on every layout pass.
  *
- * <p>It fails open: switch off, a pause, settings that aren't ready, or any failure in here, and
+ * <p>It fails open: switches off, a pause, settings that aren't ready, or any failure in here, and
  * the list goes back as Facebook made it.
  */
 public final class ProfileNotes {
@@ -57,39 +65,68 @@ public final class ProfileNotes {
     /** What a left-out node is counted under. */
     static final String REASON = "note bubble";
 
+    /** What a node's string attribute names when the node sends a gift: Facebook's gift addresses. */
+    static final String[] GIFT_ROUTES = {
+            "fb://gift/",
+            "/gifts/start",
+    };
+
+    /** A Bloks app whose name holds "gift", or a quoted name holding both "profile" and "gift". */
+    static final Pattern GIFT_ACTION = Pattern.compile(
+            "com\\.bloks\\.www\\.[\\w.]*gift|\"(?=[a-z_.]*profile)(?=[a-z_.]*gift)[a-z_.]+\"",
+            Pattern.CASE_INSENSITIVE);
+
+    /** What a left-out gift button is counted under. */
+    static final String GIFT_REASON = "gift button";
+
+    /** What a node is, as bits. */
+    static final int NOTE = 1;
+    static final int GIFT = 2;
+
     /** Each class's attribute field, or {@link #NO_FIELD} for a class that has none. */
     private static final Map<Class<?>, Object> ATTRIBUTES = new ConcurrentHashMap<>();
     private static final Object NO_FIELD = new Object();
 
-    /** Each node's answer. Bloks nodes keep Object's identity equality, so this is by node. */
-    private static final Map<Object, Boolean> NOTES = Collections.synchronizedMap(new WeakHashMap<>());
+    /** Each node's bits. Bloks nodes keep Object's identity equality, so this is by node. */
+    private static final Map<Object, Integer> KINDS = Collections.synchronizedMap(new WeakHashMap<>());
 
     private ProfileNotes() {
     }
 
     /**
      * Injection point, before every return of the Bloks node class's child getters: the list the
-     * getter would return, or the same list without its note bubble. Never throws.
+     * getter would return, or the same list without its note bubble or its gift button, each while
+     * its switch is on. Never throws.
      */
     public static List<?> children(@Nullable List<?> list) {
         try {
             HookStatus.invoked(FamilyNames.PROFILE_NOTES);
             if (list == null || list.isEmpty()) return list;
-            if (!Utils.settingsReady() || !Settings.HIDE_PROFILE_NOTES.get()) return list;
+            if (!Utils.settingsReady()) return list;
+            int hidden = (Settings.HIDE_PROFILE_NOTES.get() ? NOTE : 0) | (Settings.HIDE_PROFILE_GIFTS.get() ? GIFT : 0);
+            if (hidden == 0) return list;
             int size = list.size();
             List<Object> kept = null;
+            int notes = 0;
+            int gifts = 0;
             for (int index = 0; index < size; index++) {
                 Object child = list.get(index);
-                if (isNote(child)) {
+                int kind = kindOf(child) & hidden;
+                if (kind != 0) {
                     if (kept == null) kept = new ArrayList<>(list.subList(0, index));
+                    if ((kind & NOTE) != 0) notes++;
+                    else gifts++;
                 } else if (kept != null) {
                     kept.add(child);
                 }
             }
             if (kept == null) return list;
-            int removed = size - kept.size();
-            FeedFilterCounters.removed(ROUTE, removed, REASON);
-            Logger.printDebug(() -> "Profile notes: left out " + removed + " note bubble node(s)");
+            if (notes > 0) FeedFilterCounters.removed(ROUTE, notes, REASON);
+            if (gifts > 0) FeedFilterCounters.removed(ROUTE, gifts, GIFT_REASON);
+            int leftNotes = notes;
+            int leftGifts = gifts;
+            Logger.printDebug(() -> "Profile notes: left out " + leftNotes + " note bubble node(s) and "
+                    + leftGifts + " gift button node(s)");
             return kept;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.PROFILE_NOTES, "Bloks children", failure);
@@ -100,15 +137,44 @@ public final class ProfileNotes {
 
     /** Whether [node] is a Bloks node whose own string attributes name a note bubble. */
     static boolean isNote(@Nullable Object node) throws IllegalAccessException {
-        if (node == null) return false;
+        return (kindOf(node) & NOTE) != 0;
+    }
+
+    /**
+     * What [node] is, as bits: {@link #NOTE} when its own string attributes name a note bubble,
+     * {@link #GIFT} when they name a gift. 0 for anything else, a child that isn't a node included.
+     */
+    static int kindOf(@Nullable Object node) throws IllegalAccessException {
+        if (node == null) return 0;
         Field field = attributes(node.getClass());
-        if (field == null) return false;
-        Boolean known = NOTES.get(node);
+        if (field == null) return 0;
+        Integer known = KINDS.get(node);
         if (known != null) return known;
-        boolean note = namesANote((SparseArray<?>) field.get(node));
-        NOTES.put(node, note);
-        if (note) HookStatus.bound(FamilyNames.PROFILE_NOTES, node.getClass().getName() + "#" + field.getName());
-        return note;
+        SparseArray<?> attributes = (SparseArray<?>) field.get(node);
+        int kind = namesANote(attributes) ? NOTE : 0;
+        String gift = giftNamedBy(attributes);
+        if (kind == 0 && gift != null) kind = GIFT;
+        KINDS.put(node, kind);
+        if (kind != 0) HookStatus.bound(FamilyNames.PROFILE_NOTES, node.getClass().getName() + "#" + field.getName());
+        if (kind == GIFT) Logger.printDebug(() -> "Profile notes: a gift button names " + gift);
+        return kind;
+    }
+
+    /** The first of [attributes]' string values that names a gift, cut to 200 characters, or null. */
+    @Nullable
+    static String giftNamedBy(@Nullable SparseArray<?> attributes) {
+        if (attributes == null) return null;
+        for (int index = 0, size = attributes.size(); index < size; index++) {
+            Object value = attributes.valueAt(index);
+            if (!(value instanceof String)) continue;
+            String text = (String) value;
+            boolean named = GIFT_ACTION.matcher(text).find();
+            for (String route : GIFT_ROUTES) {
+                named |= text.contains(route);
+            }
+            if (named) return text.length() > 200 ? text.substring(0, 200) : text;
+        }
+        return null;
     }
 
     /** Whether one of [attributes]' string values holds a marker. */
@@ -150,6 +216,6 @@ public final class ProfileNotes {
     /** Forgets every class and node answer, for tests. */
     static void forgetForTests() {
         ATTRIBUTES.clear();
-        NOTES.clear();
+        KINDS.clear();
     }
 }

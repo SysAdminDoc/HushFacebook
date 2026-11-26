@@ -449,6 +449,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_PROFILE_NOTES,
                         L10n.t("Hides the note bubble that sits on profile pictures. Applies the next time you open a "
                                 + "profile.")));
+                feed.addPreference(toggle(context, Settings.HIDE_PROFILE_GIFTS,
+                        L10n.t("Takes the Send a gift button off other people's profiles. Applies the next time you "
+                                + "open a profile.")));
             }
             // Read each time Facebook lays a profile out, so a change shows on the next profile opened.
             if (build.contains(PatchFamily.LOCAL_PROFILE_COUNTS)) {

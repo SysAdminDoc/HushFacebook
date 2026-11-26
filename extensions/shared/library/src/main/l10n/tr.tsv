@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	Bi
 Hide profile notes	Profil notlarını gizle
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Profil fotoğraflarının üzerindeki not balonunu gizler. Bir profili bir sonraki açışınızda uygulanır.
+Hide the gift button on profiles	Profillerde hediye düğmesini gizle
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Başkalarının profillerinden hediye gönder düğmesini kaldırır. Bir profili bir sonraki açışınızda uygulanır.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Gönderilerin altında Kaydet düğmesi
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

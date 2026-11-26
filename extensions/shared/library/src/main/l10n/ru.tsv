@@ -578,6 +578,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	С
 Hide profile notes	Скрывать заметки в профилях
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Скрывает облачко заметки на фото профиля. Применяется при следующем открытии профиля.
+Hide the gift button on profiles	Скрыть кнопку подарка в профилях
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Убирает кнопку отправки подарка из чужих профилей. Применяется при следующем открытии профиля.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Кнопка «Сохранить» под публикациями
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

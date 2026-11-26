@@ -518,6 +518,8 @@ Hide sponsored profile posts	Ocultar publicações patrocinadas em perfis
 Hides ads between posts on someone's profile or a Page. Their own posts stay.	Oculta os anúncios entre as publicações no perfil de alguém ou em uma Página. As publicações deles continuam.
 Hide profile notes	Ocultar notas do perfil
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Oculta o balão de nota que fica sobre as fotos de perfil. Vale a partir da próxima vez que você abrir um perfil.
+Hide the gift button on profiles	Ocultar o botão de presente nos perfis
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Tira o botão de enviar presente dos perfis de outras pessoas. Vale a partir da próxima vez que você abrir um perfil.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Botão Salvar abaixo das publicações
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

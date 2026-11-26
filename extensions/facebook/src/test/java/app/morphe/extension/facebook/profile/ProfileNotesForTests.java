@@ -40,6 +40,26 @@ public final class ProfileNotesForTests {
                 + "(bk.action.map.Make (bk.action.array.Make \"is_viewing_self\") (bk.action.array.Make true)))");
     }
 
+    /**
+     * A Send a gift button, the way #576's would be drawn if its tap opens Facebook's gift address.
+     * No phone this was written on showed one, so its script is made from the address 588 knows.
+     */
+    static Node giftButton() {
+        return new Node().with(0x2d, "(bk.action.fb.OpenUrl \"fb://gift/sendinterstitial/?recipient=4&entry_point=profile\")");
+    }
+
+    /** A gift button whose tap runs a Bloks app with "gift" in its name. */
+    static Node giftApp() {
+        return new Node().with(0x2d, "(bk.action.bloks.AsyncAction \"com.bloks.www.fb.gifting.send_gift_sheet\" "
+                + "(bk.action.map.Make (bk.action.array.Make \"entrypoint\") (bk.action.array.Make \"profile\")))");
+    }
+
+    /** A gift button whose tap names its entry point "profile_gift_cta" under another app. */
+    static Node giftEntry() {
+        return new Node().with(0x2d, "(bk.action.bloks.AsyncAction \"com.bloks.www.payments.send_sheet\" "
+                + "(bk.action.map.Make (bk.action.array.Make \"entrypoint\") (bk.action.array.Make \"profile_gift_cta\")))");
+    }
+
     /** A profile picture, a node with no note action of its own. */
     static Node picture() {
         return new Node().with(0x23, "profile_picture").with(0x31, 42);

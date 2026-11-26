@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	�
 Hide profile notes	프로필 노트 숨기기
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	프로필 사진 위의 노트 말풍선을 숨겨요. 다음에 프로필을 열 때부터 적용돼요.
+Hide the gift button on profiles	프로필의 선물 버튼 숨기기
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	다른 사람 프로필에서 선물 보내기 버튼을 없애요. 다음에 프로필을 열 때부터 적용돼요.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	게시물 아래 저장 버튼
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

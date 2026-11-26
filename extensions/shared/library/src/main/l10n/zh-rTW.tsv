@@ -576,6 +576,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	�
 Hide profile notes	隱藏個人檔案便利貼
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	隱藏個人檔案相片上的便利貼泡泡。從下次開啟個人檔案起生效。
+Hide the gift button on profiles	隱藏個人檔案上的禮物按鈕
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	從別人的個人檔案移除送禮物按鈕。從下次開啟個人檔案起生效。
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	貼文下方的儲存按鈕
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

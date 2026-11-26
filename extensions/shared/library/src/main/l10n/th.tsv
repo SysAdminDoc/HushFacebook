@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	�
 Hide profile notes	ซ่อนโน้ตบนโปรไฟล์
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	ซ่อนบับเบิลโน้ตบนรูปโปรไฟล์ จะมีผลในครั้งถัดไปที่คุณเปิดโปรไฟล์
+Hide the gift button on profiles	ซ่อนปุ่มของขวัญในโปรไฟล์
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	นำปุ่มส่งของขวัญออกจากโปรไฟล์ของคนอื่น จะมีผลในครั้งถัดไปที่คุณเปิดโปรไฟล์
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	ปุ่มบันทึกใต้โพสต์
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

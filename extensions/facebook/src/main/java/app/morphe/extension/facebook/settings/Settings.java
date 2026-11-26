@@ -663,6 +663,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_profile_notes", FALSE);
 
     /**
+     * The Send a gift button on other people's profiles, left out of the profile's Bloks layout the
+     * same way ({@link app.morphe.extension.facebook.profile.ProfileNotes}, #576). Starts off. Read
+     * each time Facebook lays the profile out, so a change shows the next time a profile opens.
+     */
+    public static final BooleanSetting HIDE_PROFILE_GIFTS =
+            new BooleanSetting("hushfacebook_hide_profile_gifts", FALSE);
+
+    /**
      * Friends, followers and following counts of your own profile that you type yourself, shown on this
      * phone only ({@link app.morphe.extension.facebook.profile.LocalProfileCounts}, #280). Starts off.
      * Read each time Facebook lays the profile out, so a change shows the next time a profile opens.

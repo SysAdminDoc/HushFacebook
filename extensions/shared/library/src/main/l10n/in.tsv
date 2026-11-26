@@ -572,6 +572,8 @@ Hides ads between posts on someone's profile or a Page. Their own posts stay.	Me
 Hide profile notes	Sembunyikan catatan profil
 # context: summary of that switch
 Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Menyembunyikan gelembung catatan di atas foto profil. Berlaku saat kamu membuka profil berikutnya.
+Hide the gift button on profiles	Sembunyikan tombol hadiah di profil
+Takes the Send a gift button off other people's profiles. Applies the next time you open a profile.	Menghapus tombol kirim hadiah dari profil orang lain. Berlaku saat kamu membuka profil berikutnya.
 # context: switch title under News feed; Save is Facebook's own button that keeps a post in your saved items
 Save button under posts	Tombol Simpan di bawah postingan
 # context: summary of that switch; Like, Comment and Share are the buttons under a post

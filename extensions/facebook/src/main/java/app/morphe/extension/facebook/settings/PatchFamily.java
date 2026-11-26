@@ -135,7 +135,7 @@ public enum PatchFamily {
     SPONSORED_PROFILE_POSTS(FamilyNames.SPONSORED_PROFILE_POSTS, "sponsoredProfilePosts", null,
             Settings.HIDE_SPONSORED_PROFILE_POSTS),
     PROFILE_NOTES(FamilyNames.PROFILE_NOTES, "profileNotes", null,
-            Settings.HIDE_PROFILE_NOTES),
+            Settings.HIDE_PROFILE_NOTES, Settings.HIDE_PROFILE_GIFTS),
     LOCAL_PROFILE_COUNTS(FamilyNames.LOCAL_PROFILE_COUNTS, "localProfileCounts", null,
             Settings.LOCAL_PROFILE_COUNTS),
     POST_ACTION_BUTTONS(FamilyNames.POST_ACTION_BUTTONS, "postActionButtons", null,

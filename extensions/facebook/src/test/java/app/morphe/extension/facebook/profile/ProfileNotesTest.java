@@ -54,6 +54,7 @@ public class ProfileNotesTest {
     public void restore() {
         PauseForTests.resume();
         Settings.HIDE_PROFILE_NOTES.resetToDefault();
+        Settings.HIDE_PROFILE_GIFTS.resetToDefault();
         ProfileNotes.forgetForTests();
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -168,6 +169,70 @@ public class ProfileNotesTest {
         };
         assertSame(broken, ProfileNotes.children(broken));
         assertTrue(statusLine(), statusLine().contains("threw"));
+    }
+
+    @Test
+    public void theGiftSwitchStartsOff() {
+        Settings.HIDE_PROFILE_GIFTS.resetToDefault();
+        assertFalse(Settings.HIDE_PROFILE_GIFTS.get());
+    }
+
+    /**
+     * With the gift switch on (#576), a node whose tap opens a gift address, runs a Bloks app named
+     * for gifts or names a profile gift entry point is left out, and the rest keep their order.
+     */
+    @Test
+    public void onTheGiftButtonIsLeftOutAndTheRestKeepTheirOrder() {
+        Settings.HIDE_PROFILE_NOTES.save(false);
+        Settings.HIDE_PROFILE_GIFTS.save(true);
+        Node picture = ProfileNotesForTests.picture();
+        Node bubble = ProfileNotesForTests.ownBubble();
+        Node other = ProfileNotesForTests.picture();
+        List<?> kept = ProfileNotes.children(Arrays.asList(picture, ProfileNotesForTests.giftButton(), bubble,
+                ProfileNotesForTests.giftApp(), other, ProfileNotesForTests.giftEntry()));
+        assertEquals("only the gift buttons go, the note stays with its switch off", Arrays.asList(picture, bubble, other), kept);
+        assertEquals(ProfileNotes.ROUTE + ": 0 lists, 0 items, 3 removed. Last reason: gift button. Removed: "
+                + "gift button 3", counterLine());
+    }
+
+    /** Gift words that don't name what a tap opens stay: a label, a gift card, a profile script with no gift. */
+    @Test
+    public void giftWordsThatOpenNoGiftAreKept() {
+        Settings.HIDE_PROFILE_GIFTS.save(true);
+        List<Node> nodes = Arrays.asList(
+                new Node().with(0x2d, "Send a gift"),
+                new Node().with(0x2d, "(bk.action.bloks.AsyncAction \"com.bloks.www.fb.profile.actions\" "
+                        + "(bk.action.map.Make (bk.action.array.Make \"entrypoint\") (bk.action.array.Make \"profile_header\")))"),
+                new Node().with(0x2d, "(bk.action.bloks.AsyncAction \"com.bloks.www.marketplace.checkout\" "
+                        + "(bk.action.map.Make (bk.action.array.Make \"surface\") (bk.action.array.Make \"checkout_gift_toggle\")))"));
+        assertEquals(nodes, ProfileNotes.children(nodes));
+        assertNull(counterLine());
+    }
+
+    @Test
+    public void withBothSwitchesOnBothGoAndAreCountedApart() {
+        Settings.HIDE_PROFILE_GIFTS.save(true);
+        Node picture = ProfileNotesForTests.picture();
+        List<?> kept = ProfileNotes.children(Arrays.asList(ProfileNotesForTests.ownBubble(), picture,
+                ProfileNotesForTests.giftButton()));
+        assertEquals(Collections.singletonList(picture), kept);
+        String line = counterLine();
+        assertTrue(line, line.contains(" 2 removed") && line.contains("note bubble 1") && line.contains("gift button 1"));
+    }
+
+    @Test
+    public void withOnlyNotesOnTheGiftButtonStays() {
+        Node gift = ProfileNotesForTests.giftButton();
+        List<Node> nodes = Arrays.asList(ProfileNotesForTests.picture(), gift);
+        assertEquals(nodes, ProfileNotes.children(nodes));
+    }
+
+    @Test
+    public void pausedTheGiftButtonStays() {
+        Settings.HIDE_PROFILE_GIFTS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        List<Node> nodes = Arrays.asList(ProfileNotesForTests.picture(), ProfileNotesForTests.giftButton());
+        assertEquals(nodes, ProfileNotes.children(nodes));
     }
 
     /** A node's answer is kept, so a layout pass over the same node doesn't read it again. */
