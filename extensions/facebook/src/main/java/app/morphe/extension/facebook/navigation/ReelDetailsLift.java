@@ -39,8 +39,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>Each frame, every child there with a button smaller than a quarter of the row, and no video
  * under it, moves up by as much as the row's bottom is under the top of the tab bar's rows on
  * screen once the row is paged in at the list's top, wherever it is now, so a reel's details travel
- * with it through a swipe. A row shorter than the list, one Facebook's height was left on, ends
- * above the bar and isn't moved. The tap layers, the video and its cover stay where Facebook has
+ * with it through a swipe. That holds for a row taller than the list too, so the details sit above
+ * the bar before the page runs under it. A row shorter than the list, one Facebook's height was
+ * left on, ends above the bar and isn't moved. The tap layers, the video and its cover stay where Facebook has
  * them. The details ride with the bar as it slides away and back, and a part no longer found goes
  * back where Facebook had it.
  */
@@ -76,11 +77,14 @@ final class ReelDetailsLift {
         if (list instanceof ViewGroup && cover != Integer.MAX_VALUE && list.isShown()) {
             ViewGroup rows = (ViewGroup) list;
             int top = TranslucentBars.laidOutTop(list) + list.getPaddingTop();
-            int bottom = TranslucentBars.laidOutTop(list) + list.getHeight() - list.getPaddingBottom();
             for (int i = 0; i < rows.getChildCount(); i++) {
                 View row = rows.getChildAt(i);
                 if (row.getVisibility() != View.VISIBLE || row.getHeight() <= 0) continue;
-                int lift = Math.max(0, Math.min(top + row.getHeight(), bottom) - cover);
+                // The row's own bottom, not the list's: a row taller than its list, as one made
+                // ahead is before the page runs under the bar, or in a page Facebook keeps putting
+                // its gap back on, was lifted only to the list's bottom, so its details stayed cut
+                // off behind the bar (#503).
+                int lift = Math.max(0, top + row.getHeight() - cover);
                 if (lift == 0) continue;
                 ViewGroup branch = branchOf(row);
                 if (branch == null) continue;

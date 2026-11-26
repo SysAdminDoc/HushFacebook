@@ -241,6 +241,32 @@ public class ReelDetailsLiftTest {
         assertEquals(-160f, reels.shown.details.getTranslationY(), 0f);
     }
 
+    /**
+     * #503: a row taller than its list, as rows made ahead are before the page runs under the tab
+     * bar, or while Facebook keeps putting the page's gap back, was lifted only as far as the list's
+     * bottom. With the list still stopping at the bar that's nothing, and the name, caption and
+     * buttons stayed cut off behind it. The row's own bottom counts, so they sit above the bar.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aRowTallerThanItsListStillHasItsDetailsAboveTheBar() {
+        Settings.TRANSLUCENT_BARS.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        Reels reels = new Reels(screen, 1600);
+        ((FrameLayout.LayoutParams) reels.list.getLayoutParams()).bottomMargin = 160;
+        reels.list.requestLayout();
+        screen.layOut();
+        int[] at = new int[2];
+        screen.tabBar.getLocationInWindow(at);
+        int tabsTop = at[1];
+        assertEquals("the page still stops at the tab bar", tabsTop, bottomOnScreen(reels.list));
+        assertEquals("the row runs on past it", tabsTop + 160, bottomOnScreen(reels.shown.row));
+
+        screen.bars.details.place(reels.list, tabsTop);
+        assertEquals("the buttons end where the tabs start", tabsTop, bottomOnScreen(reels.shown.like));
+        assertEquals(-160f, reels.shown.details.getTranslationY(), 0f);
+    }
+
     @Test
     @Config(qualifiers = "w720dp-h1800dp")
     public void aRowThatEndsAboveTheBarIsLeftAlone() {

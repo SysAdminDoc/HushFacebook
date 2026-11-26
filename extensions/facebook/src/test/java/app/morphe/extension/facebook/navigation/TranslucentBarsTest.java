@@ -244,6 +244,46 @@ public class TranslucentBarsTest {
         assertFalse("the booked frame books none", shadowOf(screen.window).wasInvalidated());
     }
 
+    /**
+     * #503: the stretch looks once a second, so a tab opened just after a look kept its page
+     * stopping at the tab bar for up to a second. The first reel on the Reels tab had its name,
+     * caption and buttons cut off by the bar, then jumped up (S22: 0.8 s after the tap). A tab shown
+     * has the next frames look until one takes the page, and then the wait is back, so Facebook
+     * putting the gap back is still counted a look a second.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aTabShownHasItsPageRunUnderTheBarOnTheNextFrame() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        FrameLayout holder = new FrameLayout(screen.activity);
+        View reels = new View(screen.activity);
+        holder.addView(reels, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        screen.page.addView(holder, new FrameLayout.LayoutParams(720, 1600));
+        screen.layOut();
+        screen.bars.update();
+        assertEquals("nothing stops at the tab bar on the tab before", 1600, reels.getBottom());
+
+        ShadowLooper.idleMainLooper(300, TimeUnit.MILLISECONDS);
+        TranslucentBars.tabShown();
+        screen.bars.update();
+        assertEquals("the new tab's page isn't laid out yet", 1600, reels.getBottom());
+        holder.setPadding(0, 0, 0, 160);
+        screen.layOut();
+        assertEquals("it stops at the tab bar", 1440, reels.getBottom());
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("under the tab bar on the next frame", 1600, reels.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 1"));
+
+        ShadowLooper.idleMainLooper(100, TimeUnit.MILLISECONDS);
+        holder.setPadding(0, 0, 0, 160);
+        screen.layOut();
+        screen.bars.update();
+        assertEquals("a gap put back waits for the next look", 1440, reels.getBottom());
+        nextLook(screen);
+        assertEquals("under the tab bar again", 1600, reels.getBottom());
+    }
+
     /** A page held off the tab bar by its own bottom margin, which Facebook keeps putting back, is left alone. */
     @Test
     @Config(qualifiers = "w720dp-h1800dp")

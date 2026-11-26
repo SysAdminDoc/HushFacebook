@@ -212,10 +212,12 @@ public final class ReelsTabBarHidden {
     /**
      * Injection point, where Facebook restyles the tab bar for the tab just selected: the bar and
      * that tab. On the Reels tab the bar is hidden; on any other tab a bar hidden here is shown
-     * again. Never throws.
+     * again. The see-through bars look for the tab's page on the frames that follow
+     * ({@link TranslucentBars#tabShown}). Never throws.
      */
     public static void tabShown(@Nullable View bar, @Nullable Object tab) {
         if (bar == null || tab == null) return;
+        TranslucentBars.tabShown();
         boolean barGoes = false;
         try {
             HookStatus.invoked(FAMILY);
