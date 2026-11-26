@@ -564,6 +564,11 @@ public class SettingsEntryTest {
             assertTrue("the screen didn't open on Links", onLinks);
             assertTrue(pageOver(activity.get()).navigation.isExpanded("Links"));
 
+            // The first Back folds Links (#604), the next one closes the screen.
+            SettingsL10nTest.backOf(dialog).performClick();
+            ShadowLooper.idleMainLooper();
+            assertNotNull("Back closed the screen with Links open", dialogOver(activity.get()));
+            assertFalse(pageOver(activity.get()).navigation.isExpanded("Links"));
             SettingsL10nTest.backOf(dialog).performClick();
             ShadowLooper.idleMainLooper();
             assertNull("the screen stayed open", dialogOver(activity.get()));
@@ -640,8 +645,8 @@ public class SettingsEntryTest {
         ShadowLooper.idleMainLooper();
         HushfacebookPreferenceFragment page = pageOver(activity.get());
         ListView list = page.getView().findViewById(android.R.id.list);
-        org.junit.Assert.assertEquals(24, list.getCount());
-        org.junit.Assert.assertEquals("section_Opening Facebook", ((Preference) list.getItemAtPosition(1)).getKey());
+        org.junit.Assert.assertEquals(26, list.getCount());
+        org.junit.Assert.assertEquals("section_Opening Facebook", ((Preference) list.getItemAtPosition(3)).getKey());
         assertFalse(page.navigation.isExpanded("Downloads"));
         assertFalse(titles(pageOver(activity.get())).contains("More settings"));
         String report = app.morphe.extension.shared.settings.preference.LogBufferManager.buildExportText();

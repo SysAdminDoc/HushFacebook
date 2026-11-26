@@ -143,7 +143,7 @@ public class CategoryPagesSettingsTest {
         assertFalse(context.getSharedPreferences(SettingsNavigation.VIEW_STORE, Context.MODE_PRIVATE)
                 .getBoolean(SettingsNavigation.LIST_VIEW, true));
         // Every category, Support and the build details: the main page it always had.
-        assertEquals(24, list().getCount());
+        assertEquals(26, list().getCount());
     }
 
     @Test public void aDeviceWalkOpensByCategoryAndLeavesTheListChoiceAlone() {

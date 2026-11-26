@@ -62,7 +62,8 @@ public class SectionJumpTest {
 
         List<String> titles = new ArrayList<>();
         for (int i = 0; i < page.sections().size(); i++) {
-            Preference header = (Preference) list.getItemAtPosition(i + 1);
+            // Under the search box: Export settings, Import settings (#608) and Switches that are on.
+            Preference header = (Preference) list.getItemAtPosition(i + 3);
             assertTrue(header.getKey(), header.getKey().startsWith("section_"));
             titles.add(header.getTitle().toString());
         }
@@ -72,15 +73,15 @@ public class SectionJumpTest {
                 "Tabs and navigation", "Appearance", "Built-in changes", "Pause, backup and diagnostics", "About");
         assertEquals(expected, titles);
         assertEquals(21, titles.size());
-        assertEquals(SettingsNavigation.SUPPORT, ((Preference) list.getItemAtPosition(22)).getKey());
-        assertEquals(24, list.getCount());
+        assertEquals(SettingsNavigation.SUPPORT, ((Preference) list.getItemAtPosition(24)).getKey());
+        assertEquals(26, list.getCount());
         assertFalse(titles.contains("More settings"));
         assertTrue(titles.contains("Downloads"));
         assertTrue(titles.contains("Links and sharing"));
     }
 
     @Test
-    public void aSectionIsRevealedInTheMainListAndBackClosesSettings() {
+    public void aSectionIsRevealedInTheMainListAndBackFoldsItThenClosesSettings() {
         SettingsDialog dialog = show();
         HushfacebookPreferenceFragment page = page(dialog);
         ListView list = laidOut(dialog);
@@ -90,7 +91,7 @@ public class SectionJumpTest {
         assertTrue(page.jumpTo(downloads));
         relayout(list);
         assertTrue(page.navigation.isExpanded("Downloads"));
-        assertEquals(24 + ((android.preference.PreferenceCategory) downloads).getPreferenceCount(), list.getCount());
+        assertEquals(26 + ((android.preference.PreferenceCategory) downloads).getPreferenceCount(), list.getCount());
         int header = -1;
         for (int i = 0; i < list.getCount(); i++) {
             if ("section_Downloads".equals(((Preference) list.getItemAtPosition(i)).getKey())) header = i;
@@ -98,9 +99,13 @@ public class SectionJumpTest {
         assertTrue("the Downloads header is off screen", header >= list.getFirstVisiblePosition()
                 && header <= list.getLastVisiblePosition());
         assertTrue(downloads == ((Preference) list.getItemAtPosition(header + 1)).getParent());
+        // Back folds the open section first (#604), then leaves.
+        dialog.getDialog().onBackPressed();
+        assertTrue("Back closed settings with Downloads open", dialog.getDialog().isShowing());
+        assertFalse(page.navigation.isExpanded("Downloads"));
         assertFalse(page.backFromJump());
         dialog.getDialog().onBackPressed();
-        assertFalse("Back should close settings directly", dialog.getDialog().isShowing());
+        assertFalse("Back with every section folded should close settings", dialog.getDialog().isShowing());
         assertFalse("Back should leave Facebook running", controller.get().isFinishing());
     }
 

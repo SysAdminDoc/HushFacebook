@@ -731,9 +731,17 @@ final class SettingsNavigation extends BaseAdapter {
         giveIcons();
         visible.clear();
         List<String> terms = SettingsSearch.terms(query);
-        // Switches that are on (#353) sits above the sections, on the main list and in search.
+        // Export and Import settings (#608), then Switches that are on (#353), sit above the
+        // sections, on the main list and in search.
+        Preference[] backup = {
+                screen.findPreference(SettingsBackupPreference.keyFor(SettingsBackupPreference.EXPORT)),
+                screen.findPreference(SettingsBackupPreference.keyFor(SettingsBackupPreference.IMPORT)),
+        };
         Preference favorites = screen.findPreference(FavoriteSwitchesScreen.ROW);
         if (!terms.isEmpty()) {
+            for (Preference row : backup) {
+                if (row != null && SettingsSearch.matchesTerms(terms, row.getTitle(), row.getSummary())) visible.add(row);
+            }
             if (favorites != null && SettingsSearch.matchesTerms(terms, favorites.getTitle(), favorites.getSummary()))
                 visible.add(favorites);
             for (Section section : sections) {
@@ -779,6 +787,7 @@ final class SettingsNavigation extends BaseAdapter {
             // Only in a build that lacks another default patch: the card's own line under it.
             Preference missing = screen.findPreference(HushfacebookPreferenceFragment.MISSING_DEFAULTS);
             if (missing != null) visible.add(missing);
+            for (Preference row : backup) if (row != null) visible.add(row);
             if (favorites != null) visible.add(favorites);
             for (Section section : sections) {
                 // The list view names each section over its rows, as search does, with no button to open.

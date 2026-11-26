@@ -397,6 +397,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         screen.addPreference(jumpRow(context));
         // It sits among the section rows, which all lead with a mark.
         screen.addPreference(mark(FavoriteSwitchesScreen.row(this, context), SettingsIcons.SWITCHES));
+        // The list shows them above Switches that are on (SettingsNavigation.rebuild).
+        HushfacebookPages.backup(this, screen, context);
 
         // The sections in the order they come on the page, each in its category page's class.
         FeedPages.opening(this, screen, context, build);

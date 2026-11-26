@@ -387,24 +387,32 @@ final class HushfacebookPages {
         }
     }
 
+    /**
+     * Export settings and Import settings, rows of the page itself right under the search box, so a
+     * backup before trying a new switch is one tap from opening the settings (#608).
+     */
+    static void backup(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context) {
+        // Morphe Manager can export the patch choices and the signing key, not these switches.
+        screen.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.EXPORT,
+                L10n.t("Export settings"),
+                L10n.t("Saves your switches and download choices to a file, to back up or copy to another phone. Pause, "
+                        + "Debug logging and the update check aren't included.")), SettingsIcons.EXPORT));
+        // The preview gives a count of the switches and the download settings' new values, not
+        // each switch by name.
+        screen.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.IMPORT,
+                L10n.t("Import settings"),
+                L10n.t("Choose a settings file you saved earlier. You'll see how many switches it changes before anything "
+                        + "is applied.")), SettingsIcons.DOWNLOADS));
+    }
+
     /** Pause, backup and diagnostics, in every build. */
     static void pause(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
         // Named for its rows: the screen's own title already says Hushfacebook.
         PreferenceCategory hushfacebook = category(screen, L10n.t("Pause, backup and diagnostics"));
         String stays = PatchFamily.staysWhilePausedSummary(build);
+        // Export and Import lead the main list (backup() below). Reset and its undo stay here.
         subheading(hushfacebook, L10n.t("Backup and restore"));
-        // Morphe Manager can export the patch choices and the signing key, not these switches.
-        hushfacebook.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.EXPORT,
-                L10n.t("Export settings"),
-                L10n.t("Saves your switches and download choices to a file, to back up or copy to another phone. Pause, "
-                        + "Debug logging and the update check aren't included.")), SettingsIcons.EXPORT));
-        // The preview gives a count of the switches and the download settings' new values, not
-        // each switch by name.
-        hushfacebook.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.IMPORT,
-                L10n.t("Import settings"),
-                L10n.t("Choose a settings file you saved earlier. You'll see how many switches it changes before anything "
-                        + "is applied.")), SettingsIcons.DOWNLOADS));
         // At once and with no dialog, since Undo the reset right below takes it back.
         hushfacebook.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.RESET,
                 L10n.t("Reset settings"),
