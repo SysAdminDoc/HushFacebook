@@ -2681,7 +2681,7 @@
     },
     {
       "name": "Hushfacebook settings",
-      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, Icon style can make the icon Hushfacebook's logo, white on black or black on white, and Notification icon puts Hushfacebook's H on notifications. Other patches need it, so keep it selected.",
+      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, Icon style can make the icon Hushfacebook's logo in color or black and white, Icon picture and Icon background use your own picture and color, and Notification icon puts Hushfacebook's H on notifications. Other patches need it, so keep it selected.",
       "category": "Settings",
       "use": true,
       "dependencies": [
@@ -2727,16 +2727,36 @@
         {
           "key": "iconStyle",
           "title": "Icon style",
-          "description": "Facebook colors keeps the home screen icon as it is. Hushfacebook draws Hushfacebook's blue H logo instead, so this copy is easy to tell apart from the official app. White on black and Black on white draw Facebook's \"f\" in one color on a plain icon. Themed icons on Android 13 and up still work.",
+          "description": "Facebook colors keeps the home screen icon as it is. Hushfacebook draws Hushfacebook's blue H logo instead, so this copy is easy to tell apart from the official app, and its white on black and black on white versions draw the H alone. White on black and Black on white draw Facebook's \"f\" in one color on a plain icon. Themed icons on Android 13 and up still work.",
           "required": false,
           "type": "kotlin.String",
           "default": "facebook",
           "values": {
             "Facebook colors": "facebook",
             "Hushfacebook": "hushfacebook",
+            "Hushfacebook white on black": "hushfacebook-white-on-black",
+            "Hushfacebook black on white": "hushfacebook-black-on-white",
             "White on black": "white-on-black",
             "Black on white": "black-on-white"
           }
+        },
+        {
+          "key": "iconBackground",
+          "title": "Icon background",
+          "description": "A color like #1E88E5 to put behind the icon's logo, or behind your picture, instead of the style's own. Leave it empty to keep the style's.",
+          "required": false,
+          "type": "kotlin.String",
+          "default": null,
+          "values": null
+        },
+        {
+          "key": "iconPicture",
+          "title": "Icon picture",
+          "description": "Where to find a square PNG picture of your own, 432 to 1024 pixels on each side, to use as the home screen icon instead of the style's logo. Home screens trim icons to their own shape, so keep what matters in the middle two thirds. With a picture, the style only sets the color behind it and there's no themed icon. A folder works too when the picture is the only PNG in it or is named icon.png. Leave it empty to keep the logo.",
+          "required": false,
+          "type": "kotlin.String",
+          "default": null,
+          "values": null
         },
         {
           "key": "notificationIcon",

@@ -1532,7 +1532,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: the Icon style option of Hushfacebook settings for issue #278, after the idea of Hushfeed's two plain app icons. The resource patch reads the application icon from the manifest, finds its one adaptive-icon configuration and the themed-icon vector its monochrome layer names, and writes a solid background color and a one-color copy of that vector inline into the adaptive icon. The monochrome layer stays. For issue #467 the Hushfacebook style instead writes Hushfacebook's own logo, from HushfacebookLogo.kt, inline as the foreground on Hushfacebook blue, with a one-color H as the themed layer."
+      "changes": "Written for Hushfacebook: the Icon style option of Hushfacebook settings for issue #278, after the idea of Hushfeed's two plain app icons. The resource patch reads the application icon from the manifest, finds its one adaptive-icon configuration and the themed-icon vector its monochrome layer names, and writes a solid background color and a one-color copy of that vector inline into the adaptive icon. The monochrome layer stays. For issue #467 the Hushfacebook style instead writes Hushfacebook's own logo, from HushfacebookLogo.kt, inline as the foreground on Hushfacebook blue, with a one-color H as the themed layer. Two more styles draw that H in one color on black or white, Icon picture puts a PNG of the user's own in the foreground and drops the themed layer, and Icon background sets the color behind any style or picture."
     },
     {
       "paths": [
@@ -1542,6 +1542,16 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Hushfacebook's own logo (assets/icons/icon-1024.png) traced into vector paths for issue #467: the white H with its two blue slots, its light blue and navy copies behind it, and a one-color outline for themed icons, scaled into an adaptive icon's 66 dp safe circle."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/LauncherPicture.kt"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/hushfeed",
+      "commit": "92679641a7a20fb1b62794f83653f948ccc15252",
+      "license": "GPL-3.0-only",
+      "changes": "The custom launcher picture and background color checks of Hushfeed's CustomLauncherIconPatch.kt, taken out into their own file for issue #467: the color parse, the PNG reader with its size, header, palette and scanline checks, and the picture folder lookup, with Hushfacebook's option names in every refusal. The icon itself is written by LauncherIconStyle.kt."
     },
     {
       "paths": [
