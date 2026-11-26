@@ -26,6 +26,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * `Switches that are on` can sort its list. The chips at the top pick A to Z, Newest (the switch you turned on last comes first) or the order the settings pages show them in, and the list opens the same way next time. Switches you turned on before this update have no time yet, so Newest puts them after the rest, in page order. (#604)
 * The diagnostic report has a VIDEO STARTS section: the last 24 times Facebook asked a video to start, newest first, with what asked and whether it played or Hushfacebook held it, plus what Facebook's Autoplay setting answered last. A report sent right after feed videos stop playing on their own shows whether Hushfacebook or Facebook stopped them. (#602)
 * `3-dot menu items to hide` can take `Remix this reel` off a reel's More sheet. It joins the list the first time a reel's sheet shows it, and one tick covers both ways Facebook builds that row. (#475)
+* `Hold the profile tab for Activity log` under the tab bar settings opens your Activity log when you press and hold the profile tab, in place of the account switcher. On accounts with a Menu tab there, that tab does it. You can still switch accounts from the Menu. It starts off. (#605)
 
 ### Changed
 

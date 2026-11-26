@@ -3265,3 +3265,5 @@ Same as Facebook	與 Facebook 相同
 Show feed reels uncropped	動態消息中的 Reels 不裁切
 Reels in your feed show the whole picture at their own shape, instead of cut down to Facebook's frame. Reels drawn after a change pick it up.	動態消息中的 Reels 會以原本比例顯示完整畫面，不再被裁成 Facebook 的框。變更後繪製的 Reels 才會生效。
 Remix this reel	混剪這則 Reel
+Hold the profile tab for Activity log	長按個人檔案分頁開啟動態紀錄
+Press and hold the profile tab to open your Activity log instead of switching accounts. On accounts with a Menu tab in its place, that tab does it. You can still switch accounts from the Menu.	長按個人檔案分頁會開啟你的動態紀錄，而不是切換帳號。在該位置顯示選單分頁的帳號上，由選單分頁來做。你仍可以在選單中切換帳號.

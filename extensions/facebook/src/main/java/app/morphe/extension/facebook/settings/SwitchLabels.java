@@ -471,6 +471,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REELS_TAB_BAR) return L10n.t("Hide the tab bar on the Reels tab");
         if (setting == Settings.HIDE_TAB_BAR_LINE) return L10n.t("Hide the line along the tab bar");
         if (setting == Settings.TAB_BAR_IN_GROUPS) return L10n.t("Keep the tab bar in groups");
+        if (setting == Settings.PROFILE_TAB_ACTIVITY_LOG) return L10n.t("Hold the profile tab for Activity log");
         if (setting == Settings.TRANSLUCENT_BARS) return L10n.t("See-through bars");
         if (setting == Settings.ROUNDED_TAB_BAR) return L10n.t("Rounded tab bar");
         if (setting == Settings.GLASS_TAB_BAR) return L10n.t("Glass tab bar");

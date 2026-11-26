@@ -3467,6 +3467,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_tab_bar_in_groups", FALSE);
 
     /**
+     * A long press on the profile tab, or the Menu tab on accounts that have it there, opens your
+     * Activity log instead of Facebook's account switcher (#605,
+     * {@link app.morphe.extension.facebook.navigation.ProfileTabHold}). Off by default. Asked on
+     * each long press, so a change shows on the next one.
+     */
+    public static final BooleanSetting PROFILE_TAB_ACTIVITY_LOG =
+            new BooleanSetting("hushfacebook_profile_tab_activity_log", FALSE);
+
+    /**
      * The top bar and the tab bar let the feed show through, with a blur of it behind them on
      * Android 12 and newer (#124, {@link app.morphe.extension.facebook.navigation.TranslucentBars}).
      * Asked as each frame of the main screen draws, so a change shows right away. A kept tab bar is

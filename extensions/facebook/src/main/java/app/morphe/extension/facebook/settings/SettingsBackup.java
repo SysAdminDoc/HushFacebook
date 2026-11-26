@@ -548,6 +548,7 @@ public final class SettingsBackup {
             Settings.HIDE_REELS_TAB_BAR,
             Settings.HIDE_TAB_BAR_LINE,
             Settings.TAB_BAR_IN_GROUPS,
+            Settings.PROFILE_TAB_ACTIVITY_LOG,
             Settings.TRANSLUCENT_BARS,
             Settings.ROUNDED_TAB_BAR,
             Settings.GLASS_TAB_BAR,

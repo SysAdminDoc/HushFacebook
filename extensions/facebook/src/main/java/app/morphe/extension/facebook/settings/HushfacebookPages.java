@@ -119,6 +119,11 @@ final class HushfacebookPages {
             tabs.addPreference(toggle(context, Settings.TAB_BAR_IN_GROUPS,
                     L10n.t("A group you open keeps the tab bar along the bottom, so a tap takes you straight to another "
                             + "tab. Works while the tab bar is at the bottom. Open a group to see the change.")));
+            // Asked on each long press, so a change shows on the next one.
+            tabs.addPreference(toggle(context, Settings.PROFILE_TAB_ACTIVITY_LOG,
+                    L10n.t("Press and hold the profile tab to open your Activity log instead of switching accounts. "
+                            + "On accounts with a Menu tab in its place, that tab does it. You can still switch "
+                            + "accounts from the Menu.")));
             subheading(tabs, L10n.t("Top bar"));
             // Asked each time Facebook moves the top bar, so it takes effect on the next scroll.
             tabs.addPreference(toggle(context, Settings.KEEP_TOP_BAR,

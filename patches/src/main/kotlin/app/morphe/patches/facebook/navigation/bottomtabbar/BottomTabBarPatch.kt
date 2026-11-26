@@ -12,6 +12,7 @@ import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
@@ -65,6 +66,7 @@ internal const val OVERRIDE = "$BOTTOM_TAB_BAR->override(I)I"
  * one hook closes the strip Facebook draws behind the bar once it's gone (see StatusBarStrip.kt).
  * Light bars on the Reels tab keeps that tab's bars light in light mode (#423, LightReelsTabBars.kt).
  * Hide the tab bar on the Reels tab takes the bar off that tab alone (ReelsTabBarHidden.kt).
+ * Hold the profile tab for Activity log answers a long press on the profile tab (#605, ProfileTabHold.kt).
  */
 @Suppress("unused")
 val bottomTabBarPatch = patch(
@@ -78,7 +80,8 @@ val bottomTabBarPatch = patch(
         "a column down the middle on those big screens. One makes the top bar and " +
         "the tab bar see-through. Another hides the phone's status bar on the main screen until you swipe down " +
         "from the top, and another keeps the Reels tab's bars light in light mode, like the other tabs. One hides " +
-        "the tab bar on the Reels tab alone, so the reel gets the whole screen. Three more " +
+        "the tab bar on the Reels tab alone, so the reel gets the whole screen. Another makes a long press on the " +
+        "profile tab open your Activity log. Three more " +
         "take the Messenger button, its unread count or the Facebook logo out " +
         "of the top bar. Starts off. Pick it in " +
         "Hushfacebook settings > Tabs and navigation, then restart Facebook. The see-through, status bar, " +
@@ -112,6 +115,13 @@ val bottomTabBarPatch = patch(
         hookTabBarLineAtLayout()
         reads.groupBy { it.method }.forEach { (method, sites) ->
             mutableClassDefBy(method.definingClass).findMutableMethodOf(method).hookOverrideReads(sites)
+        }
+        // A long press on the profile tab can open the Activity log (#605). A moved listener only
+        // costs that switch, so the rest of the patch goes on.
+        try {
+            hookProfileTabHold(profileTabHoldSite())
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without Hold the profile tab for Activity log.")
         }
         enableStatus("bottomTabBar")
     }

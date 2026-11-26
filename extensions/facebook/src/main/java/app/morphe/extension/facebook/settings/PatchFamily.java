@@ -318,7 +318,7 @@ public enum PatchFamily {
             Settings.PHONE_LAYOUT_ON_BIG_SCREENS, Settings.TRANSLUCENT_BARS, Settings.ROUNDED_TAB_BAR, Settings.GLASS_TAB_BAR,
             Settings.HIDE_STATUS_BAR,
             Settings.CENTER_FEED_ON_BIG_SCREENS, Settings.LIGHT_REELS_TAB_BARS, Settings.HIDE_REELS_TAB_BAR, Settings.HIDE_TAB_BAR_LINE,
-            Settings.TAB_BAR_IN_GROUPS, Settings.HIDE_MESSENGER_BUTTON, Settings.HIDE_MESSENGER_COUNT, Settings.HIDE_FACEBOOK_LOGO,
+            Settings.TAB_BAR_IN_GROUPS, Settings.PROFILE_TAB_ACTIVITY_LOG, Settings.HIDE_MESSENGER_BUTTON, Settings.HIDE_MESSENGER_COUNT, Settings.HIDE_FACEBOOK_LOGO,
             Settings.HIDE_CREATE_BUTTON, Settings.HIDE_SEARCH_BUTTON, Settings.SEARCH_WITH_PICTURE),
     FORCE_DARK_MODE(FamilyNames.FORCE_DARK_MODE, "forceDarkMode", null,
             Settings.FORCE_DARK_MODE),

@@ -27,6 +27,7 @@ import com.facebook.graphql.model.GraphQLComment;
 import com.facebook.graphql.model.GraphQLPagesYouMayLikeFeedUnit;
 import com.facebook.graphql.model.GraphQLStory;
 import com.facebook.graphservice.tree.TreeJNI;
+import com.facebook.timeline.dashboard.tab.TimelineTab;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -158,6 +159,7 @@ import app.morphe.extension.facebook.misc.ShareSheetGroups;
 import app.morphe.extension.facebook.misc.ShareSheetPeople;
 import app.morphe.extension.facebook.navigation.BottomTabBar;
 import app.morphe.extension.facebook.navigation.TopBarButtons;
+import app.morphe.extension.facebook.navigation.ProfileTabHold;
 import app.morphe.extension.facebook.navigation.TabBarScrollAway;
 import app.morphe.extension.facebook.navigation.TranslucentBarsForTests;
 import app.morphe.extension.facebook.navigation.RoundedTabBarForTests;
@@ -1054,8 +1056,10 @@ public class PausedHooksTest {
         // With the bar at the bottom, Facebook's check of whether it slides away answers yes. The top
         // bar's entry is told to move 0 and fade by 0. (A kept bottom bar has its own test: with every
         // switch on, the slide wins over it.) Facebook's big screen layout gate is answered no. A frame
-        // of the main screen makes the top bar's background see-through.
+        // of the main screen makes the top bar's background see-through. A long press on the profile
+        // tab is taken, opening the Activity log.
         probes.put(PatchFamily.BOTTOM_TAB_BAR, Arrays.asList(
+                () -> ProfileTabHold.held(new View(RuntimeEnvironment.getApplication()), new TimelineTab()),
                 () -> BottomTabBar.override(TriState.NO.ordinal()) == TriState.YES.ordinal(),
                 BottomTabBar::phoneLayout,
                 TabBarScrollAway::slidesAway,
