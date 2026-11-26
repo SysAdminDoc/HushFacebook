@@ -3160,11 +3160,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	Ekspor akun
 Copies this account's cookies and token to the clipboard.	Menyalin cookie dan token akun ini ke papan klip.
-Copy token	Salin token
-Copies only the access token.	Hanya menyalin token akses.
-Nothing was copied	Tidak ada yang disalin
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook belum membuat sesi. Buka satu kiriman, lalu coba lagi.
-Token copied	Token disalin
 Import account	Impor akun
 Signs in with an account you paste, or a file.	Masuk dengan akun yang Anda tempel, atau dengan file.
 Account copied	Akun disalin
@@ -3173,19 +3169,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	Tempel di Impor akun di ponsel lain, atau pakai file yang tersimpan.
 From file	Dari file
 No account file on this phone.	Tidak ada file akun di ponsel ini.
-That file couldn't be read.	File itu tidak bisa dibaca.
-Facebook has to restart before the account shows.	Facebook harus dimulai ulang agar akun muncul.
-Account imported	Akun diimpor
-Later	Nanti
-Nothing was imported	Tidak ada yang diimpor
-That text couldn't be written into this Facebook.	Teks itu tidak bisa ditulis ke Facebook ini.
 Your account	Akun Anda
-Import or export	Impor atau ekspor
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Menampilkan akun ponsel ini sebagai teks. Salin atau simpan di sini, atau tempel akun lalu simpan ke Facebook ini.
-Export to file	Ekspor ke file
-Import from file	Impor dari file
 Copy	Salin
 Copied.	Disalin.
 There's nothing to save.	Tidak ada yang bisa disimpan.
 That file couldn't be written.	File itu tidak bisa ditulis.
-Account saved.	Akun disimpan.
+Export token	Ekspor token
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Menampilkan token akses setiap akun yang masuk di ponsel ini. Salin satu, atau simpan semuanya sebagai JSON.
+Save JSON	Simpan JSON
+Tokens saved.	Token disimpan.
+Check	Periksa
+Live: %1$s (uid %2$s)	Aktif: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook menolak token ini.
+The check couldn't reach Facebook.	Pemeriksaan tidak dapat menjangkau Facebook.

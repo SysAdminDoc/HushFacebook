@@ -18,7 +18,7 @@ final class L10nTablePt_rBR {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4312);
+        Map<String, String> table = new HashMap<>(4310);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,24 +4410,12 @@ final class L10nTablePt_rBR {
                 "sugest\u00f5es");
         table.put("this person",
                 "essa pessoa");
-        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
-                "Definido quando voc\u00ea aplicou os patches, ent\u00e3o a pausa n\u00e3o pode desativ\u00e1-lo:\\n%1$s\\nPara descartar essa possibilidade, aplique os patches de novo sem o patch dele.");
-        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
-                "Definidos quando voc\u00ea aplicou os patches, ent\u00e3o a pausa n\u00e3o pode desativ\u00e1-los:\\n%1$s\\nPara descartar um deles, aplique os patches de novo sem o patch dele.");
         table.put("Export account",
                 "Exportar conta");
         table.put("Copies this account's cookies and token to the clipboard.",
                 "Copia os cookies e o token desta conta para a \u00e1rea de transfer\u00eancia.");
-        table.put("Copy token",
-                "Copiar token");
-        table.put("Copies only the access token.",
-                "Copia apenas o token de acesso.");
-        table.put("Nothing was copied",
-                "Nada foi copiado");
         table.put("Facebook hasn't built a session yet. Open a post, then try again.",
                 "O Facebook ainda n\u00e3o criou uma sess\u00e3o. Abra uma publica\u00e7\u00e3o e tente de novo.");
-        table.put("Token copied",
-                "Token copiado");
         table.put("Import account",
                 "Importar conta");
         table.put("Signs in with an account you paste, or a file.",
@@ -4444,28 +4432,8 @@ final class L10nTablePt_rBR {
                 "De arquivo");
         table.put("No account file on this phone.",
                 "Nenhum arquivo de conta neste telefone.");
-        table.put("That file couldn't be read.",
-                "N\u00e3o foi poss\u00edvel ler esse arquivo.");
-        table.put("Facebook has to restart before the account shows.",
-                "O Facebook precisa reiniciar para a conta aparecer.");
-        table.put("Account imported",
-                "Conta importada");
-        table.put("Later",
-                "Depois");
-        table.put("Nothing was imported",
-                "Nada foi importado");
-        table.put("That text couldn't be written into this Facebook.",
-                "N\u00e3o foi poss\u00edvel gravar esse texto neste Facebook.");
         table.put("Your account",
                 "Sua conta");
-        table.put("Import or export",
-                "Importar ou exportar");
-        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
-                "Mostra as contas deste telefone como texto. Copie ou salve aqui, ou cole uma conta e salve neste Facebook.");
-        table.put("Export to file",
-                "Exportar para arquivo");
-        table.put("Import from file",
-                "Importar de arquivo");
         table.put("Copy",
                 "Copiar");
         table.put("Copied.",
@@ -4474,7 +4442,21 @@ final class L10nTablePt_rBR {
                 "N\u00e3o h\u00e1 nada para salvar.");
         table.put("That file couldn't be written.",
                 "N\u00e3o foi poss\u00edvel gravar esse arquivo.");
-        table.put("Account saved.",
-                "Conta salva.");
+        table.put("Export token",
+                "Exportar token");
+        table.put("Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.",
+                "Mostra o token de acesso de cada conta conectada neste telefone. Copie um, ou salve todos como JSON.");
+        table.put("Save JSON",
+                "Salvar JSON");
+        table.put("Tokens saved.",
+                "Tokens salvos.");
+        table.put("Check",
+                "Verificar");
+        table.put("Live: %1$s (uid %2$s)",
+                "Ativo: %1$s (uid %2$s)");
+        table.put("Facebook rejected this token.",
+                "O Facebook recusou este token.");
+        table.put("The check couldn't reach Facebook.",
+                "A verifica\u00e7\u00e3o n\u00e3o conseguiu alcan\u00e7ar o Facebook.");
     }
 }

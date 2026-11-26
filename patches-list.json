@@ -2715,8 +2715,8 @@
       ]
     },
     {
-      "name": "Import and export account",
-      "description": "Adds Export account, Copy token and Import account to Hushfacebook settings, and an Import account button to Facebook's login screen, so an account saved from one phone signs in on another without the password. Export writes the account's cookies and its access token.",
+      "name": "Export token",
+      "description": "Adds Export token to Hushfacebook settings: each signed-in account's access token, in the open to copy or check, and saved as a small JSON file.",
       "category": "Settings",
       "use": true,
       "dependencies": [

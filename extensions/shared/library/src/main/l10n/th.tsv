@@ -3160,11 +3160,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	ส่งออกบัญชี
 Copies this account's cookies and token to the clipboard.	คัดลอกคุกกี้และโทเคนของบัญชีนี้ไปยังคลิปบอร์ด
-Copy token	คัดลอกโทเคน
-Copies only the access token.	คัดลอกเฉพาะโทเคนการเข้าถึง
-Nothing was copied	ไม่มีอะไรถูกคัดลอก
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook ยังไม่ได้สร้างเซสชัน เปิดโพสต์หนึ่งครั้ง แล้วลองใหม่
-Token copied	คัดลอกโทเคนแล้ว
 Import account	นำเข้าบัญชี
 Signs in with an account you paste, or a file.	ลงชื่อเข้าใช้ด้วยบัญชีที่วาง หรือไฟล์
 Account copied	คัดลอกบัญชีแล้ว
@@ -3173,19 +3169,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	วางในนำเข้าบัญชีบนโทรศัพท์อีกเครื่อง หรือใช้ไฟล์ที่บันทึกไว้
 From file	จากไฟล์
 No account file on this phone.	ไม่มีไฟล์บัญชีบนโทรศัพท์นี้
-That file couldn't be read.	อ่านไฟล์นั้นไม่ได้
-Facebook has to restart before the account shows.	ต้องรีสตาร์ท Facebook ก่อนบัญชีจะแสดง
-Account imported	นำเข้าบัญชีแล้ว
-Later	ไว้ทีหลัง
-Nothing was imported	ไม่มีอะไรถูกนำเข้า
-That text couldn't be written into this Facebook.	เขียนข้อความนั้นลงใน Facebook นี้ไม่ได้
 Your account	บัญชีของคุณ
-Import or export	นำเข้าหรือส่งออก
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	แสดงบัญชีของโทรศัพท์นี้เป็นข้อความ คัดลอกหรือบันทึกที่นี่ หรือวางบัญชีแล้วบันทึกลงใน Facebook นี้
-Export to file	ส่งออกเป็นไฟล์
-Import from file	นำเข้าจากไฟล์
 Copy	คัดลอก
 Copied.	คัดลอกแล้ว
 There's nothing to save.	ไม่มีอะไรให้บันทึก
 That file couldn't be written.	เขียนไฟล์นั้นไม่ได้
-Account saved.	บันทึกบัญชีแล้ว
+Export token	ส่งออกโทเคน
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	แสดงโทเคนการเข้าถึงของแต่ละบัญชีที่ลงชื่อเข้าใช้บนโทรศัพท์นี้ คัดลอกอันหนึ่ง หรือบันทึกทั้งหมดเป็น JSON
+Save JSON	บันทึก JSON
+Tokens saved.	บันทึกโทเคนแล้ว
+Check	ตรวจสอบ
+Live: %1$s (uid %2$s)	ใช้งานได้: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook ปฏิเสธโทเคนนี้
+The check couldn't reach Facebook.	การตรวจสอบเชื่อมต่อ Facebook ไม่ได้

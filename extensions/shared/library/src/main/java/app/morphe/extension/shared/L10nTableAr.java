@@ -18,7 +18,7 @@ final class L10nTableAr {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4512);
+        Map<String, String> table = new HashMap<>(4510);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4618,24 +4618,12 @@ final class L10nTableAr {
                 "\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a");
         table.put("this person",
                 "\u0647\u0630\u0627 \u0627\u0644\u0634\u062e\u0635");
-        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
-                "\u0645\u0636\u0628\u0648\u0637 \u0639\u0646\u062f \u0627\u0644\u062a\u0639\u062f\u064a\u0644\u060c \u0644\u0630\u0644\u0643 \u0644\u0627 \u064a\u0645\u0643\u0646 \u0644\u0625\u064a\u0642\u0627\u0641 \u0645\u0624\u0642\u062a \u0623\u0646 \u064a\u0637\u0641\u0626\u0647:\\n%1$s\\n\u0644\u0627\u0633\u062a\u0628\u0639\u0627\u062f\u0647\u060c \u0639\u062f\u0651\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649 \u0648\u0627\u0633\u062a\u0628\u0639\u062f \u062a\u0639\u062f\u064a\u0644\u0647.");
-        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
-                "\u0645\u0636\u0628\u0648\u0637 \u0639\u0646\u062f \u0627\u0644\u062a\u0639\u062f\u064a\u0644\u060c \u0644\u0630\u0644\u0643 \u0644\u0627 \u064a\u0645\u0643\u0646 \u0644\u0625\u064a\u0642\u0627\u0641 \u0645\u0624\u0642\u062a \u0623\u0646 \u064a\u0637\u0641\u0626\u0647\u0627:\\n%1$s\\n\u0644\u0627\u0633\u062a\u0628\u0639\u0627\u062f \u0648\u0627\u062d\u062f \u0645\u0646\u0647\u0627\u060c \u0639\u062f\u0651\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649 \u0648\u0627\u0633\u062a\u0628\u0639\u062f \u062a\u0639\u062f\u064a\u0644\u0647.");
         table.put("Export account",
                 "\u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u062d\u0633\u0627\u0628");
         table.put("Copies this account's cookies and token to the clipboard.",
                 "\u064a\u0646\u0633\u062e \u0645\u0644\u0641\u0627\u062a \u062a\u0639\u0631\u064a\u0641 \u0627\u0644\u0627\u0631\u062a\u0628\u0627\u0637 \u0648\u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0645\u0645\u064a\u0632 \u0644\u0647\u0630\u0627 \u0627\u0644\u062d\u0633\u0627\u0628 \u0625\u0644\u0649 \u0627\u0644\u062d\u0627\u0641\u0638\u0629.");
-        table.put("Copy token",
-                "\u0646\u0633\u062e \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0645\u0645\u064a\u0632");
-        table.put("Copies only the access token.",
-                "\u064a\u0646\u0633\u062e \u0631\u0645\u0632 \u0627\u0644\u0648\u0635\u0648\u0644 \u0641\u0642\u0637.");
-        table.put("Nothing was copied",
-                "\u0644\u0645 \u064a\u064f\u0646\u0633\u062e \u0634\u064a\u0621");
         table.put("Facebook hasn't built a session yet. Open a post, then try again.",
                 "\u0644\u0645 \u064a\u064f\u0646\u0634\u0626 \u0641\u064a\u0633\u0628\u0648\u0643 \u062c\u0644\u0633\u0629 \u0628\u0639\u062f. \u0627\u0641\u062a\u062d \u0645\u0646\u0634\u0648\u0631\u064b\u0627 \u062b\u0645 \u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u064b\u0627.");
-        table.put("Token copied",
-                "\u062a\u0645 \u0646\u0633\u062e \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0645\u0645\u064a\u0632");
         table.put("Import account",
                 "\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u062d\u0633\u0627\u0628");
         table.put("Signs in with an account you paste, or a file.",
@@ -4652,28 +4640,8 @@ final class L10nTableAr {
                 "\u0645\u0646 \u0645\u0644\u0641");
         table.put("No account file on this phone.",
                 "\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0644\u0641 \u062d\u0633\u0627\u0628 \u0639\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0647\u0627\u062a\u0641.");
-        table.put("That file couldn't be read.",
-                "\u062a\u0639\u0630\u0651\u0631\u062a \u0642\u0631\u0627\u0621\u0629 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641.");
-        table.put("Facebook has to restart before the account shows.",
-                "\u064a\u062c\u0628 \u0625\u0639\u0627\u062f\u0629 \u062a\u0634\u063a\u064a\u0644 \u0641\u064a\u0633\u0628\u0648\u0643 \u0644\u064a\u0638\u0647\u0631 \u0627\u0644\u062d\u0633\u0627\u0628.");
-        table.put("Account imported",
-                "\u062a\u0645 \u0627\u0633\u062a\u064a\u0631\u0627\u062f \u0627\u0644\u062d\u0633\u0627\u0628");
-        table.put("Later",
-                "\u0644\u0627\u062d\u0642\u064b\u0627");
-        table.put("Nothing was imported",
-                "\u0644\u0645 \u064a\u064f\u0633\u062a\u0648\u0631\u062f \u0634\u064a\u0621");
-        table.put("That text couldn't be written into this Facebook.",
-                "\u062a\u0639\u0630\u0651\u0631\u062a \u0643\u062a\u0627\u0628\u0629 \u0630\u0644\u0643 \u0627\u0644\u0646\u0635 \u0641\u064a \u0641\u064a\u0633\u0628\u0648\u0643 \u0647\u0630\u0627.");
         table.put("Your account",
                 "\u062d\u0633\u0627\u0628\u0643");
-        table.put("Import or export",
-                "\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u0623\u0648 \u062a\u0635\u062f\u064a\u0631");
-        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
-                "\u064a\u0639\u0631\u0636 \u062d\u0633\u0627\u0628\u0627\u062a \u0647\u0630\u0627 \u0627\u0644\u0647\u0627\u062a\u0641 \u0643\u0646\u0635. \u0627\u0646\u0633\u062e\u0647\u0627 \u0623\u0648 \u0627\u062d\u0641\u0638\u0647\u0627 \u0647\u0646\u0627\u060c \u0623\u0648 \u0627\u0644\u0635\u0642 \u062d\u0633\u0627\u0628\u064b\u0627 \u0648\u0627\u062d\u0641\u0638\u0647 \u0641\u064a \u0641\u064a\u0633\u0628\u0648\u0643 \u0647\u0630\u0627.");
-        table.put("Export to file",
-                "\u062a\u0635\u062f\u064a\u0631 \u0625\u0644\u0649 \u0645\u0644\u0641");
-        table.put("Import from file",
-                "\u0627\u0633\u062a\u064a\u0631\u0627\u062f \u0645\u0646 \u0645\u0644\u0641");
         table.put("Copy",
                 "\u0646\u0633\u062e");
         table.put("Copied.",
@@ -4682,7 +4650,21 @@ final class L10nTableAr {
                 "\u0644\u0627 \u064a\u0648\u062c\u062f \u0634\u064a\u0621 \u0644\u062d\u0641\u0638\u0647.");
         table.put("That file couldn't be written.",
                 "\u062a\u0639\u0630\u0651\u0631\u062a \u0643\u062a\u0627\u0628\u0629 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641.");
-        table.put("Account saved.",
-                "\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u062d\u0633\u0627\u0628.");
+        table.put("Export token",
+                "\u062a\u0635\u062f\u064a\u0631 \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0645\u0645\u064a\u0632");
+        table.put("Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.",
+                "\u064a\u0639\u0631\u0636 \u0631\u0645\u0632 \u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0643\u0644 \u062d\u0633\u0627\u0628 \u0645\u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0639\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0647\u0627\u062a\u0641. \u0627\u0646\u0633\u062e \u0648\u0627\u062d\u062f\u064b\u0627 \u0623\u0648 \u0627\u062d\u0641\u0638\u0647\u0627 \u0643\u0644\u0647\u0627 \u0628\u0635\u064a\u063a\u0629 JSON.");
+        table.put("Save JSON",
+                "\u062d\u0641\u0638 JSON");
+        table.put("Tokens saved.",
+                "\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0631\u0645\u0648\u0632 \u0627\u0644\u0645\u0645\u064a\u0632\u0629.");
+        table.put("Check",
+                "\u062a\u062d\u0642\u0642");
+        table.put("Live: %1$s (uid %2$s)",
+                "\u0646\u0634\u0637: %1$s (\u0627\u0644\u0645\u0639\u0631\u0641 %2$s)");
+        table.put("Facebook rejected this token.",
+                "\u0631\u0641\u0636 Facebook \u0647\u0630\u0627 \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0645\u0645\u064a\u0632.");
+        table.put("The check couldn't reach Facebook.",
+                "\u062a\u0639\u0630\u0631 \u0639\u0644\u0649 \u0627\u0644\u0641\u062d\u0635 \u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 Facebook.");
     }
 }

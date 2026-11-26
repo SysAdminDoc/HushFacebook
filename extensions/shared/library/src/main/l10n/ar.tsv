@@ -2233,11 +2233,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	لم �
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	تصدير الحساب
 Copies this account's cookies and token to the clipboard.	ينسخ ملفات تعريف الارتباط والرمز المميز لهذا الحساب إلى الحافظة.
-Copy token	نسخ الرمز المميز
-Copies only the access token.	ينسخ رمز الوصول فقط.
-Nothing was copied	لم يُنسخ شيء
 Facebook hasn't built a session yet. Open a post, then try again.	لم يُنشئ فيسبوك جلسة بعد. افتح منشورًا ثم حاول مجددًا.
-Token copied	تم نسخ الرمز المميز
 Import account	استيراد حساب
 Signs in with an account you paste, or a file.	يسجّل الدخول بحساب تلصقه أو بملف.
 Account copied	تم نسخ الحساب
@@ -2246,19 +2242,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	الصقه في استيراد حساب على الهاتف الآخر أو استخدم الملف المحفوظ.
 From file	من ملف
 No account file on this phone.	لا يوجد ملف حساب على هذا الهاتف.
-That file couldn't be read.	تعذّرت قراءة هذا الملف.
-Facebook has to restart before the account shows.	يجب إعادة تشغيل فيسبوك ليظهر الحساب.
-Account imported	تم استيراد الحساب
-Later	لاحقًا
-Nothing was imported	لم يُستورد شيء
-That text couldn't be written into this Facebook.	تعذّرت كتابة ذلك النص في فيسبوك هذا.
 Your account	حسابك
-Import or export	استيراد أو تصدير
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	يعرض حسابات هذا الهاتف كنص. انسخها أو احفظها هنا، أو الصق حسابًا واحفظه في فيسبوك هذا.
-Export to file	تصدير إلى ملف
-Import from file	استيراد من ملف
 Copy	نسخ
 Copied.	تم النسخ.
 There's nothing to save.	لا يوجد شيء لحفظه.
 That file couldn't be written.	تعذّرت كتابة هذا الملف.
-Account saved.	تم حفظ الحساب.
+Export token	تصدير الرمز المميز
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	يعرض رمز الوصول لكل حساب مسجل الدخول على هذا الهاتف. انسخ واحدًا أو احفظها كلها بصيغة JSON.
+Save JSON	حفظ JSON
+Tokens saved.	تم حفظ الرموز المميزة.
+Check	تحقق
+Live: %1$s (uid %2$s)	نشط: %1$s (المعرف %2$s)
+Facebook rejected this token.	رفض Facebook هذا الرمز المميز.
+The check couldn't reach Facebook.	تعذر على الفحص الوصول إلى Facebook.

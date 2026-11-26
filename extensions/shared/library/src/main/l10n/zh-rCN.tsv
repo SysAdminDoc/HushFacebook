@@ -3155,11 +3155,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	导出账户
 Copies this account's cookies and token to the clipboard.	将此账户的 Cookie 和令牌复制到剪贴板。
-Copy token	复制令牌
-Copies only the access token.	仅复制访问令牌。
-Nothing was copied	没有复制任何内容
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook 尚未建立会话。请打开一条帖子，然后重试。
-Token copied	已复制令牌
 Import account	导入账户
 Signs in with an account you paste, or a file.	用你粘贴的账户或文件登录。
 Account copied	已复制账户
@@ -3168,19 +3164,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	粘贴到另一台手机的导入账户中，或使用已保存的文件。
 From file	从文件
 No account file on this phone.	此手机上没有任何账户文件。
-That file couldn't be read.	无法读取该文件。
-Facebook has to restart before the account shows.	需要重启 Facebook 后账户才会显示。
-Account imported	已导入账户
-Later	稍后
-Nothing was imported	没有导入任何内容
-That text couldn't be written into this Facebook.	无法将该文本写入此 Facebook。
 Your account	你的账户
-Import or export	导入或导出
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	以文本显示此手机上的账户。在此复制或保存，或粘贴账户并保存到此 Facebook。
-Export to file	导出到文件
-Import from file	从文件导入
 Copy	复制
 Copied.	已复制。
 There's nothing to save.	没有可保存的内容。
 That file couldn't be written.	无法写入该文件。
-Account saved.	账户已保存。
+Export token	导出令牌
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	显示此手机上已登录的每个账户的访问令牌。复制其中一个，或将全部保存为 JSON。
+Save JSON	保存 JSON
+Tokens saved.	令牌已保存。
+Check	检查
+Live: %1$s (uid %2$s)	有效: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook 拒绝了此令牌。
+The check couldn't reach Facebook.	检查无法连接到 Facebook。

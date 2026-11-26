@@ -18,7 +18,7 @@ final class L10nTableKo {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4312);
+        Map<String, String> table = new HashMap<>(4310);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,24 +4410,12 @@ final class L10nTableKo {
                 "\ucd94\ucc9c");
         table.put("this person",
                 "\uc774 \uc0ac\ub78c");
-        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
-                "\ud328\uce58\ud560 \ub54c \uc801\uc6a9\ub418\uc5b4 \uc77c\uc2dc \uc815\uc9c0\ub85c \ub04c \uc218 \uc5c6\uc5b4\uc694:\\n%1$s\\n\uc774 \uae30\ub2a5\uc774 \uc6d0\uc778\uc778\uc9c0 \ud655\uc778\ud558\ub824\uba74 \ud574\ub2f9 \ud328\uce58\ub97c \ube7c\uace0 \ub2e4\uc2dc \ud328\uce58\ud558\uc138\uc694.");
-        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
-                "\ud328\uce58\ud560 \ub54c \uc801\uc6a9\ub418\uc5b4 \uc77c\uc2dc \uc815\uc9c0\ub85c \ub04c \uc218 \uc5c6\uc5b4\uc694:\\n%1$s\\n\uc774 \uc911 \ud558\ub098\uac00 \uc6d0\uc778\uc778\uc9c0 \ud655\uc778\ud558\ub824\uba74 \ud574\ub2f9 \ud328\uce58\ub97c \ube7c\uace0 \ub2e4\uc2dc \ud328\uce58\ud558\uc138\uc694.");
         table.put("Export account",
                 "\uacc4\uc815 \ub0b4\ubcf4\ub0b4\uae30");
         table.put("Copies this account's cookies and token to the clipboard.",
                 "\uc774 \uacc4\uc815\uc758 \ucfe0\ud0a4\uc640 \ud1a0\ud070\uc744 \ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac\ud569\ub2c8\ub2e4.");
-        table.put("Copy token",
-                "\ud1a0\ud070 \ubcf5\uc0ac");
-        table.put("Copies only the access token.",
-                "\uc561\uc138\uc2a4 \ud1a0\ud070\ub9cc \ubcf5\uc0ac\ud569\ub2c8\ub2e4.");
-        table.put("Nothing was copied",
-                "\ubcf5\uc0ac\ud55c \ud56d\ubaa9\uc774 \uc5c6\uc2b5\ub2c8\ub2e4");
         table.put("Facebook hasn't built a session yet. Open a post, then try again.",
                 "Facebook\uc774 \uc544\uc9c1 \uc138\uc158\uc744 \ub9cc\ub4e4\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4. \uac8c\uc2dc\ubb3c\uc744 \uc5f0 \ub4a4 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uc138\uc694.");
-        table.put("Token copied",
-                "\ud1a0\ud070\uc744 \ubcf5\uc0ac\ud588\uc2b5\ub2c8\ub2e4");
         table.put("Import account",
                 "\uacc4\uc815 \uac00\uc838\uc624\uae30");
         table.put("Signs in with an account you paste, or a file.",
@@ -4444,28 +4432,8 @@ final class L10nTableKo {
                 "\ud30c\uc77c\uc5d0\uc11c");
         table.put("No account file on this phone.",
                 "\uc774 \ud734\ub300\ud3f0\uc5d0 \uacc4\uc815 \ud30c\uc77c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.");
-        table.put("That file couldn't be read.",
-                "\uadf8 \ud30c\uc77c\uc744 \uc77d\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
-        table.put("Facebook has to restart before the account shows.",
-                "\uacc4\uc815\uc774 \ub098\ud0c0\ub098\ub824\uba74 Facebook\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud574\uc57c \ud569\ub2c8\ub2e4.");
-        table.put("Account imported",
-                "\uacc4\uc815\uc744 \uac00\uc838\uc654\uc2b5\ub2c8\ub2e4");
-        table.put("Later",
-                "\ub098\uc911\uc5d0");
-        table.put("Nothing was imported",
-                "\uac00\uc838\uc628 \ud56d\ubaa9\uc774 \uc5c6\uc2b5\ub2c8\ub2e4");
-        table.put("That text couldn't be written into this Facebook.",
-                "\uadf8 \ud14d\uc2a4\ud2b8\ub97c \uc774 Facebook\uc5d0 \uc4f8 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
         table.put("Your account",
                 "\ub0b4 \uacc4\uc815");
-        table.put("Import or export",
-                "\uac00\uc838\uc624\uae30 \ub610\ub294 \ub0b4\ubcf4\ub0b4\uae30");
-        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
-                "\uc774 \ud734\ub300\ud3f0\uc758 \uacc4\uc815\uc744 \ud14d\uc2a4\ud2b8\ub85c \ud45c\uc2dc\ud569\ub2c8\ub2e4. \uc5ec\uae30\uc5d0\uc11c \ubcf5\uc0ac\ud558\uac70\ub098 \uc800\uc7a5\ud558\uace0, \uacc4\uc815\uc744 \ubd99\uc5ec \ub123\uc5b4 \uc774 Facebook\uc5d0 \uc800\uc7a5\ud558\uc138\uc694.");
-        table.put("Export to file",
-                "\ud30c\uc77c\ub85c \ub0b4\ubcf4\ub0b4\uae30");
-        table.put("Import from file",
-                "\ud30c\uc77c\uc5d0\uc11c \uac00\uc838\uc624\uae30");
         table.put("Copy",
                 "\ubcf5\uc0ac");
         table.put("Copied.",
@@ -4474,7 +4442,21 @@ final class L10nTableKo {
                 "\uc800\uc7a5\ud560 \ub0b4\uc6a9\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.");
         table.put("That file couldn't be written.",
                 "\uadf8 \ud30c\uc77c\uc744 \uc4f8 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
-        table.put("Account saved.",
-                "\uacc4\uc815\uc744 \uc800\uc7a5\ud588\uc2b5\ub2c8\ub2e4.");
+        table.put("Export token",
+                "\ud1a0\ud070 \ub0b4\ubcf4\ub0b4\uae30");
+        table.put("Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.",
+                "\uc774 \ud734\ub300\ud3f0\uc5d0 \ub85c\uadf8\uc778\ub41c \uac01 \uacc4\uc815\uc758 \uc561\uc138\uc2a4 \ud1a0\ud070\uc744 \ud45c\uc2dc\ud569\ub2c8\ub2e4. \ud558\ub098\ub97c \ubcf5\uc0ac\ud558\uac70\ub098 \ubaa8\ub450 JSON\uc73c\ub85c \uc800\uc7a5\ud558\uc138\uc694.");
+        table.put("Save JSON",
+                "JSON \uc800\uc7a5");
+        table.put("Tokens saved.",
+                "\ud1a0\ud070\uc744 \uc800\uc7a5\ud588\uc2b5\ub2c8\ub2e4.");
+        table.put("Check",
+                "\ud655\uc778");
+        table.put("Live: %1$s (uid %2$s)",
+                "\uc0ac\uc6a9 \uc911: %1$s (uid %2$s)");
+        table.put("Facebook rejected this token.",
+                "Facebook\uc774 \uc774 \ud1a0\ud070\uc744 \uac70\ubd80\ud588\uc2b5\ub2c8\ub2e4.");
+        table.put("The check couldn't reach Facebook.",
+                "\ud655\uc778 \uacfc\uc815\uc5d0\uc11c Facebook\uc5d0 \uc5f0\uacb0\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.");
     }
 }

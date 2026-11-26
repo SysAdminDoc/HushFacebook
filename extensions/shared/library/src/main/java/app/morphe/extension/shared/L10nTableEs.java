@@ -18,7 +18,7 @@ final class L10nTableEs {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4312);
+        Map<String, String> table = new HashMap<>(4310);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,24 +4410,12 @@ final class L10nTableEs {
                 "sugerencias");
         table.put("this person",
                 "esta persona");
-        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
-                "Se aplic\u00f3 al parchear, as\u00ed que Pausar no puede desactivarlo:\\n%1$s\\nPara descartarlo, vuelve a parchear sin su parche.");
-        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
-                "Se aplicaron al parchear, as\u00ed que Pausar no puede desactivarlos:\\n%1$s\\nPara descartar uno, vuelve a parchear sin su parche.");
         table.put("Export account",
                 "Exportar cuenta");
         table.put("Copies this account's cookies and token to the clipboard.",
                 "Copia las cookies y el token de esta cuenta al portapapeles.");
-        table.put("Copy token",
-                "Copiar token");
-        table.put("Copies only the access token.",
-                "Copia solo el token de acceso.");
-        table.put("Nothing was copied",
-                "No se copi\u00f3 nada");
         table.put("Facebook hasn't built a session yet. Open a post, then try again.",
                 "Facebook a\u00fan no ha creado una sesi\u00f3n. Abre una publicaci\u00f3n y vuelve a intentarlo.");
-        table.put("Token copied",
-                "Token copiado");
         table.put("Import account",
                 "Importar cuenta");
         table.put("Signs in with an account you paste, or a file.",
@@ -4444,28 +4432,8 @@ final class L10nTableEs {
                 "Desde archivo");
         table.put("No account file on this phone.",
                 "No hay ning\u00fan archivo de cuenta en este tel\u00e9fono.");
-        table.put("That file couldn't be read.",
-                "No se pudo leer ese archivo.");
-        table.put("Facebook has to restart before the account shows.",
-                "Facebook tiene que reiniciarse para que aparezca la cuenta.");
-        table.put("Account imported",
-                "Cuenta importada");
-        table.put("Later",
-                "M\u00e1s tarde");
-        table.put("Nothing was imported",
-                "No se import\u00f3 nada");
-        table.put("That text couldn't be written into this Facebook.",
-                "Ese texto no se pudo escribir en este Facebook.");
         table.put("Your account",
                 "Tu cuenta");
-        table.put("Import or export",
-                "Importar o exportar");
-        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
-                "Muestra las cuentas de este tel\u00e9fono como texto. C\u00f3pialas o gu\u00e1rdalas aqu\u00ed, o pega una cuenta y gu\u00e1rdala en este Facebook.");
-        table.put("Export to file",
-                "Exportar a archivo");
-        table.put("Import from file",
-                "Importar desde archivo");
         table.put("Copy",
                 "Copiar");
         table.put("Copied.",
@@ -4474,7 +4442,21 @@ final class L10nTableEs {
                 "No hay nada que guardar.");
         table.put("That file couldn't be written.",
                 "No se pudo escribir ese archivo.");
-        table.put("Account saved.",
-                "Cuenta guardada.");
+        table.put("Export token",
+                "Exportar token");
+        table.put("Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.",
+                "Muestra el token de acceso de cada cuenta iniciada en este tel\u00e9fono. Copia uno o gu\u00e1rdalos todos como JSON.");
+        table.put("Save JSON",
+                "Guardar JSON");
+        table.put("Tokens saved.",
+                "Tokens guardados.");
+        table.put("Check",
+                "Comprobar");
+        table.put("Live: %1$s (uid %2$s)",
+                "Activo: %1$s (uid %2$s)");
+        table.put("Facebook rejected this token.",
+                "Facebook rechaz\u00f3 este token.");
+        table.put("The check couldn't reach Facebook.",
+                "La comprobaci\u00f3n no pudo llegar a Facebook.");
     }
 }

@@ -3218,11 +3218,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	Экспорт аккаунта
 Copies this account's cookies and token to the clipboard.	Копирует файлы cookie и токен этого аккаунта в буфер обмена.
-Copy token	Копировать токен
-Copies only the access token.	Копирует только токен доступа.
-Nothing was copied	Ничего не скопировано
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook ещё не создал сеанс. Откройте запись и повторите.
-Token copied	Токен скопирован
 Import account	Импорт аккаунта
 Signs in with an account you paste, or a file.	Вход с вставленным аккаунтом или из файла.
 Account copied	Аккаунт скопирован
@@ -3231,19 +3227,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	Вставьте в «Импорт аккаунта» на другом телефоне или используйте сохранённый файл.
 From file	Из файла
 No account file on this phone.	На этом телефоне нет файла аккаунта.
-That file couldn't be read.	Не удалось прочитать этот файл.
-Facebook has to restart before the account shows.	Нужно перезапустить Facebook, чтобы аккаунт появился.
-Account imported	Аккаунт импортирован
-Later	Позже
-Nothing was imported	Ничего не импортировано
-That text couldn't be written into this Facebook.	Не удалось записать этот текст в этот Facebook.
 Your account	Ваш аккаунт
-Import or export	Импорт или экспорт
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Показывает аккаунты этого телефона как текст. Скопируйте или сохраните их здесь либо вставьте аккаунт и сохраните в этот Facebook.
-Export to file	Экспорт в файл
-Import from file	Импорт из файла
 Copy	Копировать
 Copied.	Скопировано.
 There's nothing to save.	Сохранять нечего.
 That file couldn't be written.	Не удалось записать этот файл.
-Account saved.	Аккаунт сохранён.
+Export token	Экспорт токена
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Показывает токен доступа каждого аккаунта, в который выполнен вход на этом телефоне. Скопируйте один или сохраните все как JSON.
+Save JSON	Сохранить JSON
+Tokens saved.	Токены сохранены.
+Check	Проверить
+Live: %1$s (uid %2$s)	Активен: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook отклонил этот токен.
+The check couldn't reach Facebook.	Проверка не смогла связаться с Facebook.

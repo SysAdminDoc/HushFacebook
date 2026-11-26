@@ -18,7 +18,7 @@ final class L10nTableTr {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4312);
+        Map<String, String> table = new HashMap<>(4310);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,24 +4410,12 @@ final class L10nTableTr {
                 "\u00f6neriler");
         table.put("this person",
                 "bu ki\u015fi");
-        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
-                "Yamalad\u0131\u011f\u0131nda ayarland\u0131\u011f\u0131 i\u00e7in Duraklatma bunu kapatamaz:\\n%1$s\\nBunu elemek i\u00e7in yeniden yamala ve onun yamas\u0131n\u0131 d\u0131\u015far\u0131da b\u0131rak.");
-        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
-                "Yamalad\u0131\u011f\u0131nda ayarland\u0131klar\u0131 i\u00e7in Duraklatma bunlar\u0131 kapatamaz:\\n%1$s\\nBirini elemek i\u00e7in yeniden yamala ve onun yamas\u0131n\u0131 d\u0131\u015far\u0131da b\u0131rak.");
         table.put("Export account",
                 "Hesab\u0131 d\u0131\u015fa aktar");
         table.put("Copies this account's cookies and token to the clipboard.",
                 "Bu hesab\u0131n \u00e7erezlerini ve jetonunu panoya kopyalar.");
-        table.put("Copy token",
-                "Jetonu kopyala");
-        table.put("Copies only the access token.",
-                "Yaln\u0131zca eri\u015fim jetonunu kopyalar.");
-        table.put("Nothing was copied",
-                "Hi\u00e7bir \u015fey kopyalanmad\u0131");
         table.put("Facebook hasn't built a session yet. Open a post, then try again.",
                 "Facebook hen\u00fcz bir oturum olu\u015fturmad\u0131. Bir g\u00f6nderi a\u00e7\u0131p yeniden deneyin.");
-        table.put("Token copied",
-                "Jeton kopyaland\u0131");
         table.put("Import account",
                 "Hesab\u0131 i\u00e7e aktar");
         table.put("Signs in with an account you paste, or a file.",
@@ -4444,28 +4432,8 @@ final class L10nTableTr {
                 "Dosyadan");
         table.put("No account file on this phone.",
                 "Bu telefonda hesap dosyas\u0131 yok.");
-        table.put("That file couldn't be read.",
-                "O dosya okunamad\u0131.");
-        table.put("Facebook has to restart before the account shows.",
-                "Hesab\u0131n g\u00f6r\u00fcnmesi i\u00e7in Facebook'un yeniden ba\u015flamas\u0131 gerekiyor.");
-        table.put("Account imported",
-                "Hesap i\u00e7e aktar\u0131ld\u0131");
-        table.put("Later",
-                "Sonra");
-        table.put("Nothing was imported",
-                "Hi\u00e7bir \u015fey i\u00e7e aktar\u0131lmad\u0131");
-        table.put("That text couldn't be written into this Facebook.",
-                "O metin bu Facebook'a yaz\u0131lamad\u0131.");
         table.put("Your account",
                 "Hesab\u0131n\u0131z");
-        table.put("Import or export",
-                "\u0130\u00e7e veya d\u0131\u015fa aktar");
-        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
-                "Bu telefonun hesaplar\u0131n\u0131 metin olarak g\u00f6sterir. Buradan kopyalay\u0131n veya kaydedin, ya da bir hesap yap\u0131\u015ft\u0131r\u0131p bu Facebook'a kaydedin.");
-        table.put("Export to file",
-                "Dosyaya aktar");
-        table.put("Import from file",
-                "Dosyadan i\u00e7e aktar");
         table.put("Copy",
                 "Kopyala");
         table.put("Copied.",
@@ -4474,7 +4442,21 @@ final class L10nTableTr {
                 "Kaydedilecek bir \u015fey yok.");
         table.put("That file couldn't be written.",
                 "O dosya yaz\u0131lamad\u0131.");
-        table.put("Account saved.",
-                "Hesap kaydedildi.");
+        table.put("Export token",
+                "Jetonu d\u0131\u015fa aktar");
+        table.put("Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.",
+                "Bu telefonda oturum a\u00e7m\u0131\u015f her hesab\u0131n eri\u015fim jetonunu g\u00f6sterir. Birini kopyalay\u0131n veya hepsini JSON olarak kaydedin.");
+        table.put("Save JSON",
+                "JSON'u kaydet");
+        table.put("Tokens saved.",
+                "Jetonlar kaydedildi.");
+        table.put("Check",
+                "Denetle");
+        table.put("Live: %1$s (uid %2$s)",
+                "Etkin: %1$s (uid %2$s)");
+        table.put("Facebook rejected this token.",
+                "Facebook bu jetonu reddetti.");
+        table.put("The check couldn't reach Facebook.",
+                "Denetim Facebook'a ula\u015famad\u0131.");
     }
 }

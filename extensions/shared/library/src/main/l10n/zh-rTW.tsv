@@ -3164,11 +3164,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	匯出帳號
 Copies this account's cookies and token to the clipboard.	將此帳號的 Cookie 與權杖複製到剪貼簿。
-Copy token	複製權杖
-Copies only the access token.	僅複製存取權杖。
-Nothing was copied	沒有複製任何內容
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook 尚未建立工作階段。請開啟一則貼文，然後再試。
-Token copied	已複製權杖
 Import account	匯入帳號
 Signs in with an account you paste, or a file.	用你貼上的帳號或檔案登入。
 Account copied	已複製帳號
@@ -3177,19 +3173,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	貼到另一支手機的匯入帳號，或使用已儲存的檔案。
 From file	從檔案
 No account file on this phone.	這支手機上沒有帳號檔案。
-That file couldn't be read.	無法讀取該檔案。
-Facebook has to restart before the account shows.	需要重新啟動 Facebook 後帳號才會顯示。
-Account imported	已匯入帳號
-Later	稍後
-Nothing was imported	沒有匯入任何內容
-That text couldn't be written into this Facebook.	無法將該文字寫入此 Facebook。
 Your account	你的帳號
-Import or export	匯入或匯出
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	以文字顯示這支手機上的帳號。在此複製或儲存，或貼上帳號並儲存到此 Facebook。
-Export to file	匯出到檔案
-Import from file	從檔案匯入
 Copy	複製
 Copied.	已複製。
 There's nothing to save.	沒有可儲存的內容。
 That file couldn't be written.	無法寫入該檔案。
-Account saved.	帳號已儲存。
+Export token	匯出權杖
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	顯示此手機上已登入的每個帳號的存取權杖。複製其中一個，或將全部儲存為 JSON。
+Save JSON	儲存 JSON
+Tokens saved.	權杖已儲存。
+Check	檢查
+Live: %1$s (uid %2$s)	有效: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook 拒絕了此權杖。
+The check couldn't reach Facebook.	檢查無法連線到 Facebook。

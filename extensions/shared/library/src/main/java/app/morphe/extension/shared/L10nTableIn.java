@@ -18,7 +18,7 @@ final class L10nTableIn {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(4312);
+        Map<String, String> table = new HashMap<>(4310);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -4410,24 +4410,12 @@ final class L10nTableIn {
                 "saran");
         table.put("this person",
                 "orang ini");
-        table.put("Set when you patched, so Pause can't turn it off:\\n%1$s\\nTo rule it out, patch again and leave out its patch.",
-                "Diatur saat menambal, jadi Jeda tidak dapat mematikannya:\\n%1$s\\nUntuk memastikan bukan ini penyebabnya, tambal ulang tanpa tambalannya.");
-        table.put("Set when you patched, so Pause can't turn these off:\\n%1$s\\nTo rule one out, patch again and leave out its patch.",
-                "Diatur saat menambal, jadi Jeda tidak dapat mematikannya:\\n%1$s\\nUntuk memastikan salah satunya bukan penyebabnya, tambal ulang tanpa tambalannya.");
         table.put("Export account",
                 "Ekspor akun");
         table.put("Copies this account's cookies and token to the clipboard.",
                 "Menyalin cookie dan token akun ini ke papan klip.");
-        table.put("Copy token",
-                "Salin token");
-        table.put("Copies only the access token.",
-                "Hanya menyalin token akses.");
-        table.put("Nothing was copied",
-                "Tidak ada yang disalin");
         table.put("Facebook hasn't built a session yet. Open a post, then try again.",
                 "Facebook belum membuat sesi. Buka satu kiriman, lalu coba lagi.");
-        table.put("Token copied",
-                "Token disalin");
         table.put("Import account",
                 "Impor akun");
         table.put("Signs in with an account you paste, or a file.",
@@ -4444,28 +4432,8 @@ final class L10nTableIn {
                 "Dari file");
         table.put("No account file on this phone.",
                 "Tidak ada file akun di ponsel ini.");
-        table.put("That file couldn't be read.",
-                "File itu tidak bisa dibaca.");
-        table.put("Facebook has to restart before the account shows.",
-                "Facebook harus dimulai ulang agar akun muncul.");
-        table.put("Account imported",
-                "Akun diimpor");
-        table.put("Later",
-                "Nanti");
-        table.put("Nothing was imported",
-                "Tidak ada yang diimpor");
-        table.put("That text couldn't be written into this Facebook.",
-                "Teks itu tidak bisa ditulis ke Facebook ini.");
         table.put("Your account",
                 "Akun Anda");
-        table.put("Import or export",
-                "Impor atau ekspor");
-        table.put("Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.",
-                "Menampilkan akun ponsel ini sebagai teks. Salin atau simpan di sini, atau tempel akun lalu simpan ke Facebook ini.");
-        table.put("Export to file",
-                "Ekspor ke file");
-        table.put("Import from file",
-                "Impor dari file");
         table.put("Copy",
                 "Salin");
         table.put("Copied.",
@@ -4474,7 +4442,21 @@ final class L10nTableIn {
                 "Tidak ada yang bisa disimpan.");
         table.put("That file couldn't be written.",
                 "File itu tidak bisa ditulis.");
-        table.put("Account saved.",
-                "Akun disimpan.");
+        table.put("Export token",
+                "Ekspor token");
+        table.put("Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.",
+                "Menampilkan token akses setiap akun yang masuk di ponsel ini. Salin satu, atau simpan semuanya sebagai JSON.");
+        table.put("Save JSON",
+                "Simpan JSON");
+        table.put("Tokens saved.",
+                "Token disimpan.");
+        table.put("Check",
+                "Periksa");
+        table.put("Live: %1$s (uid %2$s)",
+                "Aktif: %1$s (uid %2$s)");
+        table.put("Facebook rejected this token.",
+                "Facebook menolak token ini.");
+        table.put("The check couldn't reach Facebook.",
+                "Pemeriksaan tidak dapat menjangkau Facebook.");
     }
 }

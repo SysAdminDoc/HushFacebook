@@ -3160,11 +3160,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	Xuất tài khoản
 Copies this account's cookies and token to the clipboard.	Sao chép cookie và token của tài khoản này vào clipboard.
-Copy token	Sao chép token
-Copies only the access token.	Chỉ sao chép access token.
-Nothing was copied	Không sao chép được gì
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook chưa tạo phiên đăng nhập. Hãy mở một bài viết, rồi thử lại.
-Token copied	Đã sao chép token
 Import account	Nhập tài khoản
 Signs in with an account you paste, or a file.	Đăng nhập bằng tài khoản bạn dán vào, hoặc bằng tệp.
 Account copied	Đã sao chép tài khoản
@@ -3173,19 +3169,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	Dán vào Nhập tài khoản trên máy kia, hoặc dùng tệp đã lưu.
 From file	Từ tệp
 No account file on this phone.	Không có tệp tài khoản nào trên máy này.
-That file couldn't be read.	Không đọc được tệp đó.
-Facebook has to restart before the account shows.	Facebook phải khởi động lại thì tài khoản mới hiện.
-Account imported	Đã nhập tài khoản
-Later	Để sau
-Nothing was imported	Không nhập được gì
-That text couldn't be written into this Facebook.	Không ghi được đoạn văn bản đó vào Facebook này.
 Your account	Tài khoản của bạn
-Import or export	Nhập hoặc Xuất
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Hiện tài khoản trên máy này dưới dạng văn bản. Sao chép hoặc lưu tại đây, hoặc dán một tài khoản rồi lưu vào Facebook này.
-Export to file	Xuất ra tệp
-Import from file	Nhập từ tệp
 Copy	Sao chép
 Copied.	Đã sao chép.
 There's nothing to save.	Không có gì để lưu.
 That file couldn't be written.	Không ghi được tệp đó.
-Account saved.	Đã lưu tài khoản.
+Export token	Xuất token
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Hiện access token của từng tài khoản đang đăng nhập trên máy này. Sao chép một cái, hoặc lưu tất cả thành JSON.
+Save JSON	Lưu JSON
+Tokens saved.	Đã lưu token.
+Check	Kiểm tra
+Live: %1$s (uid %2$s)	Còn sống: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook từ chối token này.
+The check couldn't reach Facebook.	Không kết nối được tới Facebook để kiểm tra.

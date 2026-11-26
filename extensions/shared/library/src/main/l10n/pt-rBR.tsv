@@ -3046,11 +3046,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	O Face
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	Exportar conta
 Copies this account's cookies and token to the clipboard.	Copia os cookies e o token desta conta para a área de transferência.
-Copy token	Copiar token
-Copies only the access token.	Copia apenas o token de acesso.
-Nothing was copied	Nada foi copiado
 Facebook hasn't built a session yet. Open a post, then try again.	O Facebook ainda não criou uma sessão. Abra uma publicação e tente de novo.
-Token copied	Token copiado
 Import account	Importar conta
 Signs in with an account you paste, or a file.	Entra com uma conta colada ou com um arquivo.
 Account copied	Conta copiada
@@ -3059,19 +3055,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	Cole em Importar conta no outro telefone ou use o arquivo salvo.
 From file	De arquivo
 No account file on this phone.	Nenhum arquivo de conta neste telefone.
-That file couldn't be read.	Não foi possível ler esse arquivo.
-Facebook has to restart before the account shows.	O Facebook precisa reiniciar para a conta aparecer.
-Account imported	Conta importada
-Later	Depois
-Nothing was imported	Nada foi importado
-That text couldn't be written into this Facebook.	Não foi possível gravar esse texto neste Facebook.
 Your account	Sua conta
-Import or export	Importar ou exportar
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Mostra as contas deste telefone como texto. Copie ou salve aqui, ou cole uma conta e salve neste Facebook.
-Export to file	Exportar para arquivo
-Import from file	Importar de arquivo
 Copy	Copiar
 Copied.	Copiado.
 There's nothing to save.	Não há nada para salvar.
 That file couldn't be written.	Não foi possível gravar esse arquivo.
-Account saved.	Conta salva.
+Export token	Exportar token
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Mostra o token de acesso de cada conta conectada neste telefone. Copie um, ou salve todos como JSON.
+Save JSON	Salvar JSON
+Tokens saved.	Tokens salvos.
+Check	Verificar
+Live: %1$s (uid %2$s)	Ativo: %1$s (uid %2$s)
+Facebook rejected this token.	O Facebook recusou este token.
+The check couldn't reach Facebook.	A verificação não conseguiu alcançar o Facebook.

@@ -5,17 +5,21 @@
 package app.morphe.extension.facebook.accounts;
 
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.util.Xml;
 import android.webkit.CookieManager;
 
 import androidx.annotation.Nullable;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -30,32 +34,27 @@ import java.util.regex.Pattern;
 import app.morphe.extension.shared.Logger;
 
 /**
- * The accounts Facebook is signed in with, read out of the running app and written back into it.
+ * The accounts Facebook is signed in with, read out of the running app.
  *
  * <p>Three stores hold them. The cookie store behind {@link CookieManager} holds what a browser
- * would send for facebook.com, which is what an account pasted into another mod is made of. The
- * preference files hold session values under the names Facebook stores them, and the import writes
- * those back where they came from. The rest of the app's data folder holds the token itself, which
- * Facebook keeps out of XML: a bounded walk of the folder finds it as the EAAAA… string it is, and
- * the id and name it belongs to come from the bytes around it.
+ * would send for facebook.com, which is what an account read from another mod is made of. The
+ * preference files hold session values under the names Facebook stores them. The rest of the app's
+ * data folder holds the token itself, which Facebook keeps out of XML: a bounded walk of the folder
+ * finds it as the EAAAA… string it is, and the id and name it belongs to come from the bytes
+ * around it.
  *
  * <p>The walk is bounded and skips what can't hold a token: {@link #MAX_DEPTH} folders deep, at most
  * {@link #MAX_SCAN_FILES} files, each past {@link #MAX_SCAN_FILE} bytes left alone, at most
- * {@link #MAX_TOKENS} tokens taken, and at most {@link #MAX_WINDOW} bytes read around each one. An
- * export carries the file and the key each preference value came from, so an import writes it back
- * rather than into a store of Hushfacebook's own that Facebook never reads.
+ * {@link #MAX_TOKENS} tokens taken, and at most {@link #MAX_WINDOW} bytes read around each one.
  *
- * <p>Both calls do file and provider work. Run them off the main thread: a walk reads a folder, and
- * an import commits several preference files.
+ * <p>{@link #captureAll} does file and provider work. Run it off the main thread: a walk reads a
+ * folder.
  */
 public final class AccountSession {
     /** The addresses Facebook's cookies are set for. A session has to be on all three. */
     private static final String[] URLS = {
             "https://www.facebook.com", "https://m.facebook.com", "https://web.facebook.com",
     };
-
-    /** What a stored cookie is given beside its value, so Facebook's own pages read it. */
-    private static final String COOKIE_ATTRIBUTES = "; domain=.facebook.com; path=/";
 
     /** How deep under the app's data folder the scan reaches: a session sits near the top. */
     private static final int MAX_DEPTH = 4;
@@ -77,6 +76,22 @@ public final class AccountSession {
 
     /** The most preference values an import can write back. */
     private static final int MAX_ENTRIES = 64;
+
+    /**
+     * The account type Facebook's own authenticator serves. Its account switcher lists the accounts
+     * of this type, and each one's userdata is the record the app signs that person in with.
+     */
+    private static final String ACCOUNT_TYPE = "com.facebook.auth.login";
+
+    /**
+     * The names Facebook keeps a session under in AccountManager, per account. The three user keys
+     * are what the switcher reads: the account signed in now, one saved for later, and one of
+     * several logged in. The credential record itself is a JSON object naming the id and the token.
+     */
+    private static final String[] CREDENTIAL_KEYS = {
+            "current_user", "saved_user", "multiple_logged_in_user", "persisted_ts",
+            "session_cookies_string", "access_token",
+    };
 
     /** Keys Facebook's own stores use for a sign-in, in lower case, matched as a suffix or a part. */
     private static final String[] SESSION_KEYS = {
@@ -104,161 +119,6 @@ public final class AccountSession {
      *
      * @throws AccountShare.Refused when nothing signable was found.
      */
-    /** Tag the store walk logs under, so the device log names what sits where. */
-    private static final String STORE_TAG = "HushFacebookStore";
-
-    /**
-     * Names the files under the app's data folder that could hold a signed-in session, in the
-     * device log. Facebook keeps its native session outside the preference files this class reads,
-     * and the account picker lists accounts this build cannot yet restore, so the names are
-     * collected rather than guessed at.
-     */
-    public static void dumpStores(Context context) {
-        dumpFolder(new java.io.File(context.getApplicationInfo().dataDir), 0);
-    }
-
-    private static void dumpFolder(java.io.File folder, int depth) {
-        if (depth > 3) return;
-        java.io.File[] files;
-        try {
-            files = folder.listFiles();
-        } catch (SecurityException denied) {
-            return;
-        }
-        if (files == null) return;
-        for (java.io.File file : files) {
-            String name = file.getName();
-            if (file.isDirectory()) {
-                if (skipped(name)) continue;
-                dumpFolder(file, depth + 1);
-            } else if (name.matches("(?i).*(auth|session|account|dbl|login|user|profile).*")
-                    || (file.length() > 4096 && name.endsWith(".db"))) {
-                android.util.Log.i(STORE_TAG, file.getAbsolutePath() + " " + file.length());
-            }
-        }
-    }
-
-    /**
-     * The app's databases and files, biggest first, as a report of where a signed-in session could
-     * sit. It goes into the file an export writes so it can be read off a phone with no root.
-     */
-    public static List<String> storeReport(Context context) {
-        List<String> found = new ArrayList<>();
-        java.io.File data = new java.io.File(context.getApplicationInfo().dataDir);
-        report(data, "databases", found);
-        report(data, "files", found);
-        reportPrefsDatabase(context, found);
-        reportPreferenceKeys(context, found);
-        return found;
-    }
-
-    /**
-     * The tables of Facebook's own preference store, which is a SQLite database and not the XML
-     * files this class reads: a session value would be a row in one of them.
-     */
-    private static void reportPrefsDatabase(Context context, List<String> found) {
-        java.io.File db = new java.io.File(context.getApplicationInfo().dataDir, "databases/prefs_db");
-        if (!db.isFile()) return;
-        android.database.sqlite.SQLiteDatabase sql = null;
-        android.database.Cursor cursor = null;
-        try {
-            sql = android.database.sqlite.SQLiteDatabase.openDatabase(db.getAbsolutePath(), null,
-                    android.database.sqlite.SQLiteDatabase.OPEN_READONLY);
-            cursor = sql.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
-            while (cursor.moveToNext() && found.size() < 64) {
-                found.add("table " + cursor.getString(0));
-            }
-        } catch (RuntimeException failed) {
-            found.add("prefs_db unreadable: " + failed.getClass().getSimpleName());
-        } finally {
-            if (cursor != null) cursor.close();
-            if (sql != null) sql.close();
-        }
-    }
-
-    /**
-     * The columns of the preference table, and the names of the rows that could be a sign-in, so
-     * the next build knows the key a session is stored under.
-     */
-    private static void reportPreferenceKeys(Context context, List<String> found) {
-        java.io.File db = new java.io.File(context.getApplicationInfo().dataDir, "databases/prefs_db");
-        if (!db.isFile()) return;
-        android.database.sqlite.SQLiteDatabase sql = null;
-        try {
-            sql = android.database.sqlite.SQLiteDatabase.openDatabase(db.getAbsolutePath(), null,
-                    android.database.sqlite.SQLiteDatabase.OPEN_READONLY);
-            StringBuilder columns = new StringBuilder();
-            android.database.Cursor info = sql.rawQuery("PRAGMA table_info(preferences)", null);
-            while (info.moveToNext()) {
-                if (columns.length() > 0) columns.append(", ");
-                columns.append(info.getString(1));
-            }
-            info.close();
-            found.add("columns preferences: " + columns);
-            android.database.Cursor rows = sql.rawQuery(
-                    "SELECT name FROM preferences WHERE name LIKE '%session%' OR name LIKE '%auth%'"
-                            + " OR name LIKE '%token%' OR name LIKE '%user%' OR name LIKE '%name%'"
-                            + " OR name LIKE '%account%' LIMIT 60", null);
-            while (rows.moveToNext()) {
-                found.add("key " + rows.getString(0));
-            }
-            rows.close();
-        } catch (RuntimeException failed) {
-            found.add("preferences unreadable: " + failed.getClass().getSimpleName());
-        } finally {
-            if (sql != null) sql.close();
-        }
-    }
-
-    private static void report(java.io.File data, String folder, List<String> found) {
-        java.io.File dir = new java.io.File(data, folder);
-        java.io.File[] files;
-        try {
-            files = dir.listFiles();
-        } catch (SecurityException denied) {
-            return;
-        }
-        if (files == null) return;
-        java.util.Arrays.sort(files, (left, right) -> Long.compare(right.length(), left.length()));
-        int listed = 0;
-        for (java.io.File file : files) {
-            if (listed++ >= 24) break;
-            found.add((file.isDirectory() ? "dir " : "file ") + file.getName() + " " + file.length());
-        }
-    }
-
-    /** The first dozen store paths under the app's data folder, for a report read off the screen. */
-    public static String storeList(Context context) {        java.util.List<String> found = new java.util.ArrayList<>();
-        collectStores(new java.io.File(context.getApplicationInfo().dataDir), 0, found);
-        StringBuilder text = new StringBuilder();
-        for (String path : found) {
-            if (text.length() > 0) text.append('\n');
-            text.append(path);
-        }
-        return text.toString();
-    }
-
-    private static void collectStores(java.io.File folder, int depth, java.util.List<String> found) {
-        if (depth > 3 || found.size() >= 12) return;
-        java.io.File[] files;
-        try {
-            files = folder.listFiles();
-        } catch (SecurityException denied) {
-            return;
-        }
-        if (files == null) return;
-        for (java.io.File file : files) {
-            String name = file.getName();
-            if (file.isDirectory()) {
-                if (!skipped(name)) collectStores(file, depth + 1, found);
-            } else if (found.size() < 12
-                    && (name.matches("(?i).*(auth|session|account|dbl|login|user|profile).*")
-                    || (file.length() > 4096 && name.endsWith(".db")))) {
-                found.add(file.getAbsolutePath() + " " + file.length());
-            }
-        }
-    }
-
     public static List<AccountShare.Account> captureAll(Context context) throws AccountShare.Refused {
         Map<String, String> cookies = cookies();
         // Every session Facebook built this run, one per account it is signed into. The cookies
@@ -308,7 +168,93 @@ public final class AccountSession {
             throw new AccountShare.Refused("This Facebook has no account to export: its cookie store is empty and no "
                     + "token was found in its data. Open a Facebook link in its browser once, then try again.");
         }
-        return accounts;
+        return withCredentials(context, accounts);
+    }
+
+    /**
+     * [accounts] with what Facebook keeps for each in AccountManager, so an export carries the record
+     * the account switcher signs in with rather than the token alone.
+     */
+    private static List<AccountShare.Account> withCredentials(Context context,
+                                                             List<AccountShare.Account> accounts) {
+        AccountManager manager = accountManager(context);
+        if (manager == null) return accounts;
+        List<AccountShare.Account> out = new ArrayList<>(accounts.size());
+        for (AccountShare.Account account : accounts) {
+            Map<String, String> credentials = account.credentials;
+            if (account.uid.isEmpty() || !credentials.isEmpty()) {
+                out.add(account);
+                continue;
+            }
+            Map<String, String> found = credentials(manager, account.uid);
+            // The session the app runs with is ahead of the record AccountManager keeps: Facebook
+            // refreshes its token and the stored record goes stale, still naming the token it was
+            // signed in with. The record goes out carrying the token that still signs in, or an
+            // import writes a dead one back and the app lands on the login screen.
+            for (Map.Entry<String, String> credential : found.entrySet()) {
+                String refreshed = withToken(credential.getValue(), account.token);
+                if (refreshed != null) credential.setValue(refreshed);
+            }
+            out.add(new AccountShare.Account(account.uid, account.name, account.token, account.cookies,
+                    account.session, found));
+        }
+        return out;
+    }
+
+    /**
+     * [record] with its accessToken replaced by [token], or null when [record] is no such record or
+     * already names [token]. Facebook keeps an account's record as a small JSON object, and the
+     * token inside it is the only part that ages.
+     */
+    @Nullable
+    private static String withToken(@Nullable String record, @Nullable String token) {
+        if (record == null || token == null || token.isEmpty() || !record.contains("\"accessToken\"")) {
+            return null;
+        }
+        try {
+            JSONObject json = new JSONObject(record);
+            if (token.equals(json.optString("accessToken"))) return null;
+            json.put("accessToken", token);
+            return json.toString();
+        } catch (JSONException malformed) {
+            return null;
+        }
+    }
+
+    /** The record Facebook keeps for [uid] in AccountManager, or an empty map when it keeps none. */
+    private static Map<String, String> credentials(AccountManager manager, String uid) {
+        Map<String, String> found = new LinkedHashMap<>();
+        if (uid.isEmpty()) return found;
+        Account[] accounts;
+        try {
+            accounts = manager.getAccountsByType(ACCOUNT_TYPE);
+        } catch (RuntimeException failed) {
+            Logger.printInfo(() -> "The accounts weren't listed: " + failed.getClass().getSimpleName());
+            return found;
+        }
+        for (Account account : accounts) {
+            if (!uid.equals(account.name)) continue;
+            for (String key : CREDENTIAL_KEYS) {
+                try {
+                    String value = manager.getUserData(account, key);
+                    if (value != null && !value.isEmpty()) found.put(key, value);
+                } catch (RuntimeException failed) {
+                    Logger.printInfo(() -> "The credential " + key + " wasn't read: "
+                            + failed.getClass().getSimpleName());
+                }
+            }
+        }
+        return found;
+    }
+
+    @Nullable
+    private static AccountManager accountManager(Context context) {
+        try {
+            return AccountManager.get(context);
+        } catch (RuntimeException failed) {
+            Logger.printInfo(() -> "AccountManager isn't reachable: " + failed.getClass().getSimpleName());
+            return null;
+        }
     }
 
     /** The cookies Facebook's own store holds for facebook.com, merged across the three addresses. */
@@ -498,7 +444,8 @@ public final class AccountSession {
             if (preferences) {
                 String key = name.substring(0, name.length() - ".xml".length());
                 for (Map.Entry<String, String> value : readStrings(file).entrySet()) {
-                    if (scan.entries.size() < MAX_ENTRIES && looksLikeSession(value.getKey(), value.getValue())) {
+                    if (scan.entries.size() < MAX_ENTRIES && looksLikeSession(value.getKey(), value.getValue())
+                            && AccountShare.isSessionValue(value.getValue())) {
                         scan.entries.add(new AccountShare.Entry(key, value.getKey(), value.getValue()));
                     }
                     // A community mod writes the cookies into one preference value as a header.
@@ -579,71 +526,6 @@ public final class AccountSession {
         scan.tokens.put(id, token);
         Matcher name = NAME_NEAR.matcher(around);
         if (name.find()) scan.names.put(id, name.group(1));
-    }
-
-    /**
-     * Writes [accounts] into the cookie store and the preference files, and says how many values
-     * were written. Facebook has to start again to read them.
-     */
-    public static int restoreAll(Context context, List<AccountShare.Account> accounts) {
-        int written = 0;
-        for (AccountShare.Account account : accounts) {
-            written += restore(context, account);
-        }
-        return written;
-    }
-
-    /** Writes one account's cookies and preference values back, and says how many were written. */
-    public static int restore(Context context, AccountShare.Account account) {
-        int written = 0;
-        CookieManager manager = CookieManager.getInstance();
-        for (Map.Entry<String, String> cookie : account.cookies.entrySet()) {
-            String value = cookie.getKey() + "=" + cookie.getValue() + COOKIE_ATTRIBUTES;
-            for (String url : URLS) {
-                try {
-                    manager.setCookie(url, value);
-                } catch (RuntimeException failed) {
-                    Logger.printInfo(() -> "The cookie " + cookie.getKey() + " wasn't set for " + url
-                            + ": " + failed.getClass().getSimpleName());
-                }
-            }
-            written++;
-        }
-        try {
-            manager.flush();
-        } catch (RuntimeException failed) {
-            Logger.printInfo(() -> "The cookies weren't flushed: " + failed.getClass().getSimpleName());
-        }
-
-        // Grouped by file, so each preference file is opened once and committed once.
-        Map<String, List<AccountShare.Entry>> byFile = new LinkedHashMap<>();
-        for (AccountShare.Entry entry : account.session) {
-            List<AccountShare.Entry> values = byFile.get(entry.file);
-            if (values == null) {
-                values = new ArrayList<>();
-                byFile.put(entry.file, values);
-            }
-            values.add(entry);
-        }
-        for (Map.Entry<String, List<AccountShare.Entry>> file : byFile.entrySet()) {
-            SharedPreferences preferences;
-            try {
-                preferences = context.getSharedPreferences(file.getKey(), Context.MODE_PRIVATE);
-            } catch (RuntimeException failed) {
-                Logger.printInfo(() -> "The preference file " + file.getKey() + " wasn't opened: "
-                        + failed.getClass().getSimpleName());
-                continue;
-            }
-            SharedPreferences.Editor editor = preferences.edit();
-            for (AccountShare.Entry entry : file.getValue()) {
-                editor.putString(entry.key, entry.value);
-                written++;
-            }
-            // Committed, not applied: the caller shows a result once this returns, and a restart
-            // right after it has to find the values on disk.
-            editor.commit();
-        }
-        return written;
     }
 
     /** Whether [key] and [value] are a sign-in, by the names Facebook stores them under. */

@@ -3160,11 +3160,7 @@ Facebook couldn't mark your notifications as read. Try again in a moment.	Facebo
 # context: the account sharing rows in Hushfacebook settings, and their dialogs
 Export account	Esporta account
 Copies this account's cookies and token to the clipboard.	Copia i cookie e il token di questo account negli appunti.
-Copy token	Copia token
-Copies only the access token.	Copia solo il token di accesso.
-Nothing was copied	Niente copiato
 Facebook hasn't built a session yet. Open a post, then try again.	Facebook non ha ancora creato una sessione. Apri un post, poi riprova.
-Token copied	Token copiato
 Import account	Importa account
 Signs in with an account you paste, or a file.	Accede con un account che incolli, o con un file.
 Account copied	Account copiato
@@ -3173,19 +3169,16 @@ This Facebook has no account to export. Open a Facebook link in its browser once
 Paste it into Import account on the other phone, or use the saved file.	Incollalo in Importa account sull'altro telefono, o usa il file salvato.
 From file	Da file
 No account file on this phone.	Nessun file di account su questo telefono.
-That file couldn't be read.	Impossibile leggere quel file.
-Facebook has to restart before the account shows.	Facebook deve riavviarsi perché l'account compaia.
-Account imported	Account importato
-Later	Più tardi
-Nothing was imported	Niente importato
-That text couldn't be written into this Facebook.	Impossibile scrivere quel testo in questo Facebook.
 Your account	Il tuo account
-Import or export	Importa o esporta
-Shows this phone's accounts as text. Copy or save them here, or paste an account and save it into this Facebook.	Mostra gli account di questo telefono come testo. Copiali o salvali qui, oppure incolla un account e salvalo in questo Facebook.
-Export to file	Esporta su file
-Import from file	Importa da file
 Copy	Copia
 Copied.	Copiato.
 There's nothing to save.	Non c'è niente da salvare.
 That file couldn't be written.	Impossibile scrivere quel file.
-Account saved.	Account salvato.
+Export token	Esporta token
+Shows the access token of each account signed in on this phone. Copy one, or save them all as JSON.	Mostra il token di accesso di ogni account connesso su questo telefono. Copiane uno o salvali tutti come JSON.
+Save JSON	Salva JSON
+Tokens saved.	Token salvati.
+Check	Verifica
+Live: %1$s (uid %2$s)	Attivo: %1$s (uid %2$s)
+Facebook rejected this token.	Facebook ha rifiutato questo token.
+The check couldn't reach Facebook.	La verifica non ha raggiunto Facebook.
