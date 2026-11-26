@@ -589,7 +589,7 @@ public class PostMenuItemsTest {
     }
 
     /** Stands in for 588's LX/01Yk, Facebook's icon enum, which keeps its names. */
-    enum Icon { HD, RUNNING, NUCLEUS_HIDE }
+    enum Icon { HD, RUNNING, NUCLEUS_HIDE, ARROWS_SQUARE_ADD }
 
     /** Stands in for 588's LX/0b3x, a row's icon: an image address and an icon. */
     static final class IconBox {
@@ -649,6 +649,37 @@ public class PostMenuItemsTest {
         assertNull(PostMenuItems.reelKind(PostMenuItems.NO_ID));
         assertNull(PostMenuItems.reelKind(PostMenuItems.NO_ID, "RUNNING"));
         assertEquals("BEST_GUESS_POST", PostMenuItems.reelKind(PostMenuItems.NO_ID, "HD"));
+    }
+
+    /**
+     * #475: Remix this reel never joined the list, since a reel open to remixes makes the row with
+     * no id (588 LX/0aiJ;->A00), and only its icon tells it apart. One that isn't open to them makes
+     * it as fds_control_remix_video. Both are Remix, and picking it leaves the other rows alone.
+     */
+    @Test
+    public void remixThisReelJoinsTheListAndGoesAlone() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        NoIdRow remix = new NoIdRow("Remix this reel", new IconBox(Icon.ARROWS_SQUARE_ADD));
+        ReelRow remixOff = new ReelRow("Remix this reel", "fds_control_remix_video");
+        NoIdRow quality = new NoIdRow("Quality settings", new IconBox(Icon.HD));
+        NoIdRow feedSpeed = new NoIdRow("Playback speed", new IconBox(null));
+        NoIdRow product = new NoIdRow("Hide product", new IconBox(Icon.NUCLEUS_HIDE));
+        List<Object> rows = Arrays.asList(reelSpeed, quality, remix, feedSpeed, product, saveReel);
+        assertSame("nothing picked keeps them", rows, PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertEquals("Remix is written down with the rows that have a kind",
+                Arrays.asList("PLAYBACK_SPEED", "BEST_GUESS_POST", "REMIX", "SAVE"),
+                new ArrayList<>(PostMenuItems.parse(Settings.SEEN_POST_MENU_ITEMS.savedValue())));
+        assertEquals("Remix this reel", PostMenuItems.label("REMIX"));
+
+        PostMenuItems.hide(Collections.singletonList("REMIX"));
+        assertEquals(Arrays.asList(reelSpeed, quality, feedSpeed, product, saveReel),
+                PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertTrue(PostMenuItems.reelRowHidden(remix, REEL_MODEL, "A04"));
+        assertTrue("the row of a reel closed to remixes goes too", PostMenuItems.reelRowHidden(remixOff, REEL_MODEL, "A04"));
+        assertFalse(PostMenuItems.reelRowHidden(quality, REEL_MODEL, "A04"));
+        assertFalse(PostMenuItems.reelRowHidden(feedSpeed, REEL_MODEL, "A04"));
+        assertEquals("REMIX", PostMenuItems.reelKind("fds_control_remix_video"));
+        assertNull("an icon alone is no kind", PostMenuItems.reelKind(null, "ARROWS_SQUARE_ADD"));
     }
 
     private final ReelRow reelInterested = new ReelRow("Interested", "fds_control_type_preference_signal_positive");

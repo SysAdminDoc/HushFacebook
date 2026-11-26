@@ -90,6 +90,15 @@ public final class PostMenuItems {
     static final String QUALITY_ICON = "HD";
     static final String QUALITY = "BEST_GUESS_POST";
 
+    /**
+     * Remix this reel. A reel open to remixes makes the row without an id, wearing this icon (588
+     * LX/0aiJ;->A00, and LX/0bJ8;->AJN for a reel remixed from another), and one that isn't makes
+     * it with {@link #REMIX_ROW}. Both are the one kind (#475).
+     */
+    static final String REMIX_ICON = "ARROWS_SQUARE_ADD";
+    static final String REMIX_ROW = "fds_control_remix_video";
+    static final String REMIX = "REMIX";
+
     /** What a few reel kinds still start with when their id had a wrapping the list doesn't take off. */
     private static final String[] KIND_WRAPS = {"FB_CONTROL_TYPE_", "FB_CONTROL_"};
 
@@ -372,16 +381,21 @@ public final class PostMenuItems {
 
     /**
      * The kind of a reel row with [id] wearing the icon named [icon]: as {@link #reelKind(String)},
-     * except that a row with {@link #NO_ID} has a kind only when its icon is Quality settings' one.
+     * except that a row with {@link #NO_ID} has a kind only when its icon is Quality settings' or
+     * Remix's one.
      */
     @Nullable
     static String reelKind(@Nullable String id, @Nullable String icon) {
         if (SKIP_SILENCE_ROW.equals(id)) return SKIP_SILENT_PARTS;
         if (id == null || id.startsWith(OWN_ROW)) return null;
-        if (NO_ID.equals(id)) return QUALITY_ICON.equals(icon) ? QUALITY : null;
+        if (NO_ID.equals(id)) {
+            if (QUALITY_ICON.equals(icon)) return QUALITY;
+            return REMIX_ICON.equals(icon) ? REMIX : null;
+        }
         switch (id) {
             case "fds_control_type_preference_signal_positive": return "SEE_MORE";
             case "fds_control_type_preference_signal_negative": return "SEE_LESS";
+            case REMIX_ROW: return REMIX;
             default: break;
         }
         String rest = id;
@@ -846,6 +860,7 @@ public final class PostMenuItems {
             case "OTHER": return L10n.t("Request community note");
             case "BUG": return L10n.t("Something went wrong");
             case SKIP_SILENT_PARTS: return L10n.t("Skip silent parts");
+            case REMIX: return L10n.t("Remix this reel");
             default: return readable(kind);
         }
     }
