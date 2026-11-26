@@ -208,6 +208,37 @@ public class AskBeforeLikeTest {
         }
     }
 
+    private static final String SHEET = "Lapp/morphe/extension/facebook/feed/AskBeforeLikeTest$SheetBar;"
+            + "->invoke(Ljava/lang/Object;)Ljava/lang/Object;";
+
+    /** What a group post's comment sheet hands its reaction lambda: the picked reaction and the bar's view. */
+    static final class SheetPick {
+        public final int reaction;
+        public final View bar;
+
+        SheetPick(int reaction, View bar) {
+            this.reaction = reaction;
+            this.bar = bar;
+        }
+    }
+
+    /**
+     * A stand-in for the merged lambda a reaction picked on a group post's comment sheet runs (#443):
+     * its own fields keep no screen, only the sheet's state, and the pick it takes holds the bar's view.
+     */
+    static final class SheetBar {
+        public final Object state = "sheet state";
+        int reactions;
+        Object lastPick;
+
+        Object invoke(Object pick) {
+            if (AskBeforeLike.hold(AskBeforeLike.COMMENT_REACTION, SHEET, new Object[] {this, pick})) return "unit";
+            reactions++;
+            lastPick = pick;
+            return "unit";
+        }
+    }
+
     private Activity screen;
     private View button;
     private Footer footer;
@@ -451,6 +482,29 @@ public class AskBeforeLikeTest {
         press(showing(), AlertDialog.BUTTON_POSITIVE);
         assertEquals("Continue didn't send it once", 2, glimpse.reactions);
         assertEquals("Continue sent another reaction than the one picked", "wow", glimpse.lastKey);
+        assertNull(showing());
+    }
+
+    @Test
+    public void aReactionPickedOnAGroupCommentSheetAsksOverTheBarsScreenAndOnlyContinueSendsIt() {
+        SheetBar sheet = new SheetBar();
+        sheet.invoke(new SheetPick(1, button));
+        assertEquals("a reaction was held with the switch off", 1, sheet.reactions);
+        assertNull(showing());
+
+        Settings.ASK_BEFORE_LIKING_COMMENTS.save(true);
+        sheet.invoke(new SheetPick(2, button));
+        AlertDialog question = showing();
+        assertTrue("no question went up over the screen of the bar the pick holds", question != null);
+        assertEquals("React to this comment?", shadowOf(question).getMessage().toString());
+        press(question, AlertDialog.BUTTON_NEGATIVE);
+        assertEquals("Cancel sent the reaction", 1, sheet.reactions);
+
+        SheetPick wow = new SheetPick(3, button);
+        sheet.invoke(wow);
+        press(showing(), AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't send it once", 2, sheet.reactions);
+        assertSame("Continue sent another pick than the one made", wow, sheet.lastPick);
         assertNull(showing());
     }
 

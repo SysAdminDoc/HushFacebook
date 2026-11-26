@@ -106,6 +106,11 @@ internal const val REEL_LIKE_NAME = "LikeButtonComponent"
 internal const val COMMENT_LIKE_TRACE = "LikePluginUtil.onReactionLikeClicked"
 internal const val INLINE_COMMENT_LIKE_TRACE = "InlineCommentActionsComponentSpec.onReactionLikeClicked"
 internal const val COMMENT_REACTION_TRACE = "CommentGlimpsePresenter.onReactionSelected"
+internal const val SHEET_REACTION_TRACE =
+    "CommentBottomSheetFragment.CommentBottomSheetComponentSpec.FeedInlineActionCallback.onReactionSelected"
+
+/** The trace names of the reaction bars a held comment opens: the glimpse's, then the comment sheet's. */
+internal val COMMENT_REACTION_TRACES = listOf(COMMENT_REACTION_TRACE, SHEET_REACTION_TRACE)
 internal const val REEL_FOLLOW_LOG = "Missing ShortFormVideoContext. Cannot follow profile."
 internal const val POST_FOLLOW_EVENT = "story_header_follow_profile"
 internal const val FOLLOW_LINK = "FollowProfileActionLink"
@@ -203,10 +208,12 @@ val askBeforeLikePatch = patch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so a story reaction goes through without asking.")
         }
-        try {
-            askBeforeCommentReaction()
-        } catch (exception: PatchException) {
-            patchLog.warning("${exception.message}, so a reaction picked on a held comment goes through without asking.")
+        for (trace in COMMENT_REACTION_TRACES) {
+            try {
+                askBeforeCommentReaction(trace)
+            } catch (exception: PatchException) {
+                patchLog.warning("${exception.message}, so a reaction picked there on a held comment goes through without asking.")
+            }
         }
         enableStatus("askBeforeLike")
     }
@@ -458,19 +465,21 @@ internal fun isOneArgumentLambda(method: Method) =
     method.name == "invoke" && method.returnType == OBJECT && method.parameterTypes.map(Any::toString) == listOf(OBJECT)
 
 /**
- * The reaction picked on the sheet a held comment opens (#443): an arm of a merged lambda that
- * takes the picked key, looks up its reaction and sends it for the comment. Asks under Ask before
- * liking a comment, as the Like under the comment does.
+ * The reaction picked on the bar a held comment opens (#443), found by [trace], one of
+ * [COMMENT_REACTION_TRACES]: an arm of a merged lambda that takes what was picked, looks up its
+ * reaction and sends it for the comment. The glimpse over a feed post's comments and the comment
+ * sheet of a group post each have their own. Asks under Ask before liking a comment, as the Like
+ * under the comment does.
  */
-internal fun BytecodePatchContext.commentReactionHandler(): LikeHandler {
-    val found = methodsHolding(COMMENT_REACTION_TRACE).filter(::isOneArgumentLambda)
+internal fun BytecodePatchContext.commentReactionHandler(trace: String): LikeHandler {
+    val found = methodsHolding(trace).filter(::isOneArgumentLambda)
     val method = found.singleOrNull()
-        ?: refuse("expected one lambda holding \"$COMMENT_REACTION_TRACE\", found ${found.size}")
-    return LikeHandler(COMMENT_REACTION, method, armIfMerged(method, COMMENT_REACTION_TRACE))
-        .also { checkHandler(it, "the comment reaction handler") }
+        ?: refuse("expected one lambda holding \"$trace\", found ${found.size}")
+    return LikeHandler(COMMENT_REACTION, method, armIfMerged(method, trace))
+        .also { checkHandler(it, "the comment reaction handler for $trace") }
 }
 
-internal fun BytecodePatchContext.askBeforeCommentReaction() = hookAll(listOf(commentReactionHandler()))
+internal fun BytecodePatchContext.askBeforeCommentReaction(trace: String) = hookAll(listOf(commentReactionHandler(trace)))
 
 /** The hook going first in [handler]'s method. */
 internal fun likeHook(handler: LikeHandler): String {

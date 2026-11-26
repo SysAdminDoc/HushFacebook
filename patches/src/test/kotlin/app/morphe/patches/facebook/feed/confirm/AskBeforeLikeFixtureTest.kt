@@ -246,37 +246,42 @@ class AskBeforeLikeFixtureTest {
     }
 
     /**
-     * A reaction picked on the sheet a held comment opens (#443) asks first on every declared build:
-     * the merged lambda's arm holding the presenter's trace name, which sends a reaction for the
-     * comment, starts with the case guard and the hand-over, and a held pick returns Unit.
+     * A reaction picked on either bar a held comment opens (#443), the glimpse's or a group post's
+     * comment sheet's, asks first on every declared build: the merged lambda's arm holding the trace
+     * name, which sends a reaction for the comment, starts with the case guard and the hand-over,
+     * and a held pick returns Unit.
      */
     @Test
     fun `each declared build's held comment reaction asks the extension first`() {
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        // How far past the trace name each arm sends the reaction: the glimpse sends right away, the
+        // sheet first looks up the comment's feedback and its logging params.
+        val sendsWithin = mapOf(COMMENT_REACTION_TRACE to 20, SHEET_REACTION_TRACE to 90)
+        assertEquals("a reaction bar without a send window", COMMENT_REACTION_TRACES.toSet(), sendsWithin.keys)
         val checked = mutableSetOf<String>()
         for (version in versions) {
-            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
-                val name = bundle.name
-                val context = PatchContexts.of(holding(bundle, COMMENT_REACTION_TRACE))
-                val handler = context.commentReactionHandler()
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) for (trace in COMMENT_REACTION_TRACES) {
+                val name = "${bundle.name} ${trace.substringBefore('.')}"
+                val context = PatchContexts.of(holding(bundle, trace))
+                val handler = context.commentReactionHandler(trace)
                 val method = handler.method
                 assertEquals("$name: the reaction lambda isn't invoke(Object)", listOf("Ljava/lang/Object;"),
                     method.parameterTypes.map { it.toString() })
                 val before = method.code()
                 val arm = handler.arm
                 assertTrue("$name: the reaction lambda got no arm guard", arm != null)
-                val cases = armCases(name, COMMENT_REACTION, before, arm!!, COMMENT_REACTION_TRACE)
-                assertEquals("$name: not one case of the reaction lambda names the presenter", 1, cases.size)
-                // Positive control: right after the trace name the arm sends the reaction, a call
-                // handing back the comment it reacted to.
-                val traceAt = before.indexOfFirst { it.loads(COMMENT_REACTION_TRACE) }
+                val cases = armCases(name, COMMENT_REACTION, before, arm!!, trace)
+                assertEquals("$name: not one case of the reaction lambda names the trace", 1, cases.size)
+                // Positive control: after the trace name the arm sends the reaction, a call handing
+                // back the comment it reacted to.
+                val traceAt = before.indexOfFirst { it.loads(trace) }
                 assertTrue("$name: the arm sends no reaction for a comment",
-                    before.subList(traceAt, minOf(before.size, traceAt + 20)).any {
+                    before.subList(traceAt, minOf(before.size, traceAt + sendsWithin.getValue(trace))).any {
                         ((it as? ReferenceInstruction)?.reference as? MethodReference)?.returnType ==
                             "Lcom/facebook/graphql/model/GraphQLComment;"
                     })
 
-                context.askBeforeCommentReaction()
+                context.askBeforeCommentReaction(trace)
 
                 val old = before.unpadded()
                 val after = context.patched(method).unpadded()
@@ -301,9 +306,9 @@ class AskBeforeLikeFixtureTest {
                 assertEquals("$name: a no doesn't go to Facebook's code", grown, hook[call + 2].target())
                 assertEquals("$name: a held pick doesn't return Unit", listOf(Opcode.SGET_OBJECT, Opcode.RETURN_OBJECT),
                     hook.drop(call + 3).map { it.opcode })
-                checked += name
+                checked += trace
             }
         }
-        assertTrue("no fixture bundle for ${versions.joinToString()}", checked.isNotEmpty())
+        assertEquals("no fixture bundle for ${versions.joinToString()}", COMMENT_REACTION_TRACES.toSet(), checked)
     }
 }
