@@ -15,8 +15,9 @@ internal var postMenuSheetMissing: String? = null
     private set
 
 /**
- * The post menu sheet's hook, shared by Post menu items (the rows it hides) and Keep the reel
- * speed (its Playback speed row on the first page, #473). The method that sorts a post menu into
+ * The post menu sheet's hook, shared by Post menu items (the rows it hides), Keep the reel speed
+ * (its Playback speed row on the first page, #473) and Download any video and Download any photo
+ * (Download first's rows on the first page, #603). The method that sorts a post menu into
  * the sheet's parts hands its holder to the extension's PostMenuItems, which runs each one's rule
  * only when it's in the build, so the build carries one hook whichever of them are in. See
  * PostMenuSheetAnchors.kt for how it's found.

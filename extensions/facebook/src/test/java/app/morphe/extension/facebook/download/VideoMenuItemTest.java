@@ -106,6 +106,7 @@ public class VideoMenuItemTest {
         Settings.SKIP_SILENT_PARTS.resetToDefault();
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
         Settings.POST_MENU_DOWNLOAD_FIRST.resetToDefault();
+        MenuTop.forgetForTests();
         Settings.HIDDEN_POST_MENU_ITEMS.resetToDefault();
         Settings.SEEN_POST_MENU_ITEMS.resetToDefault();
         PatchFamilyForTests.reset();
@@ -178,6 +179,7 @@ public class VideoMenuItemTest {
         assertEquals("Download to phone", String.valueOf(menu.getItem(0).getTitle()));
         assertEquals("Save video", String.valueOf(menu.getItem(1).getTitle()));
         assertEquals("Download video", String.valueOf(menu.getItem(2).getTitle()));
+        assertFalse("Android's own menu has no sheet to move rows in", MenuTop.isRow(menu.getItem(0)));
 
         Settings.POST_MENU_DOWNLOAD_FIRST.save(false);
         assertEquals("Download to phone", String.valueOf(filled(VideoMenuItemForTests.videoPost()).getItem(2).getTitle()));
@@ -198,11 +200,17 @@ public class VideoMenuItemTest {
         assertEquals("Download to phone", String.valueOf(menu.getItem(0).getTitle()));
         assertEquals("Save video", String.valueOf(menu.getItem(1).getTitle()));
         assertEquals("Download video", String.valueOf(menu.getItem(2).getTitle()));
+        // #603: the sheet's hook moves the row it knows out of More options.
+        assertTrue("the row on top wasn't remembered for the sheet", MenuTop.isRow(menu.getItem(0)));
+        assertFalse("Facebook's own row was taken for ours", MenuTop.isRow(menu.getItem(1)));
+        assertTrue(MenuTop.onFirstPage());
 
         Settings.POST_MENU_DOWNLOAD_FIRST.save(false);
+        assertFalse("off, the sheet's hook still moves rows", MenuTop.onFirstPage());
         Menu below = VideoMenuItemForTests.facebooksSortedMenu();
         VideoMenuItem.add(below, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
         assertEquals("Download to phone", String.valueOf(below.getItem(2).getTitle()));
+        assertFalse("a row below Facebook's was remembered", MenuTop.isRow(below.getItem(2)));
     }
 
     /** A post with nothing to save gets no row on top either, and a pause keeps the menu Facebook's. */

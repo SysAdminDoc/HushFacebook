@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import app.morphe.extension.facebook.download.MenuTop;
 import app.morphe.extension.facebook.media.PostMenuSpeed;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -47,7 +48,10 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * options; with {@link Settings#POST_MENU_SPEED_ON_TOP} on it moves to the end of the first page, the
  * way Facebook's own presenter moves its Why am I seeing this row there after the sort. Facebook draws
  * Interested and Not interested as one card only when it has both, so with one of them picked the
- * other moves to the top of the first page.
+ * other moves to the top of the first page. Download first in post menus
+ * ({@link Settings#POST_MENU_DOWNLOAD_FIRST}) puts its rows ahead of Facebook's, and Facebook files
+ * those under More options too, so they move to the end of the first page, above Playback speed
+ * (#603).
  *
  * <p>The holder's fields are found by what they hold, and the kind by the names the patch hands over:
  * the row metadata's class and its kind field, and the first page's list. Settings that aren't ready
@@ -110,6 +114,9 @@ public final class PostMenuItems {
 
     /** Counted under Keep the reel speed's name each time Playback speed goes to the first page. */
     static final String SPEED_MOVED = "post menu Playback speed put on the first page";
+
+    /** Counted under Download any video's name for each of Download first's rows put on the first page. */
+    static final String DOWNLOAD_MOVED = "post menu Download put on the first page";
 
     /** At most this many kinds are written down, so a renamed enum can't grow the setting forever. */
     static final int SEEN_LIMIT = 100;
@@ -184,6 +191,15 @@ public final class PostMenuItems {
             }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.KEEP_REEL_SPEED, "post menu speed on the first page", failure);
+        }
+        try {
+            // After the speed row's move, so Download can go above it.
+            if (MenuTop.onFirstPage()) {
+                if (read == null) read = shapeOf(holder, metadata, kindField, firstPage);
+                downloadOnTop(holder, read);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "post menu Download on the first page", failure);
         }
     }
 
@@ -601,6 +617,41 @@ public final class PostMenuItems {
                 return;
             }
         }
+    }
+
+    /**
+     * Moves the rows Download first in post menus put on top (Download to phone, Save photo, Open in
+     * another app) from More options to the end of the first page, in their order, and above Keep
+     * the reel speed's Playback speed row when that's there (#603).
+     */
+    private static void downloadOnTop(Object holder, Shape read) throws IllegalAccessException {
+        Object top = read.firstPage.get(holder);
+        if (!(top instanceof List)) return;
+        @SuppressWarnings("unchecked")
+        List<Object> firstPage = (List<Object>) top;
+        List<Object> moved = new ArrayList<>();
+        for (Field field : read.lists) {
+            if (field.equals(read.firstPage)) continue;
+            Object value = field.get(holder);
+            if (!(value instanceof List)) continue;
+            for (Iterator<?> rows = ((List<?>) value).iterator(); rows.hasNext(); ) {
+                Object row = rows.next();
+                if (!MenuTop.isRow(row)) continue;
+                rows.remove();
+                moved.add(row);
+            }
+        }
+        if (moved.isEmpty()) return;
+        int at = firstPage.size();
+        for (int i = 0; i < firstPage.size(); i++) {
+            if (PostMenuSpeed.isRow(firstPage.get(i))) {
+                at = i;
+                break;
+            }
+        }
+        firstPage.addAll(at, moved);
+        HookStatus.bound(FamilyNames.VIDEO_DOWNLOAD, "post menu Download on the first page");
+        for (int i = 0; i < moved.size(); i++) HookStatus.counted(FamilyNames.VIDEO_DOWNLOAD, DOWNLOAD_MOVED);
     }
 
     /** How a holder of [holder]'s class is read, worked out once for the class. */

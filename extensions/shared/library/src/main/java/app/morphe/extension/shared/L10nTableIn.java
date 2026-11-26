@@ -2453,8 +2453,8 @@ final class L10nTableIn {
                 "Pindahkan cerita yang sudah dilihat ke akhir");
         table.put("Move the speaker above the three dots",
                 "Pindahkan speaker ke atas tiga titik");
-        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
-                "Memindahkan Unduh ke ponsel dan Simpan foto dari bagian bawah menu tiga titik sebuah kiriman ke awal daftar opsinya. Baris teratas milik Facebook tetap di atasnya (pada kiriman foto, daftarnya adalah halaman Opsi lainnya). Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.");
+        table.put("Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.",
+                "Memindahkan Unduh ke ponsel dan Simpan foto dari Opsi lainnya ke halaman pertama menu tiga titik sebuah kiriman, di atas Kecepatan putar. Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Memindahkan bilah tab Facebook ke bawah, dekat jempol, pada akun yang menampilkannya di atas. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",

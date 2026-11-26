@@ -2453,8 +2453,8 @@ final class L10nTablePt_rBR {
                 "Mover Stories vistos para o fim");
         table.put("Move the speaker above the three dots",
                 "Mover o alto-falante para cima dos tr\u00eas pontos");
-        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
-                "Move Baixar no celular e Salvar foto do final do menu de tr\u00eas pontos de uma publica\u00e7\u00e3o para o in\u00edcio da lista de op\u00e7\u00f5es. As linhas do topo do Facebook continuam acima delas (em publica\u00e7\u00f5es com fotos, a lista \u00e9 a p\u00e1gina Mais op\u00e7\u00f5es). Uma publica\u00e7\u00e3o sem nada para salvar n\u00e3o recebe nenhum dos dois.");
+        table.put("Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.",
+                "Move Baixar no celular e Salvar foto de Mais op\u00e7\u00f5es para a primeira p\u00e1gina do menu de tr\u00eas pontos de uma publica\u00e7\u00e3o, acima de Velocidade de reprodu\u00e7\u00e3o. Uma publica\u00e7\u00e3o sem nada para salvar n\u00e3o recebe nenhum dos dois.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Move a barra de abas do Facebook para baixo, ao alcance do polegar, nas contas que a mostram no alto. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",

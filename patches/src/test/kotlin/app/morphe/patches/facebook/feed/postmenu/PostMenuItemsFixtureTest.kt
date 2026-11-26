@@ -8,6 +8,8 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.comments.summaries.descriptor
+import app.morphe.patches.facebook.downloads.photo.downloadPhotoPatch
+import app.morphe.patches.facebook.downloads.video.downloadVideoPatch
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.isStringTable
@@ -300,6 +302,15 @@ class PostMenuItemsFixtureTest {
         assertTrue("the extension has no PostMenuItems.reelRows", hook != null)
         assertEquals("reelRows' shape", POST_MENU_REEL_ROWS, hook!!.descriptor())
         assertTrue("reelRows isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
+    }
+
+    /** #603: Download first's rows leave More options only through the sheet's hook. */
+    @Test
+    fun `the download patches bring the sheet's hook`() {
+        assertTrue("Download any video doesn't bring the post menu sheet's hook",
+            postMenuSheetHookPatch in downloadVideoPatch.dependencies)
+        assertTrue("Download any photo doesn't bring the post menu sheet's hook",
+            postMenuSheetHookPatch in downloadPhotoPatch.dependencies)
     }
 
     @Test

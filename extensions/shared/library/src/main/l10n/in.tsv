@@ -1989,8 +1989,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Menyembunyikan angka di samping ikon reaksi pada komentar. Ikonnya tetap ada, dan mengetuknya tetap membuka daftar reaksi.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Unduh di urutan pertama menu kiriman
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	Memindahkan Unduh ke ponsel dan Simpan foto dari bagian bawah menu tiga titik sebuah kiriman ke awal daftar opsinya. Baris teratas milik Facebook tetap di atasnya (pada kiriman foto, daftarnya adalah halaman Opsi lainnya). Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	Memindahkan Unduh ke ponsel dan Simpan foto dari Opsi lainnya ke halaman pertama menu tiga titik sebuah kiriman, di atas Kecepatan putar. Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	Ubin Menu yang disembunyikan
 # context: title of the list of Menu tiles to hide

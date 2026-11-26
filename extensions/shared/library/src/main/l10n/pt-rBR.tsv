@@ -1875,8 +1875,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Oculta o número ao lado dos ícones de reação de um comentário. Os ícones continuam lá, e tocar neles ainda abre a lista de reações.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Baixar primeiro nos menus de publicações
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	Move Baixar no celular e Salvar foto do final do menu de três pontos de uma publicação para o início da lista de opções. As linhas do topo do Facebook continuam acima delas (em publicações com fotos, a lista é a página Mais opções). Uma publicação sem nada para salvar não recebe nenhum dos dois.
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	Move Baixar no celular e Salvar foto de Mais opções para a primeira página do menu de três pontos de uma publicação, acima de Velocidade de reprodução. Uma publicação sem nada para salvar não recebe nenhum dos dois.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	Blocos do menu para ocultar
 # context: title of the list of Menu tiles to hide

@@ -2453,8 +2453,8 @@ final class L10nTableTr {
                 "\u0130zlenen hikayeleri sona ta\u015f\u0131");
         table.put("Move the speaker above the three dots",
                 "Hoparl\u00f6r\u00fc \u00fc\u00e7 noktan\u0131n \u00fcst\u00fcne ta\u015f\u0131");
-        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
-                "Telefona indir ve Foto\u011fraf\u0131 kaydet sat\u0131rlar\u0131n\u0131 bir g\u00f6nderinin \u00fc\u00e7 nokta men\u00fcs\u00fcn\u00fcn sonundan se\u00e7enekler listesinin ba\u015f\u0131na ta\u015f\u0131r. Facebook'un kendi \u00fcst sat\u0131rlar\u0131 bunlar\u0131n \u00fcst\u00fcnde kal\u0131r (foto\u011fraf g\u00f6nderilerinde liste Di\u011fer se\u00e7enekler sayfas\u0131d\u0131r). Kaydedilecek bir \u015fey olmayan g\u00f6nderide ikisi de g\u00f6r\u00fcnmez.");
+        table.put("Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.",
+                "Telefona indir ve Foto\u011fraf\u0131 kaydet sat\u0131rlar\u0131n\u0131 Di\u011fer se\u00e7enekler sayfas\u0131ndan bir g\u00f6nderinin \u00fc\u00e7 nokta men\u00fcs\u00fcn\u00fcn ilk sayfas\u0131na, Oynatma h\u0131z\u0131 sat\u0131r\u0131n\u0131n \u00fcst\u00fcne ta\u015f\u0131r. Kaydedilecek bir \u015fey olmayan g\u00f6nderide ikisi de g\u00f6r\u00fcnmez.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Sekme \u00e7ubu\u011funu \u00fcstte g\u00f6steren hesaplarda Facebook'un sekme \u00e7ubu\u011funu ba\u015fparma\u011f\u0131n\u0131z\u0131n eri\u015fece\u011fi alt k\u0131sma ta\u015f\u0131r. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",

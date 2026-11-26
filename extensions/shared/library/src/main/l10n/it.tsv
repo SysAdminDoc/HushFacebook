@@ -1989,8 +1989,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Nasconde il numero accanto alle icone delle reazioni di un commento. Le icone restano, e un tocco su di esse apre ancora l'elenco delle reazioni.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Scarica per primo nei menu dei post
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	Sposta Scarica sul telefono e Salva foto dalla fine del menu con i tre puntini di un post all'inizio del suo elenco di opzioni. Le prime righe di Facebook restano sopra (nei post con foto l'elenco è la pagina Altre opzioni). Un post senza niente da salvare non riceve nessuna delle due.
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	Sposta Scarica sul telefono e Salva foto da Altre opzioni alla prima pagina del menu con i tre puntini di un post, sopra Velocità di riproduzione. Un post senza niente da salvare non riceve nessuna delle due.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	Riquadri del Menu da nascondere
 # context: title of the list of Menu tiles to hide

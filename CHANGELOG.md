@@ -27,6 +27,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 ### Changed
 
 * Back in the Hushfacebook settings folds the section you have open and keeps its header where it was, and the next Back leaves. Before, Back closed the settings with a section still open. After `Show all settings as a list`, Back still leaves right away. (#604)
+* With `Download first in post menus` on, `Download to phone` and `Save photo` sit on the first page of a post's three-dot menu now, right above `Playback speed`. Facebook used to file them under More options on video and photo posts, so they took an extra tap. (#603)
 
 ### Fixed
 

@@ -2453,8 +2453,8 @@ final class L10nTableDe {
                 "Gesehene Stories ans Ende verschieben");
         table.put("Move the speaker above the three dots",
                 "Lautsprecher \u00fcber die drei Punkte setzen");
-        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
-                "Verschiebt Aufs Handy herunterladen und Foto speichern vom Ende des Drei-Punkte-Men\u00fcs eines Beitrags an den Anfang seiner Optionsliste. Facebooks eigene oberste Zeilen bleiben dar\u00fcber (bei Fotobeitr\u00e4gen ist die Liste die Seite Weitere Optionen). Ein Beitrag ohne speicherbare Inhalte bekommt keines von beiden.");
+        table.put("Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.",
+                "Verschiebt Aufs Handy herunterladen und Foto speichern aus Weitere Optionen auf die erste Seite des Drei-Punkte-Men\u00fcs eines Beitrags, \u00fcber Wiedergabegeschwindigkeit. Ein Beitrag ohne speicherbare Inhalte bekommt keines von beiden.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Verschiebt Facebooks Tab-Leiste nach unten, in Reichweite des Daumens, wenn sie bei deinem Konto oben steht. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",

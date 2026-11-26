@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.downloads.video.graphQlGetter
 import app.morphe.patches.facebook.downloads.video.postMenu
 import app.morphe.patches.facebook.downloads.video.postMenuHelper
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.postmenu.postMenuSheetHookPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -105,7 +106,9 @@ val downloadPhotoPatch = patch(
     default = true,
 ) {
     category("Downloads")
-    dependsOn(settingsPatch, facebookExtensionPatch, photoSearchProviderPatch, commentSheetDialogPatch)
+    // The post menu sheet's hook puts Download first's Save photo on the menu's first page (#603).
+    dependsOn(settingsPatch, facebookExtensionPatch, photoSearchProviderPatch, commentSheetDialogPatch,
+        postMenuSheetHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     executeBytecode {

@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.downloads.photo.commentSheetDialogPatch
 import app.morphe.patches.facebook.downloads.photo.commentSheetVideoRow
 import app.morphe.patches.facebook.downloads.story.rememberPlayerSources
 import app.morphe.patches.facebook.feed.addressed
+import app.morphe.patches.facebook.feed.postmenu.postMenuSheetHookPatch
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.switchTarget
 import app.morphe.patches.facebook.feed.tableStringAt
@@ -95,7 +96,8 @@ val downloadVideoPatch = patch(
     category("Downloads")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
-    dependsOn(facebookExtensionPatch, commentSheetDialogPatch)
+    // The post menu sheet's hook puts Download first's rows on the menu's first page (#603).
+    dependsOn(facebookExtensionPatch, commentSheetDialogPatch, postMenuSheetHookPatch)
 
     executeBytecode {
         val menu = postMenu()

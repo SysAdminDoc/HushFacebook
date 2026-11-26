@@ -1989,8 +1989,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	댓글의 감정 표현 아이콘 옆 숫자를 숨겨요. 아이콘은 그대로 남고, 탭하면 여전히 감정 표현 목록이 열려요.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	게시물 메뉴에서 다운로드를 맨 위로
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	게시물 점 3개 메뉴 끝에 있는 "휴대폰에 다운로드"와 "사진 저장"을 옵션 목록 맨 앞으로 옮겨요. Facebook 자체 상단 항목은 그 위에 남아요(사진 게시물에서는 "옵션 더 보기" 페이지가 목록이에요). 저장할 것이 없는 게시물에는 둘 다 표시되지 않아요.
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	"휴대폰에 다운로드"와 "사진 저장"을 "옵션 더 보기"에서 게시물 점 3개 메뉴의 첫 페이지, "재생 속도" 위로 옮겨요. 저장할 것이 없는 게시물에는 둘 다 표시되지 않아요.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	숨길 메뉴 타일
 # context: title of the list of Menu tiles to hide

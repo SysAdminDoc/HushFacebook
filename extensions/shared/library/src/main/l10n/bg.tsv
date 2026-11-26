@@ -1989,8 +1989,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Скрива числото до иконите на реакциите в коментара. Иконите остават и докосването им пак отваря списъка с реакции.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	„Изтегляне на телефона“ най-горе в менютата на публикациите
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	Премества „Изтегляне на телефона“ и „Запази снимката“ от края на менюто с три точки на публикацията в началото на списъка с опции. Горните редове на Facebook остават над тях (при публикации със снимки списъкът е страницата „Още опции“). Публикация, в която няма какво да се запази, не получава нито един от двата.
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	Премества „Изтегляне на телефона“ и „Запази снимката“ от „Още опции“ на първата страница на менюто с три точки на публикацията, над „Скорост на възпроизвеждане“. Публикация, в която няма какво да се запази, не получава нито един от двата.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	Плочки от менюто за скриване
 # context: title of the list of Menu tiles to hide

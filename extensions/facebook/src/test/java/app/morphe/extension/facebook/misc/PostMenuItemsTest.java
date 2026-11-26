@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
+import app.morphe.extension.facebook.download.MenuTopForTests;
 import app.morphe.extension.facebook.media.PostMenuSpeed;
 import app.morphe.extension.facebook.media.ReelSpeedForTests;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -44,7 +45,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Post menu items and the first page's Playback speed: the sheet's holder loses the rows of every
  * picked kind, in its lists and its rows of their own, the kinds a menu shows are written down, and
  * Keep the reel speed's row moves from More options to the end of the first page when its switch is
- * on. Off, paused, with nothing picked or with a holder of another shape, the sheet stays Facebook's.
+ * on, with Download first's rows above it (#603). Off, paused, with nothing picked or with a holder
+ * of another shape, the sheet stays Facebook's.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -110,6 +112,8 @@ public class PostMenuItemsTest {
     private final Row cast = new Row("Cast", Kind.CAST);
     private final Row why = new Row("Why am I seeing this post?", Kind.WAIST);
     private final Row speed = new Row("Playback speed", null);
+    private final Row download = new Row("Download to phone", null);
+    private final Row openElsewhere = new Row("Open in another app", null);
 
     private Sheet sheet() {
         Sheet sheet = new Sheet();
@@ -118,6 +122,13 @@ public class PostMenuItemsTest {
         sheet.A02 = manage;
         sheet.A08.addAll(Arrays.asList(save, report));
         sheet.A07.addAll(Arrays.asList(cast, why, speed));
+        return sheet;
+    }
+
+    /** A video post's sheet with Download first on: its rows have no kind, so they lead More options. */
+    private Sheet downloadSheet() {
+        Sheet sheet = sheet();
+        sheet.A07.addAll(0, Arrays.asList(download, openElsewhere));
         return sheet;
     }
 
@@ -133,8 +144,10 @@ public class PostMenuItemsTest {
         Settings.SEEN_POST_MENU_ITEMS.resetToDefault();
         Settings.POST_MENU_SPEED.resetToDefault();
         Settings.POST_MENU_SPEED_ON_TOP.resetToDefault();
+        Settings.POST_MENU_DOWNLOAD_FIRST.resetToDefault();
         PostMenuItems.forgetForTests();
         ReelSpeedForTests.forgetPostMenuRows();
+        MenuTopForTests.forget();
         HookStatus.clear();
         FeedFilterCounters.clear();
     }
@@ -303,6 +316,63 @@ public class PostMenuItemsTest {
         PauseForTests.resume();
         arrange(sheet);
         assertEquals("the control: running, it moves", Arrays.asList(cast, why), sheet.A07);
+    }
+
+    /** #603: Download first's rows leave More options for the first page, right above Playback speed. */
+    @Test
+    public void downloadFirstMovesItsRowsOutOfMoreOptionsAbovePlaybackSpeed() {
+        Settings.POST_MENU_SPEED.save(true);
+        PostMenuSpeed.remember(speed);
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        MenuTopForTests.putOnTop(download);
+        MenuTopForTests.putOnTop(openElsewhere);
+        Sheet sheet = downloadSheet();
+        arrange(sheet);
+        assertEquals(Arrays.asList(save, report, download, openElsewhere, speed), sheet.A08);
+        assertEquals(Arrays.asList(cast, why), sheet.A07);
+        String line = statusLine(FamilyNames.VIDEO_DOWNLOAD);
+        assertNotNull(String.join("\n", HookStatus.report()), line);
+        assertTrue(line, line.contains(PostMenuItems.DOWNLOAD_MOVED + " 2"));
+
+        arrange(sheet);
+        assertEquals("a second pass moved them again", Arrays.asList(save, report, download, openElsewhere, speed),
+                sheet.A08);
+    }
+
+    @Test
+    public void withoutPlaybackSpeedOnTheFirstPageDownloadGoesAtItsEnd() {
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        MenuTopForTests.putOnTop(download);
+        Sheet sheet = downloadSheet();
+        arrange(sheet);
+        assertEquals(Arrays.asList(save, report, download), sheet.A08);
+        assertEquals("a row Download first didn't put on top stays", Arrays.asList(openElsewhere, cast, why, speed),
+                sheet.A07);
+    }
+
+    @Test
+    public void offPausedOrForAnotherRowDownloadStaysUnderMoreOptions() {
+        MenuTopForTests.putOnTop(download);
+        assertFalse("the switch starts off", Settings.POST_MENU_DOWNLOAD_FIRST.get());
+        Sheet sheet = downloadSheet();
+        arrange(sheet);
+        assertEquals(Arrays.asList(download, openElsewhere, cast, why, speed), sheet.A07);
+
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        MenuTopForTests.forget();
+        MenuTopForTests.putOnTop(new Row("Download to phone", null));
+        arrange(sheet);
+        assertEquals("a row with the same title isn't the one added",
+                Arrays.asList(download, openElsewhere, cast, why, speed), sheet.A07);
+
+        MenuTopForTests.putOnTop(download);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        arrange(sheet);
+        assertEquals(Arrays.asList(download, openElsewhere, cast, why, speed), sheet.A07);
+        PauseForTests.resume();
+        arrange(sheet);
+        assertEquals("the control: running, it moves", Arrays.asList(save, report, download), sheet.A08);
+        assertEquals(Arrays.asList(openElsewhere, cast, why, speed), sheet.A07);
     }
 
     @Test

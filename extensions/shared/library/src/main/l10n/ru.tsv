@@ -2033,8 +2033,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	Скрывает число рядом со значками реакций у комментария. Значки остаются, и нажатие на них по-прежнему открывает список реакций.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Перемещать скачивание в начало меню публикаций
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	Перемещает пункты «Скачать на телефон» и «Сохранить фото» из конца меню публикации (три точки) в начало списка параметров. Собственные верхние пункты Facebook остаются выше них (в публикациях с фото список находится на странице «Дополнительные параметры»). Если сохранять нечего, эти пункты не отображаются.
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	Перемещает пункты «Скачать на телефон» и «Сохранить фото» со страницы «Дополнительные параметры» на первую страницу меню публикации (три точки), над пунктом «Скорость воспроизведения». Если сохранять нечего, эти пункты не отображаются.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	Плитки меню для скрытия
 # context: title of the list of Menu tiles to hide

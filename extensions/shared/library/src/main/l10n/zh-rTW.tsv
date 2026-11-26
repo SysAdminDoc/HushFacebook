@@ -1991,8 +1991,8 @@ Hides the stacked reaction icons in the corner of a comment. The space stays, so
 Hides the number next to the reaction icons on a comment. The icons stay, and a tap on them still opens the list of reactions.	隱藏留言心情圖示旁的數字。圖示仍會保留，點按它們仍可開啟心情清單。
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	在貼文選單優先顯示下載
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
-Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	將「下載到手機」與「儲存相片」從貼文三點選單的選項清單結尾移至開頭。Facebook 原有的頂端項目仍位於其上方（相片貼文的清單位於「更多選項」頁面）。沒有可儲存內容的貼文不會顯示這兩項。
+# context: summary of that switch; "Download to phone", "Save photo" and "Playback speed" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.	將「下載到手機」與「儲存相片」從「更多選項」移至貼文三點選單的第一頁，放在「播放速度」上方。沒有可儲存內容的貼文不會顯示這兩項。
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	要隱藏的選單方塊
 # context: title of the list of Menu tiles to hide

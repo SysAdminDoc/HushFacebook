@@ -2453,8 +2453,8 @@ final class L10nTableFr {
                 "D\u00e9placer les stories vues \u00e0 la fin");
         table.put("Move the speaker above the three dots",
                 "D\u00e9placer le son au-dessus des trois points");
-        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
-                "D\u00e9place T\u00e9l\u00e9charger sur le t\u00e9l\u00e9phone et Enregistrer la photo de la fin du menu \u00e0 trois points d'une publication au d\u00e9but de sa liste d'options. Les premi\u00e8res lignes de Facebook restent au-dessus (sur les publications avec photo, la liste est la page Plus d'options). Une publication sans rien \u00e0 enregistrer n'a ni l'un ni l'autre.");
+        table.put("Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.",
+                "D\u00e9place T\u00e9l\u00e9charger sur le t\u00e9l\u00e9phone et Enregistrer la photo de Plus d'options vers la premi\u00e8re page du menu \u00e0 trois points d'une publication, au-dessus de Vitesse de lecture. Une publication sans rien \u00e0 enregistrer n'a ni l'un ni l'autre.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Place la barre d'onglets de Facebook en bas, \u00e0 port\u00e9e de pouce, sur les comptes qui l'affichent en haut. Red\u00e9marrez Facebook pour voir le changement.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",

@@ -2453,8 +2453,8 @@ final class L10nTableIt {
                 "Sposta in fondo le storie gi\u00e0 viste");
         table.put("Move the speaker above the three dots",
                 "Sposta l'audio sopra i tre puntini");
-        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
-                "Sposta Scarica sul telefono e Salva foto dalla fine del menu con i tre puntini di un post all'inizio del suo elenco di opzioni. Le prime righe di Facebook restano sopra (nei post con foto l'elenco \u00e8 la pagina Altre opzioni). Un post senza niente da salvare non riceve nessuna delle due.");
+        table.put("Moves Download to phone and Save photo out of More options onto the first page of a post's three-dot menu, above Playback speed. A post with nothing to save gets neither.",
+                "Sposta Scarica sul telefono e Salva foto da Altre opzioni alla prima pagina del menu con i tre puntini di un post, sopra Velocit\u00e0 di riproduzione. Un post senza niente da salvare non riceve nessuna delle due.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Sposta la barra delle schede di Facebook in basso, a portata di pollice, sugli account che la mostrano in alto. Riavvia Facebook per vedere la modifica.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
