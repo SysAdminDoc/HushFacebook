@@ -6,13 +6,18 @@ package app.morphe.patches.facebook.comments.fullheight
 
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patches.facebook.ads.sponsoredprofile.SPONSORED_DATA_FIELD
+import app.morphe.patches.facebook.ads.sponsoredprofile.SPONSORED_DATA_TYPE
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.GRAPHQL_STORY
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.storyModelAccessors
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
@@ -55,7 +60,10 @@ import java.io.File
  * extension in between, ending the setup on a yes and landing a no on Facebook's comparison.
  * The reel description's click handler reads one boolean server gate before its comments tap and
  * tests it right away, and the hook hands that answer to the extension in between and puts the
- * reply back in the register Facebook tests (#269). Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * reply back in the register Facebook tests (#269). The split screen's two gates, one for the
+ * Comment buttons and one for the comment bars, read the story's ad data and test it right away,
+ * and the hook hands what was read to the extension in between and puts the answer back in the
+ * register tested (#586). Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FullHeightCommentsFixtureTest {
     private fun bundles(check: (File) -> Unit) {
@@ -358,6 +366,50 @@ class FullHeightCommentsFixtureTest {
         assertEquals("$where: and Facebook tests that", Opcode.IF_EQZ, patched[at + 2].opcode)
         assertEquals("$where: Facebook's code stays", original.map { it.opcode },
             patched.filterIndexed { index, _ -> index !in at until at + 2 }.map { it.opcode })
+    }
+
+    private fun adGates(bundle: File) {
+        val story = FixtureDex.classes(bundle, setOf(GRAPHQL_STORY)).values.single()
+        val sponsored = storyModelAccessors(story, SPONSORED_DATA_FIELD, SPONSORED_DATA_TYPE).single()
+        val holding = holders(bundle, SPLIT_SCREEN_GATE).flatMap { methodsHolding(it, SPLIT_SCREEN_GATE) }.distinctBy { it.descriptor() }
+        val gates = sponsoredGates(holders(bundle, SPLIT_SCREEN_GATE), sponsored)
+        assertEquals("${bundle.name}: split-screen gates, the Comment buttons' and the comment bars'", 2, gates.size)
+        assertTrue("${bundle.name}: every method holding the gate's reason passed, so the check proves nothing", holding.size > gates.size)
+        for (gate in gates) {
+            val where = "${bundle.name}: ${gate.method.descriptor()}"
+            val code = gate.method.implementation!!.instructions.toList()
+            val at = gate.index
+            val read = (code[at - 2] as ReferenceInstruction).reference as MethodReference
+            assertEquals("$where: the ad check reads the story's sponsored data", sponsored.descriptor(), read.descriptor())
+            assertEquals("$where: what it read is kept", Opcode.MOVE_RESULT_OBJECT, code[at - 1].opcode)
+            assertEquals("$where: in the hook's register", gate.register, (code[at - 1] as OneRegisterInstruction).registerA)
+            val test = (at until code.size).first { code[it].opcode == Opcode.IF_EQZ || code[it].opcode == Opcode.IF_NEZ }
+            assertEquals("$where: and tested", gate.register, (code[test] as OneRegisterInstruction).registerA)
+            assertTrue("$where: past only constants", (at until test).all { code[it].opcode in setOf(Opcode.CONST, Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST_HIGH16) })
+
+            val owner = FixtureDex.classes(bundle, setOf(gate.method.definingClass)).values.single()
+            val context = PatchContexts.of(listOf(owner))
+            val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == gate.method.descriptor() }
+            val original = method.implementation!!.instructions.toList()
+            method.splitScreenForAds(gate)
+            val patched = method.implementation!!.instructions.toList()
+            assertEquals("$where gains two instructions", original.size + 2, patched.size)
+            assertEquals("$where: the read keeps its result", Opcode.MOVE_RESULT_OBJECT, patched[at - 1].opcode)
+            assertEquals("$where: the extension is asked next", Opcode.INVOKE_STATIC_RANGE, patched[at].opcode)
+            assertEquals("$where: the extension is asked next", SPONSORED_GATE, patched[at].reference())
+            val call = patched[at] as RegisterRangeInstruction
+            assertEquals("$where: with what was read", listOf(gate.register, 1), listOf(call.startRegister, call.registerCount))
+            assertEquals("$where: its answer goes back", Opcode.MOVE_RESULT_OBJECT, patched[at + 1].opcode)
+            assertEquals("$where: into the register read", gate.register, (patched[at + 1] as OneRegisterInstruction).registerA)
+            assertEquals("$where: which Facebook tests", gate.register, (patched[test + 2] as OneRegisterInstruction).registerA)
+            assertEquals("$where: Facebook's code stays", original.map { it.opcode },
+                patched.filterIndexed { index, _ -> index !in at until at + 2 }.map { it.opcode })
+        }
+    }
+
+    @Test
+    fun `each declared build hands what the split screen's gates read about an ad to the extension`() = bundles { bundle ->
+        adGates(bundle)
     }
 
     @Test

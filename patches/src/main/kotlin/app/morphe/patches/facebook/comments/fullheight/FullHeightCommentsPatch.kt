@@ -13,13 +13,17 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.patch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.ads.sponsoredprofile.SPONSORED_DATA_FIELD
+import app.morphe.patches.facebook.ads.sponsoredprofile.SPONSORED_DATA_TYPE
 import app.morphe.patches.facebook.comments.summaries.descriptor
+import app.morphe.patches.facebook.feed.GRAPHQL_STORY
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.storyModelAccessors
 import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -33,6 +37,7 @@ import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.executeBytecode
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -115,6 +120,10 @@ internal const val DESCRIPTION_OPENS_COMMENTS = "$FULL_HEIGHT_COMMENTS->descript
 internal const val FILLS_SCREEN = "$FULL_HEIGHT_COMMENTS->fillsScreen(F)Z"
 internal const val WATCH_HEADER = "$FULL_HEIGHT_COMMENTS->watchHeader(Landroid/view/View;IZ)V"
 internal const val TAP_THROUGH = "$FULL_HEIGHT_COMMENTS->tapThrough(Landroid/app/Dialog;I)Z"
+internal const val SPONSORED_GATE = "$FULL_HEIGHT_COMMENTS->sponsoredGate(Ljava/lang/Object;)Ljava/lang/Object;"
+
+/** The reason the split screen's gates log for a surface they keep out, held by each of them. */
+internal const val SPLIT_SCREEN_GATE = "Split screen only resizes the Tab and VDD host players; other surfaces stay off"
 
 /** The window a popover fragment sets up, the one parameter of [SIMPLE_POPOVER]'s dialog setup. */
 private const val DIALOG = "Landroid/app/Dialog;"
@@ -151,6 +160,16 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * moment later (#501). It's the one instance boolean method of that class taking a [SPLIT_SCREEN_VIEW]
  * and a Function0, and all six of its callers open the regular sheet (`LX/0OoH;->A01`) on a no or
  * hand the no back to a caller that does. It's hooked the same way as the five.
+ *
+ * Facebook kept ads out of the split screen (#586). Before the video shrinks, the Comment buttons
+ * ask one gate (588 arm64 `LX/0QSU;->A07`, from the Reels tab's `LX/0A7e`, feed videos' `LX/09Hg`
+ * and the video page's `LX/0Db1`) and the comment bars another of the same shape (`A08`). Each is
+ * a static boolean method holding [SPLIT_SCREEN_GATE] and taking the post's story first, reads the
+ * story's `sponsored_data` and checks one pair of server flags for an ad and another for the rest.
+ * On the S22 the ad pair was off and the other on, so an ad reel's comments opened in the regular
+ * sheet over the reel while every other reel's opened in the split screen. Right after the read the
+ * extension is handed what was read, and its answer goes back into the same register: null at
+ * Facebook's height, so an ad is checked against the other pair, and what was read otherwise.
  *
  * A tap on a feed video reel's description (585 `LX/0dPx;->A00`, the click handler of
  * `FbShortsViewerDescriptionComponentSpec`) reads a server gate, and when it's open tries the split
@@ -198,7 +217,8 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * did the same itself, ends the setup there. A Tap a reel above its comments switch of its own
  * drives it, and with full height on the setup never gets that far.
  *
- * In the default selection with its switches off, so nothing changes until one is turned on.
+ * In the default selection with its switches off. Until one is turned on, the only change is that
+ * an ad's comments open in the split screen like any other reel's.
  */
 @Suppress("unused")
 val fullHeightCommentsPatch = patch(
@@ -237,12 +257,21 @@ val fullHeightCommentsPatch = patch(
         val tapThrough = tapThroughSite(listOf(popover, ufiPopover))
         val tapTables = holders(DESCRIPTION_TAP).associateBy { it.type }
         val description = descriptionGate(holders(DESCRIPTION_SPLIT)) { call -> tapTables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val story = classDefByOrNull(GRAPHQL_STORY) ?: refuse("$GRAPHQL_STORY isn't in this build")
+        val sponsoredReads = storyModelAccessors(story, SPONSORED_DATA_FIELD, SPONSORED_DATA_TYPE)
+        val sponsored = sponsoredReads.singleOrNull()
+            ?: refuse("expected one accessor of $GRAPHQL_STORY's $SPONSORED_DATA_FIELD as $SPONSORED_DATA_TYPE, found ${sponsoredReads.size}")
+        val adGates = sponsoredGates(holders(SPLIT_SCREEN_GATE), sponsored)
 
         mutableClassDefBy(POPOVER_PARAMS).methods.single { it.descriptor() == sheet.descriptor() }
             .raiseSheet(height)
         for (launcher in launchers) {
             mutableClassDefBy(launcher.definingClass).methods.single { it.descriptor() == launcher.descriptor() }
                 .skipSplitScreen()
+        }
+        for (gate in adGates) {
+            mutableClassDefBy(gate.method.definingClass).methods.single { it.descriptor() == gate.method.descriptor() }
+                .splitScreenForAds(gate)
         }
         mutableClassDefBy(description.method.definingClass).methods.single { it.descriptor() == description.method.descriptor() }
             .keepDescriptionInPlace(description)
@@ -710,6 +739,74 @@ internal fun MutableMethod.keepDescriptionInPlace(gate: DescriptionGate) {
         """
             invoke-static/range { v${gate.register} .. v${gate.register} }, $DESCRIPTION_OPENS_COMMENTS
             move-result v${gate.register}
+        """,
+    )
+}
+
+/**
+ * Where a split-screen gate has read whether its post is an ad: instruction [index] of [method],
+ * right after the `move-result-object` that keeps the story's `sponsored_data` in [register].
+ */
+internal data class SponsoredGate(val method: Method, val index: Int, val register: Int)
+
+/** Whether [method] could be a split-screen gate: static, answering a boolean, taking the post's story first. */
+internal fun isStoryGate(method: Method) = AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Z" &&
+    method.parameterTypes.firstOrNull()?.toString() == GRAPHQL_STORY
+
+private val NULL_TESTS = setOf(Opcode.IF_EQZ, Opcode.IF_NEZ)
+
+/**
+ * The split-screen gates that check ads apart (#586): the methods holding [SPLIT_SCREEN_GATE] that
+ * could be gates ([isStoryGate]; 588 arm64 `LX/0QSU;->A07` and `A08`). The other methods holding it
+ * take no story. Each gate's read of [sponsored] is found by [sponsoredGate].
+ */
+internal fun sponsoredGates(holders: List<ClassDef>, sponsored: Method): List<SponsoredGate> {
+    val gates = holders.flatMap { methodsHolding(it, SPLIT_SCREEN_GATE) }.filter(::isStoryGate).distinctBy { it.descriptor() }
+    if (gates.isEmpty()) refuse("no static boolean method taking $GRAPHQL_STORY first holds \"$SPLIT_SCREEN_GATE\"")
+    return gates.map { sponsoredGate(it, sponsored) }
+}
+
+/**
+ * Where [method] reads whether its post is an ad: its one call of the story's `sponsored_data`
+ * accessor [sponsored], kept by a `move-result-object` and tested by an `if-eqz` or `if-nez`, with
+ * only constants into other registers between. Nothing else may jump to the instruction after the
+ * read, where the hook goes, and nothing may read the register past its test, since the extension's
+ * answer is a plain object.
+ */
+internal fun sponsoredGate(method: Method, sponsored: Method): SponsoredGate {
+    val code = method.implementation?.instructions?.toList() ?: refuse("${method.descriptor()} has no code")
+    val reads = code.indices.filter { ((code[it] as? ReferenceInstruction)?.reference as? MethodReference)?.descriptor() == sponsored.descriptor() }
+    val read = reads.singleOrNull() ?: refuse("expected ${method.descriptor()} to call ${sponsored.descriptor()} once, found ${reads.size}")
+    val result = code.getOrNull(read + 1)
+    if (result?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse("${method.descriptor()} doesn't keep what ${sponsored.name} answers")
+    val register = (result as OneRegisterInstruction).registerA
+    val index = read + 2
+    val flow = ControlFlow.of(method)
+    var test = index
+    while (test < code.size && code[test].opcode in CONSTS && (code[test] as OneRegisterInstruction).registerA != register &&
+        flow.normal[test] == listOf(test + 1)
+    ) test++
+    val tested = code.getOrNull(test)
+    if (tested?.opcode !in NULL_TESTS || (tested as OneRegisterInstruction).registerA != register) {
+        refuse("${method.descriptor()} doesn't test what ${sponsored.name} answers right away")
+    }
+    val jumps = flow.instructions.indices.filter { it != index - 1 && (index in flow.normal[it] || index in flow.exceptional[it]) }
+    if (jumps.isNotEmpty()) refuse("${method.descriptor()} jumps past its ad check's read from ${jumps.joinToString()}")
+    val liveness = RegisterLiveness.of(method)
+    if (flow.normal[test].any { register in liveness.liveInto(it) }) refuse("${method.descriptor()} reads v$register after its ad check")
+    return SponsoredGate(method, index, register)
+}
+
+/**
+ * Where [gate] says a split-screen gate has read whether its post is an ad: hand the extension what
+ * was read and keep its answer in the same register. The call takes it as a range, so any register works.
+ */
+internal fun MutableMethod.splitScreenForAds(gate: SponsoredGate) {
+    addInstructions(
+        gate.index,
+        """
+            invoke-static/range { v${gate.register} .. v${gate.register} }, $SPONSORED_GATE
+            move-result-object v${gate.register}
         """,
     )
 }

@@ -31,6 +31,7 @@ import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.HushfacebookPause;
 
 /**
  * Open comments at full height (#179): the comment sheet fills the screen instead of opening part
@@ -52,6 +53,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Each already answers no when its server gate is off, and the button then opens the regular
  * sheet. The patch asks {@link #skipSplitScreen} first in each, so with the switch on they answer
  * no and the regular sheet, at full height, opens instead.
+ *
+ * <p>Facebook kept ads out of the split screen (#586). Before a Comment button or a comment bar
+ * shrinks the video, it asks a gate that reads whether the post is an ad and checks one pair of
+ * server flags for an ad and another for every other post. The ad pair was off, so an ad reel's
+ * comments opened in the regular sheet over the video. The patch hands {@link #sponsoredGate} what
+ * the gate read, and at Facebook's height it comes back empty, so an ad is checked like the rest.
  *
  * <p>A tap on a feed video reel's description goes through one of those launchers too, behind a
  * server gate, and falls back to the regular sheet when it answers no, so with the switch on "more"
@@ -106,6 +113,12 @@ public final class FullHeightComments {
 
     /** What the report counts each time the split screen is passed over for the regular sheet. */
     static final String SPLIT_SCREEN_SKIPPED = "Split screen passed over";
+
+    /** The member the report names once a split-screen gate has asked whether its post is an ad. */
+    static final String SPONSORED = "split screen on ads";
+
+    /** What the report counts each time an ad is checked for the split screen like any other post. */
+    static final String SPONSORED_SPLIT = "Ad's comments opened in the split screen";
 
     /** The member the report names once a reel description's tap has asked whether it opens the comments. */
     static final String DESCRIPTION = "reel description tap";
@@ -199,6 +212,29 @@ public final class FullHeightComments {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "split screen", failure);
             return false;
+        }
+    }
+
+    /**
+     * The hook, where a split-screen gate has read whether its post is an ad, handed what it read
+     * (#586). For an ad Facebook checks server flags that were off, so an ad's comments opened in
+     * the regular sheet over the video while every other reel's opened in the split screen. While
+     * Open comments at is left at Facebook's height, null comes back, so the gate checks the flags
+     * every other post gets and an ad opens like the rest. At full or half height every launcher
+     * passes the split screen over anyway, so what was read comes back, as it does paused, before
+     * the settings are ready and on a throw.
+     */
+    @Nullable
+    public static Object sponsoredGate(@Nullable Object sponsored) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, SPONSORED);
+            if (sponsored == null || !Utils.settingsReady() || HushfacebookPause.isPaused() || resized()) return sponsored;
+            HookStatus.counted(FAMILY, SPONSORED_SPLIT);
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, SPONSORED, failure);
+            return sponsored;
         }
     }
 
