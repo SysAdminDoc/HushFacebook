@@ -2156,6 +2156,27 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #609 from Facebook 588: the Messenger Send message bar some posts get after a short stop on them is a plugin of the post call-to-action selector, named in its table like Meta AI's question chips. The patch finds the table by the plugin's name and the selector's check through the methods naming its socket, and first thing in that check the plugin's name goes to the extension, which answers no for the Send message plugin while Hide Send message under posts is on, so the post goes on to its next button."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AppIcon.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/PickAppIconPatch.kt"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/HushGram",
+      "commit": "6f2f0a7c585e6aae586c1eb9850dd2b42ac1a3bb",
+      "via": [],
+      "license": "GPL-3.0-only",
+      "changes": "Ported from HushGram's Pick the app icon (PickAppIconPatch.kt, AppIcons.kt and AppIcon.java) for issue #467: one disabled launcher alias per icon, and the choice swapped in when the app goes to the background. Here the icons are the one Icon style drew, Facebook's own, Hushfacebook's logo in color, white on black or black on white, and Facebook's \"f\" in white on black or black on white, drawn after Icon style so its picture stays the patched one. Facebook's own component manager calls go through AppIcon so it can't turn its launcher entry back on, except Audience Network's setup, which Disable Audience Network routes itself."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AppIconChoice.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #467: the App icon row's choices and the alias each one turns on, with the patched icon as the default until one is picked."
     }
   ]
 }

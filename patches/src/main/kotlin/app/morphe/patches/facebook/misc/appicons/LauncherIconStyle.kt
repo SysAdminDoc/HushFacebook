@@ -36,8 +36,8 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 
 private const val OPTION = "Hushfacebook settings, Icon style"
-private const val ADAPTIVE_ICON = "adaptive-icon"
-private const val VECTOR = "vector"
+internal const val ADAPTIVE_ICON = "adaptive-icon"
+internal const val VECTOR = "vector"
 private const val MONOCHROME = "monochrome"
 private const val FILL_COLOR = "android:fillColor"
 private const val STROKE_COLOR = "android:strokeColor"
@@ -225,6 +225,33 @@ internal fun drawHushfacebookIcon(icon: Document, style: LauncherIconStyle = Lau
     restyleLauncherIcon(icon, null, style)
 }
 
+/**
+ * Facebook's launcher icon file as it was before this run's Icon style drew over it, by its decoded
+ * path, or null when the option left the icon alone. Pick the app icon's Facebook choice copies it
+ * (#467). [launcherIconPatch] is a dependency of the settings patch, so it runs before every patch
+ * that reads this, and it clears this first on each run, so a refusal never leaves an older run's.
+ */
+internal object PristineLauncherIcon {
+    @Volatile var path: String? = null
+        private set
+
+    @Volatile var xml: String? = null
+        private set
+
+    internal fun clear() {
+        path = null
+        xml = null
+    }
+
+    internal fun remember(path: String, xml: String) {
+        this.xml = xml
+        this.path = path
+    }
+
+    /** The icon file at [path] as it was before Icon style drew over it: the copy kept for it, else [current]. */
+    internal fun before(path: String, current: () -> String): String = xml?.takeIf { this.path == path } ?: current()
+}
+
 private fun Element.drawInline(drawable: Element) {
     removeAttribute("android:drawable")
     while (firstChild != null) removeChild(firstChild)
@@ -245,6 +272,7 @@ internal fun launcherIconPatch(
     // Built in a function, so the block is written here to carry this file's name (see PatchBodies.kt).
     execute {
         onResources {
+            PristineLauncherIcon.clear()
             val style = pickedIconStyle(iconStyle()) ?: LauncherIconStyle.FACEBOOK
             val background = pickedIconBackground(iconBackground())
             val picture = launcherPicture(iconPicture())
@@ -273,6 +301,7 @@ internal fun launcherIconPatch(
             // One unscaled file: the launcher scales the layer to its icon size on every screen, and
             // Morphe Manager patches on the phone, where there's no image library to resize it with.
             if (picture != null && pictureFile != null) pictureFile.apply { parentFile.mkdirs() }.writeBytes(picture.bytes)
+            PristineLauncherIcon.remember(iconPath, get(iconPath).readText())
             document(iconPath).use { restyleLauncherIcon(it, vector, style, pictureReference, background) }
             val drawn = if (picture != null) "your ${picture.side} px picture" else style.label.lowercase()
             patchLog.info("$OPTION: the home screen icon is $drawn" + (background?.let { " on $it" } ?: "") + " ($iconPath).")

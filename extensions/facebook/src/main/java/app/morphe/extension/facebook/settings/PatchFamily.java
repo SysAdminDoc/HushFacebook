@@ -269,6 +269,8 @@ public enum PatchFamily {
             Settings.TURN_OFF_SCREEN_TRANSITIONS),
     // No switch: the typed text is the choice, and Pause makes it read blank, Facebook's wordmark.
     HEADER_TEXT(FamilyNames.HEADER_TEXT, "headerText", Settings.HEADER_TEXT),
+    // No switch: a pause leaves the home screen icon as it was picked, like the one Morphe drew.
+    APP_ICON(FamilyNames.APP_ICON, "appIcon", FamilyNames.APP_ICON),
     EXTERNAL_BROWSER(FamilyNames.EXTERNAL_BROWSER, "externalBrowser", null,
             Settings.OPEN_LINKS_EXTERNALLY, Settings.HOLD_LINK_HISTORY),
     SANITIZE_SHARING_LINKS(FamilyNames.SANITIZE_SHARING_LINKS, "sanitizeSharingLinks", null,

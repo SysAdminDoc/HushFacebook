@@ -190,6 +190,9 @@ public class SettingsBackupTest {
                 "it records the last chat this install opened, which the hook writes, not a choice.");
         out.put("hushfacebook_reset_undo",
                 "it is the settings file Undo the reset puts back, which Reset settings writes, not a choice.");
+        out.put("hushfacebook_app_icon",
+                "it picks this phone's home screen icon (#467), which a settings file opened on another phone would swap "
+                        + "the next time Facebook goes to the background, without anyone picking it there.");
         return Collections.unmodifiableMap(out);
     }
 

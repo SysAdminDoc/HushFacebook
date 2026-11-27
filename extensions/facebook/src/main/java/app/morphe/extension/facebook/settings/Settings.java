@@ -3720,6 +3720,16 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_header_picture", "");
 
     /**
+     * The icon on the home screen and in the app drawer ({@link
+     * app.morphe.extension.facebook.misc.AppIcon}, #467): the one Morphe drew when you patched, or one
+     * of the patch's own. It changes once Facebook goes to the background, and a pause leaves it as
+     * it is, so it isn't a switch. Like the Icon style Morphe drew, it belongs to this install, so a
+     * settings file leaves it out.
+     */
+    public static final EnumSetting<app.morphe.extension.facebook.misc.AppIconChoice> APP_ICON =
+            new EnumSetting<>("hushfacebook_app_icon", app.morphe.extension.facebook.misc.AppIconChoice.AS_PATCHED);
+
+    /**
      * The strip some posts carry ("Are you interested in this post?", "Show less", who recently
      * commented, follow and chat suggestions) goes, and so does the room kept for it
      * ({@link app.morphe.extension.facebook.feed.PostPrompts}). A change shows on the posts drawn
@@ -4312,6 +4322,9 @@ public class Settings extends BaseSettings {
         // The launcher shortcut, the logo's long press and the Menu row are ways back to the settings
         // screen, where a pause is lifted, so a pause neither brings them back nor takes them away (#146).
         Setting.keepWhenPaused(SETTINGS_SHORTCUT, SETTINGS_LOGO_PRESS, SETTINGS_MENU_ROW);
+        // The home screen icon is how Facebook is found, like the one Morphe drew, which a pause
+        // leaves too (#467).
+        Setting.keepWhenPaused(APP_ICON);
     }
 
     /**

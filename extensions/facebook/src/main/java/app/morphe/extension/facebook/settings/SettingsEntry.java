@@ -62,6 +62,7 @@ import app.morphe.extension.facebook.media.ResumePlayback;
 import app.morphe.extension.facebook.menu.MenuLayoutDump;
 import app.morphe.extension.facebook.media.TapToPlay;
 import app.morphe.extension.facebook.media.VideoBuffer;
+import app.morphe.extension.facebook.misc.AppIcon;
 import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
@@ -202,6 +203,8 @@ public final class SettingsEntry {
             // Hide the video comment box: the seek bar goes down only in the Shorts viewer's screen (#552).
             if (SettingsStatus.commentSheetOptions()) CommentSheetOptions.watch(context);
             watchLauncherChanges(context);
+            // Pick the app icon (#467): the picked icon goes on when Facebook goes to the background.
+            if (SettingsStatus.appIcon()) AppIcon.install(context);
             TextSize.application(context);
             // Only with the theme in the build and switched on, so its class and palette aren't loaded otherwise.
             if (MaterialYouSwitch.on()) MaterialYouTheme.watchWindows(context);

@@ -7,6 +7,7 @@
 package app.morphe.extension.facebook.settings;
 
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.backgroundSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.appIconSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInWaitSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.cleanReturnSummary;
@@ -75,6 +76,7 @@ import androidx.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import app.morphe.extension.facebook.misc.AppIconChoice;
 import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
@@ -1706,6 +1708,42 @@ final class ValueRows {
                 if (candidate.name().equals(getValue())) mode = candidate;
             }
             setSummary(burnInSummary(mode));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** The App icon row (#467). Its summary follows its value, whoever sets it. */
+    static final class AppIconRow extends PlainSummaryList {
+        AppIconRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            AppIconChoice choice = AppIconChoice.AS_PATCHED;
+            for (AppIconChoice candidate : AppIconChoice.values()) {
+                if (candidate.name().equals(getValue())) choice = candidate;
+            }
+            setSummary(appIconSummary(choice));
         }
 
         @Override

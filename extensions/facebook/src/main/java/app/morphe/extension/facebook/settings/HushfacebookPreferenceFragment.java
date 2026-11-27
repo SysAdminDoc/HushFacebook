@@ -75,6 +75,7 @@ import app.morphe.extension.facebook.media.BufferSize;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.media.SurfaceQuality;
+import app.morphe.extension.facebook.misc.AppIconChoice;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
@@ -114,6 +115,7 @@ import app.morphe.extension.facebook.settings.ValueRows.SeenKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.BreakRow;
 import app.morphe.extension.facebook.settings.ValueRows.PauseLengthRow;
 import app.morphe.extension.facebook.settings.ValueRows.WatchedKeepRow;
+import app.morphe.extension.facebook.settings.ValueRows.AppIconRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
 import app.morphe.extension.facebook.settings.ValueRows.CleanReturnRow;
@@ -1972,6 +1974,58 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         }
     }
 
+    /**
+     * The home screen icon (#467). Like the Burn-in guard row, its values are the setting's own names
+     * and its summary says what the choice does.
+     */
+    static AppIconRow appIconRow(Context context) {
+        AppIconRow row = new AppIconRow(context);
+        row.setKey(Settings.APP_ICON.key);
+        row.setTitle(L10n.t("App icon"));
+        row.setDialogTitle(L10n.t("App icon"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        AppIconChoice[] choices = AppIconChoice.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = appIconLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.APP_ICON.savedValue().name());
+        return row;
+    }
+
+    /** What the list and its summary call [choice]. */
+    static String appIconLabel(AppIconChoice choice) {
+        switch (choice) {
+            case FACEBOOK:
+                return L10n.t("Facebook's own");
+            case HUSHFACEBOOK:
+                return L10n.isolate("Hushfacebook");
+            case HUSHFACEBOOK_WHITE_ON_BLACK:
+                return L10n.t("Hushfacebook white on black");
+            case HUSHFACEBOOK_BLACK_ON_WHITE:
+                return L10n.t("Hushfacebook black on white");
+            case WHITE_ON_BLACK:
+                return L10n.t("White on black");
+            case BLACK_ON_WHITE:
+                return L10n.t("Black on white");
+            default:
+                return L10n.t("As patched");
+        }
+    }
+
+    /** What the choice does, for the row's summary. */
+    static String appIconSummary(AppIconChoice choice) {
+        if (choice == AppIconChoice.AS_PATCHED) {
+            return L10n.t("The icon Morphe drew when you patched. Another pick shows once you leave Facebook.");
+        }
+        return L10n.f("%1$s. It shows once you leave Facebook, and you may need to add it to your home screen "
+                + "again from the app drawer.", appIconLabel(choice));
+    }
+
     /** How long the Reels screen goes untouched before Burn-in guard dims it (#288). */
     static BurnInWaitRow burnInWaitRow(Context context) {
         BurnInWaitRow row = new BurnInWaitRow(context);
@@ -3402,6 +3456,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((WatchedKeepRow) listPreference).showSummary();
         } else if (listPreference instanceof BurnInGuardRow) {
             ((BurnInGuardRow) listPreference).showSummary();
+        } else if (listPreference instanceof AppIconRow) {
+            ((AppIconRow) listPreference).showSummary();
         } else if (listPreference instanceof BurnInWaitRow) {
             ((BurnInWaitRow) listPreference).showSummary();
         } else if (listPreference instanceof CleanReturnRow) {

@@ -120,6 +120,11 @@ no-call Landroid/content/pm/ShortcutManager;->addDynamicShortcuts(Ljava/util/Lis
 no-call Landroid/content/pm/ShortcutManager;->setDynamicShortcuts(Ljava/util/List;)Z outside Lapp/morphe/extension/
 no-call Landroid/content/pm/ShortcutManager;->updateShortcuts(Ljava/util/List;)Z outside Lapp/morphe/extension/
 no-call Landroid/content/pm/ShortcutManager;->removeAllDynamicShortcuts()V outside Lapp/morphe/extension/
+# Facebook's component manager puts its launcher entry back on and every alias off on some starts, so
+# Pick the app icon sends every call that turns a component on or off to AppIcon, which drops the ones
+# that would undo the picked icon (#467). One left in Facebook's code could bring two icons back.
+no-call Landroid/content/pm/PackageManager;->setComponentEnabledSetting(Landroid/content/ComponentName;II)V outside Lapp/morphe/extension/
+no-call Landroid/content/pm/PackageManager;->setComponentEnabledSettings(Ljava/util/List;)V outside Lapp/morphe/extension/
 # A long press on the Facebook logo at the top of the feed opens the settings screen, the way in
 # for a launcher with no shortcut menu (#2). The settings patch sends the call that gives the logo
 # its touch listener to SettingsEntry, in the top bar's logo builder, right after the logo gets its

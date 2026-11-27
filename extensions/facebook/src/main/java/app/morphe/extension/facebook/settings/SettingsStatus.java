@@ -266,6 +266,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean appIcon() {
+        return false;
+    }
+
     public static boolean turnOffScreenTransitions() {
         return false;
     }

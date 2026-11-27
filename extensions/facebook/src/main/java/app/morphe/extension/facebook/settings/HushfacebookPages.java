@@ -321,6 +321,10 @@ final class HushfacebookPages {
                             + "zooming in. Swiping between tabs still works.")));
         }
         subheading(appearance, L10n.t("App icon and header"));
+        if (build.contains(PatchFamily.APP_ICON)) {
+            // Asked as Facebook goes to the background, so a change shows once you leave it (#467).
+            appearance.addPreference(HushfacebookPreferenceFragment.appIconRow(context));
+        }
         if (build.contains(PatchFamily.HEADER_TEXT)) {
             // Facebook builds the Home header once, so a change waits for a restart.
             appearance.addPreference(HushfacebookPreferenceFragment.headerTextRow(context));
