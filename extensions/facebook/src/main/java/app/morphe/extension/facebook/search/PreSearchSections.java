@@ -74,6 +74,11 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * or search text gets out. Each distinct line is logged once, up to {@link #MAX_SHAPES}, and after
  * that no entry is read for the log.
  *
+ * <p>Some accounts get the whole screen as one page the server draws, which none of those builders
+ * sees (#600, a reporter's 588 report with both switches on and Debug logging on had no line from
+ * here at all). Where Facebook picks that page, {@link #serverPage} answers in its place, so with
+ * either switch on the screen is built from rows.
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the module or node is
  * Facebook's own.
  */
@@ -112,6 +117,12 @@ public final class PreSearchSections {
 
     /** Counted and logged each time the list is handed to Facebook without a next page (#235). */
     static final String PAGING_STOPPED = "Search screen: stopped paging, every loaded row hidden";
+
+    /** Counted each time the search screen was built from its own rows, not as one page the server drew (#600). */
+    static final String OWN_ROWS_KEPT = "Search screen built from its own rows, not one server page";
+
+    /** The hook where Facebook picks how its search screen is built, in the family's status line. */
+    static final String PAGE_HOOK = "search screen page";
 
     /** How the Debug line names the builder that handed a node over. */
     static final String FROM_LIST = "list";
@@ -218,6 +229,31 @@ public final class PreSearchSections {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
             return list;
+        }
+    }
+
+    /**
+     * Injection point where Facebook picks how the search screen before typing is built (#600),
+     * handed Facebook's answer to whether it comes as one page the server draws whole. That page
+     * holds For you and People you may know with nothing the app can tell apart, so on accounts
+     * that get it neither switch reached them. While either switch is on this answers false, and
+     * Facebook builds the screen from its own rows, the ones the switches reach. Both off, settings
+     * not ready, or a failure, and Facebook's answer stands. Never throws.
+     *
+     * @param served whether Facebook would build the screen as one server-drawn page.
+     * @return whether it does.
+     */
+    public static boolean serverPage(boolean served) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, PAGE_HOOK);
+            if (!served || !Utils.settingsReady()) return served;
+            if (!Settings.HIDE_SEARCH_FOR_YOU.get() && !Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.get()) return served;
+            HookStatus.counted(FAMILY, OWN_ROWS_KEPT);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, PAGE_HOOK, failure);
+            return served;
         }
     }
 

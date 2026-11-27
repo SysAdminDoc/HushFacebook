@@ -59,6 +59,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.search.hookPreSearchHead
 import app.morphe.patches.facebook.search.hookPreSearchList
+import app.morphe.patches.facebook.search.hookPreSearchPage
 import app.morphe.patches.facebook.search.hookPreSearchQuery
 import app.morphe.patches.facebook.search.hookPreSearchSections
 import app.morphe.util.classDefForEachReferencing
@@ -277,6 +278,12 @@ val hideSuggestedPostsPatch = patch(
             hookPreSearchQuery()
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so the search screen's rows from Facebook's older query stay as they are.")
+        }
+        // Some accounts get the whole search screen as one page the server draws, which no row hook sees (#600).
+        try {
+            hookPreSearchPage()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so For you and People you may know stay where Facebook draws the search screen as one page.")
         }
         // The Related posts list under a post is a plugin of the socket under its buttons, not a feed unit (#231).
         try {

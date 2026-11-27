@@ -197,6 +197,7 @@ import app.morphe.extension.facebook.reels.StillWatching;
 import app.morphe.extension.facebook.reels.TapShowsControls;
 import app.morphe.extension.facebook.reels.WatchAgain;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
+import app.morphe.extension.facebook.search.PreSearchSections;
 import app.morphe.extension.facebook.search.PreSearchSectionsForTests;
 import app.morphe.extension.facebook.search.SearchDateRange;
 import app.morphe.extension.facebook.search.SearchDateRangeForTests;
@@ -470,6 +471,8 @@ public class PausedHooksTest {
                 SuggestedGroupsCard::hideDiscoverRow,
                 // The search screen draws its For you section as an empty row.
                 PreSearchSectionsForTests::drawsForYouEmpty,
+                // The search screen is built from rows where Facebook would draw it as one server page.
+                () -> !PreSearchSections.serverPage(true),
                 // The socket under a post's buttons gets a no for the Related posts list.
                 () -> RelatedPosts.holds(RelatedPosts.PLUGIN),
                 // So does the comment screen's socket under the comments.

@@ -165,6 +165,24 @@ public class PreSearchSectionsTest {
     }
 
     @Test
+    public void eitherSwitchKeepsTheScreenBuiltFromRowsAndNotOneServerPage() {
+        // #600: the reporter's account got one page the server drew whole, which no row hook sees.
+        assertTrue("both off keep Facebook's pick", PreSearchSections.serverPage(true));
+        assertFalse(PreSearchSections.serverPage(false));
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        assertFalse(PreSearchSections.serverPage(true));
+        assertFalse("a screen built from rows stays that way", PreSearchSections.serverPage(false));
+        Settings.HIDE_SEARCH_FOR_YOU.save(false);
+        Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.save(true);
+        assertFalse(PreSearchSections.serverPage(true));
+        String line = statusLine();
+        assertTrue(line, line.contains("invoked 5, 1 found, 0 missing"));
+        assertTrue(line, line.contains(PreSearchSections.OWN_ROWS_KEPT + " 2"));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("paused keeps Facebook's pick", PreSearchSections.serverPage(true));
+    }
+
+    @Test
     public void bothSwitchesOnHideBothRows() {
         Settings.HIDE_SEARCH_FOR_YOU.save(true);
         Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.save(true);
