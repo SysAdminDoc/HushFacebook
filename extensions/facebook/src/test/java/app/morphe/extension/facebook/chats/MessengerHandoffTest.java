@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
@@ -21,8 +23,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 
 import java.util.List;
@@ -395,6 +399,43 @@ public class MessengerHandoffTest {
         assertTrue("on with Messenger, the chat stayed in Facebook", MessengerHandoff.chatsInMessenger());
         assertEquals(PREFIX + "invoked 2, 0 found, 0 missing. Counted: " + MessengerHandoff.CHATS_LEFT + " 1",
                 statusLine());
+    }
+
+    /**
+     * #568: a call started from a screen stays in Facebook's own call screen. Facebook's call
+     * question sent it to Messenger when the microphone was turned down, and a re-signed Facebook
+     * can't see Messenger, so the call opened the Play Store instead. A wrapped screen counts, and
+     * a call with the microphone off is counted.
+     */
+    @Test
+    public void aCallFromAScreenStaysInFacebookAndAnOffMicrophoneIsCounted() {
+        Activity screen = Robolectric.buildActivity(Activity.class).setup().get();
+        assertTrue("a call with the microphone off left Facebook", MessengerHandoff.keepCallInFacebook(screen));
+        assertTrue("a call from a wrapped screen left Facebook",
+                MessengerHandoff.keepCallInFacebook(new ContextWrapper(screen)));
+        Shadows.shadowOf(screen.getApplication()).grantPermissions(Manifest.permission.RECORD_AUDIO);
+        assertTrue("a call with the microphone on left Facebook", MessengerHandoff.keepCallInFacebook(screen));
+        assertEquals(PREFIX + "invoked 3, 0 found, 0 missing. Counted: " + MessengerHandoff.CALL_KEPT + " 2",
+                statusLine());
+    }
+
+    /**
+     * With no screen behind the call, while paused, or before the settings are ready, Facebook's
+     * call question keeps its own answer.
+     */
+    @Test
+    public void withoutAScreenOrWhilePausedFacebookAnswersItsCallQuestion() {
+        assertFalse("no context", MessengerHandoff.keepCallInFacebook(null));
+        assertFalse("the application isn't a screen",
+                MessengerHandoff.keepCallInFacebook(RuntimeEnvironment.getApplication()));
+        Activity screen = Robolectric.buildActivity(Activity.class).setup().get();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused", MessengerHandoff.keepCallInFacebook(screen));
+        PauseForTests.resume();
+        boolean[] early = new boolean[1];
+        SettingsContextRule.withoutContext(() -> early[0] = MessengerHandoff.keepCallInFacebook(screen));
+        assertFalse("before the settings are ready", early[0]);
+        assertTrue("resumed", MessengerHandoff.keepCallInFacebook(screen));
     }
 
     /**

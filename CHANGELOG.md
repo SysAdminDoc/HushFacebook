@@ -42,6 +42,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* A call you start from Facebook's chats opens Facebook's own call screen instead of the Play Store's Messenger page, or Google's sign-in on phones without a Google account. Facebook sends calls to Messenger when its microphone or phone permission was turned down, and a patched Facebook can't see Messenger, even when it's installed and signed in. (#568)
 * With `Tap a reel above its comments` on, pausing a reel with its comments open and then playing it again plays that reel, not the sound of the next one. The next reel waits just below the screen, and the play tap could pick it. (#617)
 * Restarting Facebook from the settings no longer hangs on "isn't responding" on some phones. The restart ended the app in a way that waited on Facebook's own crash reporter, which could take longer than Android allows. (#612)
 * Feed videos start playing on their own again on phones where they sometimes waited for a tap. The background video saver could think Facebook was closed while you were looking at it, and slowed those videos down to once a second. (#602)

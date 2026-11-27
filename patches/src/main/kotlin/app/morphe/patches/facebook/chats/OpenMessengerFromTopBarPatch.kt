@@ -78,6 +78,12 @@ internal const val CHATS_IN_MESSENGER = "$HANDOFF->chatsInMessenger()Z"
  * Message button on a profile and the rest of Facebook's chat routes open Messenger, as they
  * already do on accounts Meta hasn't moved into Facebook's Chats. A build without the gate keeps
  * the rest, says so in the patch log, and MessengerHandoff.chatsInBuild stays false.
+ *
+ * With no switch, the patch also goes first in the question Facebook asks before it starts its own
+ * call screen (CallRouteAnchors.kt, #568). Facebook sends the call to Messenger when the microphone
+ * or phone permission was turned down, and a re-signed Facebook can't see Messenger, so that ended
+ * on the Play Store page; the extension keeps the call in Facebook. A build without the question
+ * keeps the rest and says so in the patch log.
  */
 @Suppress("unused")
 val openMessengerFromTopBarPatch = patch(
@@ -89,7 +95,9 @@ val openMessengerFromTopBarPatch = patch(
         "Messenger, a separate switch that starts off and leaves calls and chat notifications to Messenger " +
         "while it's installed and enabled. Restart Facebook after changing the switch or whether Messenger is " +
         "installed or enabled, so call routing updates. Open chats in Messenger, another switch that starts off, " +
-        "opens chats in Messenger instead of inside Facebook, the Message button on a profile included.",
+        "opens chats in Messenger instead of inside Facebook, the Message button on a profile included. Calls you " +
+        "start in Facebook's chats open Facebook's own call screen, even where Facebook would send you to the Play " +
+        "Store page for Messenger.",
     default = true,
 ) {
     category("Chats")
@@ -141,6 +149,13 @@ val openMessengerFromTopBarPatch = patch(
             patchLog.warning("${missing.message}, so $CHATS_SWITCH isn't in this build")
             null
         }
+        // Calls stay in Facebook's call screen (#568), with no switch; a build without the question keeps the rest.
+        val callCheck = try {
+            callPermissionCheck()
+        } catch (missing: PatchException) {
+            patchLog.warning("${missing.message}, so a call Facebook hands to Messenger still opens the Play Store")
+            null
+        }
         mutableClassDefBy(tap.definingClass).methods.single { it.isSameAs(tap) }.openMessengerFirst(tapLongPress)
         mutableClassDefBy(handler.definingClass).methods.single { it.isSameAs(handler) }.openMessengerFirst(buttonLongPress(handler))
         mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single { it.isSameAs(dispatch) }.handTouchesToIcon()
@@ -159,6 +174,9 @@ val openMessengerFromTopBarPatch = patch(
         if (gate != null) {
             mutableClassDefBy(gate.definingClass).methods.single { it.isSameAs(gate) }.leaveChatsToMessengerFirst()
             chatsInBuild.returnEarly(true)
+        }
+        if (callCheck != null) {
+            mutableClassDefBy(callCheck.definingClass).methods.single { it.isSameAs(callCheck) }.keepCallInFacebookFirst()
         }
         enableStatus("messengerIcon")
     }
@@ -299,6 +317,31 @@ internal fun MutableMethod.leaveChatsToMessengerFirst() {
         0,
         """
             invoke-static {}, $CHATS_IN_MESSENGER
+            move-result v0
+            if-eqz v0, :facebook
+            const/4 v0, 0x0
+            return v0
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in Facebook's call question (CallRouteAnchors.kt): hand the extension the context,
+ * copied down into v0, and answer false while it says the call stays in Facebook, so the router
+ * starts Facebook's own call screen. Otherwise the question runs from its own first instruction.
+ * v0 is free at index 0.
+ */
+internal fun MutableMethod.keepCallInFacebookFirst() {
+    if (returnType != "Z" || parameterTypes.map(Any::toString) != listOf("Landroid/content/Context;")) {
+        throw PatchException("$ICON_PATCH: $definingClass->$name isn't a (Context)Z question")
+    }
+    requireLocals(ICON_PATCH, 1)
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, ${parameterRegister(0)}
+            invoke-static { v0 }, $KEEP_CALL_IN_FACEBOOK
             move-result v0
             if-eqz v0, :facebook
             const/4 v0, 0x0

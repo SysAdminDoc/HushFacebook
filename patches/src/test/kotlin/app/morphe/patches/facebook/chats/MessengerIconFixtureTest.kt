@@ -147,9 +147,13 @@ class MessengerIconFixtureTest {
                 val router = classes.getValue(INBOX_ROUTER)
                 val gateCall = chatsGateCalls(routerOnCreate(router.methods)!!).single()
                 val gateClass = FixtureDex.classes(bundle, setOf(gateCall.definingClass)).getValue(gateCall.definingClass)
+                // The call question (#568): the one (Context)Z method loading all three call permissions.
+                val callCheckClass = FixtureDex.classesHolding(bundle, CALL_PERMISSIONS.last())
+                    .single { owner -> owner.methods.any(::isCallPermissionCheck) }
                 val context = PatchContexts.of(
                     (listOf(tapClass, classes.getValue(handlerType), classes.getValue(FRAGMENT_ACTIVITY), router, gateClass,
-                        ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(HANDOFF)) + handoffClasses + reelsEntryHolders)
+                        callCheckClass, ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(HANDOFF)) +
+                        handoffClasses + reelsEntryHolders)
                         .distinctBy { it.type },
                 )
                 openMessengerFromTopBarPatch.execute(context)
@@ -220,6 +224,15 @@ class MessengerIconFixtureTest {
                 val chatsInBuild = context.mutableClassDefBy(HANDOFF).methods.single { it.name == "chatsInBuild" }
                 assertEquals("$name: MessengerHandoff.chatsInBuild still answers false", 1,
                     (chatsInBuild.implementation!!.instructions.first() as NarrowLiteralInstruction).narrowLiteral)
+                // The call question hands the extension its context first and answers false on its
+                // word, so the call starts in Facebook's call screen instead of the Play Store (#568).
+                val callCheck = context.mutableClassDefBy(callCheckClass.type).methods.single(::isCallPermissionCheck)
+                val callCode = callCheck.implementation!!.instructions.toList()
+                assertEquals("$name: the call question doesn't ask first", 1, firstCall(callCheck, KEEP_CALL_IN_FACEBOOK))
+                assertEquals("$name: the call question's early answer", listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC,
+                    Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN), callCode.subList(0, 6).map { it.opcode })
+                assertEquals("$name: the call question's early answer isn't false", 0,
+                    (callCode[4] as NarrowLiteralInstruction).narrowLiteral)
                 checked += version
             }
         }

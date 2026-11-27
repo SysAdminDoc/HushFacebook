@@ -4,8 +4,12 @@
  */
 package app.morphe.extension.facebook.chats;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import androidx.annotation.Nullable;
 
@@ -19,6 +23,7 @@ import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.HushfacebookPause;
 
 /**
  * What the Open Messenger from the top bar patch asks before Facebook rings for a call or posts a
@@ -79,6 +84,15 @@ public final class MessengerHandoff {
 
     /** Counted when Open chats in Messenger was on but Meta's Messenger wasn't there. */
     static final String NO_MESSENGER_FOR_CHATS = "no Messenger, chats stayed in Facebook";
+
+    /**
+     * Counted when a call started in Facebook's own call screen while the microphone or phone
+     * permission wasn't granted, where Facebook's check could have sent it to Messenger (#568).
+     */
+    static final String CALL_KEPT = "call kept in Facebook with a call permission off";
+
+    /** How many wrappers deep a context is unwrapped looking for its Activity. */
+    private static final int MAX_WRAPPERS = 16;
 
     /** Whether Meta's Messenger was installed and enabled when the gate first asked, or null before then. */
     @Nullable
@@ -161,6 +175,54 @@ public final class MessengerHandoff {
             HookStatus.threw(FamilyNames.MESSENGER_ICON, "Messenger chats", failure);
             return false;
         }
+    }
+
+    /**
+     * Injection point, first thing in the question Facebook asks before it starts its own call
+     * screen, from a call button in its chats or a group call link (#568). Facebook answers true,
+     * which sends the call to Messenger, when the context has no Activity or when the microphone or
+     * the phone permission was turned down after Facebook asked for it. A re-signed Facebook never
+     * sees Meta's Messenger as installed (its check wants Facebook's own signing key), so that route
+     * always ends on the Play Store page for Messenger, which shows Google's sign-in on a phone
+     * without a Google account, Messenger installed or not.
+     *
+     * <p>True has the question answer false, so the call starts in Facebook's own call screen. False
+     * leaves Facebook's own answer: while paused, before the settings are ready, with no Activity
+     * behind the context, or on any failure. Never throws.
+     */
+    public static boolean keepCallInFacebook(@Nullable Context context) {
+        try {
+            HookStatus.invoked(FamilyNames.MESSENGER_ICON);
+            if (!Utils.settingsReady() || HushfacebookPause.isPaused()) return false;
+            Activity activity = activityOf(context);
+            if (activity == null) return false;
+            if (callPermissionOff(activity)) HookStatus.counted(FamilyNames.MESSENGER_ICON, CALL_KEPT);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.MESSENGER_ICON, "calls kept in Facebook", failure);
+            return false;
+        }
+    }
+
+    /** The Activity {@code context} is or wraps, or null. */
+    @Nullable
+    static Activity activityOf(@Nullable Context context) {
+        for (int depth = 0; context != null && depth < MAX_WRAPPERS; depth++) {
+            if (context instanceof Activity) return (Activity) context;
+            if (!(context instanceof ContextWrapper)) return null;
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
+    }
+
+    /**
+     * Whether the microphone, or on Android 12 and newer the phone permission, isn't granted: the
+     * two Facebook's check weighs, as it only asks for the phone one past Android 11.
+     */
+    private static boolean callPermissionOff(Context context) {
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return true;
+        return Build.VERSION.SDK_INT > Build.VERSION_CODES.R
+                && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED;
     }
 
     /** Meta's Messenger, installed and enabled, looked up on the first call with a context and kept. */
