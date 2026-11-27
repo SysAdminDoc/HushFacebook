@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.media;
 
+import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -89,6 +90,9 @@ public final class PauseUnderComments {
     /** The reel a sheet paused, weakly, until the last open sheet closes. */
     private static volatile WeakReference<Object> paused = new WeakReference<>(null);
 
+    /** The reel a tap above the comments paused, weakly, so the next tap plays that one again (#617). */
+    private static volatile WeakReference<Object> tapped = new WeakReference<>(null);
+
     @Nullable private static Handler main;
 
     private PauseUnderComments() {
@@ -146,22 +150,26 @@ public final class PauseUnderComments {
     /**
      * A tap on the reel above an open comment sheet (#315), whatever this switch says: the reel
      * playing on screen pauses, and with none playing, the one a sheet paused or else the one shown
-     * plays, armed in Tap to play like a reel played on after its comments. A reel you play or pause
-     * this way is yours, so closing the sheet leaves it as it is. False when Tap to play's bridge
-     * shows no reel, or for a throw.
+     * plays, armed in Tap to play like a reel played on after its comments. The reel a tap paused
+     * comes first: the next reel waits shown under the sheet, and playing it brought its sound on
+     * (#617). A reel you play or pause this way is yours, so closing the sheet leaves it as it is.
+     * False when Tap to play's bridge shows no reel, or for a throw.
      */
     public static boolean tapReel() {
         try {
             Object playing = playingReel();
             if (playing != null) {
                 access.command(playing, false);
+                tapped = new WeakReference<>(playing);
                 Logger.printDebug(() -> "Tap a reel above its comments: paused the reel under the sheet");
                 return true;
             }
             Object reel = paused.get();
+            if (reel == null) reel = stillShown(tapped.get());
             if (reel == null) reel = shownReel();
             if (reel == null) return false;
             paused = new WeakReference<>(null);
+            tapped = new WeakReference<>(null);
             TapToPlay.armForResume(reel);
             access.command(reel, true);
             Logger.printDebug(() -> "Tap a reel above its comments: played the reel under the sheet");
@@ -185,15 +193,38 @@ public final class PauseUnderComments {
         return hidden;
     }
 
-    /** A reel whose view is shown, playing or not, or null. */
+    /**
+     * A reel whose view is shown, playing or not, or null. The one with the most of its view on the
+     * screen wins, since the next reel is shown too, laid out below (#617). With none measured yet,
+     * the first one shown.
+     */
     @Nullable
     static Object shownReel() {
+        Object first = null;
+        Object best = null;
+        long bestArea = 0;
+        Rect visible = new Rect();
         for (Object player : access.known()) {
             if (!access.reel(player)) continue;
             View view = access.view(player);
-            if (view != null && view.isShown()) return player;
+            if (view == null || !view.isShown()) continue;
+            if (first == null) first = player;
+            if (!view.getGlobalVisibleRect(visible)) continue;
+            long area = (long) visible.width() * visible.height();
+            if (area > bestArea) {
+                bestArea = area;
+                best = player;
+            }
         }
-        return null;
+        return best != null ? best : first;
+    }
+
+    /** [player] while Tap to play's bridge still has it as a reel whose view is shown, or null. */
+    @Nullable
+    private static Object stillShown(@Nullable Object player) {
+        if (player == null || !access.reel(player) || !access.known().contains(player)) return null;
+        View view = access.view(player);
+        return view != null && view.isShown() ? player : null;
     }
 
     /** [content]'s sheet has closed: once none is open, the reel it paused plays on. */
@@ -227,6 +258,7 @@ public final class PauseUnderComments {
             OPEN.clear();
         }
         paused = new WeakReference<>(null);
+        tapped = new WeakReference<>(null);
         access = PATCHED;
     }
 

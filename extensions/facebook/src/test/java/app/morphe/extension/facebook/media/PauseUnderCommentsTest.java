@@ -208,6 +208,57 @@ public class PauseUnderCommentsTest {
                 Arrays.asList("pause reel", "play reel", "pause reel"), players.commands);
     }
 
+    /**
+     * #617: with comments open, the next reel waits under the sheet, its view shown and ahead of
+     * the reel you're on in the bridge's list. A tap that paused your reel plays that reel again,
+     * not the next one, whose sound came on with the switch off.
+     */
+    @Test
+    public void aTapPlaysBackTheReelItPausedRatherThanTheNextOneWaitingBelow() {
+        String next = "next reel";
+        FrameLayout page = new FrameLayout(screen);
+        View nextView = new View(screen);
+        View reelView = new View(screen);
+        page.addView(nextView);
+        page.addView(reelView);
+        screen.setContentView(page);
+        players.known.add(0, next);
+        players.reels.add(next);
+        players.views.put(next, nextView);
+        players.views.put(reel, reelView);
+        assertTrue("no reel was found to pause", PauseUnderComments.tapReel());
+        assertTrue("no reel was found to play", PauseUnderComments.tapReel());
+        assertEquals(Arrays.asList("pause reel", "play reel"), players.commands);
+        assertTrue("Tap to play would hold the reel's start", TapToPlay.armed(reel));
+    }
+
+    /**
+     * #617: with no reel paused by a tap or a sheet, the one a tap plays is the one on the screen,
+     * not the next reel laid out below it.
+     */
+    @Test
+    public void withNoReelRememberedATapPlaysTheOneOnTheScreen() {
+        String next = "next reel";
+        FrameLayout page = new FrameLayout(screen);
+        View nextView = new View(screen);
+        View reelView = new View(screen);
+        page.addView(nextView, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        page.addView(reelView, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        screen.setContentView(page);
+        shadowOf(Looper.getMainLooper()).idle();
+        assertTrue("the page wasn't laid out", page.getHeight() > 0);
+        nextView.setTranslationY(page.getHeight());
+        players.known.add(0, next);
+        players.reels.add(next);
+        players.views.put(next, nextView);
+        players.views.put(reel, reelView);
+        players.playing.remove(reel);
+        assertTrue("no reel was found to play", PauseUnderComments.tapReel());
+        assertEquals(Arrays.asList("play reel"), players.commands);
+    }
+
     @Test
     public void withNoReelATapIsLeftToFacebook() {
         players.known.remove(reel);

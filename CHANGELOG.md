@@ -40,6 +40,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
+* With `Tap a reel above its comments` on, pausing a reel with its comments open and then playing it again plays that reel, not the sound of the next one. The next reel waits just below the screen, and the play tap could pick it. (#617)
 * Restarting Facebook from the settings no longer hangs on "isn't responding" on some phones. The restart ended the app in a way that waited on Facebook's own crash reporter, which could take longer than Android allows. (#612)
 * With `Only reels from accounts I follow` on, a reel you tap in search or on a Page plays again instead of another reel or a black screen. Facebook handed that reel on in a new item a moment after it opened, and the new item got dropped. (#565)
 * With `See-through bars` or `Rounded tab bar` on, the first reel on the Reels tab no longer jumps as it starts. Its name, caption and buttons sat behind the tab bar for a moment before moving up. With `Keep the progress bar` on, the time and seek bar then jumped up once more, and that happened on the first reel after an ad too. (#594)
