@@ -3274,3 +3274,5 @@ Holding a comment no longer offers Reply. The Reply under the comment stays.	ก
 Holding a comment no longer offers Copy.	การกดค้างที่ความคิดเห็นจะไม่มี "คัดลอก" ให้เลือกอีกต่อไป
 Holding a comment no longer offers Report comment or Report to group admins.	การกดค้างที่ความคิดเห็นจะไม่มี "รายงานความคิดเห็น" หรือ "รายงานไปยังผู้ดูแลกลุ่ม" ให้เลือกอีกต่อไป
 Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	การกดค้างที่ความคิดเห็นจะไม่มี "ซ่อนความคิดเห็น" ให้เลือกอีกต่อไป หากความคิดเห็นไม่เหลือตัวเลือกใดเลย การกดค้างจะไม่เกิดอะไรขึ้น
+Hide Send message under posts	ซ่อน "ส่งข้อความ" ใต้โพสต์
+The Messenger Send message bar some posts get after a moment, under the post and over its reactions, goes away. Like, Comment, Share and Send stay.	แถบ "ส่งข้อความ" ของ Messenger ที่บางโพสต์ได้รับหลังจากผ่านไปครู่หนึ่ง ใต้โพสต์และเหนือความรู้สึกที่มีต่อโพสต์ จะหายไป ส่วน "ถูกใจ" "แสดงความคิดเห็น" "แชร์" และ "ส่ง" ยังอยู่

@@ -3269,3 +3269,5 @@ Holding a comment no longer offers Reply. The Reply under the comment stays.	长
 Holding a comment no longer offers Copy.	长按评论时不再提供复制。
 Holding a comment no longer offers Report comment or Report to group admins.	长按评论时不再提供举报评论或向小组管理员举报。
 Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	长按评论时不再提供隐藏评论。没有任何选项可提供的评论，长按后什么也不会发生。
+Hide Send message under posts	隐藏帖子下方的发消息
+The Messenger Send message bar some posts get after a moment, under the post and over its reactions, goes away. Like, Comment, Share and Send stay.	部分帖子过一会儿会在帖子下方、心情上方出现 Messenger 的发消息栏，它会消失。赞、评论、分享和发送保留。

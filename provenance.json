@@ -2147,6 +2147,15 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #590 from Facebook 588: the one method logging that a file's address isn't http or https makes a DownloadManager request from the address and enqueues it with no destination, so the file stayed in DownloadManager's private cache. Right after the request's constructor, the request and the address go to the extension, which while the switch is on points the request at the public Downloads folder under the address's last segment, cleaned by the save folder's rules and cut to 200 bytes of UTF-8 with its ending kept."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/actionrow/SendMessageCta.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #609 from Facebook 588: the Messenger Send message bar some posts get after a short stop on them is a plugin of the post call-to-action selector, named in its table like Meta AI's question chips. The patch finds the table by the plugin's name and the selector's check through the methods naming its socket, and first thing in that check the plugin's name goes to the extension, which answers no for the Send message plugin while Hide Send message under posts is on, so the post goes on to its next button."
     }
   ]
 }

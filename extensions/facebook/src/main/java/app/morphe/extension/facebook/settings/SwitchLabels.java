@@ -34,6 +34,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_POST_SHARE_BUTTON) return L10n.t("Hide Share under posts");
         if (setting == Settings.HIDE_POST_SEND_BUTTON) return L10n.t("Hide Send under posts");
         if (setting == Settings.HIDE_POST_STARS_BUTTON) return L10n.t("Hide Stars and gifts under posts");
+        if (setting == Settings.HIDE_POST_SEND_MESSAGE) return L10n.t("Hide Send message under posts");
         if (setting == Settings.HIDE_POST_SAVE_BUTTON) return L10n.t("Hide Save under posts");
         if (setting == Settings.IGNORE_POST_ROW_TAPS) return L10n.t("Ignore taps beside the buttons");
         if (setting == Settings.HIDE_AFFILIATE_LINKS) return L10n.t("Hide affiliate product links");

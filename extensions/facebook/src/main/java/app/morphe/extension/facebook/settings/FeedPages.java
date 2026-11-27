@@ -361,6 +361,10 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SEND_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_STARS_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SAVE_BUTTON, hides));
+                // Read as each post's buttons are picked, so a change shows on the posts drawn after it (#609).
+                feed.addPreference(toggle(context, Settings.HIDE_POST_SEND_MESSAGE,
+                        L10n.t("The Messenger Send message bar some posts get after a moment, under the post and over "
+                                + "its reactions, goes away. Like, Comment, Share and Send stay.")));
                 feed.addPreference(toggle(context, Settings.IGNORE_POST_ROW_TAPS,
                         L10n.t("A tap on the empty part of the row under a post, between the buttons and the reaction "
                                 + "icons, does nothing instead of opening the comments or who reacted. The buttons work as before.")));

@@ -3274,3 +3274,5 @@ Holding a comment no longer offers Reply. The Reply under the comment stays.	П�
 Holding a comment no longer offers Copy.	При задържане на коментар вече не се предлага „Копиране“.
 Holding a comment no longer offers Report comment or Report to group admins.	При задържане на коментар вече не се предлагат „Сигнал за коментара“ и „Сигнал до администраторите на групата“.
 Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	При задържане на коментар вече не се предлага „Скриване на коментара“. Ако на коментара не остане нищо за предлагане, задържането не прави нищо.
+Hide Send message under posts	Скриване на „Изпращане на съобщение“ под публикациите
+The Messenger Send message bar some posts get after a moment, under the post and over its reactions, goes away. Like, Comment, Share and Send stay.	Лентата „Изпращане на съобщение“ на Messenger, която някои публикации получават след малко, под публикацията и над реакциите ѝ, изчезва. „Харесвам“, „Коментар“, „Споделяне“ и „Изпращане“ остават.

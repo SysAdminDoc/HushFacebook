@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Added
 
+* `Hide Send message under posts` under News feed takes away the Messenger Send message bar some posts get after you stop on them for a moment, so it's not there to tap by mistake. Like, Comment, Share and Send stay. It starts off. (#609)
 * `Icon style` in Hushfacebook settings has two more looks, `Hushfacebook white on black` and `Hushfacebook black on white`, which draw the H logo in one color on a plain icon. Next to it, `Icon picture` uses a square PNG of your own as the home screen icon, and `Icon background` puts a color you pick behind the logo or your picture. (#467)
 * `Hide the AI content label on reels` under Reels and Watch takes the "AI content" or "AI info" label off reels Facebook marks as made with AI. That covers the button next to the sound line under the author, the label under the caption and the reel's info rows. It starts off. (#574)
 * `Save files to Downloads` puts a PDF, document or other file you download from a post in your phone's Downloads folder, where a file manager can open it. Facebook kept those in a folder no file manager could reach. It's on by default. (#590)

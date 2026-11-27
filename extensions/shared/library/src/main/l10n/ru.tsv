@@ -3332,3 +3332,5 @@ Holding a comment no longer offers Reply. The Reply under the comment stays.	П�
 Holding a comment no longer offers Copy.	При удержании комментария больше не предлагается «Копировать».
 Holding a comment no longer offers Report comment or Report to group admins.	При удержании комментария больше не предлагаются «Пожаловаться на комментарий» и «Пожаловаться администраторам группы».
 Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	При удержании комментария больше не предлагается «Скрыть комментарий». Если у комментария не осталось ни одного пункта, удержание ничего не делает.
+Hide Send message under posts	Скрывать «Отправить сообщение» под публикациями
+The Messenger Send message bar some posts get after a moment, under the post and over its reactions, goes away. Like, Comment, Share and Send stay.	Полоса Messenger «Отправить сообщение», которая через мгновение появляется у некоторых публикаций под публикацией и над её реакциями, исчезает. «Нравится», «Комментировать», «Поделиться» и «Отправить» остаются.

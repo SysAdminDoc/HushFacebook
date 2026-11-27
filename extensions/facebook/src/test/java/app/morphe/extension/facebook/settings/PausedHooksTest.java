@@ -101,6 +101,7 @@ import app.morphe.extension.facebook.feed.FullPostText;
 import app.morphe.extension.facebook.feed.PostTranslation;
 import app.morphe.extension.facebook.feed.PostTranslationForTests;
 import app.morphe.extension.facebook.feed.MetaAiQuestions;
+import app.morphe.extension.facebook.feed.SendMessageCta;
 import app.morphe.extension.facebook.feed.NotificationFooter;
 import app.morphe.extension.facebook.feed.PostDates;
 import app.morphe.extension.facebook.feed.PostPrompts;
@@ -729,7 +730,9 @@ public class PausedHooksTest {
                 PostActionButtonsForTests::hidesLike,
                 PostActionButtonsForTests::hidesStars,
                 PostActionButtonsForTests::addsDownload,
-                PostActionButtonsForTests::leavesTheTapOff));
+                PostActionButtonsForTests::leavesTheTapOff,
+                // The Send message bar under a post is told it doesn't apply (#609).
+                () -> SendMessageCta.hidesSendMessage(SendMessageCta.SEND_MESSAGE)));
         // Marketplace's feed query asks to skip its ads, an ads-only query isn't sent, and a search
         // answer loses its ad.
         probes.put(PatchFamily.SPONSORED_MARKETPLACE, Arrays.asList(

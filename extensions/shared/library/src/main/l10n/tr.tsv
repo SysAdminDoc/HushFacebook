@@ -3274,3 +3274,5 @@ Holding a comment no longer offers Reply. The Reply under the comment stays.	Bir
 Holding a comment no longer offers Copy.	Bir yorumu basılı tuttuğunda artık Kopyala sunulmaz.
 Holding a comment no longer offers Report comment or Report to group admins.	Bir yorumu basılı tuttuğunda artık Yorumu şikayet et veya Grup yöneticilerine şikayet et sunulmaz.
 Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	Bir yorumu basılı tuttuğunda artık Yorumu gizle sunulmaz. Sunacak hiçbir şeyi kalmayan bir yorumu basılı tutmak hiçbir şey yapmaz.
+Hide Send message under posts	Gönderilerin altında Mesaj gönder'i gizle
+The Messenger Send message bar some posts get after a moment, under the post and over its reactions, goes away. Like, Comment, Share and Send stay.	Bazı gönderilerde bir süre sonra gönderinin altında ve tepkilerinin üstünde çıkan Messenger Mesaj gönder çubuğu kaybolur. Beğen, Yorum yap, Paylaş ve Gönder kalır.

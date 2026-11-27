@@ -3278,3 +3278,5 @@ Holding a comment no longer offers Reply. The Reply under the comment stays.	長
 Holding a comment no longer offers Copy.	長按留言時不再提供複製。
 Holding a comment no longer offers Report comment or Report to group admins.	長按留言時不再提供檢舉留言或向社團管理員檢舉。
 Holding a comment no longer offers Hide comment. A held comment left with nothing to offer does nothing at all.	長按留言時不再提供隱藏留言。沒有任何選項可提供的留言，長按後什麼也不會發生。
+Hide Send message under posts	隱藏貼文下方的傳送訊息
+The Messenger Send message bar some posts get after a moment, under the post and over its reactions, goes away. Like, Comment, Share and Send stay.	部分貼文過一會兒會在貼文下方、心情上方出現 Messenger 的傳送訊息列，它會消失。讚、留言、分享和傳送保留。
