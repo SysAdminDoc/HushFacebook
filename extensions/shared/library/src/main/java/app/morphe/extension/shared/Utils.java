@@ -455,7 +455,10 @@ public class Utils {
         // Ref: https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
         mainIntent.setPackage(packageName);
         context.startActivity(mainIntent);
-        System.exit(0);
+        // Killed rather than System.exit (#612): exit runs the app's native exit handlers, and
+        // Facebook's crash reporter can wait in there past Android's five seconds, which hung the
+        // restart on "isn't responding". Settings are already committed by now.
+        Process.killProcess(Process.myPid());
     }
 
     public static Resources getResources() {

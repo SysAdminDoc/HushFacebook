@@ -6,12 +6,18 @@ package app.morphe.extension.shared.settings.preference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Application;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Process;
 import android.os.SystemClock;
 
 import org.junit.After;
@@ -21,7 +27,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowPackageManager;
+import org.robolectric.shadows.ShadowProcess;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +128,34 @@ public class ReopenSettingsAfterRestartTest {
         ReopenSettingsAfterRestart.restartInto(app, "more");
         assertEquals(java.util.Collections.singletonList(app), restarted);
         assertEquals("more", ReopenSettingsAfterRestart.takeFresh(Setting.preferences.preferences, SystemClock.elapsedRealtime()));
+    }
+
+    /**
+     * #612: the restart ended the process with System.exit, which runs Facebook's native exit
+     * handlers, and its crash handler waited in there for more than five seconds, so the restart
+     * stopped on "isn't responding". The process is killed instead, the way HushGram's restart
+     * does it (Robolectric records the kill; System.exit would end this test run).
+     */
+    @Test
+    public void theAppsOwnRestartKillsTheProcessRatherThanRunningExitHandlers() throws Exception {
+        Application app = RuntimeEnvironment.getApplication();
+        ComponentName launcher = new ComponentName(app, "app.morphe.test.Launcher");
+        ShadowPackageManager packages = Shadows.shadowOf(app.getPackageManager());
+        packages.addActivityIfNotPresent(launcher);
+        IntentFilter main = new IntentFilter(Intent.ACTION_MAIN);
+        main.addCategory(Intent.CATEGORY_LAUNCHER);
+        packages.addIntentFilterForActivity(launcher, main);
+        ReopenSettingsAfterRestart.setRestarterForTests(null);
+        ShadowProcess.clearKilledProcesses();
+        try {
+            ReopenSettingsAfterRestart.restartInto(app, "more");
+            Intent started = Shadows.shadowOf(app).getNextStartedActivity();
+            assertNotNull("Facebook wasn't opened again", started);
+            assertEquals(launcher, started.getComponent());
+            assertTrue("the process wasn't killed", ShadowProcess.wasKilled(Process.myPid()));
+        } finally {
+            ShadowProcess.clearKilledProcesses();
+        }
     }
 
     @Test
