@@ -8,6 +8,7 @@ import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,6 +19,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
+import app.morphe.extension.facebook.download.PostDetails;
 import app.morphe.extension.facebook.feed.GenAiReelFilter;
 import app.morphe.extension.facebook.feed.PostLanguages;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -59,6 +61,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The same pages fill the full-screen player a video tapped in the feed opens, or a reel opened
  * from a link, a chat or Saved. The reel that player opened on is the first one through after
  * {@link #playerOpening}, and it stays, so the player never loses the video it was opened for (#565).
+ * Facebook hands that reel on again in a new item a moment later, so it's known by its model's id
+ * (or the model itself) rather than by the item it came in: a reel tapped in search or on a Page
+ * came back in a new item, that one came off, and the player opened on another reel or on nothing
+ * (S22 2026-11-26).
  *
  * <p>Off, paused, before the settings are ready, or when anything fails, the page goes on as
  * Facebook sent it.
@@ -127,6 +133,15 @@ public final class FollowedReels {
     private static final AtomicLong OPENED_AT = new AtomicLong(Long.MIN_VALUE);
     private static final long NONE = Long.MIN_VALUE;
 
+    /** How many of the reels players lately opened on are still known, by id and by model. */
+    static final int OPENED_REELS_KNOWN = 8;
+    /** The ids of the reels players lately opened on, newest last. Read and written under {@link #VIEWERS}. */
+    private static final ArrayDeque<String> OPENED_IDS = new ArrayDeque<>();
+    /** The models of those reels, for one whose id can't be read. Weak, and under {@link #VIEWERS}. */
+    private static final Set<Object> OPENED_MODELS = Collections.newSetFromMap(new WeakHashMap<>());
+    /** The reel model's id field, as Facebook's tree reads it. */
+    private static final int ID_FIELD = "id".hashCode();
+
     /** Stands in for the uptime clock when a test sets it. */
     @Nullable
     static volatile LongSupplier clockForTests;
@@ -185,16 +200,64 @@ public final class FollowedReels {
     /**
      * Keeps [first], the first reel of a page, as the reel a player opened on, once per opening, and
      * counts it on [route]. Nothing without a reel, so a page of cards leaves the opening waiting.
+     * The reel is also known by its model's id and its model from then on, so every item Facebook
+     * hands it on in stays too.
      */
-    private static void keepOpeningReel(@Nullable Object first, String route) {
+    private static void keepOpeningReel(@Nullable Object first, String modelClassName, String route) {
         if (first == null) return;
         long opened = OPENED_AT.get();
         if (opened == NONE || now() - opened > OPENING_WINDOW_MS || !OPENED_AT.compareAndSet(opened, NONE)) return;
+        Object model = modelOf(first, modelClassName);
+        String id = idOf(model);
         synchronized (VIEWERS) {
             KEPT.add(first);
+            if (model != null) OPENED_MODELS.add(model);
+            if (id != null) {
+                OPENED_IDS.remove(id);
+                OPENED_IDS.addLast(id);
+                while (OPENED_IDS.size() > OPENED_REELS_KNOWN) OPENED_IDS.removeFirst();
+            }
         }
         FeedFilterCounters.sawKind(route, OPENING_REEL);
-        Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE, () -> "kept the reel a player opened on");
+        final String by = id != null ? "its id" : model != null ? "its model" : "its item alone";
+        Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
+                () -> "kept the reel a player opened on, known by " + by);
+    }
+
+    /** Whether [item] holds a reel a player lately opened on, whatever item it came in. Never throws. */
+    private static boolean openedOn(@Nullable Object item, String modelClassName) {
+        if (item == null) return false;
+        synchronized (VIEWERS) {
+            if (OPENED_IDS.isEmpty() && OPENED_MODELS.isEmpty()) return false;
+        }
+        Object model = modelOf(item, modelClassName);
+        if (model == null) return false;
+        String id = idOf(model);
+        synchronized (VIEWERS) {
+            return OPENED_MODELS.contains(model) || (id != null && OPENED_IDS.contains(id));
+        }
+    }
+
+    /** [item]'s reel model, or null when it holds none or can't be read. Never throws. */
+    @Nullable
+    private static Object modelOf(@Nullable Object item, String modelClassName) {
+        try {
+            return GenAiReelFilter.reelModel(item, modelClassName);
+        } catch (Throwable unreadable) {
+            return null;
+        }
+    }
+
+    /** [model]'s id, when it's one of Facebook's live trees and has one, or null. Never throws. */
+    @Nullable
+    private static String idOf(@Nullable Object model) {
+        try {
+            if (model == null || !PostDetails.isLiveTree(model)) return null;
+            String id = PostDetails.string(model, ID_FIELD);
+            return id == null || id.isEmpty() ? null : id;
+        } catch (Throwable unreadable) {
+            return null;
+        }
     }
 
     /** The first item of [page] holding a reel model of [modelClassName]'s class, or null. */
@@ -251,7 +314,7 @@ public final class FollowedReels {
             boolean countItems = PAGES_ROUTE.equals(route);
             Pass pass = Pass.start(modelClassName, statuses, readers, countItems);
             if (pass == null) return page;
-            if (playerOpenedLately()) keepOpeningReel(firstReel(page, modelClassName), route);
+            if (playerOpenedLately()) keepOpeningReel(firstReel(page, modelClassName), modelClassName, route);
 
             ArrayList<Object> kept = new ArrayList<>(page.size());
             for (Object item : page) {
@@ -311,7 +374,9 @@ public final class FollowedReels {
             if (page == null || page.isEmpty()) return page;
             Pass pass = Pass.start(modelClassName, statuses, readers, true);
             if (pass == null) return page;
-            if (playerOpenedLately()) keepOpeningReel(ReelSections.firstItem(page, reels(modelClassName)), SECTIONS_ROUTE);
+            if (playerOpenedLately()) {
+                keepOpeningReel(ReelSections.firstItem(page, reels(modelClassName)), modelClassName, SECTIONS_ROUTE);
+            }
             Viewer viewer = viewer(controller);
             if (viewer != null && keepAllFor(viewer, page, modelClassName)) return page;
             if (viewer != null) keepFirstReel(viewer, page, modelClassName);
@@ -431,6 +496,8 @@ public final class FollowedReels {
         synchronized (VIEWERS) {
             VIEWERS.clear();
             KEPT.clear();
+            OPENED_IDS.clear();
+            OPENED_MODELS.clear();
         }
         OPENED_AT.set(NONE);
         clockForTests = null;
@@ -493,10 +560,10 @@ public final class FollowedReels {
          * Whether [item] comes off. The follow rule reads first, so a reel both it and a caption rule
          * would take is counted once, as not followed, and its caption is never read. The caption
          * rules go in the order News feed runs them: words, languages, then links. A reel a viewer
-         * keeps is never read.
+         * keeps, and a reel a player lately opened on in whatever item it comes, is never read.
          */
         boolean drops(Object item) {
-            if (kept(item)) return false;
+            if (kept(item) || openedOn(item, modelClassName)) return false;
             if (followedOnly && (countItems ? FollowedReels.drops(item, modelClassName, statuses)
                     : NOT_FOLLOWED.equals(kindOf(item, modelClassName, statuses)))) {
                 notFollowed++;

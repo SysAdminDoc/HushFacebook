@@ -267,6 +267,35 @@ public class FollowedReelsTest {
     }
 
     /**
+     * Facebook hands the reel a player opened on again in a new item a moment later. That item came
+     * off, so a reel tapped in search or on a Page opened on another reel, or on nothing (#565, S22
+     * 2026-11-26). The reel stays in whatever item it comes, on either route, and the reels beside
+     * it are filtered as usual.
+     */
+    @Test
+    public void theVideoAPlayerOpensOnStaysInANewItem() {
+        Settings.FOLLOWED_REELS_ONLY.save(true);
+        Object viewer = new Object();
+        Section followed = new Section(new ArrayList<>(Collections.singletonList(
+                FollowedReelsForTests.reel(FollowStatus.IS_SUBSCRIBED))));
+        assertEquals(Collections.singletonList(followed), viewerPage(viewer, followed));
+
+        FeedVideoAlone.reelsViewerOpening("search::fb_shorts_viewer");
+        Model tapped = new Model(FollowStatus.CAN_SUBSCRIBE);
+        List<Object> opening = page(new Item(tapped));
+        assertSame(opening, FollowedReelsForTests.followedOnly(opening));
+
+        List<Object> again = page(new Item(tapped));
+        assertSame(again, FollowedReelsForTests.followedOnly(again));
+        Item held = new Item(new Holder(tapped));
+        Section handedOn = new Section(new ArrayList<>(Arrays.asList(
+                FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE), held)));
+        assertEquals(Collections.singletonList(handedOn), viewerPage(viewer, handedOn));
+        assertEquals(Collections.singletonList(held), handedOn.items);
+        assertTrue(FollowedReelsForTests.followedOnly(page(FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))).isEmpty());
+    }
+
+    /**
      * Only a page soon after a player opens brings the reel it opened on, so a page long after is
      * filtered as usual, and a page of cards alone leaves the opening waiting for its reel.
      */
