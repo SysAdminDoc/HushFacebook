@@ -1333,22 +1333,25 @@ public class HushfacebookPreferenceFragmentTest {
             controller.get().getFragmentManager().beginTransaction().add(android.R.id.content, page).commitNow();
             List<Preference> rows = new ArrayList<>();
             collect(page.getPreferenceScreen(), rows);
-            // Right under the status card and the section jump: the heading, the opening pause and
-            // its length, Take breaks and its two lists, the switch, then the list.
+            // Right under the status card, the section jump, Switches that are on and the two backup
+            // rows (#608): the heading, the opening pause and its length, Take breaks and its two
+            // lists, the switch, then the list.
             assertEquals("Jump to a section", String.valueOf(page.getPreferenceScreen().getPreference(1).getTitle()));
             assertEquals("Switches that are on", String.valueOf(page.getPreferenceScreen().getPreference(2).getTitle()));
-            assertEquals("Opening Facebook", String.valueOf(page.getPreferenceScreen().getPreference(3).getTitle()));
-            assertEquals(Settings.OPENING_PAUSE.key, rows.get(3).getKey());
-            assertTrue(rows.get(4) instanceof ValueRows.PauseLengthRow);
-            assertFalse("the length works with the pause off", rows.get(4).isEnabled());
-            assertEquals(Settings.TAKE_BREAKS.key, rows.get(5).getKey());
-            assertEquals(Settings.BREAK_AFTER.key, rows.get(6).getKey());
-            assertEquals(Settings.BREAK_LENGTH.key, rows.get(7).getKey());
-            assertFalse("the break lists work with Take breaks off", rows.get(6).isEnabled() || rows.get(7).isEnabled());
-            assertEquals(Settings.OPEN_ON_CHOSEN_TAB.key, rows.get(8).getKey());
-            assertEquals("Open on a chosen tab", String.valueOf(rows.get(8).getTitle()));
-            assertTrue(rows.get(9) instanceof ValueRows.StartTabRow);
-            ValueRows.StartTabRow start = (ValueRows.StartTabRow) rows.get(9);
+            assertEquals("Export settings", String.valueOf(page.getPreferenceScreen().getPreference(3).getTitle()));
+            assertEquals("Import settings", String.valueOf(page.getPreferenceScreen().getPreference(4).getTitle()));
+            assertEquals("Opening Facebook", String.valueOf(page.getPreferenceScreen().getPreference(5).getTitle()));
+            assertEquals(Settings.OPENING_PAUSE.key, rows.get(5).getKey());
+            assertTrue(rows.get(6) instanceof ValueRows.PauseLengthRow);
+            assertFalse("the length works with the pause off", rows.get(6).isEnabled());
+            assertEquals(Settings.TAKE_BREAKS.key, rows.get(7).getKey());
+            assertEquals(Settings.BREAK_AFTER.key, rows.get(8).getKey());
+            assertEquals(Settings.BREAK_LENGTH.key, rows.get(9).getKey());
+            assertFalse("the break lists work with Take breaks off", rows.get(8).isEnabled() || rows.get(9).isEnabled());
+            assertEquals(Settings.OPEN_ON_CHOSEN_TAB.key, rows.get(10).getKey());
+            assertEquals("Open on a chosen tab", String.valueOf(rows.get(10).getTitle()));
+            assertTrue(rows.get(11) instanceof ValueRows.StartTabRow);
+            ValueRows.StartTabRow start = (ValueRows.StartTabRow) rows.get(11);
             assertEquals(Settings.START_TAB.key, start.getKey());
             assertEquals("Tab to open on", String.valueOf(start.getTitle()));
 
@@ -1407,9 +1410,9 @@ public class HushfacebookPreferenceFragmentTest {
             controller.get().getFragmentManager().beginTransaction().add(android.R.id.content, page).commitNow();
             List<Preference> rows = new ArrayList<>();
             collect(page.getPreferenceScreen(), rows);
-            assertTrue(rows.get(9) instanceof ValueRows.StartTabRow);
-            assertTrue(rows.get(10) instanceof ValueRows.FeedsSubtabRow);
-            ValueRows.FeedsSubtabRow subtab = (ValueRows.FeedsSubtabRow) rows.get(10);
+            assertTrue(rows.get(11) instanceof ValueRows.StartTabRow);
+            assertTrue(rows.get(12) instanceof ValueRows.FeedsSubtabRow);
+            ValueRows.FeedsSubtabRow subtab = (ValueRows.FeedsSubtabRow) rows.get(12);
             assertEquals(Settings.FEEDS_SUBTAB.key, subtab.getKey());
             assertEquals("Feeds opens on", String.valueOf(subtab.getTitle()));
 
