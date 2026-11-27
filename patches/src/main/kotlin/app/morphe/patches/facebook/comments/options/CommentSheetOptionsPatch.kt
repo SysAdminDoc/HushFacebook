@@ -401,7 +401,9 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  *
  * What a held comment offers (#607): the glimpse a held comment opens takes each option, and its
  * row of reactions, through hooks of their own, and a comment left with nothing doesn't open the
- * older comment sheet instead ([holdHeldCommentParts] has the detail).
+ * older comment sheet instead ([holdHeldCommentParts] has the detail). Where an account gets that
+ * older sheet in place of the glimpse, its plugin rows, its own rows and its reaction row go through
+ * hooks of their own too ([holdHeldCommentSheet]).
  *
  * Hide who is typing in comments (#170), Hide the new comments pop-up (#185) and Show every reaction
  * on comments (#241) are nameless patches this one carries, [incomingCommentTypingPatch],
@@ -572,6 +574,8 @@ val commentSheetOptionsPatch = patch(
         keepCommentsClosedOnTextTap(PATCH)
         // #607: what a held comment offers, three hooks on their own; a build without one warns and keeps the rest.
         holdHeldCommentParts(PATCH)
+        // #607: the older comment sheet some accounts get in its place, three hooks of its own the same way.
+        holdHeldCommentSheet(PATCH)
         enableStatus("commentSheetOptions")
     }
 }
