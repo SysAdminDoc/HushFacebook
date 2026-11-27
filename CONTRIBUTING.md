@@ -20,7 +20,7 @@ Hushfacebook is a Morphe patch source for Facebook's Android app, package `com.f
 
 The current declared target is Facebook 588.0.0.42.55 on Android 11 or newer. `AppCompatibilities.kt` holds its version code and the Facebook signing certificates. It declares build 707615136 for arm64-v8a and build 707615135 for armeabi-v7a, each pinned to its own fixture. Fixtures for older builds can still help when tracing a rename, but the current catalog declares only 588. Read [Unsupported Version](docs/help.md#unsupported-version) in the help before promising that an undeclared build works, and rerun the full fixture check before changing that claim.
 
-The bundle uses Morphe patcher 2.5.0 and needs Morphe Manager 2.7.0 or newer. The fixture gates patch with morphe-desktop 2.3.0, which bundles the same patcher. `scripts/validate-release-facts.ps1` holds both numbers here to the pins in `gradle/libs.versions.toml`. The Gradle wrapper, dependency pins, and verification data live under `gradle/`. The Morphe plugin version is in `settings.gradle.kts`. Keep those pins aligned when updating the patcher.
+The bundle uses Morphe patcher 2.6.0 and needs Morphe Manager 2.8.0 or newer. The fixture gates patch with morphe-desktop 2.4.0, which bundles the same patcher. `scripts/validate-release-facts.ps1` holds both numbers here to the pins in `gradle/libs.versions.toml`. The Gradle wrapper, dependency pins, and verification data live under `gradle/`. The Morphe plugin version is in `settings.gradle.kts`. Keep those pins aligned when updating the patcher.
 
 ## Source map
 

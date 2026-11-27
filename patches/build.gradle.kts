@@ -1111,14 +1111,15 @@ dependencies {
     // exact version at run time; this puts it on the test compile classpath as well.
     testImplementation("com.android.tools.build:apksig:9.1.1")
     // Reads the resource tables of the fixtures, for the Material You theme's colour table. This is
-    // the module and commit the patcher brings at run time (2.5.0 and 2.4.0 pin 50418a07a8, 2.3.0 pinned
-    // 675bed2de3, 2.1.0 and 2.2.0 pinned 4695b583ef); it puts that copy on the test compile classpath
-    // as well. Gradle keeps whichever of two commits sorts higher, so a stale pin here can silently
-    // replace the patcher's: 675bed2de3 sorts above 50418a07a8, and left here it put the old
-    // ValueType classes back under the tests. REAndroid's own arsclib is a different module that
+    // the module and commit the patcher brings at run time (2.6.0 pins 6435903152, 2.5.0 and 2.4.0
+    // pinned 50418a07a8, 2.3.0 675bed2de3, 2.1.0 and 2.2.0 4695b583ef); it puts that copy on the test
+    // compile classpath as well. Gradle keeps whichever of two commits sorts higher, so a stale pin
+    // here can silently replace the patcher's: 675bed2de3 sorts above 50418a07a8, and left here it put
+    // the old ValueType classes back under the tests. 6435903152 is all digits and reads as one
+    // number, so it sorts above every older commit. REAndroid's own arsclib is a different module that
     // shares most of its com.reandroid classes, so it would sit beside the patcher's copy instead of
     // merging with it.
-    testImplementation("com.github.MorpheApp:ARSCLib:50418a07a8")
+    testImplementation("com.github.MorpheApp:ARSCLib:6435903152")
 }
 
 // The patch tests run in two parts. fixtureTest takes the ones that read the Facebook fixtures,

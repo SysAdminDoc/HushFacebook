@@ -34,6 +34,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Changed
 
+* You need Morphe Manager 2.8.0 or newer now. The patches are built on Morphe patcher 2.6.0, and older Managers turn the bundle down, so update Manager before you repatch. Desktop patching needs morphe-desktop 2.4.0.
 * `Export settings` and `Import settings` sit at the top of the Hushfacebook settings, right under the search box, so a backup before you try something new is one tap away. `Reset settings` stays under Pause, backup and diagnostics. (#608)
 * With `See-through bars` on, the top bar no longer shows as a plain strip at the top of your feed. It keeps the color of your posts while nothing but the empty space above the first post is under it, and turns see-through as posts slide under it. (#588)
 * Back in the Hushfacebook settings folds the section you have open and keeps its header where it was, and the next Back leaves. Before, Back closed the settings with a section still open. After `Show all settings as a list`, Back still leaves right away. (#604)
