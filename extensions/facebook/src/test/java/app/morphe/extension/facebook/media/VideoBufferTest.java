@@ -8,9 +8,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Process;
 
 import org.junit.After;
 import org.junit.Before;
@@ -18,9 +21,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowSystemClock;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -176,9 +182,51 @@ public class VideoBufferTest {
         return Message.obtain(handler, VideoBuffer.DO_SOME_WORK);
     }
 
+    /** What Android says of Facebook's process: on screen in front, or left in the background. */
+    private static void androidSays(int importance) {
+        ActivityManager.RunningAppProcessInfo facebook =
+                new ActivityManager.RunningAppProcessInfo("com.facebook.katana", Process.myPid(), null);
+        facebook.importance = importance;
+        ActivityManager manager = (ActivityManager) RuntimeEnvironment.getApplication()
+                .getSystemService(Context.ACTIVITY_SERVICE);
+        Shadows.shadowOf(manager).setProcesses(Collections.singletonList(facebook));
+    }
+
+    private static void left() {
+        androidSays(ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED);
+    }
+
+    /**
+     * #602: the screen count's callbacks can go on after Facebook started its first screen, so the
+     * count reads none while you're on the feed. With Android showing Facebook, a video's work runs
+     * as Facebook wrote it, and once Android has Facebook in the background it rests again.
+     */
+    @Test
+    public void aCountThatMissedTheFirstScreenRestsNothingWhileFacebookIsOnScreen() {
+        VideoBuffer.watchingForTests();
+        androidSays(ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
+        Handler handler = new Handler(Looper.getMainLooper());
+        assertFalse(VideoBuffer.rest(work(handler), false));
+        ShadowSystemClock.advanceBy(10, TimeUnit.MILLISECONDS);
+        assertFalse("a video's work waited with Facebook on screen", VideoBuffer.rest(work(handler), false));
+        androidSays(ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE);
+        ShadowSystemClock.advanceBy(1, TimeUnit.SECONDS); // Android's answer is kept a second
+        assertFalse(VideoBuffer.rest(work(handler), false));
+        ShadowSystemClock.advanceBy(10, TimeUnit.MILLISECONDS);
+        assertFalse("a video's work waited with Facebook visible", VideoBuffer.rest(work(handler), false));
+        left();
+        ShadowSystemClock.advanceBy(1, TimeUnit.SECONDS); // Android's answer is kept a second
+        assertFalse(VideoBuffer.rest(work(handler), false));
+        ShadowSystemClock.advanceBy(10, TimeUnit.MILLISECONDS);
+        assertTrue("left, the run didn't wait", VideoBuffer.rest(work(handler), false));
+        assertTrue("the missed screen wasn't counted: " + statusLine(),
+                String.valueOf(statusLine()).contains("Screen count missed a screen on show 2"));
+    }
+
     @Test
     public void aPausedVideosWorkRunsOnceASecondWhileFacebookIsLeft() {
         VideoBuffer.watchingForTests();
+        left();
         Handler handler = new Handler(Looper.getMainLooper());
         assertFalse("the first run waited", VideoBuffer.rest(work(handler), false));
         ShadowSystemClock.advanceBy(10, TimeUnit.MILLISECONDS);
@@ -195,6 +243,7 @@ public class VideoBufferTest {
     @Test
     public void aPlayerMeantToPlayOtherMessagesAndAStartedScreenRunAsFacebookWroteThem() {
         VideoBuffer.watchingForTests();
+        left();
         Handler handler = new Handler(Looper.getMainLooper());
         assertFalse(VideoBuffer.rest(work(handler), false));
         assertFalse("a video meant to play waited", VideoBuffer.rest(work(handler), true));

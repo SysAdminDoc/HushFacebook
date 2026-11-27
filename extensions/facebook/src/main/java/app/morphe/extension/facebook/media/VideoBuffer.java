@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.media;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
@@ -46,8 +47,8 @@ import app.morphe.extension.shared.settings.Setting;
  * you leave it, so a paused video it hadn't finished, like the Reels row's preview on Home, never
  * gets there: its playback thread woke a hundred times a second in the background until Android
  * ended Facebook, about 3% of a core on an S22. Each playback thread asks {@link #rest} before a run
- * of that work, and with no Facebook screen started and the player not meant to play, the run
- * waits until a second after the last one. A player told to play, the one Keep playing in the
+ * of that work, and with no Facebook screen started, Android not showing Facebook either (#602), and
+ * the player not meant to play, the run waits until a second after the last one. A player told to play, the one Keep playing in the
  * background carries on included, runs as Facebook wrote it.
  */
 public final class VideoBuffer {
@@ -86,6 +87,18 @@ public final class VideoBuffer {
 
     /** Whether resting was logged since Facebook was last left, so each stay in the background logs once. */
     private static volatile boolean loggedRest;
+
+    /** Counted each time the screen count read none while Android had Facebook on screen (#602). */
+    static final String COUNT_MISSED = "Screen count missed a screen on show";
+
+    /** How long Android's answer on whether Facebook is on screen is kept, so a run doesn't ask each time. */
+    static final long SHOWN_CHECK_MS = 1000;
+
+    /** When Android was last asked whether Facebook is on screen, in uptime, or -1. */
+    private static volatile long shownCheckedAt = -1;
+
+    /** Android's last answer on whether Facebook is on screen. */
+    private static volatile boolean shownSaid;
 
     private VideoBuffer() {
     }
@@ -166,6 +179,7 @@ public final class VideoBuffer {
         try {
             if (playing || message == null || message.what != DO_SOME_WORK || !watching || started > 0) return false;
             if (!Utils.settingsReady() || Setting.isPaused()) return false;
+            if (onScreen()) return false;
             Handler handler = message.getTarget();
             if (handler == null) return false;
             long now = SystemClock.uptimeMillis();
@@ -190,6 +204,30 @@ public final class VideoBuffer {
             HookStatus.threw(FAMILY, "background rest", failure);
             return false;
         }
+    }
+
+    /**
+     * Whether Android has Facebook's process on screen, in front or visible behind something,
+     * asked at most once every {@link #SHOWN_CHECK_MS}. The screen count can miss Facebook's first
+     * screen (#602): its callbacks go on at the end of the application's start, and Facebook can
+     * start its first screen before that, so the count read none all the while you were on the
+     * feed. A video loading to autoplay then ran its work once a second and only played on a tap.
+     */
+    static boolean onScreen() {
+        long now = SystemClock.uptimeMillis();
+        long at = shownCheckedAt;
+        if (at >= 0 && now >= at && now - at < SHOWN_CHECK_MS) return shownSaid;
+        ActivityManager.RunningAppProcessInfo state = new ActivityManager.RunningAppProcessInfo();
+        ActivityManager.getMyMemoryState(state);
+        boolean shown = state.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                || state.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
+        shownSaid = shown;
+        shownCheckedAt = now;
+        if (shown) {
+            HookStatus.counted(FAMILY, COUNT_MISSED);
+            Logger.printDebug(() -> "Video buffer: no screen counted, but Facebook is on screen, so nothing rests");
+        }
+        return shown;
     }
 
     /** From the settings entry's application hook, in the main process: keeps the count of started screens. */
@@ -226,6 +264,8 @@ public final class VideoBuffer {
         watching = false;
         watched = new WeakReference<>(null);
         loggedRest = false;
+        shownCheckedAt = -1;
+        shownSaid = false;
         synchronized (lastRun) {
             lastRun.clear();
         }
