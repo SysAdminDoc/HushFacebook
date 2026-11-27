@@ -64,10 +64,12 @@ public class SuggestedStoriesTest {
         Settings.HIDE_CONTACT_IMPORT_CARD.resetToDefault();
         Settings.HIDE_STORY_PROMPTS.resetToDefault();
         Settings.HIDE_PAGE_STORIES.resetToDefault();
+        Settings.HIDE_PEOPLE_STORIES.resetToDefault();
         Settings.HIDE_SEEN_STORIES.resetToDefault();
         Settings.SHOW_ONLY_WATCHED_STORIES.resetToDefault();
         Settings.SEEN_STORIES_LAST.resetToDefault();
         SuggestedStoriesForTests.peopleYouMayKnowInBuild(null);
+        SuggestedStoriesForTests.viewer = SuggestedStoriesForTests.VIEWER;
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -588,11 +590,14 @@ public class SuggestedStoriesTest {
         assertTrue(SuggestedStoriesForTests.hidesPeopleYouMayKnow());
         assertTrue(SuggestedStoriesForTests.hidesContactImportCard());
         assertFalse("Hide stories from Pages starts off", SuggestedStoriesForTests.hidesPageStories());
+        assertFalse("Hide stories from people starts off", SuggestedStoriesForTests.hidesPeopleStories());
         assertFalse("Hide seen stories starts off", SuggestedStoriesForTests.hidesSeenStories());
         Settings.HIDE_PAGE_STORIES.save(true);
         Settings.HIDE_SEEN_STORIES.save(true);
         assertTrue(SuggestedStoriesForTests.hidesPageStories());
         assertTrue(SuggestedStoriesForTests.hidesSeenStories());
+        Settings.HIDE_PEOPLE_STORIES.save(true);
+        assertTrue(SuggestedStoriesForTests.hidesPeopleStories());
         assertFalse("Show only watched stories starts off", SuggestedStoriesForTests.keepsOnlyWatchedStories());
         Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
         assertTrue(SuggestedStoriesForTests.keepsOnlyWatchedStories());
@@ -626,6 +631,74 @@ public class SuggestedStoriesTest {
         assertEquals(Arrays.asList(friend, creator, ownerless), SuggestedStoriesForTests.keptBuckets(tray));
         assertTrue(counterLine(), counterLine().contains("Removed: " + SuggestedStories.PAGE_STORY + " 6."));
         assertTrue(statusLine(), statusLine().endsWith(" 0 missing"));
+    }
+
+    /**
+     * Issue #616: with Hide stories from people on, a person's bucket leaves the tray, a friend's, a
+     * labelled one's and one in professional mode alike, so the Pages you follow are what's left,
+     * a profile-style Page's included. Your own story stays, and so do the Add to story tile, a
+     * friend request, a card and a bucket with no owner. A suggested story goes by Hide suggested
+     * stories, not this switch. Off, the tray is Facebook's.
+     */
+    @Test
+    public void peopleStoriesLeaveWithTheirSwitch() {
+        assertFalse("the switch starts off", Settings.HIDE_PEOPLE_STORIES.get());
+        String me = SuggestedStoriesForTests.VIEWER;
+        Bucket create = new Bucket(false, null, Type.ADD_TO_STORY).ownedBy("User").postedBy(me);
+        Bucket mine = new Bucket(false, null).ownedBy("User").postedBy(me);
+        Bucket friend = new Bucket(false, null).ownedBy("User").postedBy("200002");
+        Bucket family = new Bucket(false, Label.FAMILY).ownedBy("User").postedBy("200003");
+        Bucket creator = new Bucket(false, null, Type.PROFESSIONAL_STORY).ownedBy("User").postedBy("200004");
+        Bucket page = new Bucket(false, null).ownedBy(SuggestedStories.PAGE_OWNER).postedBy("300003");
+        Bucket profilePage = new Bucket(false, null, Type.ADMINED_ADDITIONAL_PROFILE_STORY).ownedBy("User").postedBy("300004");
+        Bucket typed = Bucket.of(Type.PAGE_STORY);
+        Bucket suggested = new Bucket(true, null).ownedBy("User").postedBy("400004");
+        Bucket request = new Bucket(false, null, Type.FRIEND_REQUEST_STORY).ownedBy("User").postedBy("500005");
+        Bucket card = new Bucket(false, null, Type.CONTACT_IMPORTER_STORY).ownedBy("User").postedBy("500006");
+        Bucket ownerless = new Bucket(false, null);
+        List<Bucket> tray = Arrays.asList(create, mine, friend, family, creator, page, profilePage, typed, suggested,
+                request, card, ownerless);
+        Settings.HIDE_SUGGESTED_STORIES.save(false);
+        Settings.HIDE_CONTACT_IMPORT_CARD.save(false);
+        assertSame("off, Facebook's tray", tray, SuggestedStoriesForTests.keptBuckets(tray));
+
+        Settings.HIDE_PEOPLE_STORIES.save(true);
+        assertEquals(Arrays.asList(create, mine, page, profilePage, typed, suggested, request, card, ownerless),
+                SuggestedStoriesForTests.keptBuckets(tray));
+        assertTrue(counterLine(), counterLine().contains("Removed: person's story 3."));
+        assertTrue(statusLine(), statusLine().endsWith(" 0 missing"));
+
+        // The suggestion still goes by its own switch.
+        Settings.HIDE_SUGGESTED_STORIES.save(true);
+        assertEquals(Arrays.asList(create, mine, page, profilePage, typed, request, card, ownerless),
+                SuggestedStoriesForTests.keptBuckets(tray));
+    }
+
+    /**
+     * Issue #616: Your story stays with Hide stories from people on, watched or not, and with the seen
+     * switches on too. With no account to compare, or a bucket whose owner's id can't be read, a
+     * story might be yours, so the people's stories stay and Hook status names the missing account.
+     */
+    @Test
+    public void yourOwnStoryStaysWhenPeopleStoriesLeave() {
+        Bucket mine = new Bucket(false, null).ownedBy("User").postedBy(SuggestedStoriesForTests.VIEWER).watched();
+        Bucket friend = new Bucket(false, null).ownedBy("User").postedBy("200002");
+        Bucket unknown = new Bucket(false, null).ownedBy("User");
+        Bucket page = new Bucket(false, null).ownedBy(SuggestedStories.PAGE_OWNER).postedBy("300003");
+        List<Bucket> tray = Arrays.asList(mine, friend, unknown, page);
+        Settings.HIDE_PEOPLE_STORIES.save(true);
+        assertEquals(Arrays.asList(mine, unknown, page), SuggestedStoriesForTests.keptBuckets(tray));
+        assertTrue(statusLine(), statusLine().endsWith(" 0 missing"));
+        Settings.HIDE_SEEN_STORIES.save(true);
+        assertEquals(Arrays.asList(mine, unknown, page), SuggestedStoriesForTests.keptBuckets(tray));
+        Settings.HIDE_SEEN_STORIES.resetToDefault();
+
+        HookStatus.clear();
+        SuggestedStoriesForTests.viewer = "0";
+        assertSame("nobody signed in, Facebook's tray", tray, SuggestedStoriesForTests.keptBuckets(tray));
+        SuggestedStoriesForTests.viewer = null;
+        assertSame("no account, Facebook's tray", tray, SuggestedStoriesForTests.keptBuckets(tray));
+        assertTrue(statusLine(), statusLine().endsWith(" 1 missing. First missing: method signed-in session#user id"));
     }
 
     /**

@@ -65,6 +65,14 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * past takes a story whose tile came into view on an earlier visit to Facebook, watched or not,
  * until its person posts another ({@link PassedStories}, #463).
  *
+ * <p>Hide stories from people, off until you turn it on, goes the other way round from Hide stories
+ * from Pages, for a tray of the Pages you follow (#616). A person's bucket is one whose
+ * story_bucket_owner is a User and whose type is none of a Page's, an Add to story tile's or a
+ * friend request's. Your own story stays: the owner's id is the signed-in account's, the test
+ * Facebook's own bucket typing makes (#510). A bucket whose owner's id can't be read, or a tray
+ * read when the account can't be told, keeps its people's stories. A suggested story isn't counted
+ * as a person's, so Hide suggested stories still decides it.
+ *
  * <p>Nothing else counts, so a friend's story, a Page you follow, your own story, a friend
  * request and anything that isn't a bucket or whose type isn't one of those stay.
  *
@@ -104,6 +112,9 @@ public final class SuggestedStories {
     static final String PROFILE_PLUS_PAGE_TYPE = "PROFILE_PLUS_STORY";
     static final String ADD_TO_STORY_TYPE = "ADD_TO_STORY";
 
+    /** A friend request's tile, which asks you to answer it and stays with Hide stories from people on (#616). */
+    static final String FRIEND_REQUEST_TYPE = "FRIEND_REQUEST_STORY";
+
     /**
      * The types a tray tile comes as when it holds a person's saved highlights, the tiles named
      * Highlights, rather than a day of stories. Its expiration_time doesn't follow a story's day, and
@@ -112,21 +123,23 @@ public final class SuggestedStories {
     static final String FEATURED_HIGHLIGHTS_TYPE = "FEATURED_HIGHLIGHTS_STORY";
     static final String HIGHLIGHTED_TYPE = "HIGHLIGHTED_STORY";
 
-    /** The GraphQL fields of who posted a bucket and whether you've watched it, and a Page's type name. */
+    /** The GraphQL fields of who posted a bucket and whether you've watched it, and a Page's and a person's type names. */
     static final String OWNER_FIELD = "story_bucket_owner";
     static final String SEEN_FIELD = "is_bucket_seen_by_viewer";
     static final String PAGE_OWNER = "Page";
+    static final String USER_OWNER = "User";
 
     /** The fields a bucket watched on this phone is looked up by: its id, and when it expires. */
     static final String ID_FIELD = "id";
     static final String EXPIRATION_FIELD = "expiration_time";
 
-    /** What a bucket counts as. Only the first five can leave the tray, each behind its switch. */
+    /** What a bucket counts as. Only the first six can leave the tray, each behind its switch. */
     static final String SUGGESTED = "suggested";
     static final String LABELLED_SUGGESTED = "labelled suggested";
     static final String PEOPLE_YOU_MAY_KNOW = "people you may know";
     static final String CONTACT_IMPORT = "contact import card";
     static final String PAGE_STORY = "Page story";
+    static final String PERSON_STORY = "person's story";
     static final String NOT_SUGGESTED = "not suggested";
     static final String NOT_A_BUCKET = "not a bucket";
     static final String NOT_PATCHED = "reader not patched";
@@ -309,6 +322,8 @@ public final class SuggestedStories {
         final boolean peopleYouMayKnow;
         final boolean contactImport;
         final boolean pageStories;
+        /** Hide stories from people (#616). */
+        final boolean peopleStories;
         /** Hide seen stories, which waits while Show only watched stories is on. */
         final boolean seenStories;
         /** Show only watched stories (#340). */
@@ -333,11 +348,19 @@ public final class SuggestedStories {
         Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
                 boolean pageStories, boolean seenStories, boolean onlyWatched, boolean passedStories,
                 boolean seenLast) {
+            this(suggested, peopleYouMayKnowInBuild, peopleYouMayKnow, contactImport, pageStories, seenStories,
+                    onlyWatched, passedStories, seenLast, false);
+        }
+
+        Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
+                boolean pageStories, boolean seenStories, boolean onlyWatched, boolean passedStories,
+                boolean seenLast, boolean peopleStories) {
             this.suggested = suggested;
             this.peopleYouMayKnowInBuild = peopleYouMayKnowInBuild;
             this.peopleYouMayKnow = peopleYouMayKnowInBuild && peopleYouMayKnow;
             this.contactImport = contactImport;
             this.pageStories = pageStories;
+            this.peopleStories = peopleStories;
             this.seenStories = seenStories && !onlyWatched;
             this.onlyWatched = onlyWatched;
             this.passedStories = passedStories;
@@ -351,6 +374,7 @@ public final class SuggestedStories {
             if (PEOPLE_YOU_MAY_KNOW.equals(kind)) return peopleYouMayKnow;
             if (CONTACT_IMPORT.equals(kind)) return contactImport;
             if (PAGE_STORY.equals(kind)) return pageStories;
+            if (PERSON_STORY.equals(kind)) return peopleStories;
             return false;
         }
 
@@ -384,7 +408,7 @@ public final class SuggestedStories {
 
         private static boolean story(String kind) {
             return SUGGESTED.equals(kind) || LABELLED_SUGGESTED.equals(kind) || PAGE_STORY.equals(kind)
-                    || NOT_SUGGESTED.equals(kind);
+                    || PERSON_STORY.equals(kind) || NOT_SUGGESTED.equals(kind);
         }
 
         /**
@@ -437,7 +461,18 @@ public final class SuggestedStories {
             boolean viewerRead = false;
             for (int index = 0; index < buckets.size(); index++) {
                 Object bucket = buckets.get(index);
-                String kind = kindOf(bucket, access, switches.pageStories);
+                String kind = kindOf(bucket, access, switches.pageStories, switches.peopleStories);
+                if (PERSON_STORY.equals(kind)) {
+                    if (!viewerRead) {
+                        viewer = viewerId(access);
+                        viewerRead = true;
+                    }
+                    if (viewer == null) {
+                        HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "signed-in session", "user id");
+                    }
+                    // Your own story, and one that can't be told from yours, is a story like any other (#616).
+                    if (!someoneElses(bucket, access, viewer)) kind = NOT_SUGGESTED;
+                }
                 kinds.add(kind);
                 FeedFilterCounters.sawKind(ROUTE, kind);
                 String leaving = switches.leaves(kind) ? kind
@@ -552,13 +587,34 @@ public final class SuggestedStories {
      * the session's user id, which is never "0".
      */
     private static boolean yours(Object bucket, Buckets access, @Nullable String viewer) {
-        if (viewer == null || viewer.isEmpty() || NO_ACCOUNT.equals(viewer)) return false;
+        if (!signedIn(viewer)) return false;
         try {
             return viewer.equals(access.ownerId(bucket));
         } catch (Throwable failure) {
             Logger.printDebug(() -> "Stories tray: could not read a bucket's owner: " + failure);
             return false;
         }
+    }
+
+    /**
+     * Whether [bucket] is surely someone else's than [viewer]'s: its owner's id reads, and isn't the
+     * signed-in account's. With no account to compare, or an owner it can't read, it could be yours,
+     * so it isn't (#616).
+     */
+    private static boolean someoneElses(Object bucket, Buckets access, @Nullable String viewer) {
+        if (!signedIn(viewer)) return false;
+        try {
+            Object owner = access.ownerId(bucket);
+            return owner instanceof String && !((String) owner).isEmpty() && !viewer.equals(owner);
+        } catch (Throwable failure) {
+            Logger.printDebug(() -> "Stories tray: could not read a bucket's owner: " + failure);
+            return false;
+        }
+    }
+
+    /** Whether [viewer] is an account's id: not null, empty or the id Facebook gives nobody. */
+    private static boolean signedIn(@Nullable String viewer) {
+        return viewer != null && !viewer.isEmpty() && !NO_ACCOUNT.equals(viewer);
     }
 
     /** Whether two lists hold the very same buckets in the same order. */
@@ -703,10 +759,12 @@ public final class SuggestedStories {
     }
 
     /**
-     * What one item of the list counts as. A story counts as a Page's only when [pages] asks, so
-     * the owner is read only with that switch on. Never throws.
+     * What one item of the list counts as. A story counts as a Page's only when [pages] asks, and
+     * one Facebook doesn't suggest as a person's only when [people] does, so the owner is read only
+     * with one of those switches on. Whether a person's story is yours is the caller's to tell.
+     * Never throws.
      */
-    static String kindOf(@Nullable Object item, Buckets access, boolean pages) {
+    static String kindOf(@Nullable Object item, Buckets access, boolean pages, boolean people) {
         try {
             if (item == null || !access.isBucket(item)) return NOT_A_BUCKET;
         } catch (Throwable failure) {
@@ -745,10 +803,30 @@ public final class SuggestedStories {
             HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "tray bucket", "first label");
             return NOT_PATCHED;
         }
-        if (label == null) return NOT_SUGGESTED;
-        if (!(label instanceof Enum)) return READ_FAILED;
-        HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#first label");
-        return SUGGESTED_LABEL.equals(((Enum<?>) label).name()) ? LABELLED_SUGGESTED : NOT_SUGGESTED;
+        if (label != null) {
+            if (!(label instanceof Enum)) return READ_FAILED;
+            HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#first label");
+            if (SUGGESTED_LABEL.equals(((Enum<?>) label).name())) return LABELLED_SUGGESTED;
+        }
+        return people && personStory(item, access) ? PERSON_STORY : NOT_SUGGESTED;
+    }
+
+    /**
+     * Whether a bucket holds a person's stories (#616): its owner is a User, and its type is none of a
+     * Page's, an Add to story tile's or a friend request's. An owner it can't read says no. Never
+     * throws.
+     */
+    static boolean personStory(Object bucket, Buckets access) {
+        try {
+            Object type = access.type(bucket);
+            if (type instanceof Enum) {
+                String name = ((Enum<?>) type).name();
+                if (pageType(name) || name.startsWith(ADD_TO_STORY_TYPE) || FRIEND_REQUEST_TYPE.equals(name)) return false;
+            }
+        } catch (Throwable ignored) {
+            // cardKind already reported this read, and the owner still answers.
+        }
+        return USER_OWNER.equals(ownerTypeName(bucket, access));
     }
 
     /**
@@ -758,28 +836,36 @@ public final class SuggestedStories {
     static boolean pageStory(Object bucket, Buckets access) {
         try {
             Object type = access.type(bucket);
-            if (type instanceof Enum) {
-                String name = ((Enum<?>) type).name();
-                if (PAGE_TYPE.equals(name) || SHARED_PAGE_TYPE.equals(name)
-                        || ADDITIONAL_PROFILE_PAGE_TYPE.equals(name) || PROFILE_PLUS_PAGE_TYPE.equals(name)) return true;
-            }
+            if (type instanceof Enum && pageType(((Enum<?>) type).name())) return true;
         } catch (Throwable ignored) {
             // cardKind already reported this read, and the owner still answers.
         }
+        return PAGE_OWNER.equals(ownerTypeName(bucket, access));
+    }
+
+    /** Whether a story_bucket_type is one a Page's stories come as, a profile-style Page's two included. */
+    private static boolean pageType(String name) {
+        return PAGE_TYPE.equals(name) || SHARED_PAGE_TYPE.equals(name)
+                || ADDITIONAL_PROFILE_PAGE_TYPE.equals(name) || PROFILE_PLUS_PAGE_TYPE.equals(name);
+    }
+
+    /** The type name of a bucket's owner, or null when it has none or it can't be read. Never throws. */
+    @Nullable
+    private static String ownerTypeName(Object bucket, Buckets access) {
         Object owner;
         try {
             owner = access.ownerType(bucket);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket owner", failure);
-            return false;
+            return null;
         }
         if (owner == UNPATCHED) {
             HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "tray bucket", OWNER_FIELD);
-            return false;
+            return null;
         }
-        if (!(owner instanceof String)) return false;
+        if (!(owner instanceof String)) return null;
         HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + OWNER_FIELD);
-        return PAGE_OWNER.equals(owner);
+        return (String) owner;
     }
 
     /**
@@ -1093,7 +1179,7 @@ public final class SuggestedStories {
                     Settings.HIDE_PEOPLE_YOU_MAY_KNOW.get(), Settings.HIDE_CONTACT_IMPORT_CARD.get(),
                     Settings.HIDE_PAGE_STORIES.get(), Settings.HIDE_SEEN_STORIES.get(),
                     Settings.SHOW_ONLY_WATCHED_STORIES.get(), Settings.HIDE_PASSED_STORIES.get(),
-                    Settings.SEEN_STORIES_LAST.get());
+                    Settings.SEEN_STORIES_LAST.get(), Settings.HIDE_PEOPLE_STORIES.get());
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "switch read", failure);
             return Switches.NONE;

@@ -899,6 +899,10 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.HIDE_PAGE_STORIES,
                         L10n.t("Shows only people's stories in the Stories tray, without the Pages you follow. Applies when "
                                 + "Facebook next loads the tray.")));
+                // The other way round, for a tray of the Pages you follow (#616).
+                stories.addPreference(toggle(context, Settings.HIDE_PEOPLE_STORIES,
+                        L10n.t("Shows only the stories of Pages you follow in the Stories tray, without people's stories. "
+                                + "Your own story stays. Applies when Facebook next loads the tray.")));
                 stories.addPreference(toggle(context, Settings.HIDE_SEEN_STORIES,
                         L10n.t("Stories you've already watched leave the Stories tray until there's a new one. Applies when "
                                 + "Facebook next loads the tray.")));

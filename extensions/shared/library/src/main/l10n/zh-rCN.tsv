@@ -3281,3 +3281,5 @@ As patched	修补时的样子
 The icon Morphe drew when you patched. Another pick shows once you leave Facebook.	修补时 Morphe 绘制的图标。选择其他图标后，离开 Facebook 就会显示。
 %1$s. It shows once you leave Facebook, and you may need to add it to your home screen again from the app drawer.	%1$s。离开 Facebook 后就会显示，你可能需要从应用抽屉重新将它添加到主屏幕。
 Pick the app icon	选择应用图标
+Hide stories from people	隐藏用户的快拍
+Shows only the stories of Pages you follow in the Stories tray, without people's stories. Your own story stays. Applies when Facebook next loads the tray.	快拍栏中只显示你关注的公共主页的快拍，不显示用户的快拍。你自己的快拍会保留。在 Facebook 下次加载快拍栏时生效。

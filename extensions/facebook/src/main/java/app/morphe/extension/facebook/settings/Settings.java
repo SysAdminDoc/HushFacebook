@@ -435,6 +435,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_page_stories", FALSE);
 
     /**
+     * The other way round from {@link #HIDE_PAGE_STORIES}: the buckets of the Stories tray that hold
+     * a person's stories, a friend's or someone's you follow, so the Pages you follow are what's left
+     * (#616). A person's bucket is one whose story_bucket_owner is a User and whose type isn't a
+     * Page's. Your own story, the Add to story tiles, friend requests and the cards stay, and a
+     * suggested story goes by Hide suggested stories. Off until you turn it on.
+     */
+    public static final BooleanSetting HIDE_PEOPLE_STORIES =
+            new BooleanSetting("hushfacebook_hide_people_stories", FALSE);
+
+    /**
      * The buckets of the Stories tray you've watched: their is_bucket_seen_by_viewer flag is true,
      * the one that greys the ring (#317). A new story turns it back, so the bucket comes back with
      * it. Off until you turn it on.

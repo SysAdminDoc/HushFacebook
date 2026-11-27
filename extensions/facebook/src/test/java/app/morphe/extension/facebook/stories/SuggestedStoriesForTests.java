@@ -216,6 +216,18 @@ public final class SuggestedStoriesForTests {
         return kept != tray && Collections.singletonList(friend).equals(kept);
     }
 
+    /**
+     * A tray of your own story, a friend's and a followed Page's. True when the friend's came out and
+     * yours stayed (#616). Whether the Page's stays is Hide stories from Pages' to say.
+     */
+    public static boolean hidesPeopleStories() {
+        Bucket mine = new Bucket(false, null).ownedBy("User").postedBy(VIEWER);
+        Bucket friend = new Bucket(false, null).ownedBy("User").postedBy("200002");
+        List<Bucket> tray = Arrays.asList(mine, friend, new Bucket(false, null).ownedBy(SuggestedStories.PAGE_OWNER).postedBy("300003"));
+        Object kept = keptBuckets(tray);
+        return kept != tray && kept instanceof List && ((List<?>) kept).contains(mine) && !((List<?>) kept).contains(friend);
+    }
+
     /** A tray of a story not watched yet and one watched to the end. True when the watched one came out (#317). */
     public static boolean hidesSeenStories() {
         Bucket fresh = new Bucket(false, null).ownedBy("User");

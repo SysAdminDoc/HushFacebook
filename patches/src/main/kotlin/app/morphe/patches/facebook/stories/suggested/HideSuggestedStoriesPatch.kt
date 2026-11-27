@@ -103,8 +103,8 @@ val hideSuggestedStoriesPatch = patch(
     description = "Removes stories Facebook suggests from people and Pages you don't follow, and the \"Find " +
         "friends from contacts\" card, so the Stories tray sticks to people you know. On by default. Turn it off " +
         "in Hushfacebook settings > Stories, where more switches, all off at first, also hide the Create story " +
-        "tile, the Pages you follow and the stories you've already watched, keep only the ones you've watched, or " +
-        "move the ones you've watched to the end.",
+        "tile, the Pages you follow, the people you know and the stories you've already watched, keep only the " +
+        "ones you've watched, or move the ones you've watched to the end.",
     default = true,
 ) {
     category("Stories")
@@ -214,7 +214,7 @@ internal fun BytecodePatchContext.trayBuckets(): TrayBuckets {
     if ("${flag.definingClass}->${type.name}()${type.returnType}" !in typed) {
         throw PatchException("$PATCH: no tree class answers ${flag.definingClass}->${type.name} with $BUCKET_TYPE_FIELD")
     }
-    // Hide stories from Pages and Hide seen stories need these, hiding suggested stories doesn't. A
+    // Hide stories from Pages or from people and Hide seen stories need these, hiding suggested stories doesn't. A
     // build without exactly one of each leaves its stub alone, and that switch says it can't work.
     val declared = classDefBy(flag.definingClass).methods.filter { it.parameterTypes.isEmpty() }
     val seen = declared.filter { "${flag.definingClass}->${it.name}()${it.returnType}" in watched }.singleOrNull()

@@ -3290,3 +3290,5 @@ As patched	修補時的樣子
 The icon Morphe drew when you patched. Another pick shows once you leave Facebook.	修補時 Morphe 繪製的圖示。選擇其他圖示後，離開 Facebook 就會顯示。
 %1$s. It shows once you leave Facebook, and you may need to add it to your home screen again from the app drawer.	%1$s。離開 Facebook 後就會顯示，你可能需要從應用程式匣重新將它加入主畫面。
 Pick the app icon	選擇應用程式圖示
+Hide stories from people	隱藏個人的限時動態
+Shows only the stories of Pages you follow in the Stories tray, without people's stories. Your own story stays. Applies when Facebook next loads the tray.	限時動態橫幅只顯示你追蹤的粉絲專頁的限時動態，不含個人的限時動態。你自己的限時動態會保留。從 Facebook 下次載入橫幅起生效。
